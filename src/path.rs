@@ -11,10 +11,14 @@
 
 use crate::{KeyType, StrictVec};
 
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictEncode, StrictDecode)]
 pub enum DataStep {
     StructField(u16),
     ArrayIndex(u16),
     MapKey(KeyType),
 }
 
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictEncode, StrictDecode)]
 pub struct DataPath(StrictVec<DataStep, 0>);

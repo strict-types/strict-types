@@ -9,10 +9,15 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-mod data;
+#[macro_use]
+extern crate amplify;
+#[macro_use]
+extern crate strict_encoding;
+
+mod schema;
 mod path;
 mod types;
 
-pub use data::*;
 pub use path::*;
+pub use schema::*;
 pub use types::*;
