@@ -9,10 +9,12 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-mod data;
-mod path;
-mod types;
+use crate::{KeyType, StrictVec};
 
-pub use data::*;
-pub use path::*;
-pub use types::*;
+pub enum DataStep {
+    StructField(u16),
+    ArrayIndex(u16),
+    MapKey(KeyType),
+}
+
+pub struct DataPath(StrictVec<DataStep, 0>);

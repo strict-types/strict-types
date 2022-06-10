@@ -9,10 +9,15 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-mod data;
-mod path;
-mod types;
+use std::collections::{BTreeMap, BTreeSet};
+use std::hash::Hash;
 
-pub use data::*;
-pub use path::*;
-pub use types::*;
+pub struct StrictVec<T, const MIN_LEN: u16 = 0>(Vec<T>);
+
+pub struct StrictSet<T, const MIN_LEN: u16 = 0>(BTreeSet<T>)
+where T: Eq + Ord + Hash;
+
+pub struct StrictMap<K, V, const MIN_LEN: u16 = 0>(BTreeMap<K, V>)
+where K: Eq + Ord + Hash;
+
+pub struct StrictStr<const MIN_LEN: u16 = 0>(String);
