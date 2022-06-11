@@ -9,6 +9,8 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use std::ops::{Deref, DerefMut};
+
 use strict_encoding::{StrictDecode, StrictEncode};
 
 use crate::{AsciiString, StrictSet, StrictVec};
@@ -52,14 +54,26 @@ pub enum PrimitiveType {
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructField {
     pub optional: bool,
-    pub value: DataTypeName,
+    pub type_name: DataTypeName,
+}
+
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructType(StrictVec<StructField, 1>);
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+impl Deref for StructType {
+    type Target = StrictVec<StructField, 1>;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl DerefMut for StructType {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
 pub enum KeyType {
     Primitive(PrimitiveType),
@@ -70,18 +84,19 @@ pub enum KeyType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
-pub enum DataRepr {
+pub enum DataType {
     Primitive(PrimitiveType),
     Union(StrictSet<PrimitiveType, 2>),
     Enum(StrictSet<PrimitiveType, 1>),
-    Struct(StructType),
+    Struct(DataTypeName),
     Fixed(u16, DataTypeName),
     List(DataTypeName),
     Map(KeyType, DataTypeName),
 }
+
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
-pub struct DataType {
+pub struct TypeDef {
     pub name: DataTypeName,
-    pub repr: DataRepr,
+    pub ty: DataType,
 }
