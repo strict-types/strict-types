@@ -259,6 +259,7 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
+#[strict_encoding(repr = u8)]
 pub enum DataType {
     Primitive(PrimitiveType),
     Union(TypeRef),
@@ -299,7 +300,7 @@ impl Display for DataType {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-#[derive(StrictEncode)]
+#[derive(StrictEncode, StrictDecode)]
 pub struct TypeSystem(StrictMap<TypeName, StructType>);
 
 impl Display for TypeSystem {
@@ -352,6 +353,8 @@ pub enum Error {
 
 #[cfg(test)]
 mod test {
+    use amplify::hex::ToHex;
+
     use super::*;
     use crate::strict_vec;
 
@@ -384,5 +387,15 @@ mod test {
     #[test]
     fn display() {
         println!("{}", type_system());
+    }
+
+    #[test]
+    fn test_encode() {
+        let ts = type_system();
+        let data = ts.strict_serialize().unwrap();
+        println!("{}", data.to_hex());
+        let ts2 = TypeSystem::strict_deserialize(&data).unwrap();
+        println!("{}", ts2);
+        assert_eq!(ts, ts2);
     }
 }

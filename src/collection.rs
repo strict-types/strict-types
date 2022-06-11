@@ -374,7 +374,8 @@ where
         let mut data = BTreeMap::<K, V>::new();
         for _ in 0..len {
             let key = K::strict_decode(&mut d)?;
-            if data.insert(key.clone(), V::strict_decode(&mut d)?).is_some() {
+            let value = V::strict_decode(&mut d)?;
+            if data.insert(key.clone(), value).is_some() {
                 return Err(strict_encoding::Error::RepeatedValue(format!(
                     "non-unique map key {:?}",
                     key
@@ -528,7 +529,7 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> StrictDecode for AsciiString<MIN_LE
         if len > MAX_LEN {
             return Err(strict_encoding::Error::ExceedMaxItems(MAX_LEN as usize));
         }
-        let mut bytes = Vec::with_capacity(len as usize);
+        let mut bytes = vec![0u8; len as usize];
         d.read_exact(&mut bytes)?;
         for byte in &bytes {
             if !byte.is_ascii() {
