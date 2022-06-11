@@ -107,6 +107,15 @@ where T: StrictEncode + StrictDecode
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<'me, T, const MIN_LEN: u16> IntoIterator for &'me StrictVec<T, MIN_LEN>
+where T: StrictEncode + StrictDecode
+{
+    type Item = &'me T;
+    type IntoIter = std::slice::Iter<'me, T>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
 impl<T, const MIN_LEN: u16> TryFrom<Vec<T>> for StrictVec<T, MIN_LEN>
 where T: StrictEncode + StrictDecode
 {
