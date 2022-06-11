@@ -13,7 +13,9 @@ use std::fmt::{self, Display, Formatter};
 
 use strict_encoding::{StrictDecode, StrictEncode};
 
-use crate::{AsciiString, StrictSet, StrictVec};
+use crate::{AsciiString, OversizeError, StrictMap, StrictSet, StrictVec};
+
+pub type TypeName = AsciiString<1, 32>;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
@@ -153,7 +155,7 @@ pub enum TypeRef {
     Primitive(PrimitiveType),
 
     #[from]
-    Named(AsciiString<1, 32>),
+    Named(TypeName),
 }
 
 impl From<&'static str> for TypeRef {
@@ -189,7 +191,7 @@ impl Display for DataType {
             DataType::Struct(ty) => Display::fmt(ty, f),
             DataType::Array(size, ty) => {
                 Display::fmt(ty, f)?;
-                write!(f, "[{}]", size)
+                write!(f, "*{}", size)
             }
             DataType::List(ty) => {
                 Display::fmt(ty, f)?;
@@ -206,35 +208,55 @@ impl Display for DataType {
     }
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
-#[derive(StrictEncode, StrictDecode)]
-#[display("{name} :: {ty}")]
-pub struct TypeDecl {
-    pub name: TypeRef,
-    pub ty: StructType,
-}
-
-impl TypeDecl {
-    pub fn new(name: &'static str, ty: StructType) -> Self {
-        TypeDecl {
-            name: name.try_into().expect("invalid type name"),
-            ty,
-        }
-    }
-}
-
-#[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[derive(StrictEncode, StrictDecode)]
-pub struct TypeSystem(StrictVec<TypeDecl>);
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+#[derive(StrictEncode)]
+pub struct TypeSystem(StrictMap<TypeName, StructType>);
 
 impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for decl in &self.0 {
-            Display::fmt(decl, f)?;
+        for (name, ty) in &self.0 {
+            Display::fmt(name, f)?;
+            f.write_str(" :: ")?;
+            Display::fmt(ty, f)?;
             f.write_str("\n")?;
         }
         Ok(())
     }
+}
+
+impl TypeSystem {
+    pub fn new() -> Self { default!() }
+
+    pub fn push(&mut self, name: TypeName, ty: StructType) -> Result<(), Error> {
+        if self.0.contains_key(&name) {
+            return Err(Error::DuplicatedType(name));
+        }
+        self.0.insert(name, ty)?;
+        Ok(())
+    }
+}
+
+#[macro_export]
+macro_rules! type_system {
+    ($($name:literal :: $ty:expr),+ $(,)?) => { {
+        let mut ts = TypeSystem::new();
+        $(
+        let name = $name.try_into().expect("inline strict_vec literal contains invalid number of items");
+        ts.push(name, $ty).expect("invalid type declaration");
+        )+
+        ts
+    } }
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error, From)]
+#[display(doc_comments)]
+pub enum Error {
+    /// type `{0}` is already defined
+    DuplicatedType(TypeName),
+
+    #[from]
+    #[display(inner)]
+    Oversize(OversizeError),
 }
 
 #[cfg(test)]
@@ -243,43 +265,29 @@ mod test {
     use crate::strict_vec;
 
     fn type_system() -> TypeSystem {
-        TypeSystem(strict_vec![
-            TypeDecl::new(
-                "Transaction",
-                StructType(strict_vec![
-                    StructField::primitive(PrimitiveType::U32),
-                    StructField::list("Input"),
-                    StructField::list("Output"),
-                    StructField::primitive(PrimitiveType::U32),
-                ])
-            ),
-            TypeDecl::new(
-                "Input",
-                StructType(strict_vec![
-                    StructField::new("OutPoint"),
-                    StructField::primitive(PrimitiveType::Bytes),
-                    StructField::new("Witness"),
-                ])
-            ),
-            TypeDecl::new(
-                "Output",
-                StructType(strict_vec![
-                    StructField::primitive(PrimitiveType::U64),
-                    StructField::primitive(PrimitiveType::Bytes),
-                ])
-            ),
-            TypeDecl::new(
-                "OutPoint",
-                StructType(strict_vec![
-                    StructField::array(PrimitiveType::U8, 32),
-                    StructField::primitive(PrimitiveType::U16),
-                ])
-            ),
-            TypeDecl::new(
-                "Witness",
-                StructType(strict_vec![StructField::list(PrimitiveType::Bytes),])
-            ),
-        ])
+        type_system![
+           "Transaction" :: StructType(strict_vec![
+                StructField::primitive(PrimitiveType::U32),
+                StructField::list("Input"),
+                StructField::list("Output"),
+                StructField::primitive(PrimitiveType::U32),
+            ]),
+            "Input" :: StructType(strict_vec![
+                StructField::new("OutPoint"),
+                StructField::primitive(PrimitiveType::Bytes),
+                StructField::new("Witness"),
+            ]),
+            "Output" :: StructType(strict_vec![
+                StructField::primitive(PrimitiveType::U64),
+                StructField::primitive(PrimitiveType::Bytes),
+            ]),
+            "OutPoint" :: StructType(strict_vec![
+                StructField::new("Txid"),
+                StructField::primitive(PrimitiveType::U16),
+            ]),
+            "Txid" :: StructType(strict_vec![StructField::array(PrimitiveType::U8, 32),]),
+            "Witness" :: StructType(strict_vec![StructField::list(PrimitiveType::Bytes),]),
+        ]
     }
 
     #[test]

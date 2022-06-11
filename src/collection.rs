@@ -33,11 +33,11 @@ macro_rules! strict_vec {
     )
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
 #[display("operation results in collection size {0} exceeding 0xFFFF, which is prohibited")]
 pub struct OversizeError(usize);
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
 #[display(
     "operation results in collection size {len} less than lower boundary of {min_len}, which is \
      prohibited"
@@ -47,7 +47,7 @@ pub struct UndersizeError {
     pub min_len: u16,
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error, From)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(inner)]
 pub enum CollectionError {
     #[from]
@@ -71,7 +71,7 @@ pub enum AsciiStringError {
     InvalidChar(u8),
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error, From)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum RemoveError {
     #[from]
@@ -215,6 +215,15 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<'me, T, const MIN_LEN: u16> IntoIterator for &'me StrictSet<T, MIN_LEN>
+where T: Eq + Ord + Debug + StrictEncode + StrictDecode
+{
+    type Item = &'me T;
+    type IntoIter = std::collections::btree_set::Iter<'me, T>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
 impl<T, const MIN_LEN: u16> StrictSet<T, MIN_LEN>
 where T: Eq + Ord + Debug + StrictEncode + StrictDecode
 {
@@ -304,12 +313,48 @@ where
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
+
+impl<'me, K, V, const MIN_LEN: u16> IntoIterator for &'me StrictMap<K, V, MIN_LEN>
+where
+    K: Clone + Eq + Ord + Debug + StrictEncode + StrictDecode,
+    V: Clone + StrictEncode + StrictDecode,
+{
+    type Item = (&'me K, &'me V);
+    type IntoIter = std::collections::btree_map::Iter<'me, K, V>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
 impl<K, V, const MIN_LEN: u16> StrictMap<K, V, MIN_LEN>
 where
     K: Clone + Eq + Ord + Debug + StrictEncode + StrictDecode,
     V: Clone + StrictEncode + StrictDecode,
 {
     pub fn len(&self) -> u16 { self.0.len() as u16 }
+
+    pub fn insert(&mut self, key: K, value: V) -> Result<u16, OversizeError> {
+        let len = self.0.len();
+        if len > STRICT_COLLECTION_MAX_LEN as usize {
+            return Err(OversizeError(len));
+        }
+        self.0.insert(key, value);
+        return Ok(len as u16);
+    }
+
+    pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Result<Option<V>, UndersizeError>
+    where
+        K: Borrow<Q> + Ord,
+        Q: Ord,
+    {
+        let len = self.len();
+        if self.len() == MIN_LEN {
+            return Err(UndersizeError {
+                len,
+                min_len: MIN_LEN,
+            });
+        }
+        Ok(self.0.remove(key))
+    }
 }
 
 impl<K, V, const MIN_LEN: u16> StrictDecode for StrictMap<K, V, MIN_LEN>
