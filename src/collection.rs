@@ -13,6 +13,7 @@ use std::borrow::Borrow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::io::Read;
 use std::ops::Deref;
 
 use strict_encoding::{StrictDecode, StrictEncode};
@@ -47,7 +48,7 @@ pub enum RemoveError {
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(StrictEncode)]
 pub struct StrictVec<T, const MIN_LEN: u16 = 0>(Vec<T>)
 where T: StrictEncode + StrictDecode;
 
@@ -101,8 +102,31 @@ where T: StrictEncode + StrictDecode
     }
 }
 
+impl<T, const MIN_LEN: u16> StrictDecode for StrictVec<T, MIN_LEN>
+where T: StrictEncode + StrictDecode
+{
+    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
+        let len = u16::strict_decode(&mut d)?;
+        if len < MIN_LEN {
+            return Err(strict_encoding::Error::ValueOutOfRange(
+                "array length",
+                MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
+                len as u128,
+            ));
+        }
+        if len > STRICT_COLLECTION_MAX_LEN {
+            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
+        }
+        let mut data = Vec::<T>::with_capacity(len as usize);
+        for _ in 0..len {
+            data.push(T::strict_decode(&mut d)?);
+        }
+        Ok(Self(data))
+    }
+}
+
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(StrictEncode)]
 pub struct StrictSet<T, const MIN_LEN: u16 = 0>(BTreeSet<T>)
 where T: Eq + Ord + Debug + StrictEncode + StrictDecode;
 // TODO: Remove `Debug` requirement after strict_encoding update
@@ -157,8 +181,37 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
     }
 }
 
+impl<T, const MIN_LEN: u16> StrictDecode for StrictSet<T, MIN_LEN>
+where T: Eq + Ord + Debug + StrictEncode + StrictDecode
+{
+    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
+        let len = u16::strict_decode(&mut d)?;
+        if len < MIN_LEN {
+            return Err(strict_encoding::Error::ValueOutOfRange(
+                "set length",
+                MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
+                len as u128,
+            ));
+        }
+        if len > STRICT_COLLECTION_MAX_LEN {
+            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
+        }
+        let mut data = BTreeSet::<T>::new();
+        for pos in 0..len {
+            let item = T::strict_decode(&mut d)?;
+            if !data.insert(item) {
+                return Err(strict_encoding::Error::RepeatedValue(format!(
+                    "non-unique set element at position {}",
+                    pos
+                )));
+            }
+        }
+        Ok(Self(data))
+    }
+}
+
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(StrictEncode)]
 pub struct StrictMap<K, V, const MIN_LEN: u16 = 0>(BTreeMap<K, V>)
 where
     K: Clone + Eq + Ord + Debug + StrictEncode + StrictDecode,
@@ -198,9 +251,39 @@ where
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 }
 
+impl<K, V, const MIN_LEN: u16> StrictDecode for StrictMap<K, V, MIN_LEN>
+where
+    K: Clone + Eq + Ord + Debug + StrictEncode + StrictDecode,
+    V: Clone + StrictEncode + StrictDecode,
+{
+    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
+        let len = u16::strict_decode(&mut d)?;
+        if len < MIN_LEN {
+            return Err(strict_encoding::Error::ValueOutOfRange(
+                "map length",
+                MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
+                len as u128,
+            ));
+        }
+        if len > STRICT_COLLECTION_MAX_LEN {
+            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
+        }
+        let mut data = BTreeMap::<K, V>::new();
+        for _ in 0..len {
+            let key = K::strict_decode(&mut d)?;
+            if data.insert(key.clone(), V::strict_decode(&mut d)?).is_some() {
+                return Err(strict_encoding::Error::RepeatedValue(format!(
+                    "non-unique map key {:?}",
+                    key
+                )));
+            }
+        }
+        Ok(Self(data))
+    }
+}
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(StrictEncode)]
 pub struct StrictStr<const MIN_LEN: u16 = 0>(String);
 
 impl Default for StrictStr<0> {
@@ -221,8 +304,26 @@ impl<const MIN_LEN: u16> StrictStr<MIN_LEN> {
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 }
 
+impl<const MIN_LEN: u16> StrictDecode for StrictStr<MIN_LEN> {
+    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
+        let len = u16::strict_decode(&mut d)?;
+        if len < MIN_LEN {
+            return Err(strict_encoding::Error::ValueOutOfRange(
+                "string length",
+                MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
+                len as u128,
+            ));
+        }
+        if len > STRICT_COLLECTION_MAX_LEN {
+            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
+        }
+        let bytes = Vec::<u8>::strict_decode(d)?;
+        Ok(Self(String::from_utf8(bytes)?))
+    }
+}
+
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(StrictEncode)]
 pub struct AsciiString<const MIN_LEN: u16 = 0, const MAX_LEN: u16 = { u16::MAX }>(String);
 
 impl<const MAX_LEN: u16> Default for AsciiString<0, MAX_LEN> {
@@ -241,4 +342,32 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> Deref for AsciiString<MIN_LEN, MAX_
 
 impl<const MIN_LEN: u16, const MAX_LEN: u16> AsciiString<MIN_LEN, MAX_LEN> {
     pub fn len(&self) -> u16 { self.0.len() as u16 }
+}
+
+impl<const MIN_LEN: u16, const MAX_LEN: u16> StrictDecode for AsciiString<MIN_LEN, MAX_LEN> {
+    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
+        let len = u16::strict_decode(&mut d)?;
+        if len < MIN_LEN {
+            return Err(strict_encoding::Error::ValueOutOfRange(
+                "ASCII string length",
+                MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
+                len as u128,
+            ));
+        }
+        if len > STRICT_COLLECTION_MAX_LEN {
+            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
+        }
+        let mut bytes = Vec::with_capacity(len as usize);
+        d.read_exact(&mut bytes)?;
+        for byte in &bytes {
+            if !byte.is_ascii() {
+                return Err(strict_encoding::Error::ValueOutOfRange(
+                    "ASCII char",
+                    0x20..0x80,
+                    *byte as u128,
+                ));
+            }
+        }
+        Ok(Self(unsafe { String::from_utf8_unchecked(bytes) }))
+    }
 }
