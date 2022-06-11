@@ -17,7 +17,9 @@ use std::ops::Deref;
 
 use strict_encoding::{StrictDecode, StrictEncode};
 
-pub const STRICT_COLLECTION_MAX_LEN: usize = 0x10000;
+// TODO: Move mod to strict_encoding crate
+
+pub const STRICT_COLLECTION_MAX_LEN: u16 = u16::MAX;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error)]
 #[display("operation results in collection size exceeding 0xFFFF, which is prohibited")]
@@ -29,7 +31,7 @@ pub struct OversizeError;
      prohibited"
 )]
 pub struct UndersizeError {
-    pub len: usize,
+    pub len: u16,
     pub min_len: u16,
 }
 
@@ -41,7 +43,7 @@ pub enum RemoveError {
     Undersize(UndersizeError),
 
     /// index {index} is out of bounds of the collection size {len}.
-    IndexOutOfBounds { index: u16, len: usize },
+    IndexOutOfBounds { index: u16, len: u16 },
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
@@ -72,6 +74,8 @@ where T: StrictEncode + StrictDecode
 impl<T, const MIN_LEN: u16> StrictVec<T, MIN_LEN>
 where T: StrictEncode + StrictDecode
 {
+    pub fn len(&self) -> u16 { self.0.len() as u16 }
+
     pub fn push(&mut self, item: T) -> Result<u16, OversizeError> {
         let len = self.len();
         if len >= STRICT_COLLECTION_MAX_LEN {
@@ -83,14 +87,14 @@ where T: StrictEncode + StrictDecode
 
     pub fn remove(&mut self, index: u16) -> Result<T, RemoveError> {
         let len = self.len();
-        if self.len() == MIN_LEN as usize {
+        if self.len() == MIN_LEN {
             return Err(UndersizeError {
                 len,
                 min_len: MIN_LEN,
             }
             .into());
         }
-        if index as usize > len {
+        if index > len {
             return Err(RemoveError::IndexOutOfBounds { index, len });
         }
         Ok(self.0.remove(index as usize))
@@ -126,6 +130,8 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
 impl<T, const MIN_LEN: u16> StrictSet<T, MIN_LEN>
 where T: Eq + Ord + Debug + StrictEncode + StrictDecode
 {
+    pub fn len(&self) -> u16 { self.0.len() as u16 }
+
     pub fn insert(&mut self, item: T) -> Result<u16, OversizeError> {
         let len = self.len();
         if len >= STRICT_COLLECTION_MAX_LEN {
@@ -141,7 +147,7 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
         Q: Ord,
     {
         let len = self.len();
-        if self.len() == MIN_LEN as usize {
+        if self.len() == MIN_LEN {
             return Err(UndersizeError {
                 len,
                 min_len: MIN_LEN,
@@ -184,6 +190,14 @@ where
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
+impl<K, V, const MIN_LEN: u16> StrictMap<K, V, MIN_LEN>
+where
+    K: Clone + Eq + Ord + Debug + StrictEncode + StrictDecode,
+    V: Clone + StrictEncode + StrictDecode,
+{
+    pub fn len(&self) -> u16 { self.0.len() as u16 }
+}
+
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
@@ -203,6 +217,10 @@ impl<const MIN_LEN: u16> Deref for StrictStr<MIN_LEN> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<const MIN_LEN: u16> StrictStr<MIN_LEN> {
+    pub fn len(&self) -> u16 { self.0.len() as u16 }
+}
+
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
 pub struct AsciiString<const MIN_LEN: u16 = 0, const MAX_LEN: u16 = { u16::MAX }>(String);
@@ -219,4 +237,8 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> Deref for AsciiString<MIN_LEN, MAX_
     type Target = String;
 
     fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<const MIN_LEN: u16, const MAX_LEN: u16> AsciiString<MIN_LEN, MAX_LEN> {
+    pub fn len(&self) -> u16 { self.0.len() as u16 }
 }
