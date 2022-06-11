@@ -322,8 +322,9 @@ impl<const MIN_LEN: u16> StrictDecode for StrictStr<MIN_LEN> {
     }
 }
 
-#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Display)]
 #[derive(StrictEncode)]
+#[display(inner)]
 pub struct AsciiString<const MIN_LEN: u16 = 0, const MAX_LEN: u16 = { u16::MAX }>(String);
 
 impl<const MAX_LEN: u16> Default for AsciiString<0, MAX_LEN> {

@@ -9,7 +9,7 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::ops::{Deref, DerefMut};
+use std::fmt::{self, Display, Formatter};
 
 use strict_encoding::{StrictDecode, StrictEncode};
 
@@ -57,28 +57,46 @@ pub struct StructField {
     pub type_name: DataTypeName,
 }
 
+impl Display for StructField {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.type_name)?;
+        if self.optional {
+            f.write_str("?")?;
+        }
+        Ok(())
+    }
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructType(StrictVec<StructField, 1>);
 
-impl Deref for StructType {
-    type Target = StrictVec<StructField, 1>;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl DerefMut for StructType {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+impl Display for StructType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let len = self.len() as usize;
+        for (pos, field) in self.0.iter().enumerate() {
+            Display::fmt(field, f)?;
+            if pos < len - 1 {
+                f.write_str(", ")?;
+            }
+        }
+        Ok(())
+    }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
 pub enum KeyType {
+    #[display(inner)]
     Primitive(PrimitiveType),
+
+    #[display("{1}[{0}]")]
     Fixed(u16, PrimitiveType),
+
+    #[display("Bytes")]
     Bytes,
+
+    #[display("String")]
     Unicode,
 }
 
@@ -86,10 +104,35 @@ pub enum KeyType {
 #[derive(StrictEncode, StrictDecode)]
 pub struct EnumType(StrictSet<PrimitiveType, 1>);
 
+impl Display for EnumType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let len = self.len() as usize;
+        for (pos, field) in self.0.iter().enumerate() {
+            Display::fmt(field, f)?;
+            if pos < len - 1 {
+                f.write_str(", ")?;
+            }
+        }
+        Ok(())
+    }
+}
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[derive(StrictEncode, StrictDecode)]
 pub struct UnionType(StrictSet<PrimitiveType, 2>);
+
+impl Display for UnionType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let len = self.len() as usize;
+        for (pos, field) in self.0.iter().enumerate() {
+            Display::fmt(field, f)?;
+            if pos < len - 1 {
+                f.write_str(", ")?;
+            }
+        }
+        Ok(())
+    }
+}
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
@@ -103,7 +146,33 @@ pub enum DataType {
     Map(KeyType, DataTypeName),
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+impl Display for DataType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            DataType::Primitive(ty) => Display::fmt(ty, f),
+            DataType::Union(ty) => Display::fmt(ty, f),
+            DataType::Enum(ty) => Display::fmt(ty, f),
+            DataType::Struct(ty) => Display::fmt(ty, f),
+            DataType::Fixed(size, ty) => {
+                Display::fmt(ty, f)?;
+                write!(f, "[{}]", size)
+            }
+            DataType::List(ty) => {
+                Display::fmt(ty, f)?;
+                f.write_str("*")
+            }
+            DataType::Map(key, ty) => {
+                f.write_str("{")?;
+                Display::fmt(key, f)?;
+                f.write_str("} -> ")?;
+                Display::fmt(ty, f)?;
+                f.write_str("")
+            }
+        }
+    }
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
 #[display("{name} :: {ty}")]
 pub struct TypeDecl {
