@@ -265,6 +265,7 @@ pub enum DataType {
     Struct(TypeRef),
     Array(u16, TypeRef),
     List(TypeRef),
+    Set(TypeRef),
     Map(KeyType, TypeRef),
 }
 
@@ -275,19 +276,23 @@ impl Display for DataType {
             DataType::Union(ty) => Display::fmt(ty, f),
             DataType::Struct(ty) => Display::fmt(ty, f),
             DataType::Array(size, ty) => {
-                Display::fmt(ty, f)?;
-                write!(f, "*{}", size)
+                write!(f, "[U16; {}] -> ", size)?;
+                Display::fmt(ty, f)
             }
             DataType::List(ty) => {
+                f.write_str("[U16] -> ")?;
+                Display::fmt(ty, f)
+            }
+            DataType::Set(ty) => {
+                f.write_str("{")?;
                 Display::fmt(ty, f)?;
-                f.write_str("*")
+                f.write_str("}")
             }
             DataType::Map(key, ty) => {
                 f.write_str("{")?;
                 Display::fmt(key, f)?;
                 f.write_str("} -> ")?;
-                Display::fmt(ty, f)?;
-                f.write_str("")
+                Display::fmt(ty, f)
             }
         }
     }
