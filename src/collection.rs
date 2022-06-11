@@ -37,6 +37,30 @@ pub struct UndersizeError {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error, From)]
+#[display(inner)]
+pub enum CollectionError {
+    #[from]
+    Undersize(UndersizeError),
+
+    #[from]
+    Oversize(OversizeError),
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error, From)]
+#[display(inner)]
+pub enum AsciiStringError {
+    #[from]
+    Undersize(UndersizeError),
+
+    #[from]
+    Oversize(OversizeError),
+
+    /// non-ASCII character '{0:#04}' in ASCII-only string
+    #[display(doc_comments)]
+    InvalidChar(u8),
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum RemoveError {
     #[from]
@@ -70,6 +94,29 @@ where T: StrictEncode + StrictDecode
     type Target = Vec<T>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<T, const MIN_LEN: u16> TryFrom<Vec<T>> for StrictVec<T, MIN_LEN>
+where T: StrictEncode + StrictDecode
+{
+    type Error = CollectionError;
+
+    fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
+        let len = value.len();
+        match len {
+            len if len > STRICT_COLLECTION_MAX_LEN as usize => {
+                return Err(OversizeError(len).into())
+            }
+            len if len < MIN_LEN as usize => {
+                return Err(UndersizeError {
+                    len: len as u16,
+                    min_len: MIN_LEN,
+                }
+                .into())
+            }
+            _ => Ok(Self(value)),
+        }
+    }
 }
 
 impl<T, const MIN_LEN: u16> StrictVec<T, MIN_LEN>
@@ -291,6 +338,39 @@ impl<const MIN_LEN: u16> Deref for StrictStr<MIN_LEN> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<const MIN_LEN: u16> TryFrom<String> for StrictStr<MIN_LEN> {
+    type Error = CollectionError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let len = value.len();
+        match len {
+            len if len > STRICT_COLLECTION_MAX_LEN as usize => {
+                return Err(OversizeError(len).into())
+            }
+            len if len < MIN_LEN as usize => {
+                return Err(UndersizeError {
+                    len: len as u16,
+                    min_len: MIN_LEN,
+                }
+                .into())
+            }
+            _ => Ok(Self(value)),
+        }
+    }
+}
+
+impl<const MIN_LEN: u16> TryFrom<&String> for StrictStr<MIN_LEN> {
+    type Error = CollectionError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> { Self::try_from(value.clone()) }
+}
+
+impl<const MIN_LEN: u16> TryFrom<&str> for StrictStr<MIN_LEN> {
+    type Error = CollectionError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> { Self::try_from(value.to_owned()) }
+}
+
 impl<const MIN_LEN: u16> StrictStr<MIN_LEN> {
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 }
@@ -327,6 +407,43 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> Deref for AsciiString<MIN_LEN, MAX_
     type Target = String;
 
     fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<const MIN_LEN: u16, const MAX_LEN: u16> TryFrom<String> for AsciiString<MIN_LEN, MAX_LEN> {
+    type Error = AsciiStringError;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        let len = value.len();
+        match len {
+            len if len > MAX_LEN as usize => return Err(OversizeError(len).into()),
+            len if len < MIN_LEN as usize => {
+                return Err(UndersizeError {
+                    len: len as u16,
+                    min_len: MIN_LEN,
+                }
+                .into())
+            }
+            _ => {}
+        }
+        for byte in value.bytes() {
+            if !byte.is_ascii() {
+                return Err(AsciiStringError::InvalidChar(byte));
+            }
+        }
+        Ok(Self(value))
+    }
+}
+
+impl<const MIN_LEN: u16, const MAX_LEN: u16> TryFrom<&String> for AsciiString<MIN_LEN, MAX_LEN> {
+    type Error = AsciiStringError;
+
+    fn try_from(value: &String) -> Result<Self, Self::Error> { Self::try_from(value.clone()) }
+}
+
+impl<const MIN_LEN: u16, const MAX_LEN: u16> TryFrom<&str> for AsciiString<MIN_LEN, MAX_LEN> {
+    type Error = AsciiStringError;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> { Self::try_from(value.to_owned()) }
 }
 
 impl<const MIN_LEN: u16, const MAX_LEN: u16> AsciiString<MIN_LEN, MAX_LEN> {
