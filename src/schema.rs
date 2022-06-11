@@ -122,12 +122,14 @@ impl Display for StructType {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
-#[strict_encoding(by_order, repr = u8)]
+#[strict_encoding(by_value, repr = u8)]
 pub enum KeyType {
     #[display(inner)]
+    #[strict_encoding(value = 0x00)]
     Primitive(PrimitiveType),
 
     #[display("{1}[{0}]")]
+    #[strict_encoding(value = 0x10)]
     Array(u16, PrimitiveType),
 }
 
@@ -218,16 +220,16 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictEncode
                 strict_encode_list!(e; 0x00u8, ty)
             }
             TypeConstr::Array(size, ty) => {
-                strict_encode_list!(e; 0x01u8, size, ty)
+                strict_encode_list!(e; 0x10u8, size, ty)
             }
             TypeConstr::List(ty) => {
-                strict_encode_list!(e; 0x02u8, ty)
+                strict_encode_list!(e; 0x11u8, ty)
             }
             TypeConstr::Set(ty) => {
-                strict_encode_list!(e; 0x03u8, ty)
+                strict_encode_list!(e; 0x12u8, ty)
             }
             TypeConstr::Map(key, ty) => {
-                strict_encode_list!(e; 0x04u8, key, ty)
+                strict_encode_list!(e; 0x13u8, key, ty)
             }
         })
     }
@@ -240,13 +242,13 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
         let ty = u8::strict_decode(&mut d)?;
         Ok(match ty {
             0x00 => Self::Plain(StrictDecode::strict_decode(&mut d)?),
-            0x01 => Self::Array(
+            0x10 => Self::Array(
                 StrictDecode::strict_decode(&mut d)?,
                 StrictDecode::strict_decode(&mut d)?,
             ),
-            0x02 => Self::List(StrictDecode::strict_decode(&mut d)?),
-            0x03 => Self::Set(StrictDecode::strict_decode(&mut d)?),
-            0x04 => Self::Map(
+            0x11 => Self::List(StrictDecode::strict_decode(&mut d)?),
+            0x12 => Self::Set(StrictDecode::strict_decode(&mut d)?),
+            0x13 => Self::Map(
                 StrictDecode::strict_decode(&mut d)?,
                 StrictDecode::strict_decode(&mut d)?,
             ),
@@ -259,14 +261,27 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
-#[strict_encoding(repr = u8)]
+#[strict_encoding(by_value, repr = u8)]
 pub enum DataType {
+    #[strict_encoding(value = 0x00)]
     Primitive(PrimitiveType),
+
+    #[strict_encoding(value = 0x01)]
     Union(TypeRef),
+
+    #[strict_encoding(value = 0x02)]
     Struct(TypeRef),
+
+    #[strict_encoding(value = 0x10)]
     Array(u16, TypeRef),
+
+    #[strict_encoding(value = 0x11)]
     List(TypeRef),
+
+    #[strict_encoding(value = 0x12)]
     Set(TypeRef),
+
+    #[strict_encoding(value = 0x13)]
     Map(KeyType, TypeRef),
 }
 
