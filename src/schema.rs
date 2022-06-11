@@ -53,8 +53,8 @@ pub enum PrimitiveType {
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructField {
-    pub optional: bool,
     pub type_name: DataTypeName,
+    pub optional: bool,
 }
 
 impl Display for StructField {
@@ -64,6 +64,22 @@ impl Display for StructField {
             f.write_str("?")?;
         }
         Ok(())
+    }
+}
+
+impl StructField {
+    pub fn new(name: &'static str) -> Self {
+        StructField {
+            type_name: name.try_into().expect("invalid type name"),
+            optional: false,
+        }
+    }
+
+    pub fn optional(name: &'static str) -> Self {
+        StructField {
+            type_name: name.try_into().expect("invalid type name"),
+            optional: true,
+        }
     }
 }
 
@@ -172,14 +188,77 @@ impl Display for DataType {
     }
 }
 
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictEncode, StrictDecode)]
+pub enum Decl {
+    Primitive(PrimitiveType),
+    Union(UnionType),
+    Enum(EnumType),
+    Struct(StructType),
+    Fixed(u16, DataTypeName),
+    List(DataTypeName),
+    Map(KeyType, DataTypeName),
+}
+
+impl Display for Decl {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            Decl::Primitive(ty) => Display::fmt(ty, f),
+            Decl::Union(ty) => Display::fmt(ty, f),
+            Decl::Enum(ty) => Display::fmt(ty, f),
+            Decl::Struct(ty) => Display::fmt(ty, f),
+            Decl::Fixed(size, ty) => {
+                Display::fmt(ty, f)?;
+                write!(f, "[{}]", size)
+            }
+            Decl::List(ty) => {
+                Display::fmt(ty, f)?;
+                f.write_str("*")
+            }
+            Decl::Map(key, ty) => {
+                f.write_str("{")?;
+                Display::fmt(key, f)?;
+                f.write_str("} -> ")?;
+                Display::fmt(ty, f)?;
+                f.write_str("")
+            }
+        }
+    }
+}
+
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
-#[display("{name} :: {ty}")]
+#[display("{name} :: {decl}")]
 pub struct TypeDecl {
     pub name: DataTypeName,
-    pub ty: DataType,
+    pub decl: Decl,
+}
+
+impl TypeDecl {
+    pub fn new(name: &'static str, decl: Decl) -> Self {
+        TypeDecl {
+            name: name.try_into().expect("invalid type name"),
+            decl,
+        }
+    }
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[derive(StrictEncode, StrictDecode)]
 pub struct TypeSystem(StrictVec<TypeDecl>);
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::strict_vec;
+
+    fn type_system() -> TypeSystem {
+        TypeSystem(strict_vec![TypeDecl::new(
+            "Transaction",
+            Decl::Struct(StructType(strict_vec![StructField::new("version")]))
+        )])
+    }
+
+    #[test]
+    fn display() {}
+}
