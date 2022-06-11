@@ -82,12 +82,21 @@ pub enum KeyType {
     Unicode,
 }
 
+#[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[derive(StrictEncode, StrictDecode)]
+pub struct EnumType(StrictSet<PrimitiveType, 1>);
+
+
+#[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[derive(StrictEncode, StrictDecode)]
+pub struct UnionType(StrictSet<PrimitiveType, 2>);
+
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
 pub enum DataType {
     Primitive(PrimitiveType),
-    Union(StrictSet<PrimitiveType, 2>),
-    Enum(StrictSet<PrimitiveType, 1>),
+    Union(DataTypeName),
+    Enum(DataTypeName),
     Struct(DataTypeName),
     Fixed(u16, DataTypeName),
     List(DataTypeName),
@@ -96,7 +105,12 @@ pub enum DataType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
-pub struct TypeDef {
+#[display("{name} :: {ty}")]
+pub struct TypeDecl {
     pub name: DataTypeName,
     pub ty: DataType,
 }
+
+#[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[derive(StrictEncode, StrictDecode)]
+pub struct TypeSystem(StrictVec<TypeDecl>);
