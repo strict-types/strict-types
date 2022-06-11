@@ -51,9 +51,7 @@ pub enum PrimitiveType {
     F256 = 0x36,
     F512 = 0x37,
 
-    Unicode = 0xFE,
-
-    Bytes = 0xFF,
+    UniChar = 0xFF,
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -362,19 +360,19 @@ mod test {
             },
             "Input" :: {
                 StructField::new("OutPoint"),
-                StructField::primitive(PrimitiveType::Bytes),
+                StructField::new("Bytes"),
                 StructField::new("Witness"),
             },
             "Output" :: {
                 StructField::primitive(PrimitiveType::U64),
-                StructField::primitive(PrimitiveType::Bytes),
+                StructField::new("Bytes"),
             },
             "OutPoint" :: {
                 StructField::new("Txid"),
                 StructField::primitive(PrimitiveType::U16),
             },
             "Txid" :: { StructField::array(PrimitiveType::U8, 32) },
-            "Witness" :: { StructField::list(PrimitiveType::Bytes) },
+            "Witness" :: { StructField::list("Bytes") },
         ]
     }
 
