@@ -23,8 +23,8 @@ use strict_encoding::{StrictDecode, StrictEncode};
 pub const STRICT_COLLECTION_MAX_LEN: u16 = u16::MAX;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error)]
-#[display("operation results in collection size exceeding 0xFFFF, which is prohibited")]
-pub struct OversizeError;
+#[display("operation results in collection size {0} exceeding 0xFFFF, which is prohibited")]
+pub struct OversizeError(usize);
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error)]
 #[display(
@@ -78,9 +78,9 @@ where T: StrictEncode + StrictDecode
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 
     pub fn push(&mut self, item: T) -> Result<u16, OversizeError> {
-        let len = self.len();
-        if len >= STRICT_COLLECTION_MAX_LEN {
-            return Err(OversizeError);
+        let len = self.0.len();
+        if len > STRICT_COLLECTION_MAX_LEN as usize {
+            return Err(OversizeError(len));
         }
         self.0.push(item);
         return Ok(len as u16);
@@ -113,9 +113,6 @@ where T: StrictEncode + StrictDecode
                 MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
                 len as u128,
             ));
-        }
-        if len > STRICT_COLLECTION_MAX_LEN {
-            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
         }
         let mut data = Vec::<T>::with_capacity(len as usize);
         for _ in 0..len {
@@ -157,9 +154,9 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 
     pub fn insert(&mut self, item: T) -> Result<u16, OversizeError> {
-        let len = self.len();
-        if len >= STRICT_COLLECTION_MAX_LEN {
-            return Err(OversizeError);
+        let len = self.0.len();
+        if len > STRICT_COLLECTION_MAX_LEN as usize {
+            return Err(OversizeError(len));
         }
         self.0.insert(item);
         return Ok(len as u16);
@@ -192,9 +189,6 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
                 MIN_LEN as u128..STRICT_COLLECTION_MAX_LEN as u128,
                 len as u128,
             ));
-        }
-        if len > STRICT_COLLECTION_MAX_LEN {
-            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
         }
         let mut data = BTreeSet::<T>::new();
         for pos in 0..len {
@@ -265,9 +259,6 @@ where
                 len as u128,
             ));
         }
-        if len > STRICT_COLLECTION_MAX_LEN {
-            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
-        }
         let mut data = BTreeMap::<K, V>::new();
         for _ in 0..len {
             let key = K::strict_decode(&mut d)?;
@@ -314,9 +305,6 @@ impl<const MIN_LEN: u16> StrictDecode for StrictStr<MIN_LEN> {
                 len as u128,
             ));
         }
-        if len > STRICT_COLLECTION_MAX_LEN {
-            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
-        }
         let bytes = Vec::<u8>::strict_decode(d)?;
         Ok(Self(String::from_utf8(bytes)?))
     }
@@ -355,8 +343,8 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> StrictDecode for AsciiString<MIN_LE
                 len as u128,
             ));
         }
-        if len > STRICT_COLLECTION_MAX_LEN {
-            return Err(strict_encoding::Error::ExceedMaxItems(STRICT_COLLECTION_MAX_LEN as usize));
+        if len > MAX_LEN {
+            return Err(strict_encoding::Error::ExceedMaxItems(MAX_LEN as usize));
         }
         let mut bytes = Vec::with_capacity(len as usize);
         d.read_exact(&mut bytes)?;
