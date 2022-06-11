@@ -238,11 +238,12 @@ impl TypeSystem {
 
 #[macro_export]
 macro_rules! type_system {
-    ($($name:literal :: $ty:expr),+ $(,)?) => { {
+    ($($name:literal :: { $($field:expr),+ $(,)? }),+ $(,)?) => { {
         let mut ts = TypeSystem::new();
         $(
         let name = $name.try_into().expect("inline strict_vec literal contains invalid number of items");
-        ts.push(name, $ty).expect("invalid type declaration");
+        let ty =  StructType(strict_vec![$($field),+]);
+        ts.push(name, ty).expect("invalid type declaration");
         )+
         ts
     } }
@@ -266,27 +267,27 @@ mod test {
 
     fn type_system() -> TypeSystem {
         type_system![
-           "Transaction" :: StructType(strict_vec![
+           "Transaction" :: {
                 StructField::primitive(PrimitiveType::U32),
                 StructField::list("Input"),
                 StructField::list("Output"),
                 StructField::primitive(PrimitiveType::U32),
-            ]),
-            "Input" :: StructType(strict_vec![
+            },
+            "Input" :: {
                 StructField::new("OutPoint"),
                 StructField::primitive(PrimitiveType::Bytes),
                 StructField::new("Witness"),
-            ]),
-            "Output" :: StructType(strict_vec![
+            },
+            "Output" :: {
                 StructField::primitive(PrimitiveType::U64),
                 StructField::primitive(PrimitiveType::Bytes),
-            ]),
-            "OutPoint" :: StructType(strict_vec![
+            },
+            "OutPoint" :: {
                 StructField::new("Txid"),
                 StructField::primitive(PrimitiveType::U16),
-            ]),
-            "Txid" :: StructType(strict_vec![StructField::array(PrimitiveType::U8, 32),]),
-            "Witness" :: StructType(strict_vec![StructField::list(PrimitiveType::Bytes),]),
+            },
+            "Txid" :: { StructField::array(PrimitiveType::U8, 32) },
+            "Witness" :: { StructField::list(PrimitiveType::Bytes) },
         ]
     }
 
