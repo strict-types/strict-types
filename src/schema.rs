@@ -9,7 +9,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
+use std::hash::Hash;
+use std::io::Read;
 
 use strict_encoding::{StrictDecode, StrictEncode};
 
@@ -95,7 +97,7 @@ impl StructField {
 
     pub fn array(prim: PrimitiveType, size: u16) -> Self {
         StructField {
-            ty: DataType::Array(size, TypeRef::Primitive(prim)),
+            ty: DataType::Array(size, TypeRef::Primitive(prim.into())),
             optional: false,
         }
     }
@@ -122,6 +124,7 @@ impl Display for StructType {
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
+#[strict_encoding(by_order, repr = u8)]
 pub enum KeyType {
     #[display(inner)]
     Primitive(PrimitiveType),
@@ -149,27 +152,111 @@ impl Display for UnionType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[derive(StrictEncode, StrictDecode)]
+#[strict_encoding(by_order, repr = u8)]
 #[display(inner)]
 pub enum TypeRef {
     #[from]
-    Primitive(PrimitiveType),
+    #[from(PrimitiveType)]
+    Primitive(TypeConstr<PrimitiveType>),
 
     #[from]
-    Named(TypeName),
+    #[from(TypeName)]
+    Named(TypeConstr<TypeName>),
 }
 
 impl From<&'static str> for TypeRef {
     fn from(value: &'static str) -> Self {
-        TypeRef::Named(AsciiString::try_from(value).expect("incorrect typ name"))
+        TypeRef::Named(AsciiString::try_from(value).expect("incorrect typ name").into())
     }
 }
 
-pub enum TypeConstr<T> {
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+pub enum TypeConstr<T>
+where T: Clone + Ord + Eq + Hash + Debug
+{
+    #[from]
     Plain(T),
     Array(u16, T),
     List(T),
     Set(T),
     Map(KeyType, T),
+}
+
+impl<T> Display for TypeConstr<T>
+where T: Clone + Ord + Eq + Hash + Debug + Display
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            TypeConstr::Plain(ty) => Display::fmt(ty, f),
+            TypeConstr::Array(size, ty) => {
+                Display::fmt(ty, f)?;
+                write!(f, "*{}", size)
+            }
+            TypeConstr::List(ty) => {
+                Display::fmt(ty, f)?;
+                f.write_str("*")
+            }
+            TypeConstr::Set(ty) => {
+                f.write_str("{")?;
+                Display::fmt(ty, f)?;
+                f.write_str("}")
+            }
+            TypeConstr::Map(key, ty) => {
+                f.write_str("{")?;
+                Display::fmt(key, f)?;
+                f.write_str("} -> ")?;
+                Display::fmt(ty, f)
+            }
+        }
+    }
+}
+
+impl<T> StrictEncode for TypeConstr<T>
+where T: Clone + Ord + Eq + Hash + Debug + StrictEncode
+{
+    fn strict_encode<E: std::io::Write>(&self, mut e: E) -> Result<usize, strict_encoding::Error> {
+        Ok(match self {
+            TypeConstr::Plain(ty) => {
+                strict_encode_list!(e; 0x00u8, ty)
+            }
+            TypeConstr::Array(size, ty) => {
+                strict_encode_list!(e; 0x01u8, size, ty)
+            }
+            TypeConstr::List(ty) => {
+                strict_encode_list!(e; 0x02u8, ty)
+            }
+            TypeConstr::Set(ty) => {
+                strict_encode_list!(e; 0x03u8, ty)
+            }
+            TypeConstr::Map(key, ty) => {
+                strict_encode_list!(e; 0x04u8, key, ty)
+            }
+        })
+    }
+}
+
+impl<T> StrictDecode for TypeConstr<T>
+where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
+{
+    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
+        let ty = u8::strict_decode(&mut d)?;
+        Ok(match ty {
+            0x00 => Self::Plain(StrictDecode::strict_decode(&mut d)?),
+            0x01 => Self::Array(
+                StrictDecode::strict_decode(&mut d)?,
+                StrictDecode::strict_decode(&mut d)?,
+            ),
+            0x02 => Self::List(StrictDecode::strict_decode(&mut d)?),
+            0x03 => Self::Set(StrictDecode::strict_decode(&mut d)?),
+            0x04 => Self::Map(
+                StrictDecode::strict_decode(&mut d)?,
+                StrictDecode::strict_decode(&mut d)?,
+            ),
+            other => {
+                return Err(strict_encoding::Error::EnumValueNotKnown("TypeConstr", other as usize))
+            }
+        })
+    }
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
