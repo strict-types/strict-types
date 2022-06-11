@@ -16,8 +16,8 @@ extern crate strict_encoding;
 
 mod schema;
 mod path;
-mod types;
+mod collection;
 
+pub use collection::*;
 pub use path::*;
 pub use schema::*;
-pub use types::*;

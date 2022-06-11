@@ -202,3 +202,21 @@ impl<const MIN_LEN: u16> Deref for StrictStr<MIN_LEN> {
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
+
+#[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[derive(StrictEncode, StrictDecode)]
+pub struct AsciiString<const MIN_LEN: u16 = 0, const MAX_LEN: u16 = { u16::MAX }>(String);
+
+impl<const MAX_LEN: u16> Default for AsciiString<0, MAX_LEN> {
+    fn default() -> Self { Self(default!()) }
+}
+
+impl<const MAX_LEN: u16> AsciiString<0, MAX_LEN> {
+    pub fn new() -> Self { default!() }
+}
+
+impl<const MIN_LEN: u16, const MAX_LEN: u16> Deref for AsciiString<MIN_LEN, MAX_LEN> {
+    type Target = String;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
