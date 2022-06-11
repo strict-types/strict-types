@@ -18,34 +18,35 @@ use crate::{StrictSet, StrictVec};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
+#[strict_encoding(by_value, repr = u8)]
 #[display(Debug)]
 pub enum PrimitiveType {
-    U8,
-    U16,
-    U32,
-    U64,
-    U128,
-    U256,
-    U512,
-    U1024,
+    U8 = 0x00,
+    U16 = 0x01,
+    U32 = 0x02,
+    U64 = 0x03,
+    U128 = 0x04,
+    U256 = 0x05,
+    U512 = 0x06,
+    U1024 = 0x07,
 
-    I8,
-    I16,
-    I32,
-    I64,
-    I128,
-    I256,
-    I512,
-    I1024,
+    I8 = 0x10,
+    I16 = 0x11,
+    I32 = 0x12,
+    I64 = 0x13,
+    I128 = 0x14,
+    I256 = 0x15,
+    I512 = 0x16,
+    I1024 = 0x17,
 
-    F16b,
-    F16,
-    F32,
-    F64,
-    F80,
-    F128,
-    F256,
-    F512,
+    F16b = 0x30,
+    F16 = 0x31,
+    F32 = 0x32,
+    F64 = 0x33,
+    F80 = 0x34,
+    F128 = 0x35,
+    F256 = 0x36,
+    F512 = 0x37,
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
