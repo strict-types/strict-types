@@ -9,12 +9,11 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use std::io::{Read, Write};
-use std::ops::{Deref, DerefMut};
-
 use strict_encoding::{StrictDecode, StrictEncode};
 
-use crate::{StrictSet, StrictVec};
+use crate::{AsciiString, StrictSet, StrictVec};
+
+pub type DataTypeName = AsciiString<1, 32>;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictEncode, StrictDecode)]
@@ -53,7 +52,7 @@ pub enum PrimitiveType {
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructField {
     pub optional: bool,
-    pub value: DataType,
+    pub value: DataTypeName,
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -71,86 +70,18 @@ pub enum KeyType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
-pub enum DataType {
+pub enum DataRepr {
     Primitive(PrimitiveType),
     Union(StrictSet<PrimitiveType, 2>),
     Enum(StrictSet<PrimitiveType, 1>),
-    Struct(StructTypeBox),
-    Fixed(u16, DataTypeBox),
-    List(DataTypeBox),
-    Map(KeyType, DataTypeBox),
+    Struct(StructType),
+    Fixed(u16, DataTypeName),
+    List(DataTypeName),
+    Map(KeyType, DataTypeName),
 }
-
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-pub struct DataTypeBox(pub Box<DataType>);
-
-impl Deref for DataTypeBox {
-    type Target = DataType;
-
-    fn deref(&self) -> &Self::Target { self.0.deref() }
-}
-
-impl DerefMut for DataTypeBox {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
-}
-
-impl AsRef<DataType> for DataTypeBox {
-    fn as_ref(&self) -> &DataType { self.0.as_ref() }
-}
-
-impl AsMut<DataType> for DataTypeBox {
-    fn as_mut(&mut self) -> &mut DataType { self.0.as_mut() }
-}
-
-impl StrictEncode for DataTypeBox {
-    fn strict_encode<E: Write>(&self, e: E) -> Result<usize, strict_encoding::Error> {
-        self.as_ref().strict_encode(e)
-    }
-}
-
-impl StrictDecode for DataTypeBox {
-    fn strict_decode<D: Read>(d: D) -> Result<Self, strict_encoding::Error> {
-        Ok(Self(Box::new(DataType::strict_decode(d)?)))
-    }
-}
-
-impl DataTypeBox {
-    pub fn new(val: DataType) -> Self { Self(Box::new(val)) }
-}
-
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-pub struct StructTypeBox(pub Box<StructType>);
-
-impl Deref for StructTypeBox {
-    type Target = StructType;
-
-    fn deref(&self) -> &Self::Target { self.0.deref() }
-}
-
-impl DerefMut for StructTypeBox {
-    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
-}
-
-impl AsRef<StructType> for StructTypeBox {
-    fn as_ref(&self) -> &StructType { self.0.as_ref() }
-}
-
-impl AsMut<StructType> for StructTypeBox {
-    fn as_mut(&mut self) -> &mut StructType { self.0.as_mut() }
-}
-
-impl StructTypeBox {
-    pub fn new(val: StructType) -> Self { Self(Box::new(val)) }
-}
-
-impl StrictEncode for StructTypeBox {
-    fn strict_encode<E: Write>(&self, e: E) -> Result<usize, strict_encoding::Error> {
-        self.as_ref().strict_encode(e)
-    }
-}
-
-impl StrictDecode for StructTypeBox {
-    fn strict_decode<D: Read>(d: D) -> Result<Self, strict_encoding::Error> {
-        Ok(Self(Box::new(StructType::strict_decode(d)?)))
-    }
+#[derive(StrictEncode, StrictDecode)]
+pub struct DataType {
+    pub name: DataTypeName,
+    pub repr: DataRepr,
 }
