@@ -22,6 +22,17 @@ use strict_encoding::{StrictDecode, StrictEncode};
 
 pub const STRICT_COLLECTION_MAX_LEN: u16 = u16::MAX;
 
+#[macro_export]
+macro_rules! strict_vec {
+    () => (vec![].try_into().expect("inline strict_vec literal contains invalid number of items"));
+    ($elem:expr; $n:expr) => (
+        vec![$elem; $n].try_into().expect("inline strict_vec literal contains invalid number of items")
+    );
+    ($($x:expr),+ $(,)?) => (
+        vec![$($x,)+].try_into().expect("inline strict_vec literal contains invalid number of items")
+    )
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug, Display, Error)]
 #[display("operation results in collection size {0} exceeding 0xFFFF, which is prohibited")]
 pub struct OversizeError(usize);
