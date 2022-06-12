@@ -4,6 +4,7 @@ Changelog
 Release v0.2.0
 --------------
 - Serde for type system
+- Static library
 
 Release v0.1.0
 --------------
