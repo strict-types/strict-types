@@ -20,6 +20,7 @@ use crate::{AsciiString, OversizeError, StrictMap, StrictSet, StrictVec};
 pub type TypeName = AsciiString<1, 32>;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 #[strict_encoding(by_value, repr = u8)]
 #[display(Debug)]
@@ -55,6 +56,7 @@ pub enum PrimitiveType {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructField {
     pub ty: DataType,
@@ -104,6 +106,7 @@ impl StructField {
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructType(StrictVec<StructField, 1>);
 
@@ -121,6 +124,7 @@ impl Display for StructType {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 #[strict_encoding(by_value, repr = u8)]
 pub enum KeyType {
@@ -134,6 +138,7 @@ pub enum KeyType {
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 pub struct UnionType(StrictSet<PrimitiveType, 2>);
 
@@ -151,6 +156,7 @@ impl Display for UnionType {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 #[strict_encoding(by_order, repr = u8)]
 #[display(inner)]
@@ -171,6 +177,7 @@ impl From<&'static str> for TypeRef {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum TypeConstr<T>
 where T: Clone + Ord + Eq + Hash + Debug
 {
@@ -260,6 +267,7 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 #[strict_encoding(by_value, repr = u8)]
 pub enum DataType {
@@ -316,6 +324,7 @@ impl Display for DataType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 #[derive(StrictEncode, StrictDecode)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeSystem(StrictMap<TypeName, StructType>);
 
 impl Display for TypeSystem {

@@ -1,10 +1,14 @@
 Changelog
 =========
 
+Release v0.2.0
+--------------
+- Serde for type system
+
 Release v0.1.0
 --------------
 
 - Schema data types
 - Collection data types
-- Strict endcoding and decoding of type system
+- Strict encoding and decoding of type system
 - Display representation of data types in Parseltongue

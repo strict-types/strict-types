@@ -83,6 +83,7 @@ pub enum RemoveError {
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode)]
 pub struct StrictVec<T, const MIN_LEN: u16 = 0>(Vec<T>)
 where T: StrictEncode + StrictDecode;
@@ -190,6 +191,7 @@ where T: StrictEncode + StrictDecode
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode)]
 pub struct StrictSet<T, const MIN_LEN: u16 = 0>(BTreeSet<T>)
 where T: Eq + Ord + Debug + StrictEncode + StrictDecode;
@@ -281,6 +283,7 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode)]
 pub struct StrictMap<K, V, const MIN_LEN: u16 = 0>(BTreeMap<K, V>)
 where
@@ -387,6 +390,7 @@ where
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode)]
 pub struct StrictStr<const MIN_LEN: u16 = 0>(String);
 
@@ -457,6 +461,7 @@ impl<const MIN_LEN: u16> StrictDecode for StrictStr<MIN_LEN> {
 }
 
 #[derive(Clone, PartialOrd, Ord, PartialEq, Eq, Hash, Debug, Display)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode)]
 #[display(inner)]
 pub struct AsciiString<const MIN_LEN: u16 = 0, const MAX_LEN: u16 = { u16::MAX }>(String);
