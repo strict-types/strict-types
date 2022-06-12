@@ -1,10 +1,17 @@
 Changelog
 =========
 
+Release v0.4.0
+--------------
+- ASCII character primitive type
+- TypeRef convenience methods
+
+
 Release v0.2.0
 --------------
 - Serde for type system
 - Static library
+
 
 Release v0.1.0
 --------------
