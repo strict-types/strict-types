@@ -11,6 +11,9 @@ rust-version = "1.59.0"
 readme = "README.md"
 exclude = [".github", "Dockerfile", ".dockerignore", "contrib", "doc", "shell"]
 
+[lib]
+crate-type = ["rlib"]
+
 [dependencies]
 amplify = "3.12.0"
 strict_encoding = { version = "1.8.1", default-features = false, features = ["derive"] }
