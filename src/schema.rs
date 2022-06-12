@@ -177,6 +177,37 @@ impl From<&'static str> for TypeRef {
     }
 }
 
+impl TypeRef {
+    pub fn new(name: &'static str) -> TypeRef {
+        TypeRef::Named(TypeConstr::Plain(name.try_into().expect("invalid type name")))
+    }
+
+    pub fn bytes() -> TypeRef { TypeRef::Primitive(TypeConstr::List(PrimitiveType::U8)) }
+
+    pub fn ascii_string() -> TypeRef {
+        TypeRef::Primitive(TypeConstr::List(PrimitiveType::AsciiChar))
+    }
+
+    pub fn unicode_string() -> TypeRef {
+        TypeRef::Primitive(TypeConstr::List(PrimitiveType::UnicodeChar))
+    }
+
+    pub fn u8() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U8)) }
+    pub fn u16() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U16)) }
+    pub fn u32() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U32)) }
+    pub fn u64() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U64)) }
+    pub fn u128() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U128)) }
+
+    pub fn i8() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I8)) }
+    pub fn i16() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I16)) }
+    pub fn i32() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I32)) }
+    pub fn i64() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I64)) }
+    pub fn i128() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I128)) }
+
+    pub fn f32() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::F32)) }
+    pub fn f64() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::F64)) }
+}
+
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum TypeConstr<T>
