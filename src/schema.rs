@@ -52,7 +52,8 @@ pub enum PrimitiveType {
     F256 = 0x36,
     F512 = 0x37,
 
-    UniChar = 0xFF,
+    AsciiChar = 0xFE,
+    UnicodeChar = 0xFF,
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
