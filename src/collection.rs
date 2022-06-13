@@ -15,6 +15,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::io::Read;
 use std::ops::Deref;
+use std::str::FromStr;
 
 use strict_encoding::{StrictDecode, StrictEncode};
 
@@ -546,5 +547,17 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> StrictDecode for AsciiString<MIN_LE
             }
         }
         Ok(Self(unsafe { String::from_utf8_unchecked(bytes) }))
+    }
+}
+
+impl FromStr for AsciiString {
+    type Err = AsciiStringError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if let Some(c) = s.bytes().find(|c| !c.is_ascii()) {
+            Err(AsciiStringError::InvalidChar(c))
+        } else {
+            Ok(AsciiString(s.to_owned()))
+        }
     }
 }
