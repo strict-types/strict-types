@@ -124,6 +124,11 @@ impl Display for StructType {
     }
 }
 
+impl StructType {
+    #[doc(hidden)]
+    pub unsafe fn from_unchecked(data: StrictVec<StructField, 1>) -> StructType { Self(data) }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
@@ -386,10 +391,11 @@ impl TypeSystem {
 #[macro_export]
 macro_rules! type_system {
     ($($name:literal :: { $($field:expr),+ $(,)? }),+ $(,)?) => { {
-        let mut ts = TypeSystem::new();
+        use std::convert::TryInto;
+        let mut ts = $crate::TypeSystem::new();
         $(
         let name = $name.try_into().expect("inline strict_vec literal contains invalid number of items");
-        let ty =  StructType(strict_vec![$($field),+]);
+        let ty = unsafe { $crate::StructType::from_unchecked(strict_vec![$($field),+]) };
         ts.push(name, ty).expect("invalid type declaration");
         )+
         ts
