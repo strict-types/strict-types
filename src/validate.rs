@@ -22,11 +22,11 @@ use crate::{
 };
 
 pub trait Validate {
-    fn validate(&self, ts: &TypeSystem, buf: impl Read + Seek) -> bool;
+    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool;
 }
 
 impl Validate for TypeName {
-    fn validate(&self, ts: &TypeSystem, buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         match ts.get(self) {
             None => return false,
             Some(ty) => ty.validate(ts, buf),
@@ -35,9 +35,9 @@ impl Validate for TypeName {
 }
 
 impl Validate for StructType {
-    fn validate(&self, ts: &TypeSystem, mut buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         for field in self {
-            if !field.validate(ts, &mut buf) {
+            if !field.validate(ts, buf) {
                 return false;
             }
         }
@@ -46,7 +46,7 @@ impl Validate for StructType {
 }
 
 impl Validate for StructField {
-    fn validate(&self, ts: &TypeSystem, mut buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, mut buf: &mut (impl Read + Seek)) -> bool {
         if self.optional {
             match u8::strict_decode(&mut buf) {
                 Err(_) => return false,
@@ -61,7 +61,7 @@ impl Validate for StructField {
 }
 
 impl Validate for DataType {
-    fn validate(&self, ts: &TypeSystem, buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         match self {
             DataType::Primitive(ty) => ty.validate(ts, buf),
             DataType::Struct(ty) => ty.validate(ts, buf),
@@ -74,7 +74,7 @@ impl Validate for DataType {
 }
 
 impl Validate for TypeRef {
-    fn validate(&self, ts: &TypeSystem, buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         match self {
             TypeRef::Primitive(ty) => ty.validate(ts, buf),
             TypeRef::Named(ty) => ty.validate(ts, buf),
@@ -85,7 +85,7 @@ impl Validate for TypeRef {
 impl<T> Validate for TypeConstr<T>
 where T: Clone + Ord + Eq + Hash + Debug + Validate
 {
-    fn validate(&self, ts: &TypeSystem, mut buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, mut buf: &mut (impl Read + Seek)) -> bool {
         macro_rules! pos {
             () => {
                 buf.stream_position().expect("medium without stream position")
@@ -105,7 +105,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Validate
             TypeConstr::Plain(ty) => ty.validate(ts, buf),
             TypeConstr::Array(len, ty) => {
                 for _ in 0..*len {
-                    if !ty.validate(ts, &mut buf) {
+                    if !ty.validate(ts, buf) {
                         return false;
                     }
                 }
@@ -117,7 +117,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Validate
                     Ok(len) => len,
                 };
                 for _ in 0..len {
-                    if !ty.validate(ts, &mut buf) {
+                    if !ty.validate(ts, buf) {
                         return false;
                     }
                 }
@@ -131,7 +131,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Validate
                 let mut set = BTreeSet::new();
                 for _ in 0..len {
                     let pos_from = pos!();
-                    if !ty.validate(ts, &mut buf) {
+                    if !ty.validate(ts, buf) {
                         return false;
                     }
                     // Ensure lexicographic key uniqueness and sort order
@@ -156,7 +156,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Validate
                 let mut set = BTreeSet::new();
                 for _ in 0..len {
                     let pos_from = pos!();
-                    if !key.validate(ts, &mut buf) {
+                    if !key.validate(ts, buf) {
                         return false;
                     }
                     // Ensure lexicographic key uniqueness and sort order
@@ -171,7 +171,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Validate
                         return false;
                     }
 
-                    if !val.validate(ts, &mut buf) {
+                    if !val.validate(ts, buf) {
                         return false;
                     }
                 }
@@ -182,7 +182,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Validate
 }
 
 impl Validate for KeyType {
-    fn validate(&self, ts: &TypeSystem, buf: impl Read + Seek) -> bool {
+    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         match self {
             KeyType::Primitive(ty) => ty.validate(ts, buf),
             KeyType::Array(len, ty) => TypeConstr::Array(*len, *ty).validate(ts, buf),
@@ -191,7 +191,7 @@ impl Validate for KeyType {
 }
 
 impl Validate for PrimitiveType {
-    fn validate(&self, _: &TypeSystem, mut buf: impl Read + Seek) -> bool {
+    fn validate(&self, _: &TypeSystem, mut buf: &mut (impl Read + Seek)) -> bool {
         let len = match self {
             PrimitiveType::U8 => 1,
             PrimitiveType::U16 => 2,
