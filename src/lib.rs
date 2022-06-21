@@ -20,6 +20,7 @@ extern crate serde_crate as serde;
 mod schema;
 mod path;
 mod collection;
+mod validate;
 
 pub use collection::*;
 pub use path::*;
