@@ -64,7 +64,6 @@ impl Validate for DataType {
     fn validate(&self, ts: &TypeSystem, buf: impl Read + Seek) -> bool {
         match self {
             DataType::Primitive(ty) => ty.validate(ts, buf),
-            DataType::Union(ty) => ty.validate(ts, buf),
             DataType::Struct(ty) => ty.validate(ts, buf),
             DataType::Array(len, ty) => TypeConstr::Array(*len, ty.clone()).validate(ts, buf),
             DataType::List(ty) => TypeConstr::List(ty.clone()).validate(ts, buf),

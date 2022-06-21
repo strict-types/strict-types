@@ -318,10 +318,6 @@ pub enum DataType {
     #[strict_encoding(value = 0x00)]
     Primitive(PrimitiveType),
 
-    // TODO: Remove this type since it can't be validated
-    #[strict_encoding(value = 0x01)]
-    Union(TypeRef),
-
     #[strict_encoding(value = 0x02)]
     Struct(TypeRef),
 
@@ -342,7 +338,6 @@ impl Display for DataType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             DataType::Primitive(ty) => Display::fmt(ty, f),
-            DataType::Union(ty) => Display::fmt(ty, f),
             DataType::Struct(ty) => Display::fmt(ty, f),
             DataType::Array(size, ty) => {
                 write!(f, "[U16; {}] -> ", size)?;
