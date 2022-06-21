@@ -129,6 +129,13 @@ impl StructType {
     pub unsafe fn from_unchecked(data: StrictVec<StructField, 1>) -> StructType { Self(data) }
 }
 
+impl<'me> IntoIterator for &'me StructType {
+    type Item = &'me StructField;
+    type IntoIter = std::slice::Iter<'me, StructField>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
@@ -311,6 +318,7 @@ pub enum DataType {
     #[strict_encoding(value = 0x00)]
     Primitive(PrimitiveType),
 
+    // TODO: Remove this type since it can't be validated
     #[strict_encoding(value = 0x01)]
     Union(TypeRef),
 
@@ -386,6 +394,9 @@ impl TypeSystem {
         self.0.insert(name, ty)?;
         Ok(())
     }
+
+    #[inline]
+    pub fn get(&self, name: &TypeName) -> Option<&StructType> { self.0.get(name) }
 }
 
 #[macro_export]

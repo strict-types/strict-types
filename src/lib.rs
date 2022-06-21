@@ -25,3 +25,4 @@ mod validate;
 pub use collection::*;
 pub use path::*;
 pub use schema::*;
+pub use validate::Validate;
