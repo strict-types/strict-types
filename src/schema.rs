@@ -471,6 +471,12 @@ mod test {
     use super::*;
     use crate::strict_vec;
 
+    impl TypeSystem {
+        fn remove(&mut self, name: &'static str) {
+            self.0.remove(&name.try_into().unwrap()).unwrap();
+        }
+    }
+
     fn type_system() -> TypeSystem {
         type_system![
            "Transaction" :: {
@@ -497,7 +503,9 @@ mod test {
             "Meta" :: {
                 StructField::ascii_string(), // Name
                 StructField::typed_map(KeyType::unicode_string(), "UnicodeString"), // Arbitrary map
-            }
+            },
+            "Bytes" :: { StructField::bytes() },
+            "UnicodeString" :: { StructField::unicode_string() }
         ]
     }
 
@@ -514,5 +522,20 @@ mod test {
         let ts2 = TypeSystem::strict_deserialize(&data).unwrap();
         println!("{}", ts2);
         assert_eq!(ts, ts2);
+    }
+
+    #[test]
+    fn test_verify() {
+        let mut ts = type_system();
+        ts.verify().unwrap();
+        ts.remove("Bytes");
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_verify_absent() {
+        let mut ts = type_system();
+        ts.remove("Bytes");
+        ts.verify().unwrap();
     }
 }
