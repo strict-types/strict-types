@@ -432,6 +432,8 @@ impl TypeSystem {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[derive(StrictEncode, StrictDecode)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("type '{container}' references unknown type '{absent_type}' in its field #{field_no}")]
 pub struct TypeInconsistency {
     pub container: TypeName,
