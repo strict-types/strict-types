@@ -288,6 +288,18 @@ where T: Clone + Ord + Eq + Hash + Debug
     Map(KeyType, T),
 }
 
+impl TypeConstr<TypeName> {
+    pub fn type_name(&self) -> &TypeName {
+        match self {
+            TypeConstr::Plain(name) => name,
+            TypeConstr::Array(_, name) => name,
+            TypeConstr::List(name) => name,
+            TypeConstr::Set(name) => name,
+            TypeConstr::Map(_, name) => name,
+        }
+    }
+}
+
 impl<T> Display for TypeConstr<T>
 where T: Clone + Ord + Eq + Hash + Debug + Display
 {
@@ -395,6 +407,36 @@ impl TypeSystem {
 
     #[inline]
     pub fn get(&self, name: &TypeName) -> Option<&StructType> { self.0.get(name) }
+
+    pub fn verify(&self) -> Result<(), Vec<TypeInconsistency>> {
+        let mut issues = vec![];
+        for (name, ty) in &*self.0 {
+            for (no, field) in ty.into_iter().enumerate() {
+                if let TypeRef::NameRef(r) = &field.ty {
+                    if self.get(r.type_name()).is_none() {
+                        issues.push(TypeInconsistency {
+                            container: name.clone(),
+                            field_no: no,
+                            absent_type: r.type_name().clone(),
+                        });
+                    }
+                }
+            }
+        }
+        if issues.is_empty() {
+            Ok(())
+        } else {
+            Err(issues)
+        }
+    }
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[display("type '{container}' references unknown type '{absent_type}' in its field #{field_no}")]
+pub struct TypeInconsistency {
+    pub container: TypeName,
+    pub field_no: usize,
+    pub absent_type: TypeName,
 }
 
 #[macro_export]
