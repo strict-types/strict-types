@@ -408,7 +408,7 @@ impl TypeSystem {
     #[inline]
     pub fn get(&self, name: &TypeName) -> Option<&StructType> { self.0.get(name) }
 
-    pub fn verify(&self) -> Result<(), Vec<TypeInconsistency>> {
+    pub fn validate(&self) -> Result<(), Vec<TypeInconsistency>> {
         let mut issues = vec![];
         for (name, ty) in &*self.0 {
             for (no, field) in ty.into_iter().enumerate() {
@@ -527,7 +527,7 @@ mod test {
     #[test]
     fn test_verify() {
         let mut ts = type_system();
-        ts.verify().unwrap();
+        ts.validate().unwrap();
         ts.remove("Bytes");
     }
 
@@ -536,6 +536,6 @@ mod test {
     fn test_verify_absent() {
         let mut ts = type_system();
         ts.remove("Bytes");
-        ts.verify().unwrap();
+        ts.validate().unwrap();
     }
 }
