@@ -126,21 +126,18 @@ where T: StrictEncode + StrictDecode
     fn try_from(value: Vec<T>) -> Result<Self, Self::Error> {
         let len = value.len();
         match len {
-            len if len > STRICT_COLLECTION_MAX_LEN as usize => {
-                return Err(OversizeError(len).into())
+            len if len > STRICT_COLLECTION_MAX_LEN as usize => Err(OversizeError(len).into()),
+            len if len < MIN_LEN as usize => Err(UndersizeError {
+                len: len as u16,
+                min_len: MIN_LEN,
             }
-            len if len < MIN_LEN as usize => {
-                return Err(UndersizeError {
-                    len: len as u16,
-                    min_len: MIN_LEN,
-                }
-                .into())
-            }
+            .into()),
             _ => Ok(Self(value)),
         }
     }
 }
 
+#[allow(clippy::len_without_is_empty)]
 impl<T, const MIN_LEN: u16> StrictVec<T, MIN_LEN>
 where T: StrictEncode + StrictDecode
 {
@@ -152,7 +149,7 @@ where T: StrictEncode + StrictDecode
             return Err(OversizeError(len));
         }
         self.0.push(item);
-        return Ok(len as u16);
+        Ok(len as u16)
     }
 
     pub fn remove(&mut self, index: u16) -> Result<T, RemoveError> {
@@ -230,6 +227,7 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
 impl<T, const MIN_LEN: u16> StrictSet<T, MIN_LEN>
 where T: Eq + Ord + Debug + StrictEncode + StrictDecode
 {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 
     pub fn insert(&mut self, item: T) -> Result<u16, OversizeError> {
@@ -238,7 +236,7 @@ where T: Eq + Ord + Debug + StrictEncode + StrictDecode
             return Err(OversizeError(len));
         }
         self.0.insert(item);
-        return Ok(len as u16);
+        Ok(len as u16)
     }
 
     pub fn remove<Q: ?Sized>(&mut self, item: &Q) -> Result<bool, UndersizeError>
@@ -334,6 +332,7 @@ where
     K: Clone + Eq + Ord + Debug + StrictEncode + StrictDecode,
     V: Clone + StrictEncode + StrictDecode,
 {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 
     pub fn insert(&mut self, key: K, value: V) -> Result<u16, OversizeError> {
@@ -342,7 +341,7 @@ where
             return Err(OversizeError(len));
         }
         self.0.insert(key, value);
-        return Ok(len as u16);
+        Ok(len as u16)
     }
 
     pub fn remove<Q: ?Sized>(&mut self, key: &Q) -> Result<Option<V>, UndersizeError>
@@ -415,16 +414,12 @@ impl<const MIN_LEN: u16> TryFrom<String> for StrictStr<MIN_LEN> {
     fn try_from(value: String) -> Result<Self, Self::Error> {
         let len = value.len();
         match len {
-            len if len > STRICT_COLLECTION_MAX_LEN as usize => {
-                return Err(OversizeError(len).into())
+            len if len > STRICT_COLLECTION_MAX_LEN as usize => Err(OversizeError(len).into()),
+            len if len < MIN_LEN as usize => Err(UndersizeError {
+                len: len as u16,
+                min_len: MIN_LEN,
             }
-            len if len < MIN_LEN as usize => {
-                return Err(UndersizeError {
-                    len: len as u16,
-                    min_len: MIN_LEN,
-                }
-                .into())
-            }
+            .into()),
             _ => Ok(Self(value)),
         }
     }
@@ -443,6 +438,7 @@ impl<const MIN_LEN: u16> TryFrom<&str> for StrictStr<MIN_LEN> {
 }
 
 impl<const MIN_LEN: u16> StrictStr<MIN_LEN> {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 }
 
@@ -519,6 +515,7 @@ impl<const MIN_LEN: u16, const MAX_LEN: u16> TryFrom<&str> for AsciiString<MIN_L
 }
 
 impl<const MIN_LEN: u16, const MAX_LEN: u16> AsciiString<MIN_LEN, MAX_LEN> {
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> u16 { self.0.len() as u16 }
 }
 

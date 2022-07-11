@@ -27,7 +27,7 @@ pub trait Verify {
 impl Verify for TypeName {
     fn verify(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         match ts.get(self) {
-            None => return false,
+            None => false,
             Some(ty) => ty.verify(ts, buf),
         }
     }
@@ -48,10 +48,10 @@ impl Verify for StructField {
     fn verify(&self, ts: &TypeSystem, mut buf: &mut (impl Read + Seek)) -> bool {
         if self.optional {
             match u8::strict_decode(&mut buf) {
-                Err(_) => return false,
-                Ok(0) => return true,
+                Err(_) => false,
+                Ok(0) => true,
                 Ok(1) => self.ty.verify(ts, buf),
-                Ok(_) => return false,
+                Ok(_) => false,
             }
         } else {
             self.ty.verify(ts, buf)
