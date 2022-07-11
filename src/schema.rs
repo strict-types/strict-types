@@ -60,7 +60,7 @@ pub enum PrimitiveType {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 pub struct StructField {
-    pub ty: DataType,
+    pub ty: TypeRef,
     pub optional: bool,
 }
 
@@ -75,35 +75,77 @@ impl Display for StructField {
 }
 
 impl StructField {
-    pub fn new(type_name: &'static str) -> Self {
+    pub fn with(type_name: &'static str) -> Self {
         StructField {
-            ty: DataType::Struct(type_name.try_into().expect("invalid struct type name")),
+            ty: type_name.try_into().expect("invalid struct type name"),
             optional: false,
         }
     }
 
     pub fn primitive(prim: PrimitiveType) -> Self {
         StructField {
-            ty: DataType::Primitive(prim),
+            ty: TypeRef::InPlace(TypeConstr::Plain(prim)),
             optional: false,
         }
     }
 
-    pub fn list(ty: impl Into<TypeRef>) -> Self {
+    pub fn bytes() -> Self {
         StructField {
-            ty: DataType::List(ty.into()),
+            ty: TypeRef::bytes(),
+            optional: false,
+        }
+    }
+
+    pub fn ascii_string() -> Self {
+        StructField {
+            ty: TypeRef::ascii_string(),
+            optional: false,
+        }
+    }
+
+    pub fn unicode_string() -> Self {
+        StructField {
+            ty: TypeRef::unicode_string(),
             optional: false,
         }
     }
 
     pub fn array(prim: PrimitiveType, size: u16) -> Self {
         StructField {
-            ty: DataType::Array(size, TypeRef::Primitive(prim.into())),
+            ty: TypeRef::InPlace(TypeConstr::Array(size, prim)),
             optional: false,
         }
     }
 
-    pub fn optional(ty: DataType) -> Self { StructField { ty, optional: true } }
+    pub fn list(prim: PrimitiveType) -> Self {
+        StructField {
+            ty: TypeRef::InPlace(TypeConstr::List(prim)),
+            optional: false,
+        }
+    }
+
+    pub fn map(key: impl Into<KeyType>, prim: PrimitiveType) -> Self {
+        StructField {
+            ty: TypeRef::InPlace(TypeConstr::Map(key.into(), prim)),
+            optional: false,
+        }
+    }
+
+    pub fn typed_list(ty: &'static str) -> Self {
+        StructField {
+            ty: TypeRef::NameRef(TypeConstr::List(ty.try_into().expect("bad name"))),
+            optional: false,
+        }
+    }
+
+    pub fn typed_map(key: impl Into<KeyType>, ty: &'static str) -> Self {
+        StructField {
+            ty: TypeRef::NameRef(TypeConstr::Map(key.into(), ty.try_into().expect("bad name"))),
+            optional: false,
+        }
+    }
+
+    pub fn optional(ty: TypeRef) -> Self { StructField { ty, optional: true } }
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
@@ -136,18 +178,31 @@ impl<'me> IntoIterator for &'me StructType {
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
 #[strict_encoding(by_value, repr = u8)]
 pub enum KeyType {
     #[display(inner)]
     #[strict_encoding(value = 0x00)]
+    #[from]
     Primitive(PrimitiveType),
 
     #[display("{1}[{0}]")]
     #[strict_encoding(value = 0x10)]
     Array(u16, PrimitiveType),
+
+    #[display("{0}[]")]
+    #[strict_encoding(value = 0x20)]
+    List(PrimitiveType),
+}
+
+impl KeyType {
+    pub fn bytes() -> Self { KeyType::List(PrimitiveType::U8) }
+
+    pub fn ascii_string() -> Self { KeyType::List(PrimitiveType::AsciiChar) }
+
+    pub fn unicode_string() -> Self { KeyType::List(PrimitiveType::UnicodeChar) }
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
@@ -176,48 +231,48 @@ impl Display for UnionType {
 pub enum TypeRef {
     #[from]
     #[from(PrimitiveType)]
-    Primitive(TypeConstr<PrimitiveType>),
+    InPlace(TypeConstr<PrimitiveType>),
 
     #[from]
     #[from(TypeName)]
-    Named(TypeConstr<TypeName>),
+    NameRef(TypeConstr<TypeName>),
 }
 
 impl From<&'static str> for TypeRef {
     fn from(value: &'static str) -> Self {
-        TypeRef::Named(AsciiString::try_from(value).expect("incorrect typ name").into())
+        TypeRef::NameRef(AsciiString::try_from(value).expect("incorrect typ name").into())
     }
 }
 
 impl TypeRef {
     pub fn new(name: &'static str) -> TypeRef {
-        TypeRef::Named(TypeConstr::Plain(name.try_into().expect("invalid type name")))
+        TypeRef::NameRef(TypeConstr::Plain(name.try_into().expect("invalid type name")))
     }
 
-    pub fn bytes() -> TypeRef { TypeRef::Primitive(TypeConstr::List(PrimitiveType::U8)) }
+    pub fn bytes() -> TypeRef { TypeRef::InPlace(TypeConstr::List(PrimitiveType::U8)) }
 
     pub fn ascii_string() -> TypeRef {
-        TypeRef::Primitive(TypeConstr::List(PrimitiveType::AsciiChar))
+        TypeRef::InPlace(TypeConstr::List(PrimitiveType::AsciiChar))
     }
 
     pub fn unicode_string() -> TypeRef {
-        TypeRef::Primitive(TypeConstr::List(PrimitiveType::UnicodeChar))
+        TypeRef::InPlace(TypeConstr::List(PrimitiveType::UnicodeChar))
     }
 
-    pub fn u8() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U8)) }
-    pub fn u16() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U16)) }
-    pub fn u32() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U32)) }
-    pub fn u64() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U64)) }
-    pub fn u128() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::U128)) }
+    pub fn u8() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::U8)) }
+    pub fn u16() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::U16)) }
+    pub fn u32() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::U32)) }
+    pub fn u64() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::U64)) }
+    pub fn u128() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::U128)) }
 
-    pub fn i8() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I8)) }
-    pub fn i16() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I16)) }
-    pub fn i32() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I32)) }
-    pub fn i64() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I64)) }
-    pub fn i128() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::I128)) }
+    pub fn i8() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::I8)) }
+    pub fn i16() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::I16)) }
+    pub fn i32() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::I32)) }
+    pub fn i64() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::I64)) }
+    pub fn i128() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::I128)) }
 
-    pub fn f32() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::F32)) }
-    pub fn f64() -> TypeRef { TypeRef::Primitive(TypeConstr::Plain(PrimitiveType::F64)) }
+    pub fn f32() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::F32)) }
+    pub fn f64() -> TypeRef { TypeRef::InPlace(TypeConstr::Plain(PrimitiveType::F64)) }
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
@@ -310,58 +365,6 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
     }
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
-#[strict_encoding(by_value, repr = u8)]
-pub enum DataType {
-    #[strict_encoding(value = 0x00)]
-    Primitive(PrimitiveType),
-
-    #[strict_encoding(value = 0x02)]
-    Struct(TypeRef),
-
-    #[strict_encoding(value = 0x10)]
-    Array(u16, TypeRef),
-
-    #[strict_encoding(value = 0x11)]
-    List(TypeRef),
-
-    #[strict_encoding(value = 0x12)]
-    Set(TypeRef),
-
-    #[strict_encoding(value = 0x13)]
-    Map(KeyType, TypeRef),
-}
-
-impl Display for DataType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            DataType::Primitive(ty) => Display::fmt(ty, f),
-            DataType::Struct(ty) => Display::fmt(ty, f),
-            DataType::Array(size, ty) => {
-                write!(f, "[U16; {}] -> ", size)?;
-                Display::fmt(ty, f)
-            }
-            DataType::List(ty) => {
-                f.write_str("[U16] -> ")?;
-                Display::fmt(ty, f)
-            }
-            DataType::Set(ty) => {
-                f.write_str("{")?;
-                Display::fmt(ty, f)?;
-                f.write_str("}")
-            }
-            DataType::Map(key, ty) => {
-                f.write_str("{")?;
-                Display::fmt(key, f)?;
-                f.write_str("} -> ")?;
-                Display::fmt(ty, f)
-            }
-        }
-    }
-}
-
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 #[derive(StrictEncode, StrictDecode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
@@ -430,25 +433,29 @@ mod test {
         type_system![
            "Transaction" :: {
                 StructField::primitive(PrimitiveType::U32),
-                StructField::list("Input"),
-                StructField::list("Output"),
+                StructField::typed_list("Input"),
+                StructField::typed_list("Output"),
                 StructField::primitive(PrimitiveType::U32),
             },
             "Input" :: {
-                StructField::new("OutPoint"),
-                StructField::new("Bytes"),
-                StructField::new("Witness"),
+                StructField::with("OutPoint"),
+                StructField::with("Bytes"),
+                StructField::with("Witness"),
             },
             "Output" :: {
                 StructField::primitive(PrimitiveType::U64),
-                StructField::new("Bytes"),
+                StructField::with("Bytes"),
             },
             "OutPoint" :: {
-                StructField::new("Txid"),
+                StructField::with("Txid"),
                 StructField::primitive(PrimitiveType::U16),
             },
             "Txid" :: { StructField::array(PrimitiveType::U8, 32) },
-            "Witness" :: { StructField::list("Bytes") },
+            "Witness" :: { StructField::typed_list("Bytes") },
+            "Meta" :: {
+                StructField::ascii_string(), // Name
+                StructField::typed_map(KeyType::unicode_string(), "UnicodeString"), // Arbitrary map
+            }
         ]
     }
 

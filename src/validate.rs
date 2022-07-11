@@ -17,8 +17,7 @@ use std::io::{Read, Seek, SeekFrom};
 use strict_encoding::StrictDecode;
 
 use crate::{
-    DataType, KeyType, PrimitiveType, StructField, StructType, TypeConstr, TypeName, TypeRef,
-    TypeSystem,
+    KeyType, PrimitiveType, StructField, StructType, TypeConstr, TypeName, TypeRef, TypeSystem,
 };
 
 pub trait Validate {
@@ -60,24 +59,11 @@ impl Validate for StructField {
     }
 }
 
-impl Validate for DataType {
-    fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
-        match self {
-            DataType::Primitive(ty) => ty.validate(ts, buf),
-            DataType::Struct(ty) => ty.validate(ts, buf),
-            DataType::Array(len, ty) => TypeConstr::Array(*len, ty.clone()).validate(ts, buf),
-            DataType::List(ty) => TypeConstr::List(ty.clone()).validate(ts, buf),
-            DataType::Set(ty) => TypeConstr::Set(ty.clone()).validate(ts, buf),
-            DataType::Map(key, ty) => TypeConstr::Map(key.clone(), ty.clone()).validate(ts, buf),
-        }
-    }
-}
-
 impl Validate for TypeRef {
     fn validate(&self, ts: &TypeSystem, buf: &mut (impl Read + Seek)) -> bool {
         match self {
-            TypeRef::Primitive(ty) => ty.validate(ts, buf),
-            TypeRef::Named(ty) => ty.validate(ts, buf),
+            TypeRef::InPlace(ty) => ty.validate(ts, buf),
+            TypeRef::NameRef(ty) => ty.validate(ts, buf),
         }
     }
 }
@@ -186,6 +172,7 @@ impl Validate for KeyType {
         match self {
             KeyType::Primitive(ty) => ty.validate(ts, buf),
             KeyType::Array(len, ty) => TypeConstr::Array(*len, *ty).validate(ts, buf),
+            KeyType::List(ty) => TypeConstr::List(*ty).validate(ts, buf),
         }
     }
 }
