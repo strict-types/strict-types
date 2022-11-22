@@ -9,7 +9,9 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
-use crate::{KeyType, StrictVec};
+use amplify::confinement::SmallVec;
+
+use crate::KeyType;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
@@ -21,4 +23,4 @@ pub enum DataStep {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictEncode, StrictDecode)]
-pub struct DataPath(StrictVec<DataStep, 0>);
+pub struct DataPath(SmallVec<DataStep>);

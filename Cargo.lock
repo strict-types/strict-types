@@ -15,12 +15,13 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "4.0.0-alpha.1"
+version = "4.0.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "eb19b1bb6fe191f155406d8300d14bc9fa66f59bb8a8520d2a8015d6be80bf7d"
+checksum = "69fff8fd7349244c39a194ceb9ae1c1a73fa99d26e0f1156ebc90c173f7fa087"
 dependencies = [
  "amplify_derive",
  "amplify_num",
+ "ascii",
  "wasm-bindgen",
 ]
 
@@ -61,6 +62,12 @@ checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
 dependencies = [
  "libc",
 ]
+
+[[package]]
+name = "ascii"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d92bec98840b8f03a5ff5413de5293bfcd8bf96467cf5452609f939ec6f5de16"
 
 [[package]]
 name = "autocfg"
@@ -447,7 +454,7 @@ dependencies = [
 name = "stens"
 version = "0.8.0"
 dependencies = [
- "amplify 4.0.0-alpha.1",
+ "amplify 4.0.0-alpha.5",
  "serde",
  "serde_with",
  "serde_yaml",

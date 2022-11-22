@@ -19,10 +19,8 @@ extern crate serde_crate as serde;
 
 mod schema;
 mod path;
-mod collection;
 mod verify;
 
-pub use collection::*;
 pub use path::*;
 pub use schema::*;
 pub use verify::Verify;

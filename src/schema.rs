@@ -9,15 +9,17 @@
 // You should have received a copy of the MIT License along with this software.
 // If not, see <https://opensource.org/licenses/MIT>.
 
+use std::collections::BTreeSet;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::hash::Hash;
 use std::io::Read;
 
+use amplify::ascii::AsciiString;
+use amplify::confinement;
+use amplify::confinement::{Confined, SmallOrdMap};
 use strict_encoding::{StrictDecode, StrictEncode};
 
-use crate::{AsciiString, OversizeError, StrictMap, StrictSet, StrictVec};
-
-pub type TypeName = AsciiString<1, 32>;
+pub type TypeName = Confined<AsciiString, 1, 32>;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
@@ -151,7 +153,7 @@ impl StructField {
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
-pub struct StructType(StrictVec<StructField, 1>);
+pub struct StructType(Confined<BTreeSet<StructField>, 1, { u8::MAX as usize }>);
 
 impl Display for StructType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -168,7 +170,11 @@ impl Display for StructType {
 
 impl StructType {
     #[doc(hidden)]
-    pub unsafe fn from_unchecked(data: StrictVec<StructField, 1>) -> StructType { Self(data) }
+    pub unsafe fn from_unchecked(
+        data: Confined<BTreeSet<StructField>, 1, { u8::MAX as usize }>,
+    ) -> StructType {
+        Self(data)
+    }
 }
 
 impl<'me> IntoIterator for &'me StructType {
@@ -208,7 +214,7 @@ impl KeyType {
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(StrictEncode, StrictDecode)]
-pub struct UnionType(StrictSet<PrimitiveType, 2>);
+pub struct UnionType(Confined<BTreeSet<PrimitiveType>, 2, { u8::MAX as usize }>);
 
 impl Display for UnionType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -380,7 +386,7 @@ where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 #[derive(StrictEncode, StrictDecode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeSystem(StrictMap<TypeName, StructType>);
+pub struct TypeSystem(SmallOrdMap<TypeName, StructType>);
 
 impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -448,7 +454,7 @@ macro_rules! type_system {
         let mut ts = $crate::TypeSystem::new();
         $(
         let name = $name.try_into().expect("inline strict_vec literal contains invalid number of items");
-        let ty = unsafe { $crate::StructType::from_unchecked(strict_vec![$($field),+]) };
+        let ty = unsafe { $crate::StructType::from_unchecked(tiny_vec![$($field),+]) };
         ts.push(name, ty).expect("invalid type declaration");
         )+
         ts
@@ -463,7 +469,7 @@ pub enum Error {
 
     #[from]
     #[display(inner)]
-    Oversize(OversizeError),
+    Confinement(confinement::Error),
 }
 
 #[cfg(test)]
@@ -471,7 +477,6 @@ mod test {
     use amplify::hex::ToHex;
 
     use super::*;
-    use crate::strict_vec;
 
     impl TypeSystem {
         fn remove(&mut self, name: &'static str) {
@@ -486,28 +491,28 @@ mod test {
                 StructField::typed_list("Input"),
                 StructField::typed_list("Output"),
                 StructField::primitive(PrimitiveType::U32),
-            },
-            "Input" :: {
+           },
+           "Input" :: {
                 StructField::with("OutPoint"),
                 StructField::with("Bytes"),
                 StructField::with("Witness"),
-            },
-            "Output" :: {
+           },
+           "Output" :: {
                 StructField::primitive(PrimitiveType::U64),
                 StructField::with("Bytes"),
-            },
-            "OutPoint" :: {
+           },
+           "OutPoint" :: {
                 StructField::with("Txid"),
                 StructField::primitive(PrimitiveType::U16),
-            },
-            "Txid" :: { StructField::array(PrimitiveType::U8, 32) },
-            "Witness" :: { StructField::typed_list("Bytes") },
-            "Meta" :: {
+           },
+           "Txid" :: { StructField::array(PrimitiveType::U8, 32) },
+           "Witness" :: { StructField::typed_list("Bytes") },
+           "Meta" :: {
                 StructField::ascii_string(), // Name
                 StructField::typed_map(KeyType::unicode_string(), "UnicodeString"), // Arbitrary map
-            },
-            "Bytes" :: { StructField::bytes() },
-            "UnicodeString" :: { StructField::unicode_string() }
+           },
+           "Bytes" :: { StructField::bytes() },
+           "UnicodeString" :: { StructField::unicode_string() }
         ]
     }
 
