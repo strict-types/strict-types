@@ -12,19 +12,62 @@
 use std::collections::BTreeSet;
 use std::fmt::{self, Debug, Display, Formatter};
 use std::hash::Hash;
-use std::io::Read;
+use std::io;
+use std::io::{Read, Write};
 
 use amplify::ascii::AsciiString;
-use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
-use strict_encoding::{StrictDecode, StrictEncode};
+use amplify::{confinement, WrapperMut};
+use confined_encoding::{ConfinedDecode, ConfinedEncode};
 
-pub type TypeName = Confined<AsciiString, 1, 32>;
+#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[wrapper(Deref, Display)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct TypeName(Confined<AsciiString, 1, 32>);
+
+impl TypeName {
+    pub fn len_u8(&self) -> u8 { self.0.len() as u8 }
+}
+
+impl From<&'static str> for TypeName {
+    fn from(s: &'static str) -> Self {
+        TypeName(
+            AsciiString::from_ascii(s)
+                .map_err(|_| confinement::Error::Oversize { len: 0, max_len: 0 })
+                .and_then(Confined::try_from)
+                .expect("invalid static string for TypeName"),
+        )
+    }
+}
+
+impl ConfinedEncode for TypeName {
+    fn confined_encode(&self, e: &mut impl Write) -> Result<(), confined_encoding::Error> {
+        e.write_all(&[self.len_u8()])?;
+        e.write_all(self.as_bytes())?;
+        Ok(())
+    }
+}
+
+impl ConfinedDecode for TypeName {
+    fn confined_decode(d: &mut impl Read) -> Result<Self, confined_encoding::Error> {
+        let len = u8::confined_decode(d)?;
+        let mut data = vec![0u8; len as usize];
+        d.read_exact(&mut data)?;
+        let s = AsciiString::from_ascii(data)?;
+        let c = Confined::try_from(s)?;
+        Ok(Self(c))
+    }
+}
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
-#[strict_encoding(by_value, repr = u8)]
+#[derive(ConfinedEncode, ConfinedDecode)]
+#[confined_encoding(by_value, repr = u8)]
 #[display(Debug)]
 pub enum PrimitiveType {
     U8 = 0x00,
@@ -60,7 +103,7 @@ pub enum PrimitiveType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(ConfinedEncode, ConfinedDecode)]
 pub struct StructField {
     pub ty: TypeRef,
     pub optional: bool,
@@ -151,8 +194,9 @@ impl StructField {
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[derive(ConfinedEncode, ConfinedDecode)]
+#[wrapper(Deref)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
 pub struct StructType(Confined<BTreeSet<StructField>, 1, { u8::MAX as usize }>);
 
 impl Display for StructType {
@@ -170,36 +214,38 @@ impl Display for StructType {
 
 impl StructType {
     #[doc(hidden)]
-    pub unsafe fn from_unchecked(
-        data: Confined<BTreeSet<StructField>, 1, { u8::MAX as usize }>,
-    ) -> StructType {
-        Self(data)
+    pub unsafe fn from_panicking(data: BTreeSet<StructField>) -> StructType {
+        Confined::try_from(data)
+            .map(Self)
+            .expect("no of fields in StructType size exceeds confinement limits")
     }
+
+    pub fn field_count(&self) -> u8 { self.0.len_u8() }
 }
 
 impl<'me> IntoIterator for &'me StructType {
     type Item = &'me StructField;
-    type IntoIter = std::slice::Iter<'me, StructField>;
+    type IntoIter = std::collections::btree_set::Iter<'me, StructField>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
-#[strict_encoding(by_value, repr = u8)]
+#[derive(ConfinedEncode, ConfinedDecode)]
+#[confined_encoding(by_value, repr = u8)]
 pub enum KeyType {
     #[display(inner)]
-    #[strict_encoding(value = 0x00)]
+    #[confined_encoding(value = 0x00)]
     #[from]
     Primitive(PrimitiveType),
 
     #[display("{1}[{0}]")]
-    #[strict_encoding(value = 0x10)]
+    #[confined_encoding(value = 0x10)]
     Array(u16, PrimitiveType),
 
     #[display("{0}[]")]
-    #[strict_encoding(value = 0x20)]
+    #[confined_encoding(value = 0x20)]
     List(PrimitiveType),
 }
 
@@ -213,12 +259,12 @@ impl KeyType {
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(ConfinedEncode, ConfinedDecode)]
 pub struct UnionType(Confined<BTreeSet<PrimitiveType>, 2, { u8::MAX as usize }>);
 
 impl Display for UnionType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let len = self.len() as usize;
+        let len = self.0.len();
         for (pos, field) in self.0.iter().enumerate() {
             Display::fmt(field, f)?;
             if pos < len - 1 {
@@ -231,8 +277,8 @@ impl Display for UnionType {
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[derive(StrictEncode, StrictDecode)]
-#[strict_encoding(by_order, repr = u8)]
+#[derive(ConfinedEncode, ConfinedDecode)]
+#[confined_encoding(by_order, repr = u8)]
 #[display(inner)]
 pub enum TypeRef {
     #[from]
@@ -246,7 +292,7 @@ pub enum TypeRef {
 
 impl From<&'static str> for TypeRef {
     fn from(value: &'static str) -> Self {
-        TypeRef::NameRef(AsciiString::try_from(value).expect("incorrect typ name").into())
+        TypeRef::NameRef(TypeName::try_from(value).expect("incorrect typ name").into())
     }
 }
 
@@ -335,56 +381,58 @@ where T: Clone + Ord + Eq + Hash + Debug + Display
     }
 }
 
-impl<T> StrictEncode for TypeConstr<T>
-where T: Clone + Ord + Eq + Hash + Debug + StrictEncode
+impl<T> ConfinedEncode for TypeConstr<T>
+where T: Clone + Ord + Eq + Hash + Debug + ConfinedEncode
 {
-    fn strict_encode<E: std::io::Write>(&self, mut e: E) -> Result<usize, strict_encoding::Error> {
+    fn confined_encode(&self, e: &mut impl io::Write) -> Result<(), confined_encoding::Error> {
         Ok(match self {
             TypeConstr::Plain(ty) => {
-                strict_encode_list!(e; 0x00u8, ty)
+                confined_encode_list!(e; 0x00u8, ty)
             }
             TypeConstr::Array(size, ty) => {
-                strict_encode_list!(e; 0x10u8, size, ty)
+                confined_encode_list!(e; 0x10u8, size, ty)
             }
             TypeConstr::List(ty) => {
-                strict_encode_list!(e; 0x11u8, ty)
+                confined_encode_list!(e; 0x11u8, ty)
             }
             TypeConstr::Set(ty) => {
-                strict_encode_list!(e; 0x12u8, ty)
+                confined_encode_list!(e; 0x12u8, ty)
             }
             TypeConstr::Map(key, ty) => {
-                strict_encode_list!(e; 0x13u8, key, ty)
+                confined_encode_list!(e; 0x13u8, key, ty)
             }
         })
     }
 }
 
-impl<T> StrictDecode for TypeConstr<T>
-where T: Clone + Ord + Eq + Hash + Debug + StrictDecode
+impl<T> ConfinedDecode for TypeConstr<T>
+where T: Clone + Ord + Eq + Hash + Debug + ConfinedDecode
 {
-    fn strict_decode<D: Read>(mut d: D) -> Result<Self, strict_encoding::Error> {
-        let ty = u8::strict_decode(&mut d)?;
+    fn confined_decode(d: &mut impl io::Read) -> Result<Self, confined_encoding::Error> {
+        let ty = u8::confined_decode(d)?;
         Ok(match ty {
-            0x00 => Self::Plain(StrictDecode::strict_decode(&mut d)?),
+            0x00 => Self::Plain(ConfinedDecode::confined_decode(d)?),
             0x10 => Self::Array(
-                StrictDecode::strict_decode(&mut d)?,
-                StrictDecode::strict_decode(&mut d)?,
+                ConfinedDecode::confined_decode(d)?,
+                ConfinedDecode::confined_decode(d)?,
             ),
-            0x11 => Self::List(StrictDecode::strict_decode(&mut d)?),
-            0x12 => Self::Set(StrictDecode::strict_decode(&mut d)?),
-            0x13 => Self::Map(
-                StrictDecode::strict_decode(&mut d)?,
-                StrictDecode::strict_decode(&mut d)?,
-            ),
+            0x11 => Self::List(ConfinedDecode::confined_decode(d)?),
+            0x12 => Self::Set(ConfinedDecode::confined_decode(d)?),
+            0x13 => {
+                Self::Map(ConfinedDecode::confined_decode(d)?, ConfinedDecode::confined_decode(d)?)
+            }
             other => {
-                return Err(strict_encoding::Error::EnumValueNotKnown("TypeConstr", other as usize))
+                return Err(confined_encoding::Error::EnumValueNotKnown(
+                    "TypeConstr",
+                    other as usize,
+                ))
             }
         })
     }
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(ConfinedEncode, ConfinedDecode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeSystem(SmallOrdMap<TypeName, StructType>);
 
@@ -438,7 +486,6 @@ impl TypeSystem {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
-#[derive(StrictEncode, StrictDecode)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("type '{container}' references unknown type '{absent_type}' in its field #{field_no}")]
 pub struct TypeInconsistency {
@@ -450,18 +497,17 @@ pub struct TypeInconsistency {
 #[macro_export]
 macro_rules! type_system {
     ($($name:literal :: { $($field:expr),+ $(,)? }),+ $(,)?) => { {
-        use std::convert::TryInto;
         let mut ts = $crate::TypeSystem::new();
         $(
         let name = $name.try_into().expect("inline strict_vec literal contains invalid number of items");
-        let ty = unsafe { $crate::StructType::from_unchecked(tiny_vec![$($field),+]) };
+        let ty = unsafe { $crate::StructType::from_panicking(bset![$($field),+]) };
         ts.push(name, ty).expect("invalid type declaration");
         )+
         ts
     } }
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error, From)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum Error {
     /// type `{0}` is already defined
@@ -524,9 +570,9 @@ mod test {
     #[test]
     fn test_encode() {
         let ts = type_system();
-        let data = ts.strict_serialize().unwrap();
+        let data = ts.confined_serialize::<{ u16::MAX as usize }>().unwrap();
         println!("{}", data.to_hex());
-        let ts2 = TypeSystem::strict_deserialize(&data).unwrap();
+        let ts2 = TypeSystem::confined_deserialize(&data).unwrap();
         println!("{}", ts2);
         assert_eq!(ts, ts2);
     }

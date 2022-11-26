@@ -14,7 +14,7 @@ use std::fmt::Debug;
 use std::hash::Hash;
 use std::io::{Read, Seek, SeekFrom};
 
-use strict_encoding::StrictDecode;
+use confined_encoding::ConfinedDecode;
 
 use crate::{
     KeyType, PrimitiveType, StructField, StructType, TypeConstr, TypeName, TypeRef, TypeSystem,
@@ -47,7 +47,7 @@ impl Verify for StructType {
 impl Verify for StructField {
     fn verify(&self, ts: &TypeSystem, mut buf: &mut (impl Read + Seek)) -> bool {
         if self.optional {
-            match u8::strict_decode(&mut buf) {
+            match u8::confined_decode(&mut buf) {
                 Err(_) => false,
                 Ok(0) => true,
                 Ok(1) => self.ty.verify(ts, buf),
@@ -98,7 +98,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Verify
                 true
             }
             TypeConstr::List(ty) => {
-                let len = match u16::strict_decode(&mut buf) {
+                let len = match u16::confined_decode(&mut buf) {
                     Err(_) => return false,
                     Ok(len) => len,
                 };
@@ -110,7 +110,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Verify
                 true
             }
             TypeConstr::Set(ty) => {
-                let len = match u16::strict_decode(&mut buf) {
+                let len = match u16::confined_decode(&mut buf) {
                     Err(_) => return false,
                     Ok(len) => len,
                 };
@@ -135,7 +135,7 @@ where T: Clone + Ord + Eq + Hash + Debug + Verify
                 true
             }
             TypeConstr::Map(key, val) => {
-                let len = match u16::strict_decode(&mut buf) {
+                let len = match u16::confined_decode(&mut buf) {
                     Err(_) => return false,
                     Ok(len) => len,
                 };
@@ -205,7 +205,7 @@ impl Verify for PrimitiveType {
             PrimitiveType::F256 => 32,
             PrimitiveType::F512 => 64,
             PrimitiveType::AsciiChar | PrimitiveType::UnicodeChar => {
-                match u16::strict_decode(&mut buf) {
+                match u16::confined_decode(&mut buf) {
                     Err(_) => return false,
                     Ok(len) => len,
                 }

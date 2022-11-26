@@ -14,7 +14,7 @@ use amplify::confinement::SmallVec;
 use crate::KeyType;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(ConfinedEncode, ConfinedDecode)]
 pub enum DataStep {
     StructField(u16),
     ArrayIndex(u16),
@@ -22,5 +22,5 @@ pub enum DataStep {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[derive(StrictEncode, StrictDecode)]
+#[derive(ConfinedEncode, ConfinedDecode)]
 pub struct DataPath(SmallVec<DataStep>);
