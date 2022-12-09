@@ -65,19 +65,22 @@ impl Ty {
     pub const F256: Ty = Ty(TyInner::Primitive(F256));
 
     pub fn enumerate(variants: Variants) -> Self { Ty(TyInner::Enum(variants)) }
-
     pub fn union(alternatives: Alternatives) -> Self { Ty(TyInner::Union(alternatives)) }
-
     pub fn option(ty: Ty) -> Self {
         Ty(TyInner::Union(alternatives![
             "None" => 0 => Ty::UNIT,
             "Some" => 1 => ty
         ]))
     }
+    pub fn composition(fields: Fields) -> Self { Ty(TyInner::Struct(fields)) }
 
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Box::new(Ty::BYTE), len)) }
 
     pub fn bytes() -> Self { Ty(TyInner::List(Box::new(Ty::BYTE), Sizing::U16)) }
+    pub fn ascii(sizing: Option<Sizing>) -> Self {
+        Ty(TyInner::List(Box::new(Ty::CHAR), sizing.unwrap_or_default()))
+    }
+
     pub fn list(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::List(Box::new(ty), sizing)) }
     pub fn set(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::Set(Box::new(ty), sizing)) }
     pub fn map(key: KeyTy, val: Ty, sizing: Sizing) -> Self {
