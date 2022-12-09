@@ -23,11 +23,6 @@ use confined_encoding::{ConfinedDecode, ConfinedEncode};
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref, Display)]
 #[wrapper_mut(DerefMut)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
 pub struct TypeName(Confined<AsciiString, 1, 32>);
 
 impl TypeName {
@@ -65,7 +60,6 @@ impl ConfinedDecode for TypeName {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(ConfinedEncode, ConfinedDecode)]
 #[confined_encoding(by_value, repr = u8)]
 #[display(Debug)]
@@ -102,7 +96,6 @@ pub enum PrimitiveType {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(ConfinedEncode, ConfinedDecode)]
 pub struct StructField {
     pub ty: TypeRef,
@@ -196,7 +189,6 @@ impl StructField {
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[derive(ConfinedEncode, ConfinedDecode)]
 #[wrapper(Deref)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct StructType(Confined<BTreeSet<StructField>, 1, { u8::MAX as usize }>);
 
 impl Display for StructType {
@@ -231,7 +223,6 @@ impl<'me> IntoIterator for &'me StructType {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(ConfinedEncode, ConfinedDecode)]
 #[confined_encoding(by_value, repr = u8)]
 pub enum KeyType {
@@ -258,7 +249,6 @@ impl KeyType {
 }
 
 #[derive(Wrapper, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(ConfinedEncode, ConfinedDecode)]
 pub struct UnionType(Confined<BTreeSet<PrimitiveType>, 2, { u8::MAX as usize }>);
 
@@ -276,7 +266,6 @@ impl Display for UnionType {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[derive(ConfinedEncode, ConfinedDecode)]
 #[confined_encoding(by_order, repr = u8)]
 #[display(inner)]
@@ -328,7 +317,6 @@ impl TypeRef {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum TypeConstr<T>
 where T: Clone + Ord + Eq + Hash + Debug
 {
@@ -433,7 +421,6 @@ where T: Clone + Ord + Eq + Hash + Debug + ConfinedDecode
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
 #[derive(ConfinedEncode, ConfinedDecode)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeSystem(SmallOrdMap<TypeName, StructType>);
 
 impl Display for TypeSystem {
@@ -486,7 +473,6 @@ impl TypeSystem {
 }
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display("type '{container}' references unknown type '{absent_type}' in its field #{field_no}")]
 pub struct TypeInconsistency {
     pub container: TypeName,

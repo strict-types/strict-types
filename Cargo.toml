@@ -15,11 +15,3 @@ exclude = [".github", "contrib"]
 amplify = "4.0.0-beta.3"
 amplify_derive = "4.0.0-alpha.1" # TODO Remove after WrapperMut re-export bugfix in amplify
 confined_encoding = "0.9.0-alpha.5"
-serde_crate = { package = "serde", version = "1", optional = true }
-serde_with = { version = "2", optional = true }
-serde_yaml = { version = "0.9", optional = true }
-
-[features]
-default = []
-all = ["serde"]
-serde = ["serde_crate", "serde_with", "serde_yaml", "amplify/serde"]
