@@ -17,6 +17,9 @@ pub mod primitive;
 pub mod ast;
 #[macro_use]
 mod macros;
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde_crate as serde;
 mod path;
 
 pub use ast::{KeyTy, Ty};
