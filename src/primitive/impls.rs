@@ -9,10 +9,13 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+use amplify::ascii::AsciiString;
+use amplify::confinement::Confined;
 use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
+use crate::util::Sizing;
 use crate::{StenType, Ty};
 
 macro_rules! st_impl {
@@ -59,4 +62,16 @@ impl<const LEN: usize> StenType for [u8; LEN] {
     const STEN_TYPE_NAME: &'static str = stringify!("[Byte ^ ", LEN, "]");
 
     fn sten_type() -> Ty { Ty::byte_array(LEN as u16) }
+}
+
+impl StenType for () {
+    const STEN_TYPE_NAME: &'static str = "()";
+
+    fn sten_type() -> Ty { Ty::UNIT }
+}
+
+impl<const MIN: usize, const MAX: usize> StenType for Confined<AsciiString, MIN, MAX> {
+    const STEN_TYPE_NAME: &'static str = stringify!("[Ascii ^ ", MIN, "..=", MAX, "]");
+
+    fn sten_type() -> Ty { Ty::ascii(Some(Sizing::new(MIN as u16, MAX as u16))) }
 }
