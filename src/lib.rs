@@ -12,6 +12,11 @@
 #[macro_use]
 extern crate amplify;
 
-mod schema;
+mod util;
+pub mod primitive;
+pub mod ty;
+#[macro_use]
+mod macros;
 
-pub use schema::*;
+pub use ty::{KeyTy, Ty};
+pub use util::TypeName;
