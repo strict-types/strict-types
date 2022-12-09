@@ -16,8 +16,7 @@ use std::io;
 use std::io::{Read, Write};
 
 use amplify::ascii::AsciiString;
-use amplify::confinement::{Confined, SmallOrdMap};
-use amplify::{confinement, WrapperMut};
+use amplify::confinement::{self, Confined, SmallOrdMap};
 use confined_encoding::{ConfinedDecode, ConfinedEncode};
 
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]

@@ -15,12 +15,12 @@ dependencies = [
 
 [[package]]
 name = "amplify"
-version = "4.0.0-beta.3"
+version = "4.0.0-beta.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b7bf7ea0c2d20feca399a3f1b2fc98e5f0565516bafc73be29da90ed1f2866f"
+checksum = "4ff4d466b0cb5124991d3a2085c28f2aed6d86264c3c0bdbd7d1b64a49b4726b"
 dependencies = [
  "amplify_apfloat",
- "amplify_derive 4.0.0-alpha.1",
+ "amplify_derive 4.0.0-alpha.2",
  "amplify_num",
  "amplify_syn",
  "ascii",
@@ -51,9 +51,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_derive"
-version = "4.0.0-alpha.1"
+version = "4.0.0-alpha.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6471f510180b7c9e0efd62108f604704c914ab20d5892299636b863955539a39"
+checksum = "2a258501c851f9dec1549e046d551b645b8b970e30aca85dbec2d6e36cda8e91"
 dependencies = [
  "amplify_syn",
  "proc-macro2",
@@ -137,7 +137,7 @@ version = "0.9.0-alpha.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bd6ede969f5a97b3e4d0e887b13a1c08f9f4d9e7d291099b37ac5ce8da600cbc"
 dependencies = [
- "amplify 4.0.0-beta.3",
+ "amplify 4.0.0-beta.6",
  "bitcoin",
  "confined_encoding_derive",
  "half",
@@ -238,8 +238,7 @@ dependencies = [
 name = "stens"
 version = "0.9.0"
 dependencies = [
- "amplify 4.0.0-beta.3",
- "amplify_derive 4.0.0-alpha.1",
+ "amplify 4.0.0-beta.6",
  "confined_encoding",
 ]
 

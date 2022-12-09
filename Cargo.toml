@@ -12,6 +12,5 @@ readme = "README.md"
 exclude = [".github", "contrib"]
 
 [dependencies]
-amplify = "4.0.0-beta.3"
-amplify_derive = "4.0.0-alpha.1" # TODO Remove after WrapperMut re-export bugfix in amplify
+amplify = "4.0.0-beta.6"
 confined_encoding = "0.9.0-alpha.5"
