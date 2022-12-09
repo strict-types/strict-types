@@ -18,7 +18,6 @@ use amplify::confinement::Confined;
 
 use crate::alternatives;
 use crate::primitive::constants::*;
-use crate::primitive::NumInfo;
 use crate::util::{Size, Sizing};
 
 pub type FieldName = Confined<AsciiString, 1, 32>;
@@ -116,7 +115,7 @@ impl Ty {
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum TyInner {
-    Primitive(u8),
+    Primitive(Primitive),
     Enum(Variants),
     Union(Alternatives),
     Struct(Fields),
@@ -135,7 +134,7 @@ impl TyInner {
                 Size::Fixed(1)
             }
             TyInner::Primitive(F16B) => Size::Fixed(2),
-            TyInner::Primitive(code) => Size::Fixed(NumInfo::from_code(*code).size()),
+            TyInner::Primitive(primitive) => Size::Fixed(primitive.size()),
             TyInner::Union(fields) => {
                 fields.values().map(|alt| alt.ty.size()).max().unwrap_or(Size::Fixed(0))
             }
@@ -158,7 +157,7 @@ impl TyInner {
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum KeyTy {
-    Primitive(u8),
+    Primitive(Primitive),
     Enum(Variants),
     /// Fixed-size byte array
     Array(u16),

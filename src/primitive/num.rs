@@ -1,4 +1,13 @@
-use amplify::num::u5;
+// Strict encoding schema library, implementing validation and parsing of strict
+// encoded data against the schema.
+//
+// Written in 2022-2023 by
+//     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
+//
+// Copyright (C) 2022-2023 by Ubideco Project.
+//
+// You should have received a copy of the Apache 2.0 License along with this
+// software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
 /// Information about numeric type
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -10,94 +19,64 @@ pub struct NumInfo {
 }
 
 impl NumInfo {
-    pub fn unsigned(bytes: u16) -> Self {
-        NumInfo {
-            ty: NumTy::Unsigned,
-            size: NumSize::from_bytes(bytes),
-        }
-    }
-
-    pub fn signed(bytes: u16) -> Self {
-        NumInfo {
-            ty: NumTy::Signed,
-            size: NumSize::from_bytes(bytes),
-        }
-    }
-
-    pub fn non_zero(bytes: u16) -> Self {
-        NumInfo {
-            ty: NumTy::NonZero,
-            size: NumSize::from_bytes(bytes),
-        }
-    }
-
-    pub fn float(bytes: u16) -> Self {
-        NumInfo {
-            ty: NumTy::Float,
-            size: NumSize::from_bytes(bytes),
-        }
-    }
-
-    pub fn from_code(id: u8) -> Self {
+    pub const fn from_code(id: u8) -> Self {
         NumInfo {
             ty: NumTy::from_code(id),
             size: NumSize::from_code(id),
         }
     }
 
-    pub fn into_code(self) -> u8 { self.ty.into_code() | self.size.into_code() }
+    pub const fn into_code(self) -> u8 { self.ty.into_code() | self.size.into_code() }
 
-    pub fn size(self) -> u16 { self.size.size() }
+    pub const fn size(self) -> u16 { self.size.size() }
+}
+
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub struct NumSize(NumSizeInner);
+
+impl NumSize {
+    pub(super) const fn from_bytes(bytes: u16) -> Self {
+        NumSize(if bytes < 0x20 {
+            NumSizeInner::Bytes(bytes as u8)
+        } else if bytes % 16 != 0 {
+            unreachable!()
+        } else {
+            NumSizeInner::Factored((bytes / 16 - 2) as u8)
+        })
+    }
+
+    pub(super) const fn from_code(id: u8) -> Self {
+        let code = id & 0x1F;
+        NumSize(match id & 0x20 / 0x20 {
+            0 => NumSizeInner::Bytes(code),
+            1 => NumSizeInner::Factored(code),
+            _ => unreachable!(),
+        })
+    }
+
+    pub(super) const fn into_code(self) -> u8 {
+        match self.0 {
+            NumSizeInner::Bytes(bytes) => bytes,
+            NumSizeInner::Factored(factor) => factor | 0x20,
+        }
+    }
+
+    pub const fn size(self) -> u16 {
+        match self.0 {
+            NumSizeInner::Bytes(bytes) => bytes as u16,
+            NumSizeInner::Factored(factor) => 2 * (factor as u16 + 1),
+        }
+    }
 }
 
 /// The way how the size is computed and encoded in the type id
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
-pub enum NumSize {
+enum NumSizeInner {
     /// Lowest 5 bits contain type size in bytes
-    Bytes(u5),
+    Bytes(u8),
     /// Lowest 5 bits contain a factor defining the size according to the
     /// equation `16 * (2 + factor)`
-    Factored(u5),
-}
-
-impl NumSize {
-    pub fn from_bytes(bytes: u16) -> Self {
-        if bytes < 0x20 {
-            NumSize::Bytes(u5::try_from(bytes as u8).expect("< 0x20"))
-        } else if bytes % 16 != 0 {
-            panic!(
-                "for more than 256 bits it is required to have the number of bits proportional to \
-                 128"
-            )
-        } else {
-            NumSize::Factored(
-                u5::try_from((bytes / 16 - 2) as u8).expect("number of bytes too high"),
-            )
-        }
-    }
-
-    pub fn from_code(id: u8) -> Self {
-        let code = id & 0x1F;
-        match id & 0x20 / 0x20 {
-            0 => NumSize::Bytes(code.try_into().expect("bit masked")),
-            1 => NumSize::Factored(code.try_into().expect("bit masked")),
-            _ => unreachable!(),
-        }
-    }
-
-    pub fn into_code(self) -> u8 {
-        match self {
-            NumSize::Bytes(bytes) => bytes.as_u8(),
-            NumSize::Factored(factor) => factor.as_u8() | 0x20,
-        }
-    }
-
-    pub fn size(self) -> u16 {
-        match self {
-            NumSize::Bytes(bytes) => bytes.as_u8() as u16,
-            NumSize::Factored(factor) => 2 * (factor.as_u8() as u16 + 1),
-        }
-    }
+    Factored(u8),
 }
 
 /// Class of the number type

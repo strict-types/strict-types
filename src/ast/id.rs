@@ -14,6 +14,7 @@ use std::ops::Deref;
 
 use crate::ast::inner::TyInner;
 use crate::ast::{Alternative, Alternatives, FieldName, Fields, Ty, Variant, Variants};
+use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::KeyTy;
 
@@ -54,7 +55,7 @@ impl TyCommit for Ty {
         let cls = self.cls() as u8;
         hasher.input([cls]);
         match self.deref() {
-            TyInner::Primitive(code) => hasher.input([*code]),
+            TyInner::Primitive(prim) => prim.ty_commit(hasher),
             TyInner::Enum(vars) => vars.ty_commit(hasher),
             TyInner::Union(alts) => alts.ty_commit(hasher),
             TyInner::Struct(fields) => fields.ty_commit(hasher),
@@ -86,7 +87,7 @@ impl TyCommit for KeyTy {
         let cls = self.cls() as u8;
         hasher.input([cls]);
         match self.deref() {
-            KeyTy::Primitive(code) => hasher.input([*code]),
+            KeyTy::Primitive(prim) => prim.ty_commit(hasher),
             KeyTy::Enum(vars) => vars.ty_commit(hasher),
             KeyTy::Array(len) => hasher.input(len.to_le_bytes()),
             KeyTy::Ascii(sizing) => sizing.ty_commit(hasher),
@@ -148,4 +149,8 @@ impl TyCommit for Fields {
 
 impl TyCommit for FieldName {
     fn ty_commit(&self, hasher: &mut TyHasher) { hasher.input(self.as_bytes()) }
+}
+
+impl TyCommit for Primitive {
+    fn ty_commit(&self, hasher: &mut TyHasher) { hasher.input([self.into_code()]) }
 }
