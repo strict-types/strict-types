@@ -28,7 +28,7 @@ macro_rules! fields {
                     c += 1;
                 }
             )+
-            $crate::ast::Fields::try_from(m).expect("too many fields")
+            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
     }
 }

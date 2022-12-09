@@ -37,7 +37,8 @@ pub struct SubTy(Box<Ty>);
 impl TypeRef for SubTy {}
 
 impl SubTy {
-    pub fn ty(&self) -> &Ty { &self.0.deref() }
+    pub fn as_ty(&self) -> &Ty { &self.0.deref() }
+    pub fn into_ty(self) -> Ty { *self.0 }
 }
 
 impl From<Ty> for SubTy {
@@ -133,6 +134,14 @@ impl<Ref: TypeRef> Deref for Ty<Ref> {
     type Target = TyInner<Ref>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<Ref: TypeRef> From<TyInner<Ref>> for Ty<Ref> {
+    fn from(inner: TyInner<Ref>) -> Self { Ty(inner) }
+}
+
+impl<Ref: TypeRef> Ty<Ref> {
+    pub(crate) fn into_inner(self) -> TyInner<Ref> { self.0 }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -252,7 +261,7 @@ impl TyInner<SubTy> {
             TyInner::Primitive(F16B) => Size::Fixed(2),
             TyInner::Primitive(primitive) => Size::Fixed(primitive.size()),
             TyInner::Union(fields) => {
-                fields.values().map(|alt| alt.ty().size()).max().unwrap_or(Size::Fixed(0))
+                fields.values().map(|alt| alt.as_ty().size()).max().unwrap_or(Size::Fixed(0))
             }
             TyInner::Struct(fields) => fields.values().map(|ty| ty.size()).sum(),
             TyInner::Enum(_) => Size::Fixed(1),
@@ -282,7 +291,15 @@ pub enum KeyTy {
     Bytes(Sizing),
 }
 
-pub type Fields<Ref = SubTy> = Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>;
+#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[wrapper(Deref)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct Fields<Ref = SubTy>(Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>);
 
 #[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
@@ -293,6 +310,58 @@ pub type Fields<Ref = SubTy> = Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as us
     serde(crate = "serde_crate", transparent)
 )]
 pub struct Variants(Confined<BTreeSet<Field>, 1, { u8::MAX as usize }>);
+
+impl<Ref: TypeRef> TryFrom<BTreeMap<Field, Ref>> for Fields<Ref> {
+    type Error = confinement::Error;
+
+    fn try_from(inner: BTreeMap<Field, Ref>) -> Result<Self, Self::Error> {
+        Confined::try_from(inner).map(Fields::from)
+    }
+}
+
+impl<Ref: TypeRef> IntoIterator for Fields<Ref> {
+    type Item = (Field, Ref);
+    type IntoIter = std::collections::btree_map::IntoIter<Field, Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+}
+
+impl<'a, Ref: TypeRef> IntoIterator for &'a Fields<Ref> {
+    type Item = (&'a Field, &'a Ref);
+    type IntoIter = std::collections::btree_map::Iter<'a, Field, Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
+impl<Ref: TypeRef> Display for Fields<Ref>
+where Ref: Display
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut iter = self.iter();
+        let last = iter.next_back();
+        for (field, ty) in iter {
+            write!(f, "{} {}, ", field, ty)?;
+        }
+        if let Some((field, ty)) = last {
+            write!(f, "{} {}", field, ty)?;
+        }
+        Ok(())
+    }
+}
+
+impl IntoIterator for Variants {
+    type Item = Field;
+    type IntoIter = std::collections::btree_set::IntoIter<Field>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+}
+
+impl<'a> IntoIterator for &'a Variants {
+    type Item = &'a Field;
+    type IntoIter = std::collections::btree_set::Iter<'a, Field>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
 
 impl Display for Variants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

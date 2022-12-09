@@ -18,12 +18,14 @@ mod macros;
 mod util;
 pub mod primitive;
 pub mod ast;
+pub mod dtl;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
 mod path;
 
-pub use ast::{FieldName, Ident, KeyTy, Ty, TypeRef};
+pub use ast::{FieldName, Ident, KeyTy, Translate, Ty, TyId, TypeRef};
+pub use dtl::TypeLib;
 pub use path::{Path, PathError, Step, TyIter};
 pub use util::TypeName;
 

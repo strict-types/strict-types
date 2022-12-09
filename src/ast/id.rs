@@ -9,6 +9,7 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+use std::cmp::Ordering;
 use std::io::Write;
 use std::ops::Deref;
 
@@ -21,6 +22,14 @@ use crate::KeyTy;
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display("urn:ubideco:sten:{0}")]
 pub struct TyId(blake3::Hash);
+
+impl Ord for TyId {
+    fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
+}
+
+impl PartialOrd for TyId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
 
 pub struct TyHasher(blake3::Hasher);
 
@@ -123,7 +132,7 @@ impl TyCommit for Field {
 impl TyCommit for Fields {
     fn ty_commit(&self, hasher: &mut TyHasher) {
         hasher.input([self.len_u8()]);
-        for (name, ty) in self {
+        for (name, ty) in self.iter() {
             name.ty_commit(hasher);
             ty.ty_commit(hasher);
         }

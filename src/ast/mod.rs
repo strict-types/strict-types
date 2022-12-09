@@ -12,7 +12,10 @@
 mod ty;
 mod id;
 mod serialize;
+mod translate;
 
+pub use id::TyId;
+pub use translate::{Translate, TranslateError};
 pub use ty::{Field, FieldName, Fields, Ident, KeyTy, Ty, TypeRef, Variants};
 
 pub mod inner {

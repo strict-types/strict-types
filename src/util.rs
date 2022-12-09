@@ -20,6 +20,11 @@ use amplify::confinement::Confined;
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref, Display)]
 #[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
 pub struct TypeName(Confined<AsciiString, 1, 32>);
 
 impl TypeName {
