@@ -19,7 +19,7 @@ pub mod ast;
 mod macros;
 mod path;
 
-pub use ast::{KeyTy, TyInner};
+pub use ast::{KeyTy, Ty};
 pub use path::{Path, PathError, Step, TyIter};
 pub use util::TypeName;
 
@@ -30,5 +30,5 @@ pub trait StenType {
     const STEN_TYPE_NAME: &'static str;
 
     /// Returns type representing strict encoding of the data.
-    fn sten_type() -> TyInner;
+    fn sten_type() -> Ty;
 }

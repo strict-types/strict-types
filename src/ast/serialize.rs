@@ -60,10 +60,12 @@ impl TryFrom<u8> for Cls {
 }
 
 impl Ty {
-    pub fn deserialize(ast_data: MediumVec<u8>) -> Result<Self, DecodeError> {}
+    pub fn deserialize(ast_data: MediumVec<u8>) -> Result<Self, DecodeError> { todo!() }
 
-    pub fn serialize(&self) -> MediumVec<u8> {}
+    pub fn serialize(&self) -> MediumVec<u8> { todo!() }
+}
 
+impl TyInner {
     pub const fn cls(&self) -> Cls {
         match self {
             TyInner::Primitive(_) => Cls::Primitive,

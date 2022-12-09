@@ -18,13 +18,13 @@ pub struct TyHasher();
 impl TyHasher {
     pub fn new() -> TyHasher { TyHasher() }
 
-    pub fn compute_id(ty: impl TyCommit) -> TyId {
+    pub fn compute_id(ty: &impl TyCommit) -> TyId {
         let mut hasher = TyHasher::new();
         ty.ty_commit(&mut hasher);
         hasher.finish()
     }
 
-    pub fn finish(self) -> TyId {}
+    pub fn finish(self) -> TyId { todo!() }
 }
 
 pub trait TyCommit {
@@ -33,4 +33,8 @@ pub trait TyCommit {
 
 impl Ty {
     pub fn id(&self) -> TyId { TyHasher::compute_id(self) }
+}
+
+impl TyCommit for Ty {
+    fn ty_commit(&self, hasher: &mut TyHasher) { todo!() }
 }

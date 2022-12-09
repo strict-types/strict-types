@@ -9,9 +9,12 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+use std::ops::Deref;
+
 use amplify::confinement::{SmallVec, TinyOrdSet};
 
-use crate::TyInner;
+use crate::ast::inner::TyInner;
+use crate::Ty;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Step {
@@ -37,22 +40,22 @@ impl Path {
 #[derive(Debug, Display, Error)]
 #[display("")]
 pub struct PathError<'ty> {
-    pub ty: &'ty TyInner,
+    pub ty: &'ty Ty,
     pub path: Path,
 }
 
 impl<'ty> PathError<'ty> {
-    pub fn new(ty: &'ty TyInner, path: Path) -> Self { PathError { ty, path } }
+    pub fn new(ty: &'ty Ty, path: Path) -> Self { PathError { ty, path } }
 }
 
-impl TyInner {
-    pub fn path(&self, path: &Path) -> Result<&TyInner, PathError> {
+impl Ty {
+    pub fn path(&self, path: &Path) -> Result<&Ty, PathError> {
         let mut ty = self;
         let mut path = path.clone();
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
             path_so_far.push(step).expect("confinement collection guarantees");
-            ty = match (self, step) {
+            ty = match (self.deref(), step) {
                 (TyInner::Struct(fields), Step::Field(name)) => fields.get(name).map(Box::as_ref),
                 (TyInner::Union(variants), Step::Alt(name)) => {
                     variants.get(name).map(|alt| alt.ty.as_ref())
@@ -71,13 +74,13 @@ impl TyInner {
 }
 
 pub struct TyIter {
-    ty: TyInner,
+    ty: Ty,
     fields: TinyOrdSet<&'static str>,
     current: Path,
 }
 
 impl TyIter {
-    pub fn check(&mut self, ty: &TyInner) {
+    pub fn check(&mut self, ty: &Ty) {
         let real_ty = self.ty.path(&self.current).expect("non-existing path");
         assert_eq!(real_ty, ty, "type mismatch");
     }
@@ -90,8 +93,8 @@ impl TyIter {
     }
 }
 
-impl From<TyInner> for TyIter {
-    fn from(ty: TyInner) -> Self {
+impl From<Ty> for TyIter {
+    fn from(ty: Ty) -> Self {
         TyIter {
             ty,
             fields: empty!(),

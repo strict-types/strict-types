@@ -32,6 +32,56 @@ impl Deref for Ty {
 }
 
 impl Ty {
+    pub const fn unit() -> Self { Ty(TyInner::Primitive(UNIT)) }
+    pub const fn byte() -> Self { Ty(TyInner::Primitive(BYTE)) }
+    pub const fn char() -> Self { Ty(TyInner::Primitive(CHAR)) }
+
+    pub const fn u8() -> Self { Ty(TyInner::Primitive(U8)) }
+    pub const fn u16() -> Self { Ty(TyInner::Primitive(U16)) }
+    pub const fn u24() -> Self { Ty(TyInner::Primitive(U24)) }
+    pub const fn u32() -> Self { Ty(TyInner::Primitive(U32)) }
+    pub const fn u64() -> Self { Ty(TyInner::Primitive(U64)) }
+    pub const fn u128() -> Self { Ty(TyInner::Primitive(U128)) }
+    pub const fn u256() -> Self { Ty(TyInner::Primitive(U256)) }
+    pub const fn u512() -> Self { Ty(TyInner::Primitive(U512)) }
+    pub const fn u1024() -> Self { Ty(TyInner::Primitive(U1024)) }
+
+    pub const fn i8() -> Self { Ty(TyInner::Primitive(I8)) }
+    pub const fn i16() -> Self { Ty(TyInner::Primitive(I16)) }
+    pub const fn i24() -> Self { Ty(TyInner::Primitive(I24)) }
+    pub const fn i32() -> Self { Ty(TyInner::Primitive(I32)) }
+    pub const fn i64() -> Self { Ty(TyInner::Primitive(I64)) }
+    pub const fn i128() -> Self { Ty(TyInner::Primitive(I128)) }
+    pub const fn i256() -> Self { Ty(TyInner::Primitive(I256)) }
+    pub const fn i512() -> Self { Ty(TyInner::Primitive(I512)) }
+    pub const fn i1024() -> Self { Ty(TyInner::Primitive(I1024)) }
+
+    pub const fn f16b() -> Self { Ty(TyInner::Primitive(F16B)) }
+    pub const fn f16() -> Self { Ty(TyInner::Primitive(F16)) }
+    pub const fn f32() -> Self { Ty(TyInner::Primitive(F32)) }
+    pub const fn f64() -> Self { Ty(TyInner::Primitive(F64)) }
+    pub const fn f80() -> Self { Ty(TyInner::Primitive(F80)) }
+    pub const fn f128() -> Self { Ty(TyInner::Primitive(F128)) }
+    pub const fn f256() -> Self { Ty(TyInner::Primitive(F256)) }
+
+    pub fn enumerate(variants: Variants) -> Self { Ty(TyInner::Enum(variants)) }
+
+    pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Box::new(Ty::byte()), len)) }
+
+    pub fn bytes() -> Self { Ty(TyInner::List(Box::new(Ty::byte()), Sizing::U16)) }
+    pub fn list(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::List(Box::new(ty), sizing)) }
+    pub fn set(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::Set(Box::new(ty), sizing)) }
+    pub fn map(key: KeyTy, val: Ty, sizing: Sizing) -> Self {
+        Ty(TyInner::Map(key, Box::new(val), sizing))
+    }
+
+    pub fn option(ty: Ty) -> Self {
+        Ty(TyInner::Union(alternatives![
+            "None" => 0 => Ty::unit(),
+            "Some" => 1 => ty
+        ]))
+    }
+
     pub fn try_into_key_ty(self) -> Result<KeyTy, TyInner> {
         Ok(match self.0 {
             TyInner::Primitive(code) => KeyTy::Primitive(code),
@@ -54,67 +104,15 @@ pub enum TyInner {
     Enum(Variants),
     Union(Alternatives),
     Struct(Fields),
-    Array(Box<TyInner>, u16),
+    Array(Box<Ty>, u16),
     Ascii(Sizing),
     Unicode(Sizing),
-    List(Box<TyInner>, Sizing),
-    Set(Box<TyInner>, Sizing),
-    Map(KeyTy, Box<TyInner>, Sizing),
+    List(Box<Ty>, Sizing),
+    Set(Box<Ty>, Sizing),
+    Map(KeyTy, Box<Ty>, Sizing),
 }
 
 impl TyInner {
-    pub const fn unit() -> TyInner { TyInner::Primitive(UNIT) }
-    pub const fn byte() -> TyInner { TyInner::Primitive(BYTE) }
-    pub const fn char() -> TyInner { TyInner::Primitive(CHAR) }
-
-    pub const fn u8() -> TyInner { TyInner::Primitive(U8) }
-    pub const fn u16() -> TyInner { TyInner::Primitive(U16) }
-    pub const fn u24() -> TyInner { TyInner::Primitive(U24) }
-    pub const fn u32() -> TyInner { TyInner::Primitive(U32) }
-    pub const fn u64() -> TyInner { TyInner::Primitive(U64) }
-    pub const fn u128() -> TyInner { TyInner::Primitive(U128) }
-    pub const fn u256() -> TyInner { TyInner::Primitive(U256) }
-    pub const fn u512() -> TyInner { TyInner::Primitive(U512) }
-    pub const fn u1024() -> TyInner { TyInner::Primitive(U1024) }
-
-    pub const fn i8() -> TyInner { TyInner::Primitive(I8) }
-    pub const fn i16() -> TyInner { TyInner::Primitive(I16) }
-    pub const fn i24() -> TyInner { TyInner::Primitive(I24) }
-    pub const fn i32() -> TyInner { TyInner::Primitive(I32) }
-    pub const fn i64() -> TyInner { TyInner::Primitive(I64) }
-    pub const fn i128() -> TyInner { TyInner::Primitive(I128) }
-    pub const fn i256() -> TyInner { TyInner::Primitive(I256) }
-    pub const fn i512() -> TyInner { TyInner::Primitive(I512) }
-    pub const fn i1024() -> TyInner { TyInner::Primitive(I1024) }
-
-    pub const fn f16b() -> TyInner { TyInner::Primitive(F16B) }
-    pub const fn f16() -> TyInner { TyInner::Primitive(F16) }
-    pub const fn f32() -> TyInner { TyInner::Primitive(F32) }
-    pub const fn f64() -> TyInner { TyInner::Primitive(F64) }
-    pub const fn f80() -> TyInner { TyInner::Primitive(F80) }
-    pub const fn f128() -> TyInner { TyInner::Primitive(F128) }
-    pub const fn f256() -> TyInner { TyInner::Primitive(F256) }
-
-    pub fn enumerate(variants: Variants) -> TyInner { TyInner::Enum(variants) }
-
-    pub fn byte_array(len: u16) -> TyInner {
-        TyInner::Array(Box::new(TyInner::Primitive(BYTE)), len)
-    }
-
-    pub fn bytes() -> TyInner { TyInner::List(Box::new(TyInner::Primitive(BYTE)), Sizing::U16) }
-    pub fn list(ty: TyInner, sizing: Sizing) -> TyInner { TyInner::List(Box::new(ty), sizing) }
-    pub fn set(ty: TyInner, sizing: Sizing) -> TyInner { TyInner::Set(Box::new(ty), sizing) }
-    pub fn map(key: KeyTy, val: TyInner, sizing: Sizing) -> TyInner {
-        TyInner::Map(key, Box::new(val), sizing)
-    }
-
-    pub fn option(ty: TyInner) -> TyInner {
-        TyInner::Union(alternatives![
-            "None" => 0 => TyInner::unit(),
-            "Some" => 1 => ty
-        ])
-    }
-
     pub fn size(&self) -> Size {
         match self {
             TyInner::Primitive(UNIT) | TyInner::Primitive(BYTE) | TyInner::Primitive(CHAR) => {
@@ -138,11 +136,15 @@ impl TyInner {
 }
 
 /// Lexicographically sortable types which may serve as map keys.
+///
+/// The type is always guaranteed to fit strict encoding AST serialization
+/// bounds since it doesn't has a dynamically-sized types.
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub enum KeyTy {
     Primitive(u8),
     Enum(Variants),
-    Array(Box<TyInner>, u16),
+    /// Fixed-size byte array
+    Array(u16),
     Ascii(Sizing),
     Unicode(Sizing),
     Bytes(Sizing),
@@ -153,11 +155,11 @@ pub type Alternatives = Confined<BTreeMap<&'static str, Alternative>, 1, { u8::M
 #[derive(Clone, PartialEq, Eq, Debug)]
 pub struct Alternative {
     pub id: u8,
-    pub ty: Box<TyInner>,
+    pub ty: Box<Ty>,
 }
 
 impl Alternative {
-    pub fn new(id: u8, ty: TyInner) -> Alternative {
+    pub fn new(id: u8, ty: Ty) -> Alternative {
         Alternative {
             id,
             ty: Box::new(ty),
@@ -165,7 +167,7 @@ impl Alternative {
     }
 }
 
-pub type Fields = Confined<BTreeMap<&'static str, Box<TyInner>>, 1, { u8::MAX as usize }>;
+pub type Fields = Confined<BTreeMap<&'static str, Box<Ty>>, 1, { u8::MAX as usize }>;
 
 pub type Variants = Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>;
 
