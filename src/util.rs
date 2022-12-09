@@ -38,6 +38,7 @@ impl From<&'static str> for TypeName {
 }
 
 // TODO: Replace with Range<usize>
+// TODO: Use u16
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Sizing {
     pub min: usize,
@@ -59,6 +60,17 @@ impl Sizing {
         min: 1,
         max: u8::MAX as usize,
     };
+
+    pub const fn new(min: u16, max: u16) -> Self {
+        Sizing {
+            min: min as usize,
+            max: max as usize,
+        }
+    }
+}
+
+impl Default for Sizing {
+    fn default() -> Self { Sizing::new(0, u16::MAX) }
 }
 
 /// Measure of a type size in bytes
