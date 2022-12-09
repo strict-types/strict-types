@@ -12,10 +12,7 @@
 #[macro_export]
 macro_rules! tn {
     ($name:literal) => {
-        ::amplify::confinement::Confined::try_from(
-            ::amplify::ascii::AsciiString::from_ascii($name).expect("invalid type name"),
-        )
-        .expect("invalid type name")
+        $crate::Ident::try_from($name).expect("invalid type name")
     };
 }
 
@@ -23,24 +20,15 @@ macro_rules! tn {
 macro_rules! fields {
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
+            let mut c = 0u8;
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert(tn!($key), Box::new($value)).is_none(), "repeated field");
+                assert!(m.insert($crate::ast::Field::new(tn!($key), c), $value.into()).is_none(), "repeated field");
+                #[allow(unused_assignments)] {
+                    c += 1;
+                }
             )+
             $crate::ast::Fields::try_from(m).expect("too many fields")
-        }
-    }
-}
-
-#[macro_export]
-macro_rules! alternatives {
-    { $($key:expr => $val:expr => $ty:expr),+ $(,)? } => {
-        {
-            let mut m = ::std::collections::BTreeMap::new();
-            $(
-                assert!(m.insert(tn!($key), $crate::ast::Alternative::new($val, $ty)).is_none(), "repeated union alternative");
-            )+
-            amplify::confinement::Confined::try_from(m).expect("too many union alternatives").into()
         }
     }
 }
@@ -51,7 +39,7 @@ macro_rules! variants {
         {
             let mut m = ::std::collections::BTreeSet::new();
             $(
-                assert!(m.insert($crate::ast::Variant::new(tn!($key), $value)), "repeated enum variant");
+                assert!(m.insert($crate::ast::Field::new(tn!($key), $value)), "repeated enum variant");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }

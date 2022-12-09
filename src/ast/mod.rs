@@ -13,7 +13,7 @@ mod ty;
 mod id;
 mod serialize;
 
-pub use ty::{Alternative, Alternatives, FieldName, Fields, KeyTy, Ty, Variant, Variants};
+pub use ty::{Field, FieldName, Fields, Ident, KeyTy, Ty, TypeRef, Variants};
 
 pub mod inner {
     pub use ty::TyInner;

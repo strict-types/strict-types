@@ -68,11 +68,11 @@ impl StenType for Message {
     const STEN_TYPE_NAME: &'static str = "Message";
 
     fn sten_type() -> Ty {
-        Ty::union(alternatives! [
-            "Init" => 0 => u8::sten_type(),
-            "Ping" => 0 => <()>::sten_type(),
-            "Pong" => 0 => <()>::sten_type(),
-            "Connect" => 0 => Ty::composition(fields![
+        Ty::union(fields! [
+            "Init" => u8::sten_type(),
+            "Ping" => <()>::sten_type(),
+            "Pong" => <()>::sten_type(),
+            "Connect" => Ty::composition(fields![
                 "host" => TinyAscii::sten_type(),
             ]),
         ])

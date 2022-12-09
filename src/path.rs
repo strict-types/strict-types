@@ -14,12 +14,12 @@ use std::ops::Deref;
 use amplify::confinement::{SmallVec, TinyOrdSet};
 
 use crate::ast::inner::TyInner;
-use crate::{Ty, TypeName};
+use crate::{FieldName, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Step {
-    Field(TypeName),
-    Alt(TypeName),
+    Field(FieldName),
+    Alt(FieldName),
     Index(u16),
     List,
     Set,
@@ -55,15 +55,17 @@ impl Ty {
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
             let res = match (self.deref(), &step) {
-                (TyInner::Struct(fields), Step::Field(name)) => fields.get(name).map(Box::as_ref),
+                (TyInner::Struct(fields), Step::Field(name)) => {
+                    fields.iter().find(|(f, _)| f.name == *name).map(|(_, ty)| ty)
+                }
                 (TyInner::Union(variants), Step::Alt(name)) => {
-                    variants.get(name).map(|alt| alt.ty.as_ref())
+                    variants.iter().find(|(f, _)| f.name == *name).map(|(_, ty)| ty)
                 }
                 (TyInner::Array(_, len), Step::Index(index)) if index >= len => None,
-                (TyInner::Array(ty, _), Step::Index(_)) => Some(ty.as_ref()),
-                (TyInner::List(ty, _), Step::List) => Some(ty.as_ref()),
-                (TyInner::Set(ty, _), Step::Set) => Some(ty.as_ref()),
-                (TyInner::Map(_, ty, _), Step::Map) => Some(ty.as_ref()),
+                (TyInner::Array(ty, _), Step::Index(_)) => Some(ty),
+                (TyInner::List(ty, _), Step::List) => Some(ty),
+                (TyInner::Set(ty, _), Step::Set) => Some(ty),
+                (TyInner::Map(_, ty, _), Step::Map) => Some(ty),
                 (_, _) => None,
             };
             path_so_far.push(step).expect("confinement collection guarantees");

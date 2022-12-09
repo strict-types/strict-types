@@ -13,6 +13,7 @@ use amplify::confinement::MediumVec;
 
 use super::inner::TyInner;
 use super::Ty;
+use crate::ast::TypeRef;
 use crate::KeyTy;
 
 pub enum DecodeError {}
@@ -60,13 +61,13 @@ impl TryFrom<u8> for Cls {
     }
 }
 
-impl Ty {
+impl<Ref: TypeRef> Ty<Ref> {
     pub fn deserialize(ast_data: MediumVec<u8>) -> Result<Self, DecodeError> { todo!() }
 
     pub fn serialize(&self) -> MediumVec<u8> { todo!() }
 }
 
-impl TyInner {
+impl<Ref: TypeRef> TyInner<Ref> {
     pub const fn cls(&self) -> Cls {
         match self {
             TyInner::Primitive(_) => Cls::Primitive,

@@ -18,13 +18,12 @@ mod macros;
 mod util;
 pub mod primitive;
 pub mod ast;
-pub mod dtl;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
 mod path;
 
-pub use ast::{KeyTy, Ty};
+pub use ast::{FieldName, Ident, KeyTy, Ty, TypeRef};
 pub use path::{Path, PathError, Step, TyIter};
 pub use util::TypeName;
 
@@ -34,6 +33,6 @@ pub trait StenType {
     /// Strict encoding type name.
     const STEN_TYPE_NAME: &'static str;
 
-    /// Returns type representing strict encoding of the data.
+    /// Returns AST representing strict encoding of the data.
     fn sten_type() -> Ty;
 }

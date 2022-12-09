@@ -13,7 +13,7 @@ use std::io::Write;
 use std::ops::Deref;
 
 use crate::ast::inner::TyInner;
-use crate::ast::{Alternative, Alternatives, FieldName, Fields, Ty, Variant, Variants};
+use crate::ast::{Field, FieldName, Fields, Ty, Variants};
 use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::KeyTy;
@@ -113,27 +113,10 @@ impl TyCommit for Variants {
     }
 }
 
-impl TyCommit for Variant {
+impl TyCommit for Field {
     fn ty_commit(&self, hasher: &mut TyHasher) {
         self.name.ty_commit(hasher);
         hasher.input([self.value]);
-    }
-}
-
-impl TyCommit for Alternatives {
-    fn ty_commit(&self, hasher: &mut TyHasher) {
-        hasher.input([self.len_u8()]);
-        for (name, alt) in self {
-            name.ty_commit(hasher);
-            alt.ty_commit(hasher);
-        }
-    }
-}
-
-impl TyCommit for Alternative {
-    fn ty_commit(&self, hasher: &mut TyHasher) {
-        hasher.input([self.id]);
-        self.ty.ty_commit(hasher);
     }
 }
 
