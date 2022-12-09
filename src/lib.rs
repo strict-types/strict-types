@@ -15,9 +15,5 @@ extern crate amplify;
 extern crate confined_encoding;
 
 mod schema;
-mod path;
-mod verify;
 
-pub use path::*;
 pub use schema::*;
-pub use verify::Verify;
