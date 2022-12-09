@@ -104,3 +104,5 @@ impl From<Ty> for TyIter {
         }
     }
 }
+
+// TODO: Complete type iterator

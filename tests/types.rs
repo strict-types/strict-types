@@ -22,9 +22,11 @@
 #[macro_use]
 extern crate stens;
 
+use std::ops::Deref;
+
 use amplify::confinement::TinyAscii;
 use stens::ast::Ty;
-use stens::StenType;
+use stens::{StenSchema, StenType, Translate};
 
 #[repr(u8)]
 pub enum Prim {
@@ -53,36 +55,36 @@ pub struct Complex {
     pub msg: Message,
 }
 
-impl StenType for Prim {
+impl StenSchema for Prim {
     const STEN_TYPE_NAME: &'static str = "Prim";
 
-    fn sten_type() -> Ty {
+    fn sten_ty() -> Ty<StenType> {
         Ty::enumerate(variants![
-            "A" => Prim::A as u8,
-            "B" => Prim::B as u8,
+            "a" => Prim::A as u8,
+            "b" => Prim::B as u8,
         ])
     }
 }
 
-impl StenType for Message {
+impl StenSchema for Message {
     const STEN_TYPE_NAME: &'static str = "Message";
 
-    fn sten_type() -> Ty {
+    fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! [
-            "Init" => u8::sten_type(),
-            "Ping" => <()>::sten_type(),
-            "Pong" => <()>::sten_type(),
-            "Connect" => Ty::composition(fields![
+            "init" => u8::sten_type(),
+            "ping" => <()>::sten_type(),
+            "pong" => <()>::sten_type(),
+            "connect" => StenType::new("ConnectInner", Ty::composition(fields![
                 "host" => TinyAscii::sten_type(),
-            ]),
+            ])),
         ])
     }
 }
 
-impl StenType for TypeA {
+impl StenSchema for TypeA {
     const STEN_TYPE_NAME: &'static str = "TypeA";
 
-    fn sten_type() -> Ty {
+    fn sten_ty() -> Ty<StenType> {
         Ty::composition(fields![
             "0" => u8::sten_type(),
             "1" => u16::sten_type(),
@@ -90,10 +92,10 @@ impl StenType for TypeA {
     }
 }
 
-impl StenType for TypeB {
+impl StenSchema for TypeB {
     const STEN_TYPE_NAME: &'static str = "TypeB";
 
-    fn sten_type() -> Ty {
+    fn sten_ty() -> Ty<StenType> {
         Ty::composition(fields![
             "one" => TypeA::sten_type(),
             "two" => TypeA::sten_type(),
@@ -101,10 +103,10 @@ impl StenType for TypeB {
     }
 }
 
-impl StenType for Complex {
+impl StenSchema for Complex {
     const STEN_TYPE_NAME: &'static str = "Complex";
 
-    fn sten_type() -> Ty {
+    fn sten_ty() -> Ty<StenType> {
         Ty::composition(fields![
             "a" => TypeA::sten_type(),
             "b" => TypeB::sten_type(),
@@ -116,7 +118,10 @@ impl StenType for Complex {
 
 #[test]
 fn serialize() {
-    let ty = Complex::sten_type();
-    println!("{}\n", ty.id());
-    println!("{}", serde_yaml::to_string(&ty).unwrap())
+    let root = Complex::sten_type();
+    let id = root.id();
+    let lib = root.try_into_lib().unwrap();
+
+    println!("{}\n", id);
+    println!("{}", lib);
 }

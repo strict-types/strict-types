@@ -14,6 +14,7 @@ use std::io::Write;
 use std::ops::Deref;
 
 use crate::ast::inner::TyInner;
+use crate::ast::ty::RecursiveRef;
 use crate::ast::{Field, FieldName, Fields, Ty, Variants};
 use crate::primitive::Primitive;
 use crate::util::Sizing;
@@ -55,15 +56,15 @@ pub trait TyCommit {
     fn ty_commit(&self, hasher: &mut TyHasher);
 }
 
-impl Ty {
+impl<Ref: RecursiveRef> Ty<Ref> {
     pub fn id(&self) -> TyId { TyHasher::compute_id(self) }
 }
 
-impl TyCommit for Ty {
+impl<Ref: RecursiveRef> TyCommit for Ty<Ref> {
     fn ty_commit(&self, hasher: &mut TyHasher) {
         let cls = self.cls() as u8;
         hasher.input([cls]);
-        match self.deref() {
+        match self.as_inner() {
             TyInner::Primitive(prim) => prim.ty_commit(hasher),
             TyInner::Enum(vars) => vars.ty_commit(hasher),
             TyInner::Union(alts) => alts.ty_commit(hasher),
@@ -129,7 +130,7 @@ impl TyCommit for Field {
     }
 }
 
-impl TyCommit for Fields {
+impl<Ref: RecursiveRef> TyCommit for Fields<Ref> {
     fn ty_commit(&self, hasher: &mut TyHasher) {
         hasher.input([self.len_u8()]);
         for (name, ty) in self.iter() {

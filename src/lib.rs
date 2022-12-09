@@ -24,17 +24,62 @@ pub mod dtl;
 extern crate serde_crate as serde;
 mod path;
 
+use std::ops::Deref;
+
 pub use ast::{FieldName, Ident, KeyTy, Translate, Ty, TyId, TypeRef};
 pub use dtl::TypeLib;
 pub use path::{Path, PathError, Step, TyIter};
 pub use util::TypeName;
 
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct StenType {
+    pub name: &'static str,
+    pub ty: Box<Ty<StenType>>,
+}
+
+impl Deref for StenType {
+    type Target = Ty<StenType>;
+
+    fn deref(&self) -> &Self::Target { self.ty.deref() }
+}
+
+impl StenType {
+    pub fn unit() -> StenType {
+        StenType {
+            name: "()",
+            ty: Box::new(Ty::UNIT),
+        }
+    }
+
+    pub fn byte() -> StenType {
+        StenType {
+            name: "Byte",
+            ty: Box::new(Ty::BYTE),
+        }
+    }
+
+    pub fn new(name: &'static str, ty: Ty<StenType>) -> StenType {
+        StenType {
+            name,
+            ty: Box::new(ty),
+        }
+    }
+}
+
 /// A type which can be deterministically represented in terms of
 /// strict encoding schema.
-pub trait StenType {
+pub trait StenSchema {
     /// Strict encoding type name.
     const STEN_TYPE_NAME: &'static str;
 
+    /// Returns [`StenType`] representation of this structure
+    fn sten_type() -> StenType {
+        StenType {
+            name: Self::STEN_TYPE_NAME,
+            ty: Box::new(Self::sten_ty()),
+        }
+    }
+
     /// Returns AST representing strict encoding of the data.
-    fn sten_type() -> Ty;
+    fn sten_ty() -> Ty<StenType>;
 }

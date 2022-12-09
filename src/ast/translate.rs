@@ -10,14 +10,15 @@
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
 use std::collections::BTreeMap;
+use std::convert::Infallible;
 
 use amplify::confinement;
 use amplify::confinement::SmallOrdMap;
 
 use crate::ast::inner::TyInner;
-use crate::ast::ty::SubTy;
+use crate::ast::ty::{RecursiveRef, SubTy};
 use crate::ast::Fields;
-use crate::{Ty, TyId, TypeName, TypeRef};
+use crate::{StenType, Ty, TyId, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -26,11 +27,26 @@ pub trait Translate<To: Sized> {
     fn translate(self, ctx: &mut Self::Context) -> Result<To, Self::Error>;
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
+#[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum TranslateError {
     /// a different type with name `{0}` is already present
     DuplicateName(TypeName),
+
+    /// unknown type with id `{0}`
+    UnknownId(TyId),
+
+    #[from]
+    #[display(inner)]
+    Confinement(confinement::Error),
+}
+impl Translate<SubTy> for StenType {
+    type Context = ();
+    type Error = Infallible;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<SubTy, Self::Error> {
+        self.ty.translate(ctx).map(SubTy::from)
+    }
 }
 
 impl Translate<TyId> for SubTy {
@@ -44,6 +60,15 @@ impl Translate<TyId> for SubTy {
             ctx.insert(id, ty)?;
         }
         Ok(id)
+    }
+}
+
+impl Translate<TypeName> for TyId {
+    type Context = BTreeMap<TyId, TypeName>;
+    type Error = TranslateError;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<TypeName, Self::Error> {
+        ctx.get(&self).ok_or(TranslateError::UnknownId(self)).cloned()
     }
 }
 

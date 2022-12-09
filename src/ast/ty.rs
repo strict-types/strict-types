@@ -12,7 +12,7 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
@@ -20,13 +20,28 @@ use amplify::confinement::Confined;
 
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
+use crate::StenType;
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + Eq + Sized {}
+pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> {
+    fn as_ty(&self) -> &Ty<Self>;
+    fn into_ty(self) -> Ty<Self>;
+    fn size(&self) -> Size { self.as_ty().size() }
+}
+
+impl TypeRef for SubTy {}
+impl RecursiveRef for SubTy {
+    fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
+    fn into_ty(self) -> Ty<Self> { *self.0 }
+}
+impl TypeRef for StenType {}
+impl RecursiveRef for StenType {
+    fn as_ty(&self) -> &Ty<Self> { &self.ty }
+    fn into_ty(self) -> Ty<Self> { *self.ty }
+}
 
 #[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, Debug, From)]
-#[wrapper(Deref)]
-#[wrapper_mut(DerefMut)]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -34,11 +49,14 @@ pub trait TypeRef: Clone + Eq + Sized {}
 )]
 pub struct SubTy(Box<Ty>);
 
-impl TypeRef for SubTy {}
+impl Deref for SubTy {
+    type Target = Ty;
 
-impl SubTy {
-    pub fn as_ty(&self) -> &Ty { &self.0.deref() }
-    pub fn into_ty(self) -> Ty { *self.0 }
+    fn deref(&self) -> &Self::Target { self.0.deref() }
+}
+
+impl DerefMut for SubTy {
+    fn deref_mut(&mut self) -> &mut Self::Target { self.0.deref_mut() }
 }
 
 impl From<Ty> for SubTy {
@@ -101,6 +119,19 @@ pub struct Field {
 
 impl Field {
     pub fn new(name: FieldName, value: u8) -> Field { Field { name, value } }
+
+    pub fn none() -> Field {
+        Field {
+            name: FieldName::from("None"),
+            value: 0,
+        }
+    }
+    pub fn some() -> Field {
+        Field {
+            name: FieldName::from("Some"),
+            value: 1,
+        }
+    }
 }
 
 impl PartialEq for Field {
@@ -142,6 +173,7 @@ impl<Ref: TypeRef> From<TyInner<Ref>> for Ty<Ref> {
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub(crate) fn into_inner(self) -> TyInner<Ref> { self.0 }
+    pub(crate) fn as_inner(&self) -> &TyInner<Ref> { &self.0 }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -205,6 +237,8 @@ impl<Ref: TypeRef> Ty<Ref> {
         // TODO: Check for AST size
         Ty(TyInner::Map(key, val, sizing))
     }
+
+    pub fn is_primitive(&self) -> bool { matches!(self.as_inner(), TyInner::Primitive(_)) }
 }
 
 impl Ty {
@@ -219,12 +253,52 @@ impl Ty {
     }
 }
 
+impl Ty<StenType> {
+    pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(StenType::byte(), len)) }
+    pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::byte(), sizing)) }
+    pub fn option(ty: StenType) -> Self {
+        // TODO: Check for AST size
+        Ty(TyInner::Union(fields![
+            "None" => StenType::unit(),
+            "Some" => ty
+        ]))
+    }
+}
+
+impl<Ref: TypeRef> Display for Ty<Ref>
+where Ref: Display
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self.as_inner() {
+            TyInner::Primitive(prim) => Display::fmt(prim, f),
+            TyInner::Enum(vars) => Display::fmt(vars, f),
+            TyInner::Union(fields) => {
+                if fields.len() == 2
+                    && fields.contains_key(&Field::none())
+                    && fields.contains_key(&Field::some())
+                {
+                    write!(f, "{}?", fields.get(&Field::some()).expect("optional"))
+                } else {
+                    Display::fmt(fields, f)
+                }
+            }
+            TyInner::Struct(fields) => Display::fmt(fields, f),
+            TyInner::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
+            TyInner::Ascii(sizing) => write!(f, "[Ascii{}]", sizing),
+            TyInner::Unicode(sizing) => write!(f, "[Char{}]", sizing),
+            TyInner::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
+            TyInner::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
+            TyInner::Map(key, ty, sizing) => write!(f, "{{{}{}}} -> [{}]", key, sizing, ty),
+        }
+    }
+}
+
 impl Ty {
-    pub fn try_into_key_ty(self) -> Result<KeyTy, TyInner> {
+    pub fn try_into_key(self) -> Result<KeyTy, TyInner> {
         Ok(match self.0 {
             TyInner::Primitive(code) => KeyTy::Primitive(code),
             TyInner::Enum(vars) => KeyTy::Enum(vars),
-            TyInner::Array(ty, len) if **ty == Ty::BYTE => KeyTy::Array(len),
+            TyInner::Array(ty, len) if *ty == Ty::BYTE => KeyTy::Array(len),
             TyInner::Ascii(sizing) => KeyTy::Ascii(sizing),
             TyInner::Unicode(sizing) => KeyTy::Unicode(sizing),
             me @ TyInner::Union(_)
@@ -252,7 +326,7 @@ pub enum TyInner<Ref: TypeRef = SubTy> {
     Map(KeyTy, Ref, Sizing),
 }
 
-impl TyInner<SubTy> {
+impl<Ref: RecursiveRef> TyInner<Ref> {
     pub fn size(&self) -> Size {
         match self {
             TyInner::Primitive(UNIT) | TyInner::Primitive(BYTE) | TyInner::Primitive(CHAR) => {
@@ -279,12 +353,14 @@ impl TyInner<SubTy> {
 ///
 /// The type is always guaranteed to fit strict encoding AST serialization
 /// bounds since it doesn't has a dynamically-sized types.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Clone, PartialEq, Eq, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[display(inner)]
 pub enum KeyTy {
     Primitive(Primitive),
     Enum(Variants),
     /// Fixed-size byte array
+    #[display("[Byte ^ {0}]")]
     Array(u16),
     Ascii(Sizing),
     Unicode(Sizing),
@@ -368,10 +444,10 @@ impl Display for Variants {
         let mut iter = self.iter();
         let last = iter.next_back();
         for variant in iter {
-            write!(f, "{}, ", variant)?;
+            write!(f, "{} U8 | ", variant)?;
         }
         if let Some(variant) = last {
-            write!(f, "{}", variant)?;
+            write!(f, "{} U8", variant)?;
         }
         Ok(())
     }

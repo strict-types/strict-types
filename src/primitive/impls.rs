@@ -16,13 +16,13 @@ use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
 use crate::util::Sizing;
-use crate::{StenType, Ty};
+use crate::{StenSchema, StenType, Ty};
 
 macro_rules! st_impl {
     ($name:ident, $ty:ty) => {
-        impl StenType for $ty {
+        impl StenSchema for $ty {
             const STEN_TYPE_NAME: &'static str = stringify!($name);
-            fn sten_type() -> Ty { Ty::$name }
+            fn sten_ty() -> Ty<StenType> { Ty::$name }
         }
     };
 }
@@ -58,20 +58,20 @@ st_impl!(F256, ieee::Oct);
 // We can't restrict max value for the const expression, however we will have a
 // panic on `as u16` in the implementation, so the StenType for arrays longer
 // than u16::MAX will not be resolvable.
-impl<const LEN: usize> StenType for [u8; LEN] {
-    const STEN_TYPE_NAME: &'static str = stringify!("[Byte ^ ", LEN, "]");
+impl<const LEN: usize> StenSchema for [u8; LEN] {
+    const STEN_TYPE_NAME: &'static str = "Bytes";
 
-    fn sten_type() -> Ty { Ty::byte_array(LEN as u16) }
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(LEN as u16) }
 }
 
-impl StenType for () {
+impl StenSchema for () {
     const STEN_TYPE_NAME: &'static str = "()";
 
-    fn sten_type() -> Ty { Ty::UNIT }
+    fn sten_ty() -> Ty<StenType> { Ty::UNIT }
 }
 
-impl<const MIN: usize, const MAX: usize> StenType for Confined<AsciiString, MIN, MAX> {
-    const STEN_TYPE_NAME: &'static str = stringify!("[Ascii ^ ", MIN, "..=", MAX, "]");
+impl<const MIN: usize, const MAX: usize> StenSchema for Confined<AsciiString, MIN, MAX> {
+    const STEN_TYPE_NAME: &'static str = "AsciiString";
 
-    fn sten_type() -> Ty { Ty::ascii(Sizing::new(MIN as u16, MAX as u16)) }
+    fn sten_ty() -> Ty<StenType> { Ty::ascii(Sizing::new(MIN as u16, MAX as u16)) }
 }

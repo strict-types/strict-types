@@ -10,6 +10,7 @@
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
 use std::cmp::Ordering;
+use std::fmt::{self, Display, Formatter};
 use std::iter::Sum;
 use std::ops::{Add, AddAssign};
 
@@ -37,14 +38,13 @@ impl From<&'static str> for TypeName {
             AsciiString::from_ascii(s)
                 .map_err(|_| confinement::Error::Oversize { len: 0, max_len: 0 })
                 .and_then(Confined::try_from)
-                .expect("invalid static string for TypeName"),
+                .expect(&format!("invalid static string '{}' for TypeName", s)),
         )
     }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[display("{min}..{max}")]
 pub struct Sizing {
     pub min: u16,
     pub max: u16,
@@ -67,6 +67,16 @@ impl Sizing {
     };
 
     pub const fn new(min: u16, max: u16) -> Self { Sizing { min, max } }
+}
+
+impl Display for Sizing {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match (self.min, self.max) {
+            (0, u16::MAX) => Ok(()),
+            (min, u16::MAX) => write!(f, " ^ {}..", min),
+            (min, max) => write!(f, " ^ {}..{:#04x}", min, max),
+        }
+    }
 }
 
 /// Measure of a type size in bytes
