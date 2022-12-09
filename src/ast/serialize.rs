@@ -13,6 +13,7 @@ use amplify::confinement::MediumVec;
 
 use super::inner::TyInner;
 use super::Ty;
+use crate::KeyTy;
 
 pub enum DecodeError {}
 
@@ -78,6 +79,19 @@ impl TyInner {
             TyInner::List(_, _) => Cls::List,
             TyInner::Set(_, _) => Cls::Set,
             TyInner::Map(_, _, _) => Cls::Map,
+        }
+    }
+}
+
+impl KeyTy {
+    pub const fn cls(&self) -> Cls {
+        match self {
+            KeyTy::Primitive(_) => Cls::Primitive,
+            KeyTy::Enum(_) => Cls::Enum,
+            KeyTy::Array(_) => Cls::Array,
+            KeyTy::Ascii(_) => Cls::Ascii,
+            KeyTy::Unicode(_) => Cls::Unicode,
+            KeyTy::Bytes(_) => Cls::List,
         }
     }
 }

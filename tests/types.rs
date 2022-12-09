@@ -115,4 +115,8 @@ impl StenType for Complex {
 }
 
 #[test]
-fn serialize() { println!("{}", serde_yaml::to_string(&Complex::sten_type()).unwrap()) }
+fn serialize() {
+    let ty = Complex::sten_type();
+    println!("{}\n", ty.id());
+    println!("{}", serde_yaml::to_string(&ty).unwrap())
+}
