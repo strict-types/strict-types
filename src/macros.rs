@@ -11,7 +11,7 @@
 
 #[macro_export]
 macro_rules! fields {
-    { $($key:expr => $value:expr),+ } => {
+    { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
@@ -24,7 +24,7 @@ macro_rules! fields {
 
 #[macro_export]
 macro_rules! alternatives {
-    { $($key:expr => $val:expr => $ty:expr),+ } => {
+    { $($key:expr => $val:expr => $ty:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
@@ -37,7 +37,7 @@ macro_rules! alternatives {
 
 #[macro_export]
 macro_rules! variants {
-    { $($key:expr => $value:expr),+ } => {
+    { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeSet::new();
             $(
