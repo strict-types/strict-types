@@ -9,14 +9,10 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+//! DTL stands for "Data type library".
+
 mod ty;
 mod id;
+mod compile;
+mod decompile;
 mod serialize;
-
-pub use ty::{Alternative, Alternatives, FieldName, Fields, KeyTy, Ty, Variant, Variants};
-
-pub mod inner {
-    pub use ty::TyInner;
-
-    use super::ty;
-}

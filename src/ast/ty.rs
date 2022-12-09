@@ -21,7 +21,7 @@ use crate::primitive::constants::*;
 use crate::primitive::NumInfo;
 use crate::util::{Size, Sizing};
 
-pub type TypeName = Confined<AsciiString, 1, 32>;
+pub type FieldName = Confined<AsciiString, 1, 32>;
 
 /// Provides guarantees that the type information fits maximum type size
 /// requirements, i.e. the serialized AST does not exceed `u24::MAX` bytes.
@@ -167,7 +167,7 @@ pub enum KeyTy {
     Bytes(Sizing),
 }
 
-pub type Alternatives = Confined<BTreeMap<TypeName, Alternative>, 1, { u8::MAX as usize }>;
+pub type Alternatives = Confined<BTreeMap<FieldName, Alternative>, 1, { u8::MAX as usize }>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
@@ -185,19 +185,19 @@ impl Alternative {
     }
 }
 
-pub type Fields = Confined<BTreeMap<TypeName, Box<Ty>>, 1, { u8::MAX as usize }>;
+pub type Fields = Confined<BTreeMap<FieldName, Box<Ty>>, 1, { u8::MAX as usize }>;
 
 pub type Variants = Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>;
 
 #[derive(Clone, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Variant {
-    pub name: TypeName,
+    pub name: FieldName,
     pub value: u8,
 }
 
 impl Variant {
-    pub fn new(name: TypeName, value: u8) -> Variant { Variant { name, value } }
+    pub fn new(name: FieldName, value: u8) -> Variant { Variant { name, value } }
 }
 
 impl PartialEq for Variant {

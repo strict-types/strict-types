@@ -18,6 +18,7 @@ mod macros;
 mod util;
 pub mod primitive;
 pub mod ast;
+pub mod dtl;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;

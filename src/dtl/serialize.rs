@@ -8,15 +8,3 @@
 //
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
-
-mod ty;
-mod id;
-mod serialize;
-
-pub use ty::{Alternative, Alternatives, FieldName, Fields, KeyTy, Ty, Variant, Variants};
-
-pub mod inner {
-    pub use ty::TyInner;
-
-    use super::ty;
-}

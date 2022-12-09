@@ -13,8 +13,7 @@ use std::io::Write;
 use std::ops::Deref;
 
 use crate::ast::inner::TyInner;
-use crate::ast::ty::TypeName;
-use crate::ast::{Alternative, Alternatives, Fields, Ty, Variant, Variants};
+use crate::ast::{Alternative, Alternatives, FieldName, Fields, Ty, Variant, Variants};
 use crate::util::Sizing;
 use crate::KeyTy;
 
@@ -147,6 +146,6 @@ impl TyCommit for Fields {
     }
 }
 
-impl TyCommit for TypeName {
+impl TyCommit for FieldName {
     fn ty_commit(&self, hasher: &mut TyHasher) { hasher.input(self.as_bytes()) }
 }
