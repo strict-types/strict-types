@@ -17,6 +17,18 @@ pub mod primitive;
 pub mod ty;
 #[macro_use]
 mod macros;
+mod path;
 
+pub use path::{Path, PathError, Step, TyIter};
 pub use ty::{KeyTy, Ty};
 pub use util::TypeName;
+
+/// A type which can be deterministically represented in terms of
+/// strict encoding schema.
+pub trait StenType {
+    /// Strict encoding type name.
+    const STEN_TYPE_NAME: &'static str;
+
+    /// Returns type representing strict encoding of the data.
+    fn sten_type() -> Ty;
+}
