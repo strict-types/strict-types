@@ -11,7 +11,7 @@
 
 use amplify::confinement::{SmallVec, TinyOrdSet};
 
-use crate::Ty;
+use crate::TyInner;
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Step {
@@ -37,31 +37,31 @@ impl Path {
 #[derive(Debug, Display, Error)]
 #[display("")]
 pub struct PathError<'ty> {
-    pub ty: &'ty Ty,
+    pub ty: &'ty TyInner,
     pub path: Path,
 }
 
 impl<'ty> PathError<'ty> {
-    pub fn new(ty: &'ty Ty, path: Path) -> Self { PathError { ty, path } }
+    pub fn new(ty: &'ty TyInner, path: Path) -> Self { PathError { ty, path } }
 }
 
-impl Ty {
-    pub fn path(&self, path: &Path) -> Result<&Ty, PathError> {
+impl TyInner {
+    pub fn path(&self, path: &Path) -> Result<&TyInner, PathError> {
         let mut ty = self;
         let mut path = path.clone();
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
             path_so_far.push(step).expect("confinement collection guarantees");
             ty = match (self, step) {
-                (Ty::Struct(fields), Step::Field(name)) => fields.get(name).map(Box::as_ref),
-                (Ty::Union(variants), Step::Alt(name)) => {
+                (TyInner::Struct(fields), Step::Field(name)) => fields.get(name).map(Box::as_ref),
+                (TyInner::Union(variants), Step::Alt(name)) => {
                     variants.get(name).map(|alt| alt.ty.as_ref())
                 }
-                (Ty::Array(_, len), Step::Index(index)) if index >= *len => None,
-                (Ty::Array(ty, _), Step::Index(_)) => Some(ty.as_ref()),
-                (Ty::List(ty, _), Step::List) => Some(ty.as_ref()),
-                (Ty::Set(ty, _), Step::Set) => Some(ty.as_ref()),
-                (Ty::Map(_, ty, _), Step::Map) => Some(ty.as_ref()),
+                (TyInner::Array(_, len), Step::Index(index)) if index >= *len => None,
+                (TyInner::Array(ty, _), Step::Index(_)) => Some(ty.as_ref()),
+                (TyInner::List(ty, _), Step::List) => Some(ty.as_ref()),
+                (TyInner::Set(ty, _), Step::Set) => Some(ty.as_ref()),
+                (TyInner::Map(_, ty, _), Step::Map) => Some(ty.as_ref()),
                 (_, _) => None,
             }
             .ok_or_else(|| PathError::new(self, path_so_far.clone()))?;
@@ -71,13 +71,13 @@ impl Ty {
 }
 
 pub struct TyIter {
-    ty: Ty,
+    ty: TyInner,
     fields: TinyOrdSet<&'static str>,
     current: Path,
 }
 
 impl TyIter {
-    pub fn check(&mut self, ty: &Ty) {
+    pub fn check(&mut self, ty: &TyInner) {
         let real_ty = self.ty.path(&self.current).expect("non-existing path");
         assert_eq!(real_ty, ty, "type mismatch");
     }
@@ -90,8 +90,8 @@ impl TyIter {
     }
 }
 
-impl From<Ty> for TyIter {
-    fn from(ty: Ty) -> Self {
+impl From<TyInner> for TyIter {
+    fn from(ty: TyInner) -> Self {
         TyIter {
             ty,
             fields: empty!(),

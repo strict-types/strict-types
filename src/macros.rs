@@ -17,7 +17,7 @@ macro_rules! fields {
             $(
                 assert!(m.insert($key, Box::new($value)).is_none(), "repeated field");
             )+
-            $crate::ty::Fields::try_from(m).expect("too many fields")
+            $crate::ast::Fields::try_from(m).expect("too many fields")
         }
     }
 }
@@ -28,9 +28,9 @@ macro_rules! alternatives {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($key, $crate::ty::Alternative::new($val, $ty)).is_none(), "repeated union alternative");
+                assert!(m.insert($key, $crate::ast::Alternative::new($val, $ty)).is_none(), "repeated union alternative");
             )+
-            $crate::ty::Alternatives::try_from(m).expect("too many union alternatives")
+            $crate::ast::Alternatives::try_from(m).expect("too many union alternatives")
         }
     }
 }
@@ -41,9 +41,9 @@ macro_rules! variants {
         {
             let mut m = ::std::collections::BTreeSet::new();
             $(
-                assert!(m.insert($crate::ty::Variant::new($key, $value)), "repeated enum variant");
+                assert!(m.insert($crate::ast::Variant::new($key, $value)), "repeated enum variant");
             )+
-            $crate::ty::Variants::try_from(m).expect("too many enum variants")
+            $crate::ast::Variants::try_from(m).expect("too many enum variants")
         }
     }
 }

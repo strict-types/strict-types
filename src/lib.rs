@@ -14,13 +14,13 @@ extern crate amplify;
 
 mod util;
 pub mod primitive;
-pub mod ty;
+pub mod ast;
 #[macro_use]
 mod macros;
 mod path;
 
+pub use ast::{KeyTy, TyInner};
 pub use path::{Path, PathError, Step, TyIter};
-pub use ty::{KeyTy, Ty};
 pub use util::TypeName;
 
 /// A type which can be deterministically represented in terms of
@@ -30,5 +30,5 @@ pub trait StenType {
     const STEN_TYPE_NAME: &'static str;
 
     /// Returns type representing strict encoding of the data.
-    fn sten_type() -> Ty;
+    fn sten_type() -> TyInner;
 }
