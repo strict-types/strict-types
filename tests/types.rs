@@ -19,9 +19,12 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+#[macro_use]
+extern crate stens;
+
 use amplify::confinement::TinyAscii;
 use stens::ast::Ty;
-use stens::{alternatives, fields, variants, StenType};
+use stens::StenType;
 
 #[repr(u8)]
 pub enum Prim {
@@ -112,4 +115,4 @@ impl StenType for Complex {
 }
 
 #[test]
-fn serialize() { println!("{:#?}", Complex::sten_type()) }
+fn serialize() { println!("{}", serde_yaml::to_string(&Complex::sten_type()).unwrap()) }

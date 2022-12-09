@@ -14,12 +14,12 @@ use std::ops::Deref;
 use amplify::confinement::{SmallVec, TinyOrdSet};
 
 use crate::ast::inner::TyInner;
-use crate::Ty;
+use crate::{Ty, TypeName};
 
-#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Step {
-    Field(&'static str),
-    Alt(&'static str),
+    Field(TypeName),
+    Alt(TypeName),
     Index(u16),
     List,
     Set,
@@ -54,20 +54,20 @@ impl Ty {
         let mut path = path.clone();
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
-            path_so_far.push(step).expect("confinement collection guarantees");
-            ty = match (self.deref(), step) {
+            let res = match (self.deref(), &step) {
                 (TyInner::Struct(fields), Step::Field(name)) => fields.get(name).map(Box::as_ref),
                 (TyInner::Union(variants), Step::Alt(name)) => {
                     variants.get(name).map(|alt| alt.ty.as_ref())
                 }
-                (TyInner::Array(_, len), Step::Index(index)) if index >= *len => None,
+                (TyInner::Array(_, len), Step::Index(index)) if index >= len => None,
                 (TyInner::Array(ty, _), Step::Index(_)) => Some(ty.as_ref()),
                 (TyInner::List(ty, _), Step::List) => Some(ty.as_ref()),
                 (TyInner::Set(ty, _), Step::Set) => Some(ty.as_ref()),
                 (TyInner::Map(_, ty, _), Step::Map) => Some(ty.as_ref()),
                 (_, _) => None,
-            }
-            .ok_or_else(|| PathError::new(self, path_so_far.clone()))?;
+            };
+            path_so_far.push(step).expect("confinement collection guarantees");
+            ty = res.ok_or_else(|| PathError::new(self, path_so_far.clone()))?;
         }
         Ok(ty)
     }

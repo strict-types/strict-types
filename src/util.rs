@@ -40,6 +40,7 @@ impl From<&'static str> for TypeName {
 // TODO: Replace with Range<usize>
 // TODO: Use u16
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Sizing {
     pub min: u16,
     pub max: u16,

@@ -12,11 +12,12 @@
 #[macro_use]
 extern crate amplify;
 
+#[macro_use]
+mod macros;
+
 mod util;
 pub mod primitive;
 pub mod ast;
-#[macro_use]
-mod macros;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;

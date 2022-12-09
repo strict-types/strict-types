@@ -13,6 +13,7 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::ops::Deref;
 
+use amplify::ascii::AsciiString;
 use amplify::confinement::Confined;
 
 use crate::alternatives;
@@ -20,9 +21,16 @@ use crate::primitive::constants::*;
 use crate::primitive::NumInfo;
 use crate::util::{Size, Sizing};
 
+pub type TypeName = Confined<AsciiString, 1, 32>;
+
 /// Provides guarantees that the type information fits maximum type size
 /// requirements, i.e. the serialized AST does not exceed `u24::MAX` bytes.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
 pub struct Ty(TyInner);
 
 impl Deref for Ty {
@@ -106,6 +114,7 @@ impl Ty {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum TyInner {
     Primitive(u8),
     Enum(Variants),
@@ -147,6 +156,7 @@ impl TyInner {
 /// The type is always guaranteed to fit strict encoding AST serialization
 /// bounds since it doesn't has a dynamically-sized types.
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum KeyTy {
     Primitive(u8),
     Enum(Variants),
@@ -157,9 +167,10 @@ pub enum KeyTy {
     Bytes(Sizing),
 }
 
-pub type Alternatives = Confined<BTreeMap<&'static str, Alternative>, 1, { u8::MAX as usize }>;
+pub type Alternatives = Confined<BTreeMap<TypeName, Alternative>, 1, { u8::MAX as usize }>;
 
 #[derive(Clone, PartialEq, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Alternative {
     pub id: u8,
     pub ty: Box<Ty>,
@@ -174,18 +185,19 @@ impl Alternative {
     }
 }
 
-pub type Fields = Confined<BTreeMap<&'static str, Box<Ty>>, 1, { u8::MAX as usize }>;
+pub type Fields = Confined<BTreeMap<TypeName, Box<Ty>>, 1, { u8::MAX as usize }>;
 
 pub type Variants = Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>;
 
-#[derive(Copy, Clone, Eq, Debug)]
+#[derive(Clone, Eq, Debug)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Variant {
-    pub name: &'static str,
+    pub name: TypeName,
     pub value: u8,
 }
 
 impl Variant {
-    pub fn new(name: &'static str, value: u8) -> Variant { Variant { name, value } }
+    pub fn new(name: TypeName, value: u8) -> Variant { Variant { name, value } }
 }
 
 impl PartialEq for Variant {
