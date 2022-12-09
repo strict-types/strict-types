@@ -12,4 +12,5 @@ readme = "README.md"
 exclude = [".github", "contrib"]
 
 [dependencies]
-amplify = "4.0.0-beta.6"
+amplify = { version = "4.0.0-beta.6", features = ["apfloat"] }
+half = "2.1.0"

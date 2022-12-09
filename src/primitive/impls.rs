@@ -9,6 +9,10 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+use amplify::num::apfloat::ieee;
+use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
+use half::bf16;
+
 use crate::{StenType, Ty};
 
 macro_rules! st_impl {
@@ -21,3 +25,38 @@ macro_rules! st_impl {
 }
 
 st_impl!(U8, u8);
+st_impl!(U16, u16);
+st_impl!(U24, u24);
+st_impl!(U32, u32);
+st_impl!(U64, u64);
+st_impl!(U128, u128);
+st_impl!(U256, u256);
+st_impl!(U512, u512);
+st_impl!(U1024, u1024);
+
+st_impl!(I8, i8);
+st_impl!(I16, i16);
+//st_impl!(I24, i24);
+st_impl!(I32, i32);
+st_impl!(I64, i64);
+st_impl!(I128, i128);
+st_impl!(I256, i256);
+st_impl!(I512, i512);
+st_impl!(I1024, i1024);
+
+st_impl!(F16B, bf16);
+st_impl!(F16, ieee::Half);
+st_impl!(F32, ieee::Single);
+st_impl!(F64, ieee::Double);
+st_impl!(F80, ieee::X87DoubleExtended);
+st_impl!(F128, ieee::Quad);
+st_impl!(F256, ieee::Oct);
+
+// We can't restrict max value for the const expression, however we will have a
+// panic on `as u16` in the implementation, so the StenType for arrays longer
+// than u16::MAX will not be resolvable.
+impl<const LEN: usize> StenType for [u8; LEN] {
+    const STEN_TYPE_NAME: &'static str = stringify!("[Byte ^ ", LEN, "]");
+
+    fn sten_type() -> Ty { Ty::byte_array(LEN as u16) }
+}
