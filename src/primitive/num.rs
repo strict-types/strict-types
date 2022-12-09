@@ -10,6 +10,34 @@ pub struct NumInfo {
 }
 
 impl NumInfo {
+    pub fn unsigned(bytes: u16) -> Self {
+        NumInfo {
+            ty: NumTy::Unsigned,
+            size: NumSize::from_bytes(bytes),
+        }
+    }
+
+    pub fn signed(bytes: u16) -> Self {
+        NumInfo {
+            ty: NumTy::Signed,
+            size: NumSize::from_bytes(bytes),
+        }
+    }
+
+    pub fn non_zero(bytes: u16) -> Self {
+        NumInfo {
+            ty: NumTy::NonZero,
+            size: NumSize::from_bytes(bytes),
+        }
+    }
+
+    pub fn float(bytes: u16) -> Self {
+        NumInfo {
+            ty: NumTy::Float,
+            size: NumSize::from_bytes(bytes),
+        }
+    }
+
     pub fn from_code(id: u8) -> Self {
         NumInfo {
             ty: NumTy::from_code(id),
@@ -33,6 +61,21 @@ pub enum NumSize {
 }
 
 impl NumSize {
+    pub fn from_bytes(bytes: u16) -> Self {
+        if bytes < 0x20 {
+            NumSize::Bytes(u5::try_from(bytes as u8).expect("< 0x20"))
+        } else if bytes % 16 != 0 {
+            panic!(
+                "for more than 256 bits it is required to have the number of bits proportional to \
+                 128"
+            )
+        } else {
+            NumSize::Factored(
+                u5::try_from((bytes / 16 - 2) as u8).expect("number of bytes too high"),
+            )
+        }
+    }
+
     pub fn from_code(id: u8) -> Self {
         let code = id & 0x1F;
         match id & 0x20 / 0x20 {
