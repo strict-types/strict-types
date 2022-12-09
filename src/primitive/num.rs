@@ -90,7 +90,7 @@ pub enum NumTy {
 }
 
 impl NumTy {
-    pub fn from_code(id: u8) -> Self {
+    pub const fn from_code(id: u8) -> Self {
         match id & 0xC0 {
             x if x == NumTy::Unsigned as u8 => NumTy::Unsigned,
             x if x == NumTy::Signed as u8 => NumTy::Signed,
@@ -100,5 +100,5 @@ impl NumTy {
         }
     }
 
-    pub fn into_code(self) -> u8 { self as u8 }
+    pub const fn into_code(self) -> u8 { self as u8 }
 }

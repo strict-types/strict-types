@@ -16,3 +16,5 @@ mod id;
 mod compile;
 mod decompile;
 mod serialize;
+
+pub use ty::{EnumDef, FieldDef, KeyDef, TypeDef, TypeLib, TypeName, TypeRef};

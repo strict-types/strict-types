@@ -107,7 +107,7 @@ impl TyCommit for Sizing {
 impl TyCommit for Variants {
     fn ty_commit(&self, hasher: &mut TyHasher) {
         hasher.input([self.len_u8()]);
-        for var in self {
+        for var in self.deref() {
             var.ty_commit(hasher);
         }
     }

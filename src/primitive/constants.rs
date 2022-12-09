@@ -9,6 +9,8 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+use std::fmt::{self, Display, Formatter, Write};
+
 use crate::primitive::{NumInfo, NumSize, NumTy};
 
 pub const U8: Primitive = Primitive::unsigned(1);
@@ -162,4 +164,26 @@ impl Primitive {
     pub fn info(self) -> NumInfo { NumInfo::from_code(self.0) }
 
     pub fn size(self) -> u16 { self.info().size() }
+}
+
+impl Display for Primitive {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match *self {
+            UNIT => return f.write_str("()"),
+            BYTE => return f.write_str("Byte"),
+            CHAR => return f.write_str("Char"),
+            F16B => return f.write_str("F16b"),
+            _ => {}
+        }
+
+        let info = self.info();
+        f.write_char(match info.ty {
+            NumTy::Unsigned => 'U',
+            NumTy::Signed => 'I',
+            NumTy::NonZero => 'N',
+            NumTy::Float => 'F',
+        })?;
+
+        write!(f, "{}", info.size())
+    }
 }

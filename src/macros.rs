@@ -40,7 +40,7 @@ macro_rules! alternatives {
             $(
                 assert!(m.insert(tn!($key), $crate::ast::Alternative::new($val, $ty)).is_none(), "repeated union alternative");
             )+
-            $crate::ast::Alternatives::try_from(m).expect("too many union alternatives")
+            amplify::confinement::Confined::try_from(m).expect("too many union alternatives").into()
         }
     }
 }
@@ -53,7 +53,7 @@ macro_rules! variants {
             $(
                 assert!(m.insert($crate::ast::Variant::new(tn!($key), $value)), "repeated enum variant");
             )+
-            $crate::ast::Variants::try_from(m).expect("too many enum variants")
+            amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
     }
 }

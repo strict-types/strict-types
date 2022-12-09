@@ -10,29 +10,41 @@
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
 use std::collections::BTreeMap;
+use std::fmt::{self, Display, Formatter};
 
 use amplify::ascii::AsciiString;
 use amplify::confinement::{Confined, SmallOrdMap};
 
-use crate::ast::{Alternative, FieldName, Variants};
+use crate::ast::{FieldName, Variants};
+use crate::primitive::Primitive;
 use crate::util::Sizing;
 
 pub type TypeName = Confined<AsciiString, 1, 32>;
 pub type TypeRef = TypeName;
 
 pub struct TypeLib {
-    types: SmallOrdMap<TypeName, TypeDef>,
+    pub types: SmallOrdMap<TypeName, TypeDef>,
 }
 
 pub type EnumDef = Variants;
-pub type UnionDef = Confined<BTreeMap<TypeRef, Alternative>, 1, { u8::MAX as usize }>;
-pub type StructDef = Confined<BTreeMap<FieldName, TypeRef>, 1, { u8::MAX as usize }>;
 
+#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[wrapper(Deref)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct FieldDef(Confined<BTreeMap<FieldName, TypeRef>, 1, { u8::MAX as usize }>);
+
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display(inner)]
 pub enum TypeDef {
-    Primitive(u8),
+    Primitive(Primitive),
     Enum(EnumDef),
-    Union(UnionDef),
-    Struct(StructDef),
+    Union(FieldDef),
+    Struct(FieldDef),
     Array(TypeRef, u16),
     Ascii(Sizing),
     Unicode(Sizing),
@@ -41,12 +53,28 @@ pub enum TypeDef {
     Map(KeyDef, TypeRef, Sizing),
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display(inner)]
 pub enum KeyDef {
-    Primitive(u8),
+    Primitive(Primitive),
     Enum(TypeRef),
     /// Fixed-size byte array
     Array(u16),
     Ascii(Sizing),
     Unicode(Sizing),
     Bytes(Sizing),
+}
+
+impl Display for FieldDef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut iter = self.iter();
+        let last = iter.next_back();
+        for (name, ty_ref) in iter {
+            write!(f, "{} {}, ", name, ty_ref)?;
+        }
+        if let Some((name, ty_ref)) = last {
+            write!(f, "{} {}", name, ty_ref)?;
+        }
+        Ok(())
+    }
 }

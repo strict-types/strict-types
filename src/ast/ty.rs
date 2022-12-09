@@ -11,12 +11,12 @@
 
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{self, Display, Formatter};
 use std::ops::Deref;
 
 use amplify::ascii::AsciiString;
 use amplify::confinement::Confined;
 
-use crate::alternatives;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
 
@@ -186,10 +186,33 @@ impl Alternative {
 
 pub type Fields = Confined<BTreeMap<FieldName, Box<Ty>>, 1, { u8::MAX as usize }>;
 
-pub type Variants = Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>;
+#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[wrapper(Deref)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct Variants(Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>);
 
-#[derive(Clone, Eq, Debug)]
+impl Display for Variants {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut iter = self.iter();
+        let last = iter.next_back();
+        for variant in iter {
+            write!(f, "{}, ", variant)?;
+        }
+        if let Some(variant) = last {
+            write!(f, "{}", variant)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Eq, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[display("{name}={value}")]
 pub struct Variant {
     pub name: FieldName,
     pub value: u8,

@@ -37,10 +37,9 @@ impl From<&'static str> for TypeName {
     }
 }
 
-// TODO: Replace with Range<usize>
-// TODO: Use u16
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[display("{min}..{max}")]
 pub struct Sizing {
     pub min: u16,
     pub max: u16,
