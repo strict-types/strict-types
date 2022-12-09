@@ -13,4 +13,3 @@ exclude = [".github", "contrib"]
 
 [dependencies]
 amplify = "4.0.0-beta.6"
-confined_encoding = "0.9.0-alpha.5"
