@@ -32,65 +32,70 @@ impl Deref for Ty {
 }
 
 impl Ty {
-    pub const fn unit() -> Self { Ty(TyInner::Primitive(UNIT)) }
-    pub const fn byte() -> Self { Ty(TyInner::Primitive(BYTE)) }
-    pub const fn char() -> Self { Ty(TyInner::Primitive(CHAR)) }
+    pub const UNIT: Ty = Ty(TyInner::Primitive(UNIT));
+    pub const BYTE: Ty = Ty(TyInner::Primitive(BYTE));
+    pub const CHAR: Ty = Ty(TyInner::Primitive(CHAR));
 
-    pub const fn u8() -> Self { Ty(TyInner::Primitive(U8)) }
-    pub const fn u16() -> Self { Ty(TyInner::Primitive(U16)) }
-    pub const fn u24() -> Self { Ty(TyInner::Primitive(U24)) }
-    pub const fn u32() -> Self { Ty(TyInner::Primitive(U32)) }
-    pub const fn u64() -> Self { Ty(TyInner::Primitive(U64)) }
-    pub const fn u128() -> Self { Ty(TyInner::Primitive(U128)) }
-    pub const fn u256() -> Self { Ty(TyInner::Primitive(U256)) }
-    pub const fn u512() -> Self { Ty(TyInner::Primitive(U512)) }
-    pub const fn u1024() -> Self { Ty(TyInner::Primitive(U1024)) }
+    pub const U8: Ty = Ty(TyInner::Primitive(U8));
+    pub const U16: Ty = Ty(TyInner::Primitive(U16));
+    pub const U24: Ty = Ty(TyInner::Primitive(U24));
+    pub const U32: Ty = Ty(TyInner::Primitive(U32));
+    pub const U64: Ty = Ty(TyInner::Primitive(U64));
+    pub const U128: Ty = Ty(TyInner::Primitive(U128));
+    pub const U256: Ty = Ty(TyInner::Primitive(U256));
+    pub const U512: Ty = Ty(TyInner::Primitive(U512));
+    pub const U1024: Ty = Ty(TyInner::Primitive(U1024));
 
-    pub const fn i8() -> Self { Ty(TyInner::Primitive(I8)) }
-    pub const fn i16() -> Self { Ty(TyInner::Primitive(I16)) }
-    pub const fn i24() -> Self { Ty(TyInner::Primitive(I24)) }
-    pub const fn i32() -> Self { Ty(TyInner::Primitive(I32)) }
-    pub const fn i64() -> Self { Ty(TyInner::Primitive(I64)) }
-    pub const fn i128() -> Self { Ty(TyInner::Primitive(I128)) }
-    pub const fn i256() -> Self { Ty(TyInner::Primitive(I256)) }
-    pub const fn i512() -> Self { Ty(TyInner::Primitive(I512)) }
-    pub const fn i1024() -> Self { Ty(TyInner::Primitive(I1024)) }
+    pub const I8: Ty = Ty(TyInner::Primitive(I8));
+    pub const I16: Ty = Ty(TyInner::Primitive(I16));
+    pub const I24: Ty = Ty(TyInner::Primitive(I24));
+    pub const I32: Ty = Ty(TyInner::Primitive(I32));
+    pub const I64: Ty = Ty(TyInner::Primitive(I64));
+    pub const I128: Ty = Ty(TyInner::Primitive(I128));
+    pub const I256: Ty = Ty(TyInner::Primitive(I256));
+    pub const I512: Ty = Ty(TyInner::Primitive(I512));
+    pub const I1024: Ty = Ty(TyInner::Primitive(I1024));
 
-    pub const fn f16b() -> Self { Ty(TyInner::Primitive(F16B)) }
-    pub const fn f16() -> Self { Ty(TyInner::Primitive(F16)) }
-    pub const fn f32() -> Self { Ty(TyInner::Primitive(F32)) }
-    pub const fn f64() -> Self { Ty(TyInner::Primitive(F64)) }
-    pub const fn f80() -> Self { Ty(TyInner::Primitive(F80)) }
-    pub const fn f128() -> Self { Ty(TyInner::Primitive(F128)) }
-    pub const fn f256() -> Self { Ty(TyInner::Primitive(F256)) }
+    pub const F16B: Ty = Ty(TyInner::Primitive(F16B));
+    pub const F16: Ty = Ty(TyInner::Primitive(F16));
+    pub const F32: Ty = Ty(TyInner::Primitive(F32));
+    pub const F64: Ty = Ty(TyInner::Primitive(F64));
+    pub const F80: Ty = Ty(TyInner::Primitive(F80));
+    pub const F128: Ty = Ty(TyInner::Primitive(F128));
+    pub const F256: Ty = Ty(TyInner::Primitive(F256));
 
     pub fn enumerate(variants: Variants) -> Self { Ty(TyInner::Enum(variants)) }
 
-    pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Box::new(Ty::byte()), len)) }
+    pub fn union(alternatives: Alternatives) -> Self { Ty(TyInner::Union(alternatives)) }
 
-    pub fn bytes() -> Self { Ty(TyInner::List(Box::new(Ty::byte()), Sizing::U16)) }
+    pub fn option(ty: Ty) -> Self {
+        Ty(TyInner::Union(alternatives![
+            "None" => 0 => Ty::UNIT,
+            "Some" => 1 => ty
+        ]))
+    }
+
+    pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Box::new(Ty::BYTE), len)) }
+
+    pub fn bytes() -> Self { Ty(TyInner::List(Box::new(Ty::BYTE), Sizing::U16)) }
     pub fn list(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::List(Box::new(ty), sizing)) }
     pub fn set(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::Set(Box::new(ty), sizing)) }
     pub fn map(key: KeyTy, val: Ty, sizing: Sizing) -> Self {
         Ty(TyInner::Map(key, Box::new(val), sizing))
     }
+}
 
-    pub fn option(ty: Ty) -> Self {
-        Ty(TyInner::Union(alternatives![
-            "None" => 0 => Ty::unit(),
-            "Some" => 1 => ty
-        ]))
-    }
-
+impl Ty {
     pub fn try_into_key_ty(self) -> Result<KeyTy, TyInner> {
         Ok(match self.0 {
             TyInner::Primitive(code) => KeyTy::Primitive(code),
             TyInner::Enum(vars) => KeyTy::Enum(vars),
-            TyInner::Array(ty, len) => KeyTy::Array(ty, len),
+            TyInner::Array(ty, len) if *ty == Ty::BYTE => KeyTy::Array(len),
             TyInner::Ascii(sizing) => KeyTy::Ascii(sizing),
             TyInner::Unicode(sizing) => KeyTy::Unicode(sizing),
             me @ TyInner::Union(_)
             | me @ TyInner::Struct(_)
+            | me @ TyInner::Array(_, _)
             | me @ TyInner::List(_, _)
             | me @ TyInner::Set(_, _)
             | me @ TyInner::Map(_, _, _) => return Err(me),
