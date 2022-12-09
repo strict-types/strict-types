@@ -1,10 +1,10 @@
 // Strict encoding schema library, implementing validation and parsing of strict
 // encoded data against the schema.
 //
-// Written in 2022 by
-//     Dr. Maxim Orlovsky <orlovsky@lnp-bp.org>
+// Written in 2022-2023 by
+//     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright (C) 2022 by LNP/BP Standards Association, Switzerland.
+// Copyright (C) 2022-2023 by Ubideco Project.
 //
-// You should have received a copy of the MIT License along with this software.
-// If not, see <https://opensource.org/licenses/MIT>.
+// You should have received a copy of the Apache 2.0 License along with this
+// software. If not, see <https://opensource.org/licenses/Apache-2.0>.
