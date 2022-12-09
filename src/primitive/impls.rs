@@ -73,5 +73,5 @@ impl StenType for () {
 impl<const MIN: usize, const MAX: usize> StenType for Confined<AsciiString, MIN, MAX> {
     const STEN_TYPE_NAME: &'static str = stringify!("[Ascii ^ ", MIN, "..=", MAX, "]");
 
-    fn sten_type() -> Ty { Ty::ascii(Some(Sizing::new(MIN as u16, MAX as u16))) }
+    fn sten_type() -> Ty { Ty::ascii(Sizing::new(MIN as u16, MAX as u16)) }
 }

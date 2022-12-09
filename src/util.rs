@@ -41,36 +41,27 @@ impl From<&'static str> for TypeName {
 // TODO: Use u16
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 pub struct Sizing {
-    pub min: usize,
-    pub max: usize,
+    pub min: u16,
+    pub max: u16,
 }
 
 impl Sizing {
     pub const U8: Sizing = Sizing {
         min: 0,
-        max: u8::MAX as usize,
+        max: u8::MAX as u16,
     };
 
     pub const U16: Sizing = Sizing {
         min: 0,
-        max: u16::MAX as usize,
+        max: u16::MAX,
     };
 
     pub const U8_NONEMPTY: Sizing = Sizing {
         min: 1,
-        max: u8::MAX as usize,
+        max: u8::MAX as u16,
     };
 
-    pub const fn new(min: u16, max: u16) -> Self {
-        Sizing {
-            min: min as usize,
-            max: max as usize,
-        }
-    }
-}
-
-impl Default for Sizing {
-    fn default() -> Self { Sizing::new(0, u16::MAX) }
+    pub const fn new(min: u16, max: u16) -> Self { Sizing { min, max } }
 }
 
 /// Measure of a type size in bytes

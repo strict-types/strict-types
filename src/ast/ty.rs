@@ -76,10 +76,9 @@ impl Ty {
 
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Box::new(Ty::BYTE), len)) }
 
-    pub fn bytes() -> Self { Ty(TyInner::List(Box::new(Ty::BYTE), Sizing::U16)) }
-    pub fn ascii(sizing: Option<Sizing>) -> Self {
-        Ty(TyInner::List(Box::new(Ty::CHAR), sizing.unwrap_or_default()))
-    }
+    pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(Box::new(Ty::BYTE), sizing)) }
+    pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::Ascii(sizing)) }
+    pub fn string(sizing: Sizing) -> Self { Ty(TyInner::Unicode(sizing)) }
 
     pub fn list(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::List(Box::new(ty), sizing)) }
     pub fn set(ty: Ty, sizing: Sizing) -> Self { Ty(TyInner::Set(Box::new(ty), sizing)) }
