@@ -58,13 +58,6 @@ impl StenType {
         }
     }
 
-    pub fn char() -> StenType {
-        StenType {
-            name: "Ascii",
-            ty: Box::new(Ty::CHAR),
-        }
-    }
-
     pub fn new(name: &'static str, ty: Ty<StenType>) -> StenType {
         StenType {
             name,

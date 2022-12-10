@@ -9,8 +9,7 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
-use amplify::ascii::AsciiString;
-use amplify::confinement::Confined;
+use amplify::confinement::SmallVec;
 use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
@@ -70,8 +69,18 @@ impl StenSchema for () {
     fn sten_ty() -> Ty<StenType> { Ty::UNIT }
 }
 
-impl<const MIN: usize, const MAX: usize> StenSchema for Confined<AsciiString, MIN, MAX> {
-    const STEN_TYPE_NAME: &'static str = "AsciiString";
+impl<T> StenSchema for Option<T>
+where T: StenSchema
+{
+    const STEN_TYPE_NAME: &'static str = "Option";
 
-    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii(Sizing::new(MIN as u16, MAX as u16)) }
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::option(T::sten_type()) }
+}
+
+impl<T> StenSchema for SmallVec<T>
+where T: StenSchema
+{
+    const STEN_TYPE_NAME: &'static str = "SmallVec";
+
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::list(T::sten_type(), Sizing::U16) }
 }

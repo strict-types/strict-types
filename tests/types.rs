@@ -22,7 +22,7 @@
 #[macro_use]
 extern crate stens;
 
-use amplify::confinement::TinyAscii;
+use amplify::confinement::SmallVec;
 use stens::ast::Ty;
 use stens::{StenSchema, StenType};
 
@@ -36,7 +36,7 @@ pub enum Message {
     Init(u8),
     Ping,
     Pong,
-    Connect { host: TinyAscii },
+    Connect { host: Option<SmallVec<u8>> },
 }
 
 pub struct TypeA(u8, u16);
@@ -73,7 +73,7 @@ impl StenSchema for Message {
             "ping" => <()>::sten_type(),
             "pong" => <()>::sten_type(),
             "connect" => StenType::new("ConnectInner", Ty::composition(fields![
-                "host" => TinyAscii::sten_type(),
+                "host" => Option::<SmallVec<u8>>::sten_type(),
             ])),
         ])
     }
