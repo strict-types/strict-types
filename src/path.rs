@@ -18,8 +18,8 @@ use crate::{FieldName, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 pub enum Step {
-    Field(FieldName),
-    Alt(FieldName),
+    NamedField(FieldName),
+    UnnamedField(u8),
     Index(u16),
     List,
     Set,
@@ -55,11 +55,17 @@ impl Ty {
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
             let res = match (self.deref(), &step) {
-                (TyInner::Struct(fields), Step::Field(name)) => {
-                    fields.iter().find(|(f, _)| f.name == *name).map(|(_, ty)| ty)
+                (TyInner::Struct(fields), Step::NamedField(name)) => {
+                    fields.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
                 }
-                (TyInner::Union(variants), Step::Alt(name)) => {
-                    variants.iter().find(|(f, _)| f.name == *name).map(|(_, ty)| ty)
+                (TyInner::Union(variants), Step::NamedField(name)) => {
+                    variants.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
+                }
+                (TyInner::Struct(fields), Step::UnnamedField(ord)) => {
+                    fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
+                }
+                (TyInner::Union(variants), Step::UnnamedField(ord)) => {
+                    variants.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
                 }
                 (TyInner::Array(_, len), Step::Index(index)) if index >= len => None,
                 (TyInner::Array(ty, _), Step::Index(_)) => Some(ty),

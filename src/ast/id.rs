@@ -123,8 +123,10 @@ impl TyCommit for Variants {
 
 impl TyCommit for Field {
     fn ty_commit(&self, hasher: &mut TyHasher) {
-        self.name.ty_commit(hasher);
-        hasher.input([self.value]);
+        if let Some(name) = &self.name {
+            name.ty_commit(hasher);
+        }
+        hasher.input([self.ord]);
     }
 }
 

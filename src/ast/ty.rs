@@ -109,33 +109,49 @@ impl From<&'static str> for Ident {
 
 pub type FieldName = Ident;
 
-#[derive(Clone, Eq, Hash, Debug, Display)]
+#[derive(Clone, Eq, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[display("{name}")]
 pub struct Field {
-    pub name: FieldName,
-    pub value: u8,
+    pub name: Option<FieldName>,
+    pub ord: u8,
 }
 
 impl Field {
-    pub fn new(name: FieldName, value: u8) -> Field { Field { name, value } }
+    pub fn named(name: FieldName, value: u8) -> Field {
+        Field {
+            name: Some(name),
+            ord: value,
+        }
+    }
+    pub fn unnamed(value: u8) -> Field {
+        Field {
+            name: None,
+            ord: value,
+        }
+    }
 
     pub fn none() -> Field {
         Field {
-            name: FieldName::from("None"),
-            value: 0,
+            name: Some(FieldName::from("None")),
+            ord: 0,
         }
     }
     pub fn some() -> Field {
         Field {
-            name: FieldName::from("Some"),
-            value: 1,
+            name: Some(FieldName::from("Some")),
+            ord: 1,
         }
     }
 }
 
 impl PartialEq for Field {
-    fn eq(&self, other: &Self) -> bool { self.name == other.name || self.value == other.value }
+    fn eq(&self, other: &Self) -> bool {
+        match (&self.name, &other.name) {
+            (None, None) => self.ord == other.ord,
+            (Some(name1), Some(name2)) => name1 == name2 || self.ord == other.ord,
+            _ => false,
+        }
+    }
 }
 
 impl PartialOrd for Field {
@@ -147,7 +163,16 @@ impl Ord for Field {
         if self == other {
             return Ordering::Equal;
         }
-        self.value.cmp(&other.value)
+        self.ord.cmp(&other.ord)
+    }
+}
+
+impl Display for Field {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if let Some(name) = &self.name {
+            write!(f, "{} ", name)?;
+        }
+        Ok(())
     }
 }
 
@@ -428,10 +453,10 @@ where Ref: Display
         let mut iter = self.iter();
         let last = iter.next_back();
         for (field, ty) in iter {
-            write!(f, "{} {}{}", field, ty, sep)?;
+            write!(f, "{}{}{}", field, ty, sep)?;
         }
         if let Some((field, ty)) = last {
-            write!(f, "{} {}", field, ty)?;
+            write!(f, "{}{}", field, ty)?;
         }
         Ok(())
     }
@@ -466,10 +491,10 @@ impl Display for Variants {
         let mut iter = self.iter();
         let last = iter.next_back();
         for variant in iter {
-            write!(f, "{} | ", variant)?;
+            write!(f, "{}_ | ", variant)?;
         }
         if let Some(variant) = last {
-            write!(f, "{}", variant)?;
+            write!(f, "{}_", variant)?;
         }
         Ok(())
     }

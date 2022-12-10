@@ -82,12 +82,7 @@ impl StenSchema for Message {
 impl StenSchema for TypeA {
     const STEN_TYPE_NAME: &'static str = "TypeA";
 
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields![
-            "0" => u8::sten_type(),
-            "1" => u16::sten_type(),
-        ])
-    }
+    fn sten_ty() -> Ty<StenType> { Ty::composition(fields![u8::sten_type(), u16::sten_type(),]) }
 }
 
 impl StenSchema for TypeB {
