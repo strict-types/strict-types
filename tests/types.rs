@@ -112,9 +112,15 @@ impl StenSchema for Complex {
 #[test]
 fn serialize() {
     let root = Complex::sten_type();
-    let id = root.id();
     let lib = root.try_into_lib().unwrap();
 
-    println!("{}\n", id);
+    println!("----");
+    println!("{}", lib.id());
+    for (name, id) in &lib.roots {
+        println!("{} = {}", name, id);
+    }
+    println!("----");
+
+    println!();
     println!("{}", lib);
 }

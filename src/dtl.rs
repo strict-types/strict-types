@@ -11,11 +11,13 @@
 
 //! DTL stands for "Data type library".
 
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
+use std::io::Write;
 
 use amplify::confinement;
-use amplify::confinement::SmallOrdMap;
+use amplify::confinement::{SmallOrdMap, SmallOrdSet};
 
 use crate::ast::inner::TyInner;
 use crate::ast::TranslateError;
@@ -26,8 +28,36 @@ pub type TypeIndex = BTreeMap<TyId, TypeName>;
 impl TypeRef for TypeName {}
 impl TypeRef for TyId {}
 
+#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
+#[wrapper(Deref)]
+#[display("urn:ubideco:setl:{0}")]
+pub struct LibId(blake3::Hash);
+
+impl Ord for LibId {
+    fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
+}
+
+impl PartialOrd for LibId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+pub struct LibHasher(blake3::Hasher);
+
+pub const SETL_ID_TAG: [u8; 32] = [0u8; 32];
+
+impl LibHasher {
+    pub fn new() -> LibHasher { LibHasher(blake3::Hasher::new_keyed(&SETL_ID_TAG)) }
+
+    pub fn input(&mut self, id: TyId) {
+        self.0.write_all(id.as_bytes()).expect("hashers do  not error")
+    }
+
+    pub fn finish(self) -> LibId { LibId(self.0.finalize()) }
+}
+
 pub struct TypeLib {
     // TODO: Require at least 1 type in a type library
+    pub roots: SmallOrdMap<TypeName, TyId>,
     pub types: SmallOrdMap<TypeName, Ty<TypeName>>,
 }
 
@@ -37,6 +67,14 @@ impl TypeLib {
         mut index: BTreeMap<TyId, TypeName>,
     ) -> Result<Self, TranslateError> {
         table.translate(&mut index)
+    }
+
+    pub fn id(&self) -> LibId {
+        let mut hasher = LibHasher::new();
+        for id in self.roots.values() {
+            hasher.input(*id);
+        }
+        hasher.finish()
     }
 }
 
@@ -51,6 +89,7 @@ impl Display for TypeLib {
 
 pub struct TypeTable {
     // TODO: Require at least 1 type in a type library
+    pub roots: SmallOrdSet<TyId>,
     pub types: SmallOrdMap<TyId, Ty<TyId>>,
 }
 
@@ -62,7 +101,11 @@ impl TryFrom<Ty> for TypeTable {
         let id = root.id();
         let ty = root.translate(&mut types)?;
         types.insert(id, ty)?;
-        Ok(TypeTable { types })
+
+        let mut roots = SmallOrdSet::new();
+        roots.push(id).expect("single type");
+
+        Ok(TypeTable { roots, types })
     }
 }
 
@@ -82,7 +125,12 @@ impl Translate<TypeLib> for TypeTable {
                 return Err(TranslateError::DuplicateName(name.clone()));
             }
         }
-        Ok(TypeLib { types })
+        let mut roots = SmallOrdMap::new();
+        for id in self.roots {
+            let name = ctx.get(&id).ok_or(TranslateError::UnknownId(id))?;
+            roots.insert(name.clone(), id).expect("equal size maps");
+        }
+        Ok(TypeLib { roots, types })
     }
 }
 

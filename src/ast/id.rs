@@ -20,7 +20,8 @@ use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::KeyTy;
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
+#[wrapper(Deref)]
 #[display("urn:ubideco:sten:{0}")]
 pub struct TyId(blake3::Hash);
 
