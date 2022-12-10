@@ -24,8 +24,7 @@ use crate::{StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 pub type TypeIndex = BTreeMap<TyId, TypeName>;
 
-#[derive(Clone, Eq, PartialEq, Debug, Display, From)]
-#[display(inner)]
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
     #[from]
     Name(TypeName),
@@ -35,6 +34,16 @@ pub enum InlineRef {
 }
 
 impl TypeRef for InlineRef {}
+
+impl Display for InlineRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            InlineRef::Name(name) => write!(f, "{}", name),
+            InlineRef::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
+            InlineRef::Inline(ty) => write!(f, "{}", ty),
+        }
+    }
+}
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]

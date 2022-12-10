@@ -58,8 +58,8 @@ impl StenSchema for Prim {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::enumerate(variants![
-            "a" => Prim::A as u8,
-            "b" => Prim::B as u8,
+            "a" => 10 => Prim::A as u8,
+            "b" => 20 => Prim::B as u8,
         ])
     }
 }
@@ -72,7 +72,7 @@ impl StenSchema for Message {
             "init" => u8::sten_type(),
             "ping" => <()>::sten_type(),
             "pong" => <()>::sten_type(),
-            "connect" => StenType::new("ConnectInner", Ty::composition(fields![
+            "connect" => StenType::new("", Ty::composition(fields![
                 "host" => Option::<SmallVec<u8>>::sten_type(),
             ])),
         ])

@@ -217,6 +217,20 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 
     pub fn is_primitive(&self) -> bool { matches!(self.as_inner(), TyInner::Primitive(_)) }
+    pub fn is_compound(&self) -> bool {
+        matches!(self.as_inner(), TyInner::Struct(fields)
+            if fields.len() > 1
+            || fields.keys().next().expect("always at least one field").name.is_some())
+        || (matches!(self.as_inner(), TyInner::Enum(_) | TyInner::Union(_) | TyInner::Map(..))
+            && !self.is_option())
+    }
+    pub fn is_option(&self) -> bool {
+        matches!(self.as_inner(),
+            TyInner::Union(fields) if fields.len() == 2
+            && fields.contains_key(&Field::none())
+            && fields.contains_key(&Field::some())
+        )
+    }
 }
 
 impl Ty {
@@ -250,16 +264,10 @@ where Ref: Display
         match self.as_inner() {
             TyInner::Primitive(prim) => Display::fmt(prim, f),
             TyInner::Enum(vars) => Display::fmt(vars, f),
-            TyInner::Union(fields) => {
-                if fields.len() == 2
-                    && fields.contains_key(&Field::none())
-                    && fields.contains_key(&Field::some())
-                {
-                    write!(f, "{}?", fields.get(&Field::some()).expect("optional"))
-                } else {
-                    Display::fmt(fields, f)
-                }
+            TyInner::Union(fields) if self.is_option() => {
+                write!(f, "{}?", fields.get(&Field::some()).expect("optional"))
             }
+            TyInner::Union(fields) => Display::fmt(fields, f),
             TyInner::Struct(fields) => Display::fmt(fields, f),
             TyInner::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
             TyInner::Unicode(sizing) => write!(f, "[Char{}]", sizing),
