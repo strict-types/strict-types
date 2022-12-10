@@ -26,10 +26,10 @@ mod path;
 
 use std::ops::Deref;
 
-pub use ast::{FieldName, Ident, KeyTy, Translate, Ty, TyId, TypeRef};
+pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
 pub use dtl::TypeLib;
 pub use path::{Path, PathError, Step, TyIter};
-pub use util::TypeName;
+pub use util::{Ident, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
@@ -46,7 +46,7 @@ impl Deref for StenType {
 impl StenType {
     pub fn unit() -> StenType {
         StenType {
-            name: "()",
+            name: "",
             ty: Box::new(Ty::UNIT),
         }
     }

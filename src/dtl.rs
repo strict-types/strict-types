@@ -137,7 +137,8 @@ impl Translate<TypeLib> for TypeTable {
 impl StenType {
     pub fn build_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
         let id = self.ty.id();
-        let name = TypeName::from(self.name);
+        let name =
+            if !self.name.is_empty() { TypeName::from(self.name) } else { TypeName::from(id) };
         match index.get(&id) {
             None => index.insert(id, name),
             Some(n) if n != &name => return Err(TranslateError::DuplicateName(name)),

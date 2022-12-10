@@ -12,7 +12,7 @@
 #[macro_export]
 macro_rules! tn {
     ($name:literal) => {
-        $crate::Ident::try_from($name).expect("invalid type name")
+        $crate::Ident::from($name)
     };
 }
 

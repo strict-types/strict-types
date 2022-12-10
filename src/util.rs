@@ -14,10 +14,31 @@ use std::fmt::{self, Display, Formatter};
 use std::iter::Sum;
 use std::ops::{Add, AddAssign};
 
-use amplify::ascii::AsciiString;
+use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
 use amplify::confinement::Confined;
 
+use crate::TyId;
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
+#[display(doc_comments)]
+pub enum InvalidIdent {
+    /// identifier name must start with alphabetic character and not `{0}`
+    NonAlphabetic(AsciiChar),
+
+    /// identifier name contains invalid character `{0}`
+    InvalidChar(AsciiChar),
+
+    #[from(AsAsciiStrError)]
+    /// identifier name contains non-ASCII character(s)
+    NonAsciiChar,
+
+    /// identifier name has invalid length
+    #[from]
+    Confinement(confinement::Error),
+}
+
+/// Identifier (field or type name).
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref, Display)]
 #[wrapper_mut(DerefMut)]
@@ -26,22 +47,44 @@ use amplify::confinement::Confined;
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct TypeName(Confined<AsciiString, 1, 32>);
+pub struct Ident(Confined<AsciiString, 1, 32>);
 
-impl TypeName {
-    pub fn len_u8(&self) -> u8 { self.0.len() as u8 }
-}
-
-impl From<&'static str> for TypeName {
+impl From<&'static str> for Ident {
     fn from(s: &'static str) -> Self {
-        TypeName(
-            AsciiString::from_ascii(s)
-                .map_err(|_| confinement::Error::Oversize { len: 0, max_len: 0 })
-                .and_then(Confined::try_from)
-                .expect(&format!("invalid static string '{}' for TypeName", s)),
+        Ident::try_from(
+            Confined::try_from(AsciiString::from_ascii(s).expect("invalid identifier name"))
+                .expect("invalid identifier name"),
         )
+        .expect("invalid identifier name")
     }
 }
+
+impl From<TyId> for Ident {
+    fn from(id: TyId) -> Self {
+        let mut s = s!("Auto");
+        s.extend(id.to_hex()[..8].to_uppercase().chars().take(8));
+        let s = AsciiString::from_ascii(s).expect("invalid identifier name");
+        Ident::try_from(Confined::try_from(s).expect("invalid identifier name"))
+            .expect("invalid identifier name")
+    }
+}
+
+impl Ident {
+    pub fn try_from(value: Confined<AsciiString, 1, 32>) -> Result<Self, InvalidIdent> {
+        let first = value[0];
+        if !first.is_alphabetic() {
+            return Err(InvalidIdent::NonAlphabetic(first));
+        }
+        if let Some(ch) =
+            value.as_slice().iter().copied().find(|ch| !ch.is_ascii_alphanumeric() && *ch != b'_')
+        {
+            return Err(InvalidIdent::InvalidChar(ch));
+        }
+        Ok(Self(value))
+    }
+}
+
+pub type TypeName = Ident;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]

@@ -14,13 +14,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
 use amplify::confinement::Confined;
 
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::StenType;
+use crate::{Ident, StenType};
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + Eq + Sized {}
@@ -61,50 +60,6 @@ impl DerefMut for SubTy {
 
 impl From<Ty> for SubTy {
     fn from(ty: Ty) -> Self { SubTy(Box::new(ty)) }
-}
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
-#[display(doc_comments)]
-pub enum InvalidIdent {
-    /// identifier name must start with alphabetic character and not `{0}`
-    NonAlphabetic(AsciiChar),
-
-    /// identifier name contains invalid character `{0}`
-    InvalidChar(AsciiChar),
-
-    #[from(AsAsciiStrError)]
-    /// identifier name contains non-ASCII character(s)
-    NonAsciiChar,
-
-    /// identifier name has invalid length
-    #[from]
-    Confinement(confinement::Error),
-}
-
-/// Identifier (field or type name).
-#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, From, Display)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
-#[display(inner)]
-pub struct Ident(Confined<AsciiString, 1, 32>);
-
-impl Deref for Ident {
-    type Target = Confined<AsciiString, 1, 32>;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl From<&'static str> for Ident {
-    fn from(s: &'static str) -> Self {
-        Ident::try_from(
-            Confined::try_from(AsciiString::from_ascii(s).expect("invalid identifier name"))
-                .expect("invalid identifier name"),
-        )
-        .expect("invalid identifier name")
-    }
 }
 
 pub type FieldName = Ident;

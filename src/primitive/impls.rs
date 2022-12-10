@@ -58,13 +58,13 @@ st_impl!(F256, ieee::Oct);
 // panic on `as u16` in the implementation, so the StenType for arrays longer
 // than u16::MAX will not be resolvable.
 impl<const LEN: usize> StenSchema for [u8; LEN] {
-    const STEN_TYPE_NAME: &'static str = "Bytes";
+    const STEN_TYPE_NAME: &'static str = "";
 
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(LEN as u16) }
 }
 
 impl StenSchema for () {
-    const STEN_TYPE_NAME: &'static str = "()";
+    const STEN_TYPE_NAME: &'static str = "";
 
     fn sten_ty() -> Ty<StenType> { Ty::UNIT }
 }
@@ -72,7 +72,7 @@ impl StenSchema for () {
 impl<T> StenSchema for Option<T>
 where T: StenSchema
 {
-    const STEN_TYPE_NAME: &'static str = "Option";
+    const STEN_TYPE_NAME: &'static str = "";
 
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::option(T::sten_type()) }
 }
@@ -80,7 +80,7 @@ where T: StenSchema
 impl<T> StenSchema for SmallVec<T>
 where T: StenSchema
 {
-    const STEN_TYPE_NAME: &'static str = "SmallVec";
+    const STEN_TYPE_NAME: &'static str = "";
 
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::list(T::sten_type(), Sizing::U16) }
 }
