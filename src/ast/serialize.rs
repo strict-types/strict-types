@@ -26,21 +26,19 @@ pub enum Cls {
     Union = 2,
     Struct = 3,
     Array = 4,
-    Ascii = 5,
-    Unicode = 6,
-    List = 7,
-    Set = 8,
-    Map = 9,
+    Unicode = 5,
+    List = 6,
+    Set = 7,
+    Map = 8,
 }
 
 impl Cls {
-    pub const ALL: [Cls; 10] = [
+    pub const ALL: [Cls; 9] = [
         Cls::Primitive,
         Cls::Enum,
         Cls::Union,
         Cls::Struct,
         Cls::Array,
-        Cls::Ascii,
         Cls::Unicode,
         Cls::List,
         Cls::Set,
@@ -75,7 +73,6 @@ impl<Ref: TypeRef> TyInner<Ref> {
             TyInner::Union(_) => Cls::Union,
             TyInner::Struct(_) => Cls::Struct,
             TyInner::Array(_, _) => Cls::Array,
-            TyInner::Ascii(_) => Cls::Ascii,
             TyInner::Unicode(_) => Cls::Unicode,
             TyInner::List(_, _) => Cls::List,
             TyInner::Set(_, _) => Cls::Set,
@@ -90,7 +87,6 @@ impl KeyTy {
             KeyTy::Primitive(_) => Cls::Primitive,
             KeyTy::Enum(_) => Cls::Enum,
             KeyTy::Array(_) => Cls::Array,
-            KeyTy::Ascii(_) => Cls::Ascii,
             KeyTy::Unicode(_) => Cls::Unicode,
             KeyTy::Bytes(_) => Cls::List,
         }

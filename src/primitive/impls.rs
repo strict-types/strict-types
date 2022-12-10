@@ -73,5 +73,5 @@ impl StenSchema for () {
 impl<const MIN: usize, const MAX: usize> StenSchema for Confined<AsciiString, MIN, MAX> {
     const STEN_TYPE_NAME: &'static str = "AsciiString";
 
-    fn sten_ty() -> Ty<StenType> { Ty::ascii(Sizing::new(MIN as u16, MAX as u16)) }
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii(Sizing::new(MIN as u16, MAX as u16)) }
 }

@@ -213,16 +213,15 @@ impl<Ref: TypeRef> Ty<Ref> {
         // TODO: Check for AST size
         Ty(TyInner::Enum(variants))
     }
-    pub fn union(fields: Fields<Ref>) -> Self {
+    pub fn union(fields: Fields<Ref, false>) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields))
     }
-    pub fn composition(fields: Fields<Ref>) -> Self {
+    pub fn composition(fields: Fields<Ref, true>) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Struct(fields))
     }
 
-    pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::Ascii(sizing)) }
     pub fn string(sizing: Sizing) -> Self { Ty(TyInner::Unicode(sizing)) }
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self {
@@ -244,6 +243,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 impl Ty {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Ty::BYTE.into(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::BYTE.into(), sizing)) }
+    pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::CHAR.into(), sizing)) }
     pub fn option(ty: Ty) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields![
@@ -256,6 +256,7 @@ impl Ty {
 impl Ty<StenType> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(StenType::byte(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::byte(), sizing)) }
+    pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::char(), sizing)) }
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields![
@@ -284,7 +285,6 @@ where Ref: Display
             }
             TyInner::Struct(fields) => Display::fmt(fields, f),
             TyInner::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
-            TyInner::Ascii(sizing) => write!(f, "[Ascii{}]", sizing),
             TyInner::Unicode(sizing) => write!(f, "[Char{}]", sizing),
             TyInner::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
             TyInner::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
@@ -299,7 +299,7 @@ impl Ty {
             TyInner::Primitive(code) => KeyTy::Primitive(code),
             TyInner::Enum(vars) => KeyTy::Enum(vars),
             TyInner::Array(ty, len) if *ty == Ty::BYTE => KeyTy::Array(len),
-            TyInner::Ascii(sizing) => KeyTy::Ascii(sizing),
+            TyInner::List(ty, sizing) if *ty == Ty::BYTE => KeyTy::Bytes(sizing),
             TyInner::Unicode(sizing) => KeyTy::Unicode(sizing),
             me @ TyInner::Union(_)
             | me @ TyInner::Struct(_)
@@ -316,10 +316,9 @@ impl Ty {
 pub enum TyInner<Ref: TypeRef = SubTy> {
     Primitive(Primitive),
     Enum(Variants),
-    Union(Fields<Ref>),
-    Struct(Fields<Ref>),
+    Union(Fields<Ref, false>),
+    Struct(Fields<Ref, true>),
     Array(Ref, u16),
-    Ascii(Sizing),
     Unicode(Sizing),
     List(Ref, Sizing),
     Set(Ref, Sizing),
@@ -340,11 +339,9 @@ impl<Ref: RecursiveRef> TyInner<Ref> {
             TyInner::Struct(fields) => fields.values().map(|ty| ty.size()).sum(),
             TyInner::Enum(_) => Size::Fixed(1),
             TyInner::Array(_, len) => Size::Fixed(*len),
-            TyInner::Unicode(..)
-            | TyInner::Ascii(..)
-            | TyInner::List(..)
-            | TyInner::Set(..)
-            | TyInner::Map(..) => Size::Variable,
+            TyInner::Unicode(..) | TyInner::List(..) | TyInner::Set(..) | TyInner::Map(..) => {
+                Size::Variable
+            }
         }
     }
 }
@@ -362,20 +359,88 @@ pub enum KeyTy {
     /// Fixed-size byte array
     #[display("[Byte ^ {0}]")]
     Array(u16),
-    Ascii(Sizing),
     Unicode(Sizing),
     Bytes(Sizing),
 }
 
-#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
-#[wrapper(Deref)]
-#[wrapper_mut(DerefMut)]
+/*
+TODO: Use when const expression generics will arrive
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[repr(u8)]
+pub enum Composition {
+    #[display(" | ")]
+    Add = 0,
+    #[display(", ")]
+    Mul = 1,
+}
+*/
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Fields<Ref = SubTy>(Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>);
+pub struct Fields<Ref: TypeRef = SubTy, const OP: bool = true>(
+    Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>,
+);
+
+impl<Ref: TypeRef, const OP: bool> Deref for Fields<Ref, OP> {
+    type Target = Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<Ref: TypeRef, const OP: bool> TryFrom<BTreeMap<Field, Ref>> for Fields<Ref, OP> {
+    type Error = confinement::Error;
+
+    fn try_from(inner: BTreeMap<Field, Ref>) -> Result<Self, Self::Error> {
+        Confined::try_from(inner).map(Fields::from)
+    }
+}
+
+impl<Ref: TypeRef, const OP: bool> IntoIterator for Fields<Ref, OP> {
+    type Item = (Field, Ref);
+    type IntoIter = std::collections::btree_map::IntoIter<Field, Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+}
+
+impl<'a, Ref: TypeRef, const OP: bool> IntoIterator for &'a Fields<Ref, OP> {
+    type Item = (&'a Field, &'a Ref);
+    type IntoIter = std::collections::btree_map::Iter<'a, Field, Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
+impl<Ref: TypeRef, const OP: bool> Fields<Ref, OP> {
+    pub fn into_inner(self) -> BTreeMap<Field, Ref> { self.0.into_inner() }
+
+    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Field, Ref> {
+        self.0.into_inner().into_keys()
+    }
+
+    pub fn into_values(self) -> std::collections::btree_map::IntoValues<Field, Ref> {
+        self.0.into_inner().into_values()
+    }
+}
+
+impl<Ref: TypeRef, const OP: bool> Display for Fields<Ref, OP>
+where Ref: Display
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let sep = if OP { ", " } else { " | " };
+        let mut iter = self.iter();
+        let last = iter.next_back();
+        for (field, ty) in iter {
+            write!(f, "{} {}{}", field, ty, sep)?;
+        }
+        if let Some((field, ty)) = last {
+            write!(f, "{} {}", field, ty)?;
+        }
+        Ok(())
+    }
+}
 
 #[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
@@ -386,44 +451,6 @@ pub struct Fields<Ref = SubTy>(Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as us
     serde(crate = "serde_crate", transparent)
 )]
 pub struct Variants(Confined<BTreeSet<Field>, 1, { u8::MAX as usize }>);
-
-impl<Ref: TypeRef> TryFrom<BTreeMap<Field, Ref>> for Fields<Ref> {
-    type Error = confinement::Error;
-
-    fn try_from(inner: BTreeMap<Field, Ref>) -> Result<Self, Self::Error> {
-        Confined::try_from(inner).map(Fields::from)
-    }
-}
-
-impl<Ref: TypeRef> IntoIterator for Fields<Ref> {
-    type Item = (Field, Ref);
-    type IntoIter = std::collections::btree_map::IntoIter<Field, Ref>;
-
-    fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
-}
-
-impl<'a, Ref: TypeRef> IntoIterator for &'a Fields<Ref> {
-    type Item = (&'a Field, &'a Ref);
-    type IntoIter = std::collections::btree_map::Iter<'a, Field, Ref>;
-
-    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
-}
-
-impl<Ref: TypeRef> Display for Fields<Ref>
-where Ref: Display
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let mut iter = self.iter();
-        let last = iter.next_back();
-        for (field, ty) in iter {
-            write!(f, "{} {}, ", field, ty)?;
-        }
-        if let Some((field, ty)) = last {
-            write!(f, "{} {}", field, ty)?;
-        }
-        Ok(())
-    }
-}
 
 impl IntoIterator for Variants {
     type Item = Field;
@@ -444,10 +471,10 @@ impl Display for Variants {
         let mut iter = self.iter();
         let last = iter.next_back();
         for variant in iter {
-            write!(f, "{} U8 | ", variant)?;
+            write!(f, "{} | ", variant)?;
         }
         if let Some(variant) = last {
-            write!(f, "{} U8", variant)?;
+            write!(f, "{}", variant)?;
         }
         Ok(())
     }

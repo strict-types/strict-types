@@ -73,7 +73,6 @@ impl<Ref: RecursiveRef> TyCommit for Ty<Ref> {
                 ty.ty_commit(hasher);
                 hasher.input(len.to_le_bytes());
             }
-            TyInner::Ascii(sizing) => sizing.ty_commit(hasher),
             TyInner::Unicode(sizing) => sizing.ty_commit(hasher),
             TyInner::List(ty, sizing) => {
                 ty.ty_commit(hasher);
@@ -100,7 +99,6 @@ impl TyCommit for KeyTy {
             KeyTy::Primitive(prim) => prim.ty_commit(hasher),
             KeyTy::Enum(vars) => vars.ty_commit(hasher),
             KeyTy::Array(len) => hasher.input(len.to_le_bytes()),
-            KeyTy::Ascii(sizing) => sizing.ty_commit(hasher),
             KeyTy::Unicode(sizing) => sizing.ty_commit(hasher),
             KeyTy::Bytes(sizing) => sizing.ty_commit(hasher),
         }
@@ -130,7 +128,7 @@ impl TyCommit for Field {
     }
 }
 
-impl<Ref: RecursiveRef> TyCommit for Fields<Ref> {
+impl<Ref: RecursiveRef, const OP: bool> TyCommit for Fields<Ref, OP> {
     fn ty_commit(&self, hasher: &mut TyHasher) {
         hasher.input([self.len_u8()]);
         for (name, ty) in self.iter() {

@@ -85,7 +85,6 @@ where Ref: Translate<ToRef>
             TyInner::Union(fields) => TyInner::Union(fields.translate(ctx)?),
             TyInner::Struct(fields) => TyInner::Struct(fields.translate(ctx)?),
             TyInner::Array(ty, len) => TyInner::Array(ty.translate(ctx)?, len),
-            TyInner::Ascii(sizing) => TyInner::Ascii(sizing),
             TyInner::Unicode(sizing) => TyInner::Unicode(sizing),
             TyInner::List(ty, sizing) => TyInner::List(ty.translate(ctx)?, sizing),
             TyInner::Set(ty, sizing) => TyInner::Set(ty.translate(ctx)?, sizing),
@@ -95,13 +94,13 @@ where Ref: Translate<ToRef>
     }
 }
 
-impl<Ref: TypeRef, ToRef: TypeRef> Translate<Fields<ToRef>> for Fields<Ref>
+impl<Ref: TypeRef, ToRef: TypeRef, const OP: bool> Translate<Fields<ToRef, OP>> for Fields<Ref, OP>
 where Ref: Translate<ToRef>
 {
     type Context = <Ref as Translate<ToRef>>::Context;
     type Error = <Ref as Translate<ToRef>>::Error;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<Fields<ToRef>, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<Fields<ToRef, OP>, Self::Error> {
         let mut fields = BTreeMap::new();
         for (name, rf) in self {
             fields.insert(name, rf.translate(ctx)?);

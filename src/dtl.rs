@@ -111,7 +111,12 @@ impl StenType {
 impl Ty<StenType> {
     pub fn build_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
         match self.as_inner() {
-            TyInner::Union(fields) | TyInner::Struct(fields) => {
+            TyInner::Union(fields) => {
+                for ty in fields.values() {
+                    ty.build_index(index)?;
+                }
+            }
+            TyInner::Struct(fields) => {
                 for ty in fields.values() {
                     ty.build_index(index)?;
                 }

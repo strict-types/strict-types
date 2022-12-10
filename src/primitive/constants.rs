@@ -171,7 +171,7 @@ impl Display for Primitive {
         match *self {
             UNIT => return f.write_str("()"),
             BYTE => return f.write_str("Byte"),
-            CHAR => return f.write_str("Char"),
+            CHAR => return f.write_str("Ascii"),
             F16B => return f.write_str("F16b"),
             _ => {}
         }

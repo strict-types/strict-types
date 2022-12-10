@@ -22,11 +22,9 @@
 #[macro_use]
 extern crate stens;
 
-use std::ops::Deref;
-
 use amplify::confinement::TinyAscii;
 use stens::ast::Ty;
-use stens::{StenSchema, StenType, Translate};
+use stens::{StenSchema, StenType};
 
 #[repr(u8)]
 pub enum Prim {
