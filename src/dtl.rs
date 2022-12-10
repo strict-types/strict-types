@@ -36,9 +36,8 @@ pub enum InlineRef {
 
 impl TypeRef for InlineRef {}
 
-#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
+#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]
-#[display("urn:ubideco:setl:{0}")]
 pub struct LibId(blake3::Hash);
 
 impl Ord for LibId {
@@ -47,6 +46,17 @@ impl Ord for LibId {
 
 impl PartialOrd for LibId {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+impl Display for LibId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            let m = mnemonic::to_string(&self.as_bytes()[14..18]);
+            write!(f, "urn:ubideco:setl:{}#{}", self.0, m)
+        } else {
+            write!(f, "urn:ubideco:setl:{}", self.0)
+        }
+    }
 }
 
 pub struct LibHasher(blake3::Hasher);

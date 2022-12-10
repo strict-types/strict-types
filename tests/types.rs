@@ -115,7 +115,7 @@ fn serialize() {
     let lib = TypeLib::try_from(root).unwrap();
 
     println!("----");
-    println!("{}", lib.id());
+    println!("{:#}", lib.id());
     for id in &lib.roots {
         println!("{} = {}", lib.index.get(id).unwrap(), id);
     }
