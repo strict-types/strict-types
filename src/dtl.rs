@@ -12,12 +12,11 @@
 //! DTL stands for "Data type library".
 
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 use std::io::Write;
 
-use amplify::confinement;
-use amplify::confinement::{SmallOrdMap, SmallOrdSet};
+use amplify::confinement::SmallOrdMap;
 
 use crate::ast::inner::TyInner;
 use crate::ast::TranslateError;
@@ -25,8 +24,17 @@ use crate::{StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 pub type TypeIndex = BTreeMap<TyId, TypeName>;
 
-impl TypeRef for TypeName {}
-impl TypeRef for TyId {}
+#[derive(Clone, Eq, PartialEq, Debug, Display, From)]
+#[display(inner)]
+pub enum InlineRef {
+    #[from]
+    Name(TypeName),
+
+    #[from]
+    Inline(Box<Ty<InlineRef>>),
+}
+
+impl TypeRef for InlineRef {}
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref)]
@@ -57,25 +65,25 @@ impl LibHasher {
 
 pub struct TypeLib {
     // TODO: Require at least 1 type in a type library
-    pub roots: SmallOrdMap<TypeName, TyId>,
-    pub types: SmallOrdMap<TypeName, Ty<TypeName>>,
+    pub roots: BTreeSet<TyId>,
+    pub index: TypeIndex,
+    pub types: SmallOrdMap<TypeName, Ty<InlineRef>>,
 }
 
 impl TypeLib {
-    pub fn with(
-        table: TypeTable,
-        mut index: BTreeMap<TyId, TypeName>,
-    ) -> Result<Self, TranslateError> {
-        table.translate(&mut index)
-    }
-
     pub fn id(&self) -> LibId {
         let mut hasher = LibHasher::new();
-        for id in self.roots.values() {
+        for id in self.roots.iter() {
             hasher.input(*id);
         }
         hasher.finish()
     }
+}
+
+impl TryFrom<StenType> for TypeLib {
+    type Error = TranslateError;
+
+    fn try_from(root: StenType) -> Result<Self, Self::Error> { root.translate(&mut ()) }
 }
 
 impl Display for TypeLib {
@@ -87,73 +95,48 @@ impl Display for TypeLib {
     }
 }
 
-pub struct TypeTable {
-    // TODO: Require at least 1 type in a type library
-    pub roots: SmallOrdSet<TyId>,
-    pub types: SmallOrdMap<TyId, Ty<TyId>>,
-}
-
-impl TryFrom<Ty> for TypeTable {
-    type Error = confinement::Error;
-
-    fn try_from(root: Ty) -> Result<Self, Self::Error> {
-        let mut types = SmallOrdMap::new();
-        let id = root.id();
-        let ty = root.translate(&mut types)?;
-        types.insert(id, ty)?;
-
-        let mut roots = SmallOrdSet::new();
-        roots.push(id).expect("single type");
-
-        Ok(TypeTable { roots, types })
-    }
-}
-
-impl Translate<TypeLib> for TypeTable {
-    type Context = TypeIndex;
+impl Translate<TypeLib> for StenType {
+    type Context = ();
     type Error = TranslateError;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<TypeLib, Self::Error> {
-        let mut types = SmallOrdMap::new();
-        for (id, ty) in self.types {
-            let ty2 = ty.translate(ctx)?;
-            let name = ctx.get(&id).ok_or(TranslateError::UnknownId(id))?;
-            if ty2.is_primitive() {
-                continue;
-            }
-            if types.insert(name.clone(), ty2).expect("equal size maps").is_some() {
-                return Err(TranslateError::DuplicateName(name.clone()));
-            }
+    fn translate(self, _: &mut Self::Context) -> Result<TypeLib, Self::Error> {
+        let id = self.ty.id();
+
+        let mut lib = TypeLib {
+            roots: bset!(id),
+            index: empty!(),
+            types: empty!(),
+        };
+
+        self.build_index(&mut lib.index)?;
+        let root = self.ty.translate(&mut lib)?;
+
+        let name = lib.index.get(&id).ok_or(TranslateError::UnknownId(id))?;
+        if lib.types.insert(name.clone(), root)?.is_some() {
+            return Err(TranslateError::DuplicateName(name.clone()));
         }
-        let mut roots = SmallOrdMap::new();
-        for id in self.roots {
-            let name = ctx.get(&id).ok_or(TranslateError::UnknownId(id))?;
-            roots.insert(name.clone(), id).expect("equal size maps");
-        }
-        Ok(TypeLib { roots, types })
+
+        Ok(lib)
     }
 }
 
 impl StenType {
     pub fn build_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
+        if self.name.is_empty() {
+            return Ok(());
+        }
+
         let id = self.ty.id();
-        let name =
-            if !self.name.is_empty() { TypeName::from(self.name) } else { TypeName::from(id) };
+        let name = TypeName::from(self.name);
         match index.get(&id) {
             None => index.insert(id, name),
             Some(n) if n != &name => return Err(TranslateError::DuplicateName(name)),
             _ => None,
         };
-        self.ty.build_index(index)?;
-        Ok(())
-    }
 
-    pub fn try_into_lib(self) -> Result<TypeLib, TranslateError> {
-        let mut index = TypeIndex::new();
-        self.build_index(&mut index)?;
-        let root = self.ty.translate(&mut ()).expect("infallible");
-        let table = TypeTable::try_from(root)?;
-        TypeLib::with(table, index)
+        self.ty.build_index(index)?;
+
+        Ok(())
     }
 }
 

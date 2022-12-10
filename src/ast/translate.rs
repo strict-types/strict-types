@@ -10,15 +10,14 @@
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
 use std::collections::BTreeMap;
-use std::convert::Infallible;
 
 use amplify::confinement;
-use amplify::confinement::SmallOrdMap;
 
 use crate::ast::inner::TyInner;
-use crate::ast::ty::{RecursiveRef, SubTy};
+use crate::ast::ty::RecursiveRef;
 use crate::ast::Fields;
-use crate::{StenType, Ty, TyId, TypeName, TypeRef};
+use crate::dtl::InlineRef;
+use crate::{StenType, Ty, TyId, TypeLib, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -40,35 +39,23 @@ pub enum TranslateError {
     #[display(inner)]
     Confinement(confinement::Error),
 }
-impl Translate<SubTy> for StenType {
-    type Context = ();
-    type Error = Infallible;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<SubTy, Self::Error> {
-        self.ty.translate(ctx).map(SubTy::from)
-    }
-}
-
-impl Translate<TyId> for SubTy {
-    type Context = SmallOrdMap<TyId, Ty<TyId>>;
-    type Error = confinement::Error;
-
-    fn translate(self, ctx: &mut Self::Context) -> Result<TyId, Self::Error> {
-        let id = self.id();
-        if !ctx.contains_key(&id) {
-            let ty = self.into_ty().translate(ctx)?;
-            ctx.insert(id, ty)?;
-        }
-        Ok(id)
-    }
-}
-
-impl Translate<TypeName> for TyId {
-    type Context = BTreeMap<TyId, TypeName>;
+impl Translate<InlineRef> for StenType {
+    type Context = TypeLib;
     type Error = TranslateError;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<TypeName, Self::Error> {
-        ctx.get(&self).ok_or(TranslateError::UnknownId(self)).cloned()
+    fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef, Self::Error> {
+        let id = self.id();
+        let ty = self.into_ty().translate(ctx)?;
+        Ok(match ctx.index.get(&id) {
+            Some(name) => {
+                if !ctx.types.contains_key(name) {
+                    ctx.types.insert(name.clone(), ty)?;
+                }
+                InlineRef::Name(name.clone())
+            }
+            None => InlineRef::Inline(Box::new(ty)),
+        })
     }
 }
 
