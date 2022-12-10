@@ -10,7 +10,7 @@
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
 use std::cmp::Ordering;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -425,31 +425,43 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Variants(Confined<BTreeSet<Field>, 1, { u8::MAX as usize }>);
+pub struct Variants(Confined<BTreeMap<Field, u8>, 1, { u8::MAX as usize }>);
 
 impl IntoIterator for Variants {
-    type Item = Field;
-    type IntoIter = std::collections::btree_set::IntoIter<Field>;
+    type Item = (Field, u8);
+    type IntoIter = std::collections::btree_map::IntoIter<Field, u8>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
 impl<'a> IntoIterator for &'a Variants {
-    type Item = &'a Field;
-    type IntoIter = std::collections::btree_set::Iter<'a, Field>;
+    type Item = (&'a Field, &'a u8);
+    type IntoIter = std::collections::btree_map::Iter<'a, Field, u8>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
+impl Variants {
+    pub fn into_inner(self) -> BTreeMap<Field, u8> { self.0.into_inner() }
+
+    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Field, u8> {
+        self.0.into_inner().into_keys()
+    }
+
+    pub fn into_values(self) -> std::collections::btree_map::IntoValues<Field, u8> {
+        self.0.into_inner().into_values()
+    }
 }
 
 impl Display for Variants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
-        for variant in iter {
-            write!(f, "{}_ | ", variant)?;
+        for (field, val) in iter {
+            write!(f, "{}= {} | ", field, val)?;
         }
-        if let Some(variant) = last {
-            write!(f, "{}_", variant)?;
+        if let Some((field, val)) = last {
+            write!(f, "{}= {}", field, val)?;
         }
         Ok(())
     }

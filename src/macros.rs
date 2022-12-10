@@ -48,11 +48,24 @@ macro_rules! fields {
 
 #[macro_export]
 macro_rules! variants {
+    { $($key:expr => $ord:literal => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeMap::new();
+            $(
+                assert!(m.insert($crate::ast::Field::named(tn!($key), $value), $ord).is_none(), "repeated enum variant");
+            )+
+            amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
+        }
+    };
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
-            let mut m = ::std::collections::BTreeSet::new();
+            let mut c = 0u8;
+            let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), $value)), "repeated enum variant");
+                assert!(m.insert($crate::ast::Field::named(tn!($key), $value), c).is_none(), "repeated enum variant");
+                #[allow(unused_assignments)] {
+                    c += 1;
+                }
             )+
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
