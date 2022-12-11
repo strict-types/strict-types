@@ -15,6 +15,7 @@ mod serialize;
 mod translate;
 
 pub use id::TyId;
+pub use serialize::{DecodeError, Encode};
 pub use translate::{Translate, TranslateError};
 pub use ty::{Field, FieldName, Fields, KeyTy, Ty, TypeRef, Variants};
 

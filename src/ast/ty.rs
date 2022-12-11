@@ -17,13 +17,14 @@ use std::ops::{Deref, DerefMut};
 use amplify::confinement;
 use amplify::confinement::Confined;
 
+use crate::ast::serialize::Encode;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
 use crate::{Ident, StenType};
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + Eq + Sized {}
-pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> {
+pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> + Encode {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
     fn size(&self) -> Size { self.as_ty().size() }
@@ -221,8 +222,8 @@ impl<Ref: TypeRef> Ty<Ref> {
         matches!(self.as_inner(), TyInner::Struct(fields)
             if fields.len() > 1
             || fields.keys().next().expect("always at least one field").name.is_some())
-        || (matches!(self.as_inner(), TyInner::Enum(_) | TyInner::Union(_) | TyInner::Map(..))
-            && !self.is_option())
+            || (matches!(self.as_inner(), TyInner::Enum(_) | TyInner::Union(_) | TyInner::Map(..))
+                && !self.is_option())
     }
     pub fn is_option(&self) -> bool {
         matches!(self.as_inner(),

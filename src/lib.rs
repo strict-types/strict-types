@@ -26,7 +26,7 @@ mod path;
 
 use std::ops::Deref;
 
-pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
+pub use ast::{DecodeError, Encode, FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
 pub use dtl::TypeLib;
 pub use path::{Path, PathError, Step, TyIter};
 pub use util::{Ident, TypeName};
