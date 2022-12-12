@@ -9,14 +9,14 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
-mod ty;
-mod id;
-mod serialize;
-mod translate;
+//! DTL stands for "Data type library".
 
-pub use id::TyId;
-pub use serialize::{Cls, Decode, DecodeError, Encode};
-pub use translate::{Translate, TranslateError};
-pub use ty::{
-    Field, FieldName, Fields, KeyTy, RecursiveRef, SubTy, Ty, TyInner, TypeRef, Variants,
-};
+mod gravel;
+mod monolith;
+mod translate;
+mod serialize;
+
+pub use gravel::{Gravel, GravelAlias, GravelId, GravelName, GravelTy};
+pub use monolith::{Monolith, MonolithTy};
+
+pub type TypeIndex = std::collections::BTreeMap<crate::TyId, crate::TypeName>;

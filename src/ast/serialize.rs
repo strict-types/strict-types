@@ -20,7 +20,6 @@ use amplify::{confinement, IoError, Wrapper, WriteCounter};
 
 use crate::ast::ty::{RecursiveRef, SubTy};
 use crate::ast::{Field, Fields, TyInner, TypeRef, Variants};
-use crate::dtl::InlineRef;
 use crate::primitive::Primitive;
 use crate::util::{InvalidIdent, Sizing};
 use crate::{FieldName, KeyTy, StenType, Ty};
@@ -39,7 +38,7 @@ pub enum DecodeError {
     InvalidTyCls(Cls),
 
     /// unknown variant id {0} for inline type reference
-    WrongInlineRef(u8),
+    WrongRef(u8),
 
     /// confinement requirements are not satisfied. Specifically, {0}
     #[from]
@@ -283,31 +282,6 @@ impl Encode for SubTy {
 impl Decode for SubTy {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         Ty::decode(reader).map(SubTy::from)
-    }
-}
-
-impl Encode for InlineRef {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
-        match self {
-            InlineRef::Name(name) => {
-                0u8.encode(writer)?;
-                name.encode(writer)
-            }
-            InlineRef::Inline(ty) => {
-                1u8.encode(writer)?;
-                ty.encode(writer)
-            }
-        }
-    }
-}
-
-impl Decode for InlineRef {
-    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
-        match u8::decode(reader)? {
-            0u8 => Decode::decode(reader).map(InlineRef::Name),
-            1u8 => Decode::decode(reader).map(Box::new).map(InlineRef::Inline),
-            wrong => Err(DecodeError::WrongInlineRef(wrong)),
-        }
     }
 }
 

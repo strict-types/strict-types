@@ -16,8 +16,9 @@ use std::ops::{Add, AddAssign};
 
 use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
-use amplify::confinement::Confined;
+use amplify::confinement::{Confined, TinyVec};
 
+use crate::dtl::GravelId;
 use crate::TyId;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
@@ -169,4 +170,69 @@ impl Sum for Size {
         }
         acc
     }
+}
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[display(inner)]
+pub enum PreFragment {
+    Ident(Ident),
+    Digits(u128),
+}
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[display(inner)]
+pub enum BuildFragment {
+    Ident(Ident),
+    Digits(Confined<AsciiString, 1, 32>),
+}
+
+// TODO: Manually implement Ord, PartialOrd
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub struct SemVer {
+    pub major: u16,
+    pub minor: u16,
+    pub patch: u16,
+    pub build: TinyVec<PreFragment>,
+    pub pre: TinyVec<BuildFragment>,
+}
+
+impl Display for SemVer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}.{}.{}", self.major, self.minor, self.patch)?;
+
+        if !self.build.is_empty() {
+            f.write_str("-")?;
+        }
+        let mut len = self.build.len();
+        for item in &self.build {
+            Display::fmt(item, f)?;
+            len -= 1;
+            if len > 0 {
+                f.write_str(".")?;
+            }
+        }
+
+        if !self.pre.is_empty() {
+            f.write_str("+")?;
+        }
+        let mut len = self.pre.len();
+        for item in &self.pre {
+            Display::fmt(item, f)?;
+            len -= 1;
+            if len > 0 {
+                f.write_str(".")?;
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+pub enum Urn {
+    #[from]
+    #[display("urn:ubideco:gravel:{0}", alt = "urn:ubideco:gravel:{0:#}")]
+    Gravel(GravelId),
+
+    #[from]
+    #[display("urn:ubideco:sten:{0}", alt = "urn:ubideco:sten:{0:#}")]
+    Type(TyId),
 }

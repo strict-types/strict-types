@@ -24,7 +24,8 @@ extern crate stens;
 
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
-use stens::{StenSchema, StenType, TypeLib};
+use stens::dtl::{Gravel, Monolith};
+use stens::{StenSchema, StenType, Urn};
 
 #[repr(u8)]
 pub enum Prim {
@@ -112,14 +113,9 @@ impl StenSchema for Complex {
 #[test]
 fn serialize() {
     let root = Complex::sten_type();
-    let lib = TypeLib::try_from(root).unwrap();
+    let lib = Gravel::try_from(root).unwrap();
 
-    println!("----");
-    println!("{:#}", lib.id());
-    for id in &lib.roots {
-        println!("{} = {}", lib.index.get(id).unwrap(), id);
-    }
-    println!("----");
+    println!("{:#}", Urn::from(lib.id()));
 
     println!();
     println!("{}", lib);

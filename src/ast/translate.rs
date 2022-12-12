@@ -9,15 +9,12 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 
-use amplify::confinement::{Confined, SmallOrdMap};
 use amplify::{confinement, Wrapper};
 
-use crate::ast::ty::RecursiveRef;
 use crate::ast::{Fields, TyInner};
-use crate::dtl::{InlineRef, TypeIndex};
-use crate::{StenType, Ty, TyId, TypeLib, TypeName, TypeRef};
+use crate::{Ty, TyId, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -38,49 +35,6 @@ pub enum TranslateError {
     #[from]
     #[display(inner)]
     Confinement(confinement::Error),
-}
-
-#[derive(Default)]
-pub struct TranslateContext {
-    index: TypeIndex,
-    types: SmallOrdMap<TypeName, Ty<InlineRef>>,
-}
-
-impl TranslateContext {
-    pub(crate) fn with(index: TypeIndex) -> TranslateContext {
-        TranslateContext {
-            index,
-            types: default!(),
-        }
-    }
-
-    pub(crate) fn build_lib(self, roots: BTreeSet<TyId>) -> Result<TypeLib, confinement::Error> {
-        let types = Confined::try_from(self.types.into_inner())?;
-        Ok(TypeLib {
-            roots,
-            index: self.index,
-            types,
-        })
-    }
-}
-
-impl Translate<InlineRef> for StenType {
-    type Context = TranslateContext;
-    type Error = TranslateError;
-
-    fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef, Self::Error> {
-        let id = self.id();
-        let ty = self.into_ty().translate(ctx)?;
-        Ok(match ctx.index.get(&id) {
-            Some(name) => {
-                if !ctx.types.contains_key(name) {
-                    ctx.types.insert(name.clone(), ty)?;
-                }
-                InlineRef::Name(name.clone())
-            }
-            None => InlineRef::Inline(Box::new(ty)),
-        })
-    }
 }
 
 impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>

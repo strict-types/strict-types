@@ -27,9 +27,8 @@ mod path;
 use std::ops::Deref;
 
 pub use ast::{Decode, DecodeError, Encode, FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
-pub use dtl::TypeLib;
 pub use path::{Path, PathError, Step, TyIter};
-pub use util::{Ident, TypeName};
+pub use util::{Ident, SemVer, TypeName, Urn};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
