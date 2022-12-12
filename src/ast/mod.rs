@@ -15,12 +15,8 @@ mod serialize;
 mod translate;
 
 pub use id::TyId;
-pub use serialize::{Decode, DecodeError, Encode};
+pub use serialize::{Cls, Decode, DecodeError, Encode};
 pub use translate::{Translate, TranslateError};
-pub use ty::{Field, FieldName, Fields, KeyTy, Ty, TypeRef, Variants};
-
-pub mod inner {
-    pub use ty::TyInner;
-
-    use super::ty;
-}
+pub use ty::{
+    Field, FieldName, Fields, KeyTy, RecursiveRef, SubTy, Ty, TyInner, TypeRef, Variants,
+};

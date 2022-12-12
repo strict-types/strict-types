@@ -11,7 +11,7 @@
 
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
-use std::fmt::{self, Display, Formatter};
+use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
 use amplify::confinement::Confined;
@@ -20,25 +20,71 @@ use amplify::{confinement, Wrapper};
 use crate::ast::serialize::Encode;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Ident, StenType};
+use crate::{Ident, Path, PathError, StenType, Step, TyIter};
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + Eq + Sized {}
+pub trait TypeRef: Clone + Eq + Debug + Sized {}
 pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> + Encode {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
     fn size(&self) -> Size { self.as_ty().size() }
+    fn about(&self) -> String;
+
+    fn at_path(&self, path: &Path) -> Result<&Self, PathError<Self>> {
+        let mut ty = self;
+        let mut path = path.clone();
+        let mut path_so_far = Path::new();
+        while let Some(step) = path.pop() {
+            let res = match (self.as_inner(), &step) {
+                (TyInner::Struct(fields), Step::NamedField(name)) => {
+                    fields.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
+                }
+                (TyInner::Union(variants), Step::NamedField(name)) => {
+                    variants.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
+                }
+                (TyInner::Struct(fields), Step::UnnamedField(ord)) => {
+                    fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
+                }
+                (TyInner::Union(variants), Step::UnnamedField(ord)) => {
+                    variants.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
+                }
+                (TyInner::Array(ty, _), Step::Index) => Some(ty),
+                (TyInner::List(ty, _), Step::List) => Some(ty),
+                (TyInner::Set(ty, _), Step::Set) => Some(ty),
+                (TyInner::Map(_, ty, _), Step::Map) => Some(ty),
+                (_, _) => None,
+            };
+            path_so_far.push(step).expect("confinement collection guarantees");
+            ty = res.ok_or_else(|| PathError::new(self, path_so_far.clone()))?;
+        }
+        Ok(ty)
+    }
+
+    fn iter(&self) -> TyIter<Self> { TyIter::from(self) }
+    fn count_subtypes(&self) -> u8 {
+        match self.as_inner() {
+            TyInner::Primitive(_) => 0,
+            TyInner::Enum(_) => 0,
+            TyInner::Union(fields) => fields.len_u8(),
+            TyInner::Struct(fields) => fields.len_u8(),
+            TyInner::Array(_, _) => 1,
+            TyInner::Unicode(_) => 0,
+            TyInner::List(_, _) | TyInner::Set(_, _) | TyInner::Map(_, _, _) => 1,
+        }
+    }
 }
 
 impl TypeRef for SubTy {}
 impl RecursiveRef for SubTy {
     fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
     fn into_ty(self) -> Ty<Self> { *self.0 }
+    fn about(&self) -> String { self.0.id().to_string() }
 }
 impl TypeRef for StenType {}
 impl RecursiveRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
     fn into_ty(self) -> Ty<Self> { *self.ty }
+    fn about(&self) -> String { self.name.to_owned() }
 }
 
 #[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, Debug, From)]
@@ -266,20 +312,20 @@ where Ref: Display
     }
 }
 
-impl Ty {
-    pub fn try_into_key(self) -> Result<KeyTy, TyInner> {
+impl<Ref: RecursiveRef> Ty<Ref> {
+    pub fn try_into_key(self) -> Result<KeyTy, Ty<Ref>> {
         Ok(match self.0 {
             TyInner::Primitive(code) => KeyTy::Primitive(code),
             TyInner::Enum(vars) => KeyTy::Enum(vars),
-            TyInner::Array(ty, len) if *ty == Ty::BYTE => KeyTy::Array(len),
-            TyInner::List(ty, sizing) if *ty == Ty::BYTE => KeyTy::Bytes(sizing),
+            TyInner::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(len),
+            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(sizing),
             TyInner::Unicode(sizing) => KeyTy::Unicode(sizing),
             me @ TyInner::Union(_)
             | me @ TyInner::Struct(_)
             | me @ TyInner::Array(_, _)
             | me @ TyInner::List(_, _)
             | me @ TyInner::Set(_, _)
-            | me @ TyInner::Map(_, _, _) => return Err(me),
+            | me @ TyInner::Map(_, _, _) => return Err(Ty::from_inner(me)),
         })
     }
 }
@@ -394,6 +440,8 @@ impl<Ref: TypeRef, const OP: bool> Fields<Ref, OP> {
     pub fn into_values(self) -> std::collections::btree_map::IntoValues<Field, Ref> {
         self.0.into_inner().into_values()
     }
+
+    pub fn ty_at(&self, pos: u8) -> Option<&Ref> { self.values().skip(pos as usize).next() }
 }
 
 impl<Ref: TypeRef, const OP: bool> Display for Fields<Ref, OP>

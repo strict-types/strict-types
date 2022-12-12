@@ -19,8 +19,7 @@ use std::io::Write;
 use amplify::confinement::SmallOrdMap;
 use amplify::Wrapper;
 
-use crate::ast::inner::TyInner;
-use crate::ast::TranslateError;
+use crate::ast::{TranslateError, TyInner};
 use crate::{StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 pub type TypeIndex = BTreeMap<TyId, TypeName>;

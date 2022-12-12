@@ -13,9 +13,8 @@ use std::collections::BTreeMap;
 
 use amplify::{confinement, Wrapper};
 
-use crate::ast::inner::TyInner;
 use crate::ast::ty::RecursiveRef;
-use crate::ast::Fields;
+use crate::ast::{Fields, TyInner};
 use crate::dtl::InlineRef;
 use crate::{StenType, Ty, TyId, TypeLib, TypeName, TypeRef};
 

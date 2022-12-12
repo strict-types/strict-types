@@ -596,7 +596,7 @@ dependencies = [
 
 [[package]]
 name = "stens"
-version = "1.0.0-beta.1"
+version = "0.9.0-beta.1"
 dependencies = [
  "amplify",
  "blake3",
