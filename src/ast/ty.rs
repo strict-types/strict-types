@@ -14,8 +14,8 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
-use amplify::confinement;
 use amplify::confinement::Confined;
+use amplify::{confinement, Wrapper};
 
 use crate::ast::serialize::Encode;
 use crate::primitive::constants::*;
@@ -134,28 +134,15 @@ impl Display for Field {
 
 /// Provides guarantees that the type information fits maximum type size
 /// requirements, i.e. the serialized AST does not exceed `u24::MAX` bytes.
-#[derive(Clone, PartialEq, Eq, Debug)]
+#[derive(Wrapper, Clone, PartialEq, Eq, Debug, From)]
+#[wrapper(Deref)]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Ty<Ref: TypeRef = SubTy>(TyInner<Ref>);
-
-impl<Ref: TypeRef> Deref for Ty<Ref> {
-    type Target = TyInner<Ref>;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl<Ref: TypeRef> From<TyInner<Ref>> for Ty<Ref> {
-    fn from(inner: TyInner<Ref>) -> Self { Ty(inner) }
-}
-
-impl<Ref: TypeRef> Ty<Ref> {
-    pub(crate) fn into_inner(self) -> TyInner<Ref> { self.0 }
-    pub(crate) fn as_inner(&self) -> &TyInner<Ref> { &self.0 }
-}
+pub struct Ty<Ref = SubTy>(TyInner<Ref>)
+where Ref: TypeRef;
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub const UNIT: Ty<Ref> = Ty(TyInner::Primitive(UNIT));
@@ -435,6 +422,14 @@ where Ref: Display
     serde(crate = "serde_crate", transparent)
 )]
 pub struct Variants(Confined<BTreeMap<Field, u8>, 1, { u8::MAX as usize }>);
+
+impl TryFrom<BTreeMap<Field, u8>> for Variants {
+    type Error = confinement::Error;
+
+    fn try_from(inner: BTreeMap<Field, u8>) -> Result<Self, Self::Error> {
+        Confined::try_from(inner).map(Variants::from)
+    }
+}
 
 impl IntoIterator for Variants {
     type Item = (Field, u8);

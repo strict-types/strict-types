@@ -11,7 +11,7 @@
 
 use std::collections::BTreeMap;
 
-use amplify::confinement;
+use amplify::{confinement, Wrapper};
 
 use crate::ast::inner::TyInner;
 use crate::ast::ty::RecursiveRef;

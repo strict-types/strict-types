@@ -51,11 +51,8 @@ pub struct Ident(Confined<AsciiString, 1, 32>);
 
 impl From<&'static str> for Ident {
     fn from(s: &'static str) -> Self {
-        Ident::try_from(
-            Confined::try_from(AsciiString::from_ascii(s).expect("invalid identifier name"))
-                .expect("invalid identifier name"),
-        )
-        .expect("invalid identifier name")
+        let ascii = AsciiString::from_ascii(s).expect("invalid identifier name");
+        Ident::try_from(ascii).expect("invalid identifier name")
     }
 }
 
@@ -64,23 +61,23 @@ impl From<TyId> for Ident {
         let mut s = s!("Auto");
         s.extend(id.to_hex()[..8].to_uppercase().chars().take(8));
         let s = AsciiString::from_ascii(s).expect("invalid identifier name");
-        Ident::try_from(Confined::try_from(s).expect("invalid identifier name"))
-            .expect("invalid identifier name")
+        Ident::try_from(s).expect("invalid identifier name")
     }
 }
 
 impl Ident {
-    pub fn try_from(value: Confined<AsciiString, 1, 32>) -> Result<Self, InvalidIdent> {
-        let first = value[0];
+    pub fn try_from(ascii: AsciiString) -> Result<Self, InvalidIdent> {
+        let first = ascii[0];
         if !first.is_alphabetic() {
             return Err(InvalidIdent::NonAlphabetic(first));
         }
         if let Some(ch) =
-            value.as_slice().iter().copied().find(|ch| !ch.is_ascii_alphanumeric() && *ch != b'_')
+            ascii.as_slice().iter().copied().find(|ch| !ch.is_ascii_alphanumeric() && *ch != b'_')
         {
             return Err(InvalidIdent::InvalidChar(ch));
         }
-        Ok(Self(value))
+        let s = Confined::try_from(ascii)?;
+        Ok(Self(s))
     }
 }
 

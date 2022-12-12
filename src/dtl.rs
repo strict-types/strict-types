@@ -17,6 +17,7 @@ use std::fmt::{self, Display, Formatter};
 use std::io::Write;
 
 use amplify::confinement::SmallOrdMap;
+use amplify::Wrapper;
 
 use crate::ast::inner::TyInner;
 use crate::ast::TranslateError;
