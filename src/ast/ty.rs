@@ -22,9 +22,11 @@ use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
 use crate::{Ident, Path, PathError, StenType, Step, TyIter};
 
+pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
+
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + Eq + Debug + Sized {}
-pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> + Encode {
+pub trait TypeRef: Clone + Eq + Debug + Encode + Sized {}
+pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
     fn size(&self) -> Size { self.as_ty().size() }
@@ -222,32 +224,34 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub const F128: Ty<Ref> = Ty(TyInner::Primitive(F128));
     pub const F256: Ty<Ref> = Ty(TyInner::Primitive(F256));
 
-    pub fn enumerate(variants: Variants) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::Enum(variants))
-    }
+    pub fn enumerate(variants: Variants) -> Self { Ty(TyInner::Enum(variants)) }
     pub fn union(fields: Fields<Ref, false>) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::Union(fields))
+        let ty = Ty(TyInner::Union(fields));
+        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
+        ty
     }
     pub fn composition(fields: Fields<Ref, true>) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::Struct(fields))
+        let ty = Ty(TyInner::Struct(fields));
+        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
+        ty
     }
 
     pub fn string(sizing: Sizing) -> Self { Ty(TyInner::Unicode(sizing)) }
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::List(ty, sizing))
+        let ty = Ty(TyInner::List(ty, sizing));
+        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
+        ty
     }
     pub fn set(ty: Ref, sizing: Sizing) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::Set(ty, sizing))
+        let ty = Ty(TyInner::Set(ty, sizing));
+        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
+        ty
     }
     pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::Map(key, val, sizing))
+        let ty = Ty(TyInner::Map(key, val, sizing));
+        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
+        ty
     }
 
     pub fn is_primitive(&self) -> bool { matches!(self.as_inner(), TyInner::Primitive(_)) }
