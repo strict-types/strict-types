@@ -14,7 +14,7 @@ use std::collections::BTreeSet;
 use amplify::confinement::{Confined, SmallOrdMap};
 use amplify::{confinement, Wrapper};
 
-use crate::ast::{RecursiveRef, TranslateError, TyInner};
+use crate::ast::{NestedRef, TranslateError, TyInner};
 use crate::dtl::{Gravel, GravelTy, TypeIndex};
 use crate::{StenType, Translate, Ty, TyId, TypeName};
 
@@ -36,7 +36,7 @@ impl GravelBuilder {
         let types = Confined::try_from(self.types.into_inner())?;
         Ok(Gravel {
             roots,
-            uses: none!(),
+            dependencies: none!(),
             types,
         })
     }

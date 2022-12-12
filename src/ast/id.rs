@@ -12,7 +12,7 @@
 use std::cmp::Ordering;
 
 use crate::ast::serialize::Encode;
-use crate::ast::ty::RecursiveRef;
+use crate::ast::ty::NestedRef;
 use crate::Ty;
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -30,7 +30,7 @@ impl PartialOrd for TyId {
 
 pub const STEN_ID_TAG: [u8; 32] = [0u8; 32];
 
-impl<Ref: RecursiveRef> Ty<Ref> {
+impl<Ref: NestedRef> Ty<Ref> {
     pub fn id(&self) -> TyId {
         let mut hasher = blake3::Hasher::new_keyed(&STEN_ID_TAG);
         self.encode(&mut hasher).expect("hasher do  not error");

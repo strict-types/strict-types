@@ -17,7 +17,7 @@ use std::fmt::{self, Display, Formatter};
 use amplify::Wrapper;
 
 use crate::dtl::gravel::Dependency;
-use crate::dtl::{Gravel, GravelAlias, GravelTy};
+use crate::dtl::{Gravel, GravelAlias, GravelName, GravelTy};
 use crate::{Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
@@ -48,8 +48,8 @@ pub struct Monolith(BTreeMap<TyId, Ty<MonolithTy>>);
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct MonolithBuilder {
-    pub uses: BTreeMap<GravelAlias, Dependency>,
-    pub types: BTreeMap<TypeName, Ty<GravelTy>>,
+    dependencies: BTreeMap<GravelAlias, Dependency>,
+    types: BTreeMap<(GravelAlias, TypeName), Ty<GravelTy>>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -70,10 +70,39 @@ pub enum Error {
     TypeAbsent(GravelAlias, Dependency, TypeName),
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display(doc_comments)]
+pub enum ImportError {
+    /// type library {0} is not a dependency and can't be imported
+    Absent(GravelName),
+}
+
 impl MonolithBuilder {
     pub fn new() -> MonolithBuilder { MonolithBuilder::default() }
 
-    pub fn import(&mut self, _gravel: Gravel) {}
+    pub fn import(&mut self, name: GravelName, gravel: Gravel) -> Result<(), ImportError> {
+        let Some((alias, _)) = self.dependencies.iter().find(|(_, d)| d.name == name) else {
+            return Err(ImportError::Absent(name))
+        };
+        let alias = alias.clone();
+        self.dependencies.remove(&alias);
+        self.types
+            .extend(gravel.types.into_iter().map(|(ty_name, ty)| ((alias.clone(), ty_name), ty)));
+        self.dependencies.extend(gravel.dependencies);
 
-    pub fn finalize(self) -> Result<(Monolith, Vec<Warning>), Vec<Error>> { todo!() }
+        Ok(())
+    }
+
+    pub fn finalize(self) -> Result<(Monolith, Vec<Warning>), Vec<Error>> {
+        /*
+        for ty in self.types.values() {
+            for st in ty {
+                if matches!(st, GravelTy::Extern(n, a) if a == alias && n == name)
+                {
+                }
+            }
+        }
+         */
+        todo!()
+    }
 }

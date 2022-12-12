@@ -18,7 +18,7 @@ use amplify::confinement::MediumVec;
 use amplify::num::u24;
 use amplify::{confinement, IoError, Wrapper, WriteCounter};
 
-use crate::ast::ty::{RecursiveRef, SubTy};
+use crate::ast::ty::{NestedRef, SubTy};
 use crate::ast::{Field, Fields, TyInner, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::util::{InvalidIdent, Sizing};

@@ -20,70 +20,31 @@ use amplify::{confinement, Wrapper};
 use crate::ast::serialize::Encode;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Ident, Path, PathError, StenType, Step, TyIter};
+use crate::{Ident, StenType, TyIter};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + Eq + Debug + Encode + Sized {}
-pub trait RecursiveRef: TypeRef + Deref<Target = Ty<Self>> {
+pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
-    fn size(&self) -> Size { self.as_ty().size() }
     fn about(&self) -> String;
 
-    fn at_path(&self, path: &Path) -> Result<&Self, PathError<Self>> {
-        let mut ty = self;
-        let mut path = path.clone();
-        let mut path_so_far = Path::new();
-        while let Some(step) = path.pop() {
-            let res = match (self.as_inner(), &step) {
-                (TyInner::Struct(fields), Step::NamedField(name)) => {
-                    fields.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
-                }
-                (TyInner::Union(variants), Step::NamedField(name)) => {
-                    variants.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
-                }
-                (TyInner::Struct(fields), Step::UnnamedField(ord)) => {
-                    fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
-                }
-                (TyInner::Union(variants), Step::UnnamedField(ord)) => {
-                    variants.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
-                }
-                (TyInner::Array(ty, _), Step::Index) => Some(ty),
-                (TyInner::List(ty, _), Step::List) => Some(ty),
-                (TyInner::Set(ty, _), Step::Set) => Some(ty),
-                (TyInner::Map(_, ty, _), Step::Map) => Some(ty),
-                (_, _) => None,
-            };
-            path_so_far.push(step).expect("confinement collection guarantees");
-            ty = res.ok_or_else(|| PathError::new(self, path_so_far.clone()))?;
-        }
-        Ok(ty)
-    }
-
     fn iter(&self) -> TyIter<Self> { TyIter::from(self) }
-    fn count_subtypes(&self) -> u8 {
-        match self.as_inner() {
-            TyInner::Primitive(_) => 0,
-            TyInner::Enum(_) => 0,
-            TyInner::Union(fields) => fields.len_u8(),
-            TyInner::Struct(fields) => fields.len_u8(),
-            TyInner::Array(_, _) => 1,
-            TyInner::Unicode(_) => 0,
-            TyInner::List(_, _) | TyInner::Set(_, _) | TyInner::Map(_, _, _) => 1,
-        }
-    }
+}
+pub trait FullRef: NestedRef {
+    fn byte_size(&self) -> Size { self.as_ty().byte_size() }
 }
 
 impl TypeRef for SubTy {}
-impl RecursiveRef for SubTy {
+impl NestedRef for SubTy {
     fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
     fn into_ty(self) -> Ty<Self> { *self.0 }
     fn about(&self) -> String { self.0.id().to_string() }
 }
 impl TypeRef for StenType {}
-impl RecursiveRef for StenType {
+impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
     fn into_ty(self) -> Ty<Self> { *self.ty }
     fn about(&self) -> String { self.name.to_owned() }
@@ -316,7 +277,7 @@ where Ref: Display
     }
 }
 
-impl<Ref: RecursiveRef> Ty<Ref> {
+impl<Ref: NestedRef> Ty<Ref> {
     pub fn try_into_key(self) -> Result<KeyTy, Ty<Ref>> {
         Ok(match self.0 {
             TyInner::Primitive(code) => KeyTy::Primitive(code),
@@ -348,16 +309,16 @@ pub enum TyInner<Ref: TypeRef = SubTy> {
     Map(KeyTy, Ref, Sizing),
 }
 
-impl<Ref: RecursiveRef> TyInner<Ref> {
-    pub fn size(&self) -> Size {
+impl<Ref: NestedRef> TyInner<Ref> {
+    pub fn byte_size(&self) -> Size {
         match self {
             TyInner::Primitive(UNIT) | TyInner::Primitive(BYTE) => Size::Fixed(1),
             TyInner::Primitive(F16B) => Size::Fixed(2),
             TyInner::Primitive(primitive) => Size::Fixed(primitive.size()),
             TyInner::Union(fields) => {
-                fields.values().map(|alt| alt.as_ty().size()).max().unwrap_or(Size::Fixed(0))
+                fields.values().map(|alt| alt.as_ty().byte_size()).max().unwrap_or(Size::Fixed(0))
             }
-            TyInner::Struct(fields) => fields.values().map(|ty| ty.size()).sum(),
+            TyInner::Struct(fields) => fields.values().map(|ty| ty.byte_size()).sum(),
             TyInner::Enum(_) => Size::Fixed(1),
             TyInner::Array(_, len) => Size::Fixed(*len),
             TyInner::Unicode(..) | TyInner::List(..) | TyInner::Set(..) | TyInner::Map(..) => {

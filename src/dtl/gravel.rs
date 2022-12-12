@@ -15,11 +15,12 @@ use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 use std::io::Write;
+use std::ops::Deref;
 
 use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::Wrapper;
 
-use crate::ast::TranslateError;
+use crate::ast::{NestedRef, TranslateError};
 use crate::{Ident, SemVer, StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
@@ -34,6 +35,32 @@ pub enum GravelTy {
 }
 
 impl TypeRef for GravelTy {}
+
+impl Deref for GravelTy {
+    type Target = Ty<Self>;
+
+    fn deref(&self) -> &Self::Target { self.as_ty() }
+}
+
+impl NestedRef for GravelTy {
+    fn as_ty(&self) -> &Ty<Self> {
+        match self {
+            GravelTy::Name(_) => &Ty::UNIT,
+            GravelTy::Inline(ty) => ty.as_ref(),
+            GravelTy::Extern(_, _) => &Ty::UNIT,
+        }
+    }
+
+    fn into_ty(self) -> Ty<Self> {
+        match self {
+            GravelTy::Name(_) => Ty::UNIT,
+            GravelTy::Inline(ty) => *ty,
+            GravelTy::Extern(_, _) => Ty::UNIT,
+        }
+    }
+
+    fn about(&self) -> String { todo!() }
+}
 
 impl Display for GravelTy {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -98,7 +125,7 @@ pub struct Dependency {
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct Gravel {
     pub roots: BTreeSet<TyId>,
-    pub uses: TinyOrdMap<GravelAlias, Dependency>,
+    pub dependencies: TinyOrdMap<GravelAlias, Dependency>,
     pub types: Confined<BTreeMap<TypeName, Ty<GravelTy>>, 1, { u16::MAX as usize }>,
 }
 
