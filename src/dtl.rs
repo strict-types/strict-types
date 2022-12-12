@@ -16,10 +16,10 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 use std::io::Write;
 
-use amplify::confinement::SmallOrdMap;
+use amplify::confinement::Confined;
 use amplify::Wrapper;
 
-use crate::ast::{TranslateError, TyInner};
+use crate::ast::{TranslateContext, TranslateError, TyInner};
 use crate::{StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 pub type TypeIndex = BTreeMap<TyId, TypeName>;
@@ -83,10 +83,9 @@ impl LibHasher {
 }
 
 pub struct TypeLib {
-    // TODO: Require at least 1 type in a type library
     pub roots: BTreeSet<TyId>,
     pub index: TypeIndex,
-    pub types: SmallOrdMap<TypeName, Ty<InlineRef>>,
+    pub types: Confined<BTreeMap<TypeName, Ty<InlineRef>>, 1, { u16::MAX as usize }>,
 }
 
 impl TypeLib {
@@ -121,15 +120,12 @@ impl Translate<TypeLib> for StenType {
     fn translate(self, _: &mut Self::Context) -> Result<TypeLib, Self::Error> {
         let id = self.ty.id();
 
-        let mut lib = TypeLib {
-            roots: bset!(id),
-            index: empty!(),
-            types: empty!(),
-        };
+        let index = self.build_index()?;
 
-        self.build_index(&mut lib.index)?;
-        let root = self.ty.translate(&mut lib)?;
+        let mut ctx = TranslateContext::with(index);
+        let root = self.ty.translate(&mut ctx)?;
 
+        let mut lib = ctx.build_lib(bset!(id))?;
         let name = lib.index.get(&id).ok_or(TranslateError::UnknownId(id))?;
         if lib.types.insert(name.clone(), root)?.is_some() {
             return Err(TranslateError::DuplicateName(name.clone()));
@@ -140,7 +136,12 @@ impl Translate<TypeLib> for StenType {
 }
 
 impl StenType {
-    pub fn build_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
+    pub fn build_index(&self) -> Result<TypeIndex, TranslateError> {
+        let mut index = empty!();
+        self.index(&mut index).map(|_| index)
+    }
+
+    pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
         if self.name.is_empty() {
             return Ok(());
         }
@@ -164,18 +165,18 @@ impl Ty<StenType> {
         match self.as_inner() {
             TyInner::Union(fields) => {
                 for ty in fields.values() {
-                    ty.build_index(index)?;
+                    ty.index(index)?;
                 }
             }
             TyInner::Struct(fields) => {
                 for ty in fields.values() {
-                    ty.build_index(index)?;
+                    ty.index(index)?;
                 }
             }
             TyInner::Array(ty, _)
             | TyInner::List(ty, _)
             | TyInner::Set(ty, _)
-            | TyInner::Map(_, ty, _) => ty.build_index(index)?,
+            | TyInner::Map(_, ty, _) => ty.index(index)?,
             _ => {}
         }
         Ok(())

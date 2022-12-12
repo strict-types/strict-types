@@ -190,17 +190,3 @@ impl<'ty, Ref: RecursiveRef + 'ty> Iterator for TyIter<'ty, Ref> {
         ret
     }
 }
-
-/*
-impl<Ref: RecursiveRef> Iterator for FieldIter {
-    type Item = Ref;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        match self.ty.as_inner() {
-            TyInner::Union(fields) => {}
-            TyInner::Struct(fields) => {}
-            _ => None,
-        }
-    }
-}
-*/
