@@ -15,7 +15,8 @@ use amplify::confinement::{Confined, SmallOrdMap};
 use amplify::{confinement, Wrapper};
 
 use crate::ast::{NestedRef, TranslateError, TyInner};
-use crate::dtl::{LibTy, TypeIndex, TypeLib};
+use crate::dtl::embedded::EmbeddedBuilder;
+use crate::dtl::{EmbeddedTy, LibTy, TypeIndex, TypeLib};
 use crate::{StenType, Translate, Ty, TyId, TypeName};
 
 #[derive(Default)]
@@ -80,6 +81,25 @@ impl Translate<LibTy> for StenType {
             }
             None => LibTy::Inline(Box::new(ty)),
         })
+    }
+}
+
+impl Translate<EmbeddedTy> for LibTy {
+    type Context = EmbeddedBuilder;
+    type Error = ();
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<EmbeddedTy, Self::Error> {
+        let lib_name =
+            &ctx.dependencies.get(lib_alias).expect("internal builder inconsistency").name;
+        match self {
+            LibTy::Named(name) => Ok(EmbeddedTy::Name(lib_name.clone(), name)),
+            LibTy::Inline(inline_ty) => {
+                inline_ty.translate(ctx).map(Box::new).map(EmbeddedTy::Inline)
+            }
+            LibTy::Extern(ext_ty_name, ext_lib) => {
+                todo!()
+            }
+        }
     }
 }
 

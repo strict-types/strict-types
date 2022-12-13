@@ -116,7 +116,7 @@ pub type LibName = Ident;
 #[display("typelib {name}@{ver} {id:#}")]
 pub struct Dependency {
     pub id: TypeLibId,
-    pub name: Ident,
+    pub name: LibName,
     pub ver: SemVer,
 }
 

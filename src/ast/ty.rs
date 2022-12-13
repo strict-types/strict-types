@@ -42,12 +42,15 @@ impl NestedRef for SubTy {
     fn into_ty(self) -> Ty<Self> { *self.0 }
     fn about(&self) -> String { self.0.id().to_string() }
 }
+impl FullRef for SubTy {}
+
 impl TypeRef for StenType {}
 impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
     fn into_ty(self) -> Ty<Self> { *self.ty }
     fn about(&self) -> String { self.name.to_owned() }
 }
+impl FullRef for StenType {}
 
 #[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, Debug, From)]
 #[cfg_attr(
