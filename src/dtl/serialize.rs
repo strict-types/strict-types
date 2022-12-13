@@ -11,17 +11,17 @@
 
 use std::io;
 
-use crate::dtl::{GravelTy, MonolithTy};
+use crate::dtl::{EmbeddedTy, LibTy};
 use crate::{Decode, DecodeError, Encode};
 
-impl Encode for MonolithTy {
+impl Encode for EmbeddedTy {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         match self {
-            MonolithTy::Name(name) => {
+            EmbeddedTy::Name(name) => {
                 0u8.encode(writer)?;
                 name.encode(writer)
             }
-            MonolithTy::Inline(ty) => {
+            EmbeddedTy::Inline(ty) => {
                 1u8.encode(writer)?;
                 ty.encode(writer)
             }
@@ -29,28 +29,28 @@ impl Encode for MonolithTy {
     }
 }
 
-impl Decode for MonolithTy {
+impl Decode for EmbeddedTy {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Decode::decode(reader).map(MonolithTy::Name),
-            1u8 => Decode::decode(reader).map(Box::new).map(MonolithTy::Inline),
+            0u8 => Decode::decode(reader).map(EmbeddedTy::Name),
+            1u8 => Decode::decode(reader).map(Box::new).map(EmbeddedTy::Inline),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }
 }
 
-impl Encode for GravelTy {
+impl Encode for LibTy {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         match self {
-            GravelTy::Name(name) => {
+            LibTy::Named(name) => {
                 0u8.encode(writer)?;
                 name.encode(writer)
             }
-            GravelTy::Inline(ty) => {
+            LibTy::Inline(ty) => {
                 1u8.encode(writer)?;
                 ty.encode(writer)
             }
-            GravelTy::Extern(name, dep) => {
+            LibTy::Extern(name, dep) => {
                 2u8.encode(writer)?;
                 name.encode(writer)?;
                 dep.encode(writer)
@@ -59,12 +59,12 @@ impl Encode for GravelTy {
     }
 }
 
-impl Decode for GravelTy {
+impl Decode for LibTy {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Decode::decode(reader).map(GravelTy::Name),
-            1u8 => Decode::decode(reader).map(Box::new).map(GravelTy::Inline),
-            2u8 => Ok(GravelTy::Extern(Decode::decode(reader)?, Decode::decode(reader)?)),
+            0u8 => Decode::decode(reader).map(LibTy::Named),
+            1u8 => Decode::decode(reader).map(Box::new).map(LibTy::Inline),
+            2u8 => Ok(LibTy::Extern(Decode::decode(reader)?, Decode::decode(reader)?)),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }

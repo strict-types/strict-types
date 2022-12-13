@@ -15,26 +15,26 @@ use amplify::confinement::{Confined, SmallOrdMap};
 use amplify::{confinement, Wrapper};
 
 use crate::ast::{NestedRef, TranslateError, TyInner};
-use crate::dtl::{Gravel, GravelTy, TypeIndex};
+use crate::dtl::{LibTy, TypeIndex, TypeLib};
 use crate::{StenType, Translate, Ty, TyId, TypeName};
 
 #[derive(Default)]
-pub struct GravelBuilder {
+pub struct LibBuilder {
     index: TypeIndex,
-    types: SmallOrdMap<TypeName, Ty<GravelTy>>,
+    types: SmallOrdMap<TypeName, Ty<LibTy>>,
 }
 
-impl GravelBuilder {
-    pub(crate) fn with(index: TypeIndex) -> GravelBuilder {
-        GravelBuilder {
+impl LibBuilder {
+    pub(crate) fn with(index: TypeIndex) -> LibBuilder {
+        LibBuilder {
             index,
             types: default!(),
         }
     }
 
-    pub(crate) fn finalize(self, roots: BTreeSet<TyId>) -> Result<Gravel, confinement::Error> {
+    pub(crate) fn finalize(self, roots: BTreeSet<TyId>) -> Result<TypeLib, confinement::Error> {
         let types = Confined::try_from(self.types.into_inner())?;
-        Ok(Gravel {
+        Ok(TypeLib {
             roots,
             dependencies: none!(),
             types,
@@ -42,16 +42,16 @@ impl GravelBuilder {
     }
 }
 
-impl Translate<Gravel> for StenType {
+impl Translate<TypeLib> for StenType {
     type Context = ();
     type Error = TranslateError;
 
-    fn translate(self, _: &mut Self::Context) -> Result<Gravel, Self::Error> {
+    fn translate(self, _: &mut Self::Context) -> Result<TypeLib, Self::Error> {
         let id = self.ty.id();
 
         let index = self.build_index()?;
 
-        let mut ctx = GravelBuilder::with(index);
+        let mut ctx = LibBuilder::with(index);
         let root = self.ty.translate(&mut ctx)?;
 
         let name = ctx.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
@@ -64,11 +64,11 @@ impl Translate<Gravel> for StenType {
     }
 }
 
-impl Translate<GravelTy> for StenType {
-    type Context = GravelBuilder;
+impl Translate<LibTy> for StenType {
+    type Context = LibBuilder;
     type Error = TranslateError;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<GravelTy, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<LibTy, Self::Error> {
         let id = self.id();
         let ty = self.into_ty().translate(ctx)?;
         Ok(match ctx.index.get(&id) {
@@ -76,9 +76,9 @@ impl Translate<GravelTy> for StenType {
                 if !ctx.types.contains_key(name) {
                     ctx.types.insert(name.clone(), ty)?;
                 }
-                GravelTy::Name(name.clone())
+                LibTy::Named(name.clone())
             }
-            None => GravelTy::Inline(Box::new(ty)),
+            None => LibTy::Inline(Box::new(ty)),
         })
     }
 }

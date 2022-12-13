@@ -18,7 +18,7 @@ use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
 use amplify::confinement::{Confined, TinyVec};
 
-use crate::dtl::GravelId;
+use crate::dtl::TypeLibId;
 use crate::TyId;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
@@ -229,8 +229,8 @@ impl Display for SemVer {
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 pub enum Urn {
     #[from]
-    #[display("urn:ubideco:gravel:{0}", alt = "urn:ubideco:gravel:{0:#}")]
-    Gravel(GravelId),
+    #[display("urn:ubideco:sten:lib:{0}", alt = "urn:ubideco:sten:lib:{0:#}")]
+    Lib(TypeLibId),
 
     #[from]
     #[display("urn:ubideco:sten:{0}", alt = "urn:ubideco:sten:{0:#}")]

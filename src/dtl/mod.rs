@@ -11,12 +11,12 @@
 
 //! DTL stands for "Data type library".
 
-mod gravel;
-mod monolith;
+mod type_lib;
+pub mod embedded;
 mod translate;
 mod serialize;
 
-pub use gravel::{Gravel, GravelAlias, GravelId, GravelName, GravelTy};
-pub use monolith::{Monolith, MonolithTy};
+pub use embedded::{EmbeddedLib, EmbeddedTy};
+pub use type_lib::{LibAlias, LibName, LibTy, TypeLib, TypeLibId};
 
 pub type TypeIndex = std::collections::BTreeMap<crate::TyId, crate::TypeName>;

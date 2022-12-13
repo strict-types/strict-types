@@ -24,7 +24,7 @@ extern crate stens;
 
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
-use stens::dtl::{Gravel, Monolith};
+use stens::dtl::TypeLib;
 use stens::{StenSchema, StenType, Urn};
 
 #[repr(u8)]
@@ -113,7 +113,7 @@ impl StenSchema for Complex {
 #[test]
 fn serialize() {
     let root = Complex::sten_type();
-    let lib = Gravel::try_from(root).unwrap();
+    let lib = TypeLib::try_from(root).unwrap();
 
     println!("{:#}", Urn::from(lib.id()));
 
