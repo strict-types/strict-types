@@ -14,8 +14,8 @@ use std::fmt::{Display, Formatter};
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
 
-use crate::ast::{Cls, NestedRef, SubTy, TyInner};
-use crate::{FieldName, Ty};
+use crate::ast::{NestedRef, SubTy, TyInner};
+use crate::{Cls, FieldName, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 pub enum Step {

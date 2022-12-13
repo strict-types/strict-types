@@ -19,6 +19,7 @@ mod util;
 pub mod primitive;
 pub mod ast;
 pub mod dtl;
+mod serialize;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
@@ -26,8 +27,9 @@ mod path;
 
 use std::ops::Deref;
 
-pub use ast::{Decode, DecodeError, Encode, FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
+pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
 pub use path::{Path, PathError, Step, TyIter};
+pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
 pub use util::{Ident, SemVer, TypeName, Urn};
 
 #[derive(Clone, Eq, PartialEq, Debug)]

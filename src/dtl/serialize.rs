@@ -9,10 +9,40 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
+use std::collections::BTreeMap;
 use std::io;
 
-use crate::dtl::{EmbeddedTy, LibTy};
-use crate::{Decode, DecodeError, Encode};
+use amplify::num::u24;
+
+use crate::dtl::{EmbeddedLib, EmbeddedTy, LibTy};
+use crate::{Decode, DecodeError, Deserialize, Encode, Serialize, Ty, TyId};
+
+// TODO: Serialize TypeLib
+
+impl Serialize for EmbeddedLib {}
+impl Deserialize for EmbeddedLib {}
+
+impl Encode for EmbeddedLib {
+    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+        self.count_types().encode(writer)?;
+        for (id, ty) in self.iter() {
+            id.encode(writer)?;
+            ty.encode(writer)?;
+        }
+        Ok(())
+    }
+}
+
+impl Decode for EmbeddedLib {
+    fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
+        let count = u24::decode(reader)?;
+        let mut lib: BTreeMap<TyId, Ty<EmbeddedTy>> = empty!();
+        for _ in 0..count.into_usize() {
+            lib.insert(Decode::decode(reader)?, Decode::decode(reader)?);
+        }
+        EmbeddedLib::try_from_iter(lib).map_err(DecodeError::from)
+    }
+}
 
 impl Encode for EmbeddedTy {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {

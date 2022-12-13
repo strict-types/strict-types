@@ -17,10 +17,9 @@ use std::ops::{Deref, DerefMut};
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
-use crate::ast::serialize::Encode;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Ident, StenType, TyIter};
+use crate::{Encode, Ident, Serialize, StenType, TyIter};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 

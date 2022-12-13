@@ -11,9 +11,8 @@
 
 use std::cmp::Ordering;
 
-use crate::ast::serialize::Encode;
 use crate::ast::ty::NestedRef;
-use crate::Ty;
+use crate::{Encode, Ty};
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref)]
