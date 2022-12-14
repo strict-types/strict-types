@@ -9,7 +9,7 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::{Error, Read, Write};
 
@@ -19,7 +19,7 @@ use amplify::Wrapper;
 
 use crate::dtl::type_lib::Dependency;
 use crate::dtl::{EmbeddedTy, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
-use crate::{Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, Ty, TyId, TypeName};
+use crate::{Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, Ty, TypeName};
 
 impl Serialize for TypeSystem {}
 impl Deserialize for TypeSystem {}
@@ -37,10 +37,10 @@ impl Encode for TypeSystem {
 impl Decode for TypeSystem {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let count = u24::decode(reader)?;
-        let mut lib: BTreeMap<TyId, Ty<EmbeddedTy>> = empty!();
+        let mut lib: BTreeSet<Ty<EmbeddedTy>> = empty!();
         for _ in 0..count.into_usize() {
             let ty = Ty::decode(reader)?;
-            lib.insert(ty.id(), ty);
+            lib.insert(ty);
         }
         TypeSystem::try_from_iter(lib).map_err(DecodeError::from)
     }
@@ -99,10 +99,8 @@ impl Decode for TypeLib {
 impl Encode for EmbeddedTy {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         match self {
-            EmbeddedTy::Name(lib_name, ty_name, id) => {
+            EmbeddedTy::Ref(id) => {
                 0u8.encode(writer)?;
-                lib_name.encode(writer)?;
-                ty_name.encode(writer)?;
                 id.encode(writer)
             }
             EmbeddedTy::Inline(ty) => {
@@ -116,11 +114,7 @@ impl Encode for EmbeddedTy {
 impl Decode for EmbeddedTy {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(EmbeddedTy::Name(
-                Decode::decode(reader)?,
-                Decode::decode(reader)?,
-                Decode::decode(reader)?,
-            )),
+            0u8 => Ok(EmbeddedTy::Ref(Decode::decode(reader)?)),
             1u8 => Decode::decode(reader).map(Box::new).map(EmbeddedTy::Inline),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }

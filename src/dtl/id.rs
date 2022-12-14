@@ -68,7 +68,7 @@ impl Display for TypeSysId {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        let mut hasher = blake3::Hasher::new_keyed(&TYPESYS_ID_TAG);
         for (name, ty) in self.types.iter() {
             hasher.update(name.as_bytes());
             hasher.update(ty.id().as_bytes());

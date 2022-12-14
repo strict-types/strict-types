@@ -13,7 +13,6 @@ use std::cmp::Ordering;
 
 use amplify::Wrapper;
 
-use crate::ast::ty::NestedRef;
 use crate::ast::{Field, Fields, TyInner, Variants};
 use crate::util::Sizing;
 use crate::{Cls, KeyTy, Ty, TypeRef};
@@ -33,7 +32,7 @@ impl PartialOrd for TyId {
 
 pub const STEN_ID_TAG: [u8; 32] = [0u8; 32];
 
-impl<Ref: NestedRef> Ty<Ref> {
+impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self) -> TyId {
         let mut hasher = blake3::Hasher::new_keyed(&STEN_ID_TAG);
         self.hash(&mut hasher);

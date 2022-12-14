@@ -92,7 +92,7 @@ pub struct TypeLib {
 }
 
 impl TypeLib {
-    fn with(name: LibName, root: StenType) -> Result<Self, TranslateError> {
+    pub fn with(mut name: LibName, root: StenType) -> Result<Self, TranslateError> {
         root.translate(&mut name)
     }
 }
