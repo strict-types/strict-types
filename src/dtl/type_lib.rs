@@ -86,18 +86,29 @@ pub struct Dependency {
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct TypeLib {
+    pub name: LibName,
     pub dependencies: TinyOrdMap<LibAlias, Dependency>,
     pub types: Confined<BTreeMap<TypeName, Ty<LibTy>>, 1, { u16::MAX as usize }>,
 }
 
-impl TryFrom<StenType> for TypeLib {
-    type Error = TranslateError;
-
-    fn try_from(root: StenType) -> Result<Self, Self::Error> { root.translate(&mut ()) }
+impl TypeLib {
+    fn with(name: LibName, root: StenType) -> Result<Self, TranslateError> {
+        root.translate(&mut name)
+    }
 }
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typemod {}", self.name)?;
+        writeln!(f)?;
+        for (alias, dep) in &self.dependencies {
+            if alias != &dep.name {
+                writeln!(f, "{} as {}", dep, alias)?;
+            } else {
+                Display::fmt(dep, f)?;
+            }
+        }
+        writeln!(f)?;
         for (name, ty) in &self.types {
             writeln!(f, "data {:16} :: {}", name, ty)?;
         }

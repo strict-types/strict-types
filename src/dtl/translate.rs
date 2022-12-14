@@ -9,15 +9,13 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
-use std::collections::BTreeSet;
-
 use amplify::confinement::{Confined, SmallOrdMap};
 use amplify::{confinement, Wrapper};
 
 use crate::ast::{NestedRef, TranslateError, TyInner};
 use crate::dtl::embedded::SystemBuilder;
-use crate::dtl::{EmbeddedTy, LibTy, TypeIndex, TypeLib};
-use crate::{StenType, Translate, Ty, TyId, TypeName};
+use crate::dtl::{EmbeddedTy, LibName, LibTy, TypeIndex, TypeLib};
+use crate::{StenType, Translate, Ty, TypeName};
 
 #[derive(Default)]
 pub struct LibBuilder {
@@ -33,9 +31,10 @@ impl LibBuilder {
         }
     }
 
-    pub(crate) fn finalize(self) -> Result<TypeLib, confinement::Error> {
+    pub(crate) fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
         let types = Confined::try_from(self.types.into_inner())?;
         Ok(TypeLib {
+            name,
             dependencies: none!(),
             types,
         })
@@ -43,10 +42,10 @@ impl LibBuilder {
 }
 
 impl Translate<TypeLib> for StenType {
-    type Context = ();
+    type Context = LibName;
     type Error = TranslateError;
 
-    fn translate(self, _: &mut Self::Context) -> Result<TypeLib, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<TypeLib, Self::Error> {
         let id = self.ty.id();
 
         let index = self.build_index()?;
@@ -55,7 +54,7 @@ impl Translate<TypeLib> for StenType {
         let root = self.ty.translate(&mut ctx)?;
 
         let name = ctx.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
-        let mut lib = ctx.finalize(bset!(id))?;
+        let mut lib = ctx.finalize(ctx.clone())?;
         if lib.types.insert(name.clone(), root)?.is_some() {
             return Err(TranslateError::DuplicateName(name));
         }

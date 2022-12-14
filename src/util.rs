@@ -182,7 +182,7 @@ pub enum PreFragment {
 #[display(inner)]
 pub enum BuildFragment {
     Ident(Ident),
-    Digits(Confined<AsciiString, 1, 32>),
+    Digits(Ident),
 }
 
 // TODO: Manually implement Ord, PartialOrd
@@ -191,8 +191,8 @@ pub struct SemVer {
     pub major: u16,
     pub minor: u16,
     pub patch: u16,
-    pub build: TinyVec<PreFragment>,
-    pub pre: TinyVec<BuildFragment>,
+    pub pre: TinyVec<PreFragment>,
+    pub build: TinyVec<BuildFragment>,
 }
 
 impl Display for SemVer {

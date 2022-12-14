@@ -9,16 +9,16 @@
 // You should have received a copy of the Apache 2.0 License along with this
 // software. If not, see <https://opensource.org/licenses/Apache-2.0>.
 
-use std::io::{Error, Read};
+use std::io::{Error, Read, Write};
 use std::{fs, io};
 
 use amplify::ascii::AsciiString;
-use amplify::confinement::MediumVec;
+use amplify::confinement::{MediumVec, TinyVec};
 use amplify::num::u24;
 use amplify::{confinement, IoError, WriteCounter};
 
-use crate::util::{InvalidIdent, Sizing};
-use crate::FieldName;
+use crate::util::{BuildFragment, InvalidIdent, PreFragment, Sizing};
+use crate::{FieldName, Ident, SemVer};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -43,6 +43,9 @@ pub enum DecodeError {
     #[display(inner)]
     #[from]
     InvalidIdent(InvalidIdent),
+
+    /// invalid value {1} for {0} enum
+    WrongEnumId(&'static str, u8),
 }
 
 pub trait Deserialize: Decode {
@@ -187,6 +190,20 @@ impl Decode for u24 {
     }
 }
 
+impl Encode for u128 {
+    fn encode(&self, writer: &mut impl io::Write) -> Result<(), Error> {
+        writer.write_all(&self.to_le_bytes())
+    }
+}
+
+impl Decode for u128 {
+    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        let mut buf = [0u8; 16];
+        reader.read_exact(&mut buf)?;
+        Ok(u128::from_le_bytes(buf))
+    }
+}
+
 impl Encode for FieldName {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         writer.write_all(self.as_bytes())
@@ -215,5 +232,97 @@ impl Encode for Sizing {
 impl Decode for Sizing {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         Ok(Sizing::new(Decode::decode(reader)?, Decode::decode(reader)?))
+    }
+}
+
+impl Encode for SemVer {
+    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+        self.major.encode(writer)?;
+        self.minor.encode(writer)?;
+        self.patch.encode(writer)?;
+        self.pre.len_u8().encode(writer)?;
+        for fragment in &self.pre {
+            fragment.encode(writer)?;
+        }
+        self.build.len_u8().encode(writer)?;
+        for fragment in &self.build {
+            fragment.encode(writer)?;
+        }
+        Ok(())
+    }
+}
+
+impl Decode for SemVer {
+    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        let major = u16::decode(reader)?;
+        let minor = u16::decode(reader)?;
+        let patch = u16::decode(reader)?;
+        let len = u8::decode(reader)?;
+        let mut pre = TinyVec::with_capacity(len as usize);
+        for _ in 0..len {
+            pre.push(PreFragment::decode(reader)?).expect("len is less than u8::MAX");
+        }
+        let len = u8::decode(reader)?;
+        let mut build = TinyVec::with_capacity(len as usize);
+        for _ in 0..len {
+            build.push(BuildFragment::decode(reader)?).expect("len is less than u8::MAX");
+        }
+        Ok(SemVer {
+            major,
+            minor,
+            patch,
+            build,
+            pre,
+        })
+    }
+}
+
+impl Encode for PreFragment {
+    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+        match self {
+            PreFragment::Ident(ident) => {
+                0u8.encode(writer)?;
+                ident.encode(writer)
+            }
+            PreFragment::Digits(dig) => {
+                1u8.encode(writer)?;
+                dig.encode(writer)
+            }
+        }
+    }
+}
+
+impl Decode for PreFragment {
+    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        match u8::decode(reader)? {
+            0u8 => Ident::decode(reader).map(PreFragment::Ident),
+            1u8 => u128::decode(reader).map(PreFragment::Digits),
+            wrong => Err(DecodeError::WrongEnumId("PreFragment", wrong)),
+        }
+    }
+}
+
+impl Encode for BuildFragment {
+    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+        match self {
+            BuildFragment::Ident(ident) => {
+                0u8.encode(writer)?;
+                ident.encode(writer)
+            }
+            BuildFragment::Digits(ident) => {
+                1u8.encode(writer)?;
+                ident.encode(writer)
+            }
+        }
+    }
+}
+
+impl Decode for BuildFragment {
+    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        match u8::decode(reader)? {
+            0u8 => Ident::decode(reader).map(BuildFragment::Ident),
+            1u8 => Ident::decode(reader).map(BuildFragment::Digits),
+            wrong => Err(DecodeError::WrongEnumId("BuildFragment", wrong)),
+        }
     }
 }
