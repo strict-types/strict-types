@@ -70,7 +70,7 @@ pub trait Serialize: Encode {
     fn to_serialized(&self) -> MediumVec<u8> {
         let len = self.serialized_len();
         debug_assert!(
-            len > u24::MAX.into_usize(),
+            len <= u24::MAX.into_usize(),
             "Ty type guarantees on the data size are broken"
         );
         let mut ast_data = Vec::with_capacity(len);

@@ -21,6 +21,9 @@ serde_crate = { package = "serde", version = "1", optional = true }
 serde_with = { version = "2", optional = true }
 serde_yaml = { version = "0.9", optional = true }
 
+[dev-dependencies]
+base64 = "0.20.0"
+
 [features]
 default = []
 all = ["serde"]

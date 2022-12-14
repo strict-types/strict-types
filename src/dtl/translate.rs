@@ -83,27 +83,21 @@ pub struct SystemBuilder {
     types: BTreeMap<(LibAlias, TypeName), Ty<LibTy>>,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[display(doc_comments)]
-pub enum ImportError {
-    /// type library {0} is not a dependency and can't be imported
-    Absent(LibName),
-}
-
 impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
-    pub fn import(&mut self, name: LibName, lib: TypeLib) -> Result<(), ImportError> {
-        let Some((alias, _)) = self.dependencies.iter().find(|(_, d)| d.name == name) else {
-            return Err(ImportError::Absent(name))
-        };
+    pub fn import(&mut self, lib: TypeLib) {
+        let alias = self
+            .dependencies
+            .iter()
+            .find(|(_, d)| d.name == lib.name)
+            .map(|(name, _)| name)
+            .unwrap_or(&lib.name);
         let alias = alias.clone();
         self.dependencies.remove(&alias);
         self.types
             .extend(lib.types.into_iter().map(|(ty_name, ty)| ((alias.clone(), ty_name), ty)));
         self.dependencies.extend(lib.dependencies);
-
-        Ok(())
     }
 
     pub fn finalize(mut self) -> Result<(TypeSystem, Vec<Warning>), Vec<Error>> {

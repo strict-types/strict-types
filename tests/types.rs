@@ -26,8 +26,8 @@ extern crate amplify;
 
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
-use stens::dtl::TypeLib;
-use stens::{StenSchema, StenType, Urn};
+use stens::dtl::{SystemBuilder, TypeLib};
+use stens::{Serialize, StenSchema, StenType, Urn};
 
 #[repr(u8)]
 pub enum Prim {
@@ -121,4 +121,32 @@ fn serialize() {
 
     println!();
     println!("{}", lib);
+
+    let mut builder = SystemBuilder::new();
+    builder.import(lib);
+    match builder.finalize() {
+        Ok((sys, warnings)) => {
+            for warning in warnings {
+                eprintln!("Warning: {}", warning);
+            }
+            let data = sys.to_serialized();
+            let data = base64::encode(data.as_inner());
+            let mut data = data.as_str();
+            println!("----- BEGIN STEN TYPE SYSTEM -----");
+            println!("Id: {}\n", sys.id());
+            while data.len() > 80 {
+                let (line, rest) = data.split_at(80);
+                println!("{}", line);
+                data = rest;
+            }
+            println!("{}", data);
+            println!("\n----- END STEN TYPE SYSTEM -----\n");
+        }
+        Err(errors) => {
+            for error in errors {
+                eprintln!("Error: {}", error);
+            }
+            panic!()
+        }
+    }
 }

@@ -19,6 +19,7 @@ mod serialize;
 
 pub use embedded::{EmbeddedTy, TypeSystem};
 pub use id::TypeLibId;
+pub use translate::{Error, LibBuilder, SystemBuilder, Warning};
 pub use type_lib::{Dependency, LibAlias, LibName, LibTy, TypeLib};
 
 pub type TypeIndex = std::collections::BTreeMap<crate::TyId, crate::TypeName>;
