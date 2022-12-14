@@ -13,7 +13,9 @@ mod ty;
 mod id;
 mod serialize;
 mod translate;
+mod path;
 
 pub use id::TyId;
+pub use path::{Path, PathError, Step, TyIter};
 pub use translate::{Translate, TranslateError};
 pub use ty::{Field, FieldName, Fields, KeyTy, NestedRef, SubTy, Ty, TyInner, TypeRef, Variants};
