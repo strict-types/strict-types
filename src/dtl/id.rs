@@ -12,7 +12,7 @@
 use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 
-use crate::dtl::TypeLib;
+use crate::dtl::{TypeLib, TypeSystem};
 
 // TODO: Use real tag
 pub const LIB_ID_TAG: [u8; 32] = [0u8; 32];
@@ -40,6 +40,32 @@ impl Display for TypeLibId {
     }
 }
 
+// TODO: Use real tag
+pub const TYPESYS_ID_TAG: [u8; 32] = [0u8; 32];
+
+#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
+#[wrapper(Deref)]
+pub struct TypeSysId(blake3::Hash);
+
+impl Ord for TypeSysId {
+    fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
+}
+
+impl PartialOrd for TypeSysId {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+impl Display for TypeSysId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if f.alternate() {
+            let m = mnemonic::to_string(&self.as_bytes()[14..18]);
+            write!(f, "{}#{}", self.0, m)
+        } else {
+            write!(f, "{}", self.0)
+        }
+    }
+}
+
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
         let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
@@ -48,5 +74,15 @@ impl TypeLib {
             hasher.update(ty.id().as_bytes());
         }
         TypeLibId(hasher.finalize())
+    }
+}
+
+impl TypeSystem {
+    pub fn id(&self) -> TypeSysId {
+        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        for ty in self.values() {
+            hasher.update(ty.id().as_bytes());
+        }
+        TypeSysId(hasher.finalize())
     }
 }

@@ -14,15 +14,15 @@ use std::io;
 
 use amplify::num::u24;
 
-use crate::dtl::{EmbeddedLib, EmbeddedTy, LibTy};
+use crate::dtl::{EmbeddedTy, LibTy, TypeSystem};
 use crate::{Decode, DecodeError, Deserialize, Encode, Serialize, Ty, TyId};
 
 // TODO: Serialize TypeLib
 
-impl Serialize for EmbeddedLib {}
-impl Deserialize for EmbeddedLib {}
+impl Serialize for TypeSystem {}
+impl Deserialize for TypeSystem {}
 
-impl Encode for EmbeddedLib {
+impl Encode for TypeSystem {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         self.count_types().encode(writer)?;
         for (id, ty) in self.iter() {
@@ -33,14 +33,14 @@ impl Encode for EmbeddedLib {
     }
 }
 
-impl Decode for EmbeddedLib {
+impl Decode for TypeSystem {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         let count = u24::decode(reader)?;
         let mut lib: BTreeMap<TyId, Ty<EmbeddedTy>> = empty!();
         for _ in 0..count.into_usize() {
             lib.insert(Decode::decode(reader)?, Decode::decode(reader)?);
         }
-        EmbeddedLib::try_from_iter(lib).map_err(DecodeError::from)
+        TypeSystem::try_from_iter(lib).map_err(DecodeError::from)
     }
 }
 

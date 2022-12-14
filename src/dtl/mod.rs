@@ -17,7 +17,7 @@ pub mod embedded;
 mod translate;
 mod serialize;
 
-pub use embedded::{EmbeddedLib, EmbeddedTy};
+pub use embedded::{EmbeddedTy, TypeSystem};
 pub use id::TypeLibId;
 pub use type_lib::{LibAlias, LibName, LibTy, TypeLib};
 

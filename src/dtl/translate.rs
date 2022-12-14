@@ -15,7 +15,7 @@ use amplify::confinement::{Confined, SmallOrdMap};
 use amplify::{confinement, Wrapper};
 
 use crate::ast::{NestedRef, TranslateError, TyInner};
-use crate::dtl::embedded::EmbeddedBuilder;
+use crate::dtl::embedded::SystemBuilder;
 use crate::dtl::{EmbeddedTy, LibTy, TypeIndex, TypeLib};
 use crate::{StenType, Translate, Ty, TyId, TypeName};
 
@@ -84,7 +84,7 @@ impl Translate<LibTy> for StenType {
 }
 
 impl Translate<EmbeddedTy> for LibTy {
-    type Context = EmbeddedBuilder;
+    type Context = SystemBuilder;
     type Error = ();
 
     fn translate(self, ctx: &mut Self::Context) -> Result<EmbeddedTy, Self::Error> {

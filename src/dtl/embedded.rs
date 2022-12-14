@@ -75,29 +75,29 @@ impl Display for EmbeddedTy {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub struct EmbeddedLib(MediumOrdMap<TyId, Ty<EmbeddedTy>>);
+pub struct TypeSystem(MediumOrdMap<TyId, Ty<EmbeddedTy>>);
 
-impl Deref for EmbeddedLib {
+impl Deref for TypeSystem {
     type Target = BTreeMap<TyId, Ty<EmbeddedTy>>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
-impl IntoIterator for EmbeddedLib {
+impl IntoIterator for TypeSystem {
     type Item = (TyId, Ty<EmbeddedTy>);
     type IntoIter = std::collections::btree_map::IntoIter<TyId, Ty<EmbeddedTy>>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
-impl<'lib> IntoIterator for &'lib EmbeddedLib {
+impl<'lib> IntoIterator for &'lib TypeSystem {
     type Item = (&'lib TyId, &'lib Ty<EmbeddedTy>);
     type IntoIter = std::collections::btree_map::Iter<'lib, TyId, Ty<EmbeddedTy>>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
-impl EmbeddedLib {
+impl TypeSystem {
     pub fn try_from_iter<T: IntoIterator<Item = (TyId, Ty<EmbeddedTy>)>>(
         iter: T,
     ) -> Result<Self, confinement::Error> {
@@ -106,7 +106,7 @@ impl EmbeddedLib {
             lib.insert(id, ty);
         }
 
-        let lib = EmbeddedLib(MediumOrdMap::try_from_iter(lib)?);
+        let lib = TypeSystem(MediumOrdMap::try_from_iter(lib)?);
         let len = lib.serialized_len();
         let max_len = u24::MAX.into_usize();
         if len > max_len {
@@ -119,7 +119,7 @@ impl EmbeddedLib {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
-pub struct EmbeddedBuilder {
+pub struct SystemBuilder {
     pub(super) dependencies: BTreeMap<LibAlias, Dependency>,
     types: BTreeMap<(LibAlias, TypeName), Ty<LibTy>>,
 }
@@ -153,8 +153,8 @@ pub enum ImportError {
     Absent(LibName),
 }
 
-impl EmbeddedBuilder {
-    pub fn new() -> EmbeddedBuilder { EmbeddedBuilder::default() }
+impl SystemBuilder {
+    pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(&mut self, name: LibName, lib: TypeLib) -> Result<(), ImportError> {
         let Some((alias, _)) = self.dependencies.iter().find(|(_, d)| d.name == name) else {
@@ -169,7 +169,7 @@ impl EmbeddedBuilder {
         Ok(())
     }
 
-    pub fn finalize(self) -> Result<(EmbeddedLib, Vec<Warning>), Vec<Error>> {
+    pub fn finalize(self) -> Result<(TypeSystem, Vec<Warning>), Vec<Error>> {
         let mut warnings: Vec<Warning> = empty!();
         let mut errors: Vec<Error> = empty!();
         let mut lib: BTreeSet<Ty<EmbeddedTy>> = empty!();
@@ -186,7 +186,7 @@ impl EmbeddedBuilder {
             }
         }
 
-        match EmbeddedLib::try_from_iter(lib) {
+        match TypeSystem::try_from_iter(lib) {
             Err(err) => {
                 errors.push(err.into());
                 return Err(errors);
