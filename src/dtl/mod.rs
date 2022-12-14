@@ -11,12 +11,14 @@
 
 //! DTL stands for "Data type library".
 
+mod id;
 mod type_lib;
 pub mod embedded;
 mod translate;
 mod serialize;
 
 pub use embedded::{EmbeddedLib, EmbeddedTy};
-pub use type_lib::{LibAlias, LibName, LibTy, TypeLib, TypeLibId};
+pub use id::TypeLibId;
+pub use type_lib::{LibAlias, LibName, LibTy, TypeLib};
 
 pub type TypeIndex = std::collections::BTreeMap<crate::TyId, crate::TypeName>;

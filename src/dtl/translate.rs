@@ -33,10 +33,9 @@ impl LibBuilder {
         }
     }
 
-    pub(crate) fn finalize(self, roots: BTreeSet<TyId>) -> Result<TypeLib, confinement::Error> {
+    pub(crate) fn finalize(self) -> Result<TypeLib, confinement::Error> {
         let types = Confined::try_from(self.types.into_inner())?;
         Ok(TypeLib {
-            roots,
             dependencies: none!(),
             types,
         })
