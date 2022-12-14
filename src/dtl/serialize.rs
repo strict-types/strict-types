@@ -18,8 +18,8 @@ use amplify::num::u24;
 use amplify::Wrapper;
 
 use crate::dtl::type_lib::Dependency;
-use crate::dtl::{EmbeddedTy, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
-use crate::{Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, Ty, TypeName};
+use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
+use crate::{Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, Ty, TyId, TypeName};
 
 impl Serialize for TypeSystem {}
 impl Deserialize for TypeSystem {}
@@ -38,9 +38,17 @@ impl Decode for TypeSystem {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let count = u24::decode(reader)?;
         let mut lib: BTreeSet<Ty<EmbeddedTy>> = empty!();
+        let mut prev: Option<TyId> = None;
         for _ in 0..count.into_usize() {
             let ty = Ty::decode(reader)?;
-            lib.insert(ty);
+            if matches!(prev, Some(id) if id > ty.id()) {
+                return Err(DecodeError::WrongTypeOrdering(ty.id()));
+            }
+            let id = ty.id();
+            prev = Some(id);
+            if !lib.insert(ty) {
+                return Err(DecodeError::RepeatedType(id));
+            }
         }
         TypeSystem::try_from_iter(lib).map_err(DecodeError::from)
     }
@@ -74,18 +82,34 @@ impl Decode for TypeLib {
 
         let len = u8::decode(reader)?;
         let mut dependencies: TinyOrdMap<_, _> = empty!();
+        let mut prev = None;
         for _ in 0..len {
-            let name = LibName::decode(reader)?;
-            let ty = Dependency::decode(reader)?;
-            dependencies.insert(name, ty).expect("under u8::MAX");
+            let alias = LibAlias::decode(reader)?;
+            let dep = Dependency::decode(reader)?;
+            if matches!(prev, Some(a) if a > alias) {
+                return Err(DecodeError::WrongDependencyOrdering(alias));
+            }
+            prev = Some(alias.clone());
+            let name = dep.name.clone();
+            if dependencies.insert(alias, dep).expect("under u8::MAX").is_some() {
+                return Err(DecodeError::RepeatedDependency(name));
+            }
         }
 
         let len = u16::decode(reader)?;
         let mut types: BTreeMap<_, _> = empty!();
+        let mut prev: Option<TyId> = None;
         for _ in 0..len {
             let name = TypeName::decode(reader)?;
             let ty = Ty::decode(reader)?;
-            types.insert(name, ty);
+            if matches!(prev, Some(id) if id > ty.id()) {
+                return Err(DecodeError::WrongTypeOrdering(ty.id()));
+            }
+            let id = ty.id();
+            prev = Some(id);
+            if types.insert(name, ty).is_some() {
+                return Err(DecodeError::RepeatedType(id));
+            }
         }
 
         Ok(TypeLib {

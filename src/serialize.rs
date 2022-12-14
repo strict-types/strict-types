@@ -17,8 +17,9 @@ use amplify::confinement::{MediumVec, TinyVec};
 use amplify::num::u24;
 use amplify::{confinement, IoError, WriteCounter};
 
+use crate::dtl::LibName;
 use crate::util::{BuildFragment, InvalidIdent, PreFragment, Sizing};
-use crate::{FieldName, Ident, SemVer};
+use crate::{FieldName, Ident, SemVer, TyId};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -46,6 +47,18 @@ pub enum DecodeError {
 
     /// invalid value {1} for {0} enum
     WrongEnumId(&'static str, u8),
+
+    /// type {0} occurs multiple times
+    RepeatedType(TyId),
+
+    /// incorrect ordering of type {0}
+    WrongTypeOrdering(TyId),
+
+    /// repeated dependency {0}
+    RepeatedDependency(LibName),
+
+    /// repeated dependency {0}
+    WrongDependencyOrdering(LibName),
 }
 
 pub trait Deserialize: Decode {
