@@ -19,34 +19,40 @@ use amplify::{confinement, Wrapper};
 
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Encode, Ident, Serialize, StenType, TyIter};
+use crate::{Encode, Ident, Serialize, StenType, TyId, TyIter};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + Eq + Debug + Encode + Sized {}
+pub trait TypeRef: Clone + Eq + Debug + Encode + Sized {
+    fn id(&self) -> TyId;
+}
 pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
     fn iter(&self) -> TyIter<Self> { TyIter::from(self) }
 }
-pub trait FullRef: NestedRef {
+pub trait RecursiveRef: NestedRef {
     fn byte_size(&self) -> Size { self.as_ty().byte_size() }
 }
 
-impl TypeRef for SubTy {}
+impl TypeRef for SubTy {
+    fn id(&self) -> TyId { self.as_ty().id() }
+}
 impl NestedRef for SubTy {
     fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
     fn into_ty(self) -> Ty<Self> { *self.0 }
 }
-impl FullRef for SubTy {}
+impl RecursiveRef for SubTy {}
 
-impl TypeRef for StenType {}
+impl TypeRef for StenType {
+    fn id(&self) -> TyId { self.as_ty().id() }
+}
 impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
     fn into_ty(self) -> Ty<Self> { *self.ty }
 }
-impl FullRef for StenType {}
+impl RecursiveRef for StenType {}
 
 #[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, Debug, From)]
 #[cfg_attr(

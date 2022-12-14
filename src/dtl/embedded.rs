@@ -27,7 +27,7 @@ use crate::{Serialize, Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum EmbeddedTy {
-    Name(LibName, TypeName),
+    Name(LibName, TypeName, TyId),
 
     #[from]
     Inline(Box<Ty<EmbeddedTy>>),
@@ -38,20 +38,27 @@ impl Deref for EmbeddedTy {
 
     fn deref(&self) -> &Self::Target {
         match self {
-            EmbeddedTy::Name(_, _) => &Ty::UNIT,
+            EmbeddedTy::Name(_, _, _) => &Ty::UNIT,
             EmbeddedTy::Inline(ty) => ty.as_ref(),
         }
     }
 }
 
-impl TypeRef for EmbeddedTy {}
+impl TypeRef for EmbeddedTy {
+    fn id(&self) -> TyId {
+        match self {
+            EmbeddedTy::Name(_, _, id) => *id,
+            EmbeddedTy::Inline(ty) => ty.id(),
+        }
+    }
+}
 
 impl NestedRef for EmbeddedTy {
     fn as_ty(&self) -> &Ty<Self> { self.deref() }
 
     fn into_ty(self) -> Ty<Self> {
         match self {
-            EmbeddedTy::Name(_, _) => Ty::UNIT,
+            EmbeddedTy::Name(_, _, _) => Ty::UNIT,
             EmbeddedTy::Inline(ty) => *ty,
         }
     }
@@ -60,7 +67,7 @@ impl NestedRef for EmbeddedTy {
 impl Display for EmbeddedTy {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            EmbeddedTy::Name(lib, name) => write!(f, "{}.{}", lib, name),
+            EmbeddedTy::Name(lib, name, _) => write!(f, "{}.{}", lib, name),
             EmbeddedTy::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
             EmbeddedTy::Inline(ty) => write!(f, "{}", ty),
         }

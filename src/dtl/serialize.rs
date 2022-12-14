@@ -47,9 +47,11 @@ impl Decode for EmbeddedLib {
 impl Encode for EmbeddedTy {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         match self {
-            EmbeddedTy::Name(name) => {
+            EmbeddedTy::Name(lib_name, ty_name, id) => {
                 0u8.encode(writer)?;
-                name.encode(writer)
+                lib_name.encode(writer)?;
+                ty_name.encode(writer)?;
+                id.encode(writer)
             }
             EmbeddedTy::Inline(ty) => {
                 1u8.encode(writer)?;
@@ -62,7 +64,11 @@ impl Encode for EmbeddedTy {
 impl Decode for EmbeddedTy {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Decode::decode(reader).map(EmbeddedTy::Name),
+            0u8 => Ok(EmbeddedTy::Name(
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+            )),
             1u8 => Decode::decode(reader).map(Box::new).map(EmbeddedTy::Inline),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
@@ -72,18 +78,20 @@ impl Decode for EmbeddedTy {
 impl Encode for LibTy {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         match self {
-            LibTy::Named(name) => {
+            LibTy::Named(name, id) => {
                 0u8.encode(writer)?;
-                name.encode(writer)
+                name.encode(writer)?;
+                id.encode(writer)
             }
             LibTy::Inline(ty) => {
                 1u8.encode(writer)?;
                 ty.encode(writer)
             }
-            LibTy::Extern(name, dep) => {
+            LibTy::Extern(name, lib_alias, id) => {
                 2u8.encode(writer)?;
                 name.encode(writer)?;
-                dep.encode(writer)
+                lib_alias.encode(writer)?;
+                id.encode(writer)
             }
         }
     }
@@ -92,9 +100,13 @@ impl Encode for LibTy {
 impl Decode for LibTy {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Decode::decode(reader).map(LibTy::Named),
+            0u8 => Ok(LibTy::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
             1u8 => Decode::decode(reader).map(Box::new).map(LibTy::Inline),
-            2u8 => Ok(LibTy::Extern(Decode::decode(reader)?, Decode::decode(reader)?)),
+            2u8 => Ok(LibTy::Extern(
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+            )),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }

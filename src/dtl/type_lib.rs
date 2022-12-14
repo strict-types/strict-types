@@ -23,16 +23,22 @@ use crate::{Ident, SemVer, StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum LibTy {
-    #[from]
-    Named(TypeName),
+    Named(TypeName, TyId),
 
     #[from]
     Inline(Box<Ty<LibTy>>),
 
-    Extern(TypeName, LibAlias),
+    Extern(TypeName, LibAlias, TyId),
 }
 
-impl TypeRef for LibTy {}
+impl TypeRef for LibTy {
+    fn id(&self) -> TyId {
+        match self {
+            LibTy::Named(_, id) | LibTy::Extern(_, _, id) => *id,
+            LibTy::Inline(ty) => ty.id(),
+        }
+    }
+}
 
 impl Deref for LibTy {
     type Target = Ty<Self>;
@@ -43,17 +49,17 @@ impl Deref for LibTy {
 impl NestedRef for LibTy {
     fn as_ty(&self) -> &Ty<Self> {
         match self {
-            LibTy::Named(_) => &Ty::UNIT,
+            LibTy::Named(_, _) => &Ty::UNIT,
             LibTy::Inline(ty) => ty.as_ref(),
-            LibTy::Extern(_, _) => &Ty::UNIT,
+            LibTy::Extern(_, _, _) => &Ty::UNIT,
         }
     }
 
     fn into_ty(self) -> Ty<Self> {
         match self {
-            LibTy::Named(_) => Ty::UNIT,
+            LibTy::Named(_, _) => Ty::UNIT,
             LibTy::Inline(ty) => *ty,
-            LibTy::Extern(_, _) => Ty::UNIT,
+            LibTy::Extern(_, _, _) => Ty::UNIT,
         }
     }
 }
@@ -61,10 +67,10 @@ impl NestedRef for LibTy {
 impl Display for LibTy {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibTy::Named(name) => write!(f, "{}", name),
+            LibTy::Named(name, _) => write!(f, "{}", name),
             LibTy::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
             LibTy::Inline(ty) => write!(f, "{}", ty),
-            LibTy::Extern(name, lib) => write!(f, "{}.{}", lib, name),
+            LibTy::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
         }
     }
 }
