@@ -63,8 +63,8 @@ impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
             TyInner::Union(fields) => fields.encode(writer),
             TyInner::Struct(fields) => fields.encode(writer),
             TyInner::Array(ty, len) => {
-                writer.write_all(&len.to_le_bytes())?;
-                ty.encode(writer)
+                ty.encode(writer)?;
+                writer.write_all(&len.to_le_bytes())
             }
             TyInner::Unicode(sizing) => sizing.encode(writer),
             TyInner::List(ty, sizing) => {
