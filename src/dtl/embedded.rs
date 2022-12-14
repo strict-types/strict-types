@@ -27,7 +27,6 @@ use crate::{Serialize, Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum EmbeddedTy {
-    #[from]
     Name(LibName, TypeName),
 
     #[from]
@@ -56,8 +55,6 @@ impl NestedRef for EmbeddedTy {
             EmbeddedTy::Inline(ty) => *ty,
         }
     }
-
-    fn about(&self) -> String { self.to_string() }
 }
 
 impl Display for EmbeddedTy {

@@ -28,8 +28,6 @@ pub trait TypeRef: Clone + Eq + Debug + Encode + Sized {}
 pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
-    fn about(&self) -> String;
-
     fn iter(&self) -> TyIter<Self> { TyIter::from(self) }
 }
 pub trait FullRef: NestedRef {
@@ -40,7 +38,6 @@ impl TypeRef for SubTy {}
 impl NestedRef for SubTy {
     fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
     fn into_ty(self) -> Ty<Self> { *self.0 }
-    fn about(&self) -> String { self.0.id().to_string() }
 }
 impl FullRef for SubTy {}
 
@@ -48,7 +45,6 @@ impl TypeRef for StenType {}
 impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
     fn into_ty(self) -> Ty<Self> { *self.ty }
-    fn about(&self) -> String { self.name.to_owned() }
 }
 impl FullRef for StenType {}
 

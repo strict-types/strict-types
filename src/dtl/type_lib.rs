@@ -56,8 +56,6 @@ impl NestedRef for LibTy {
             LibTy::Extern(_, _) => Ty::UNIT,
         }
     }
-
-    fn about(&self) -> String { todo!() }
 }
 
 impl Display for LibTy {
