@@ -21,6 +21,8 @@
 
 #[macro_use]
 extern crate stens;
+#[macro_use]
+extern crate amplify;
 
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
@@ -113,7 +115,7 @@ impl StenSchema for Complex {
 #[test]
 fn serialize() {
     let root = Complex::sten_type();
-    let lib = TypeLib::try_from(root).unwrap();
+    let lib = TypeLib::with(s!("Test"), root).unwrap();
 
     println!("{:#}", Urn::from(lib.id()));
 

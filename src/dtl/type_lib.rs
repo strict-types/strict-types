@@ -13,6 +13,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 use std::ops::Deref;
 
+use amplify::ascii::AsciiString;
 use amplify::confinement::{Confined, TinyOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
@@ -92,7 +93,12 @@ pub struct TypeLib {
 }
 
 impl TypeLib {
-    pub fn with(mut name: LibName, root: StenType) -> Result<Self, TranslateError> {
+    pub fn with(name: String, root: StenType) -> Result<Self, TranslateError> {
+        let mut name = LibName::try_from(
+            AsciiString::from_ascii(name.clone())
+                .map_err(|_| TranslateError::InvalidLibName(name.clone()))?,
+        )
+        .map_err(|_| TranslateError::InvalidLibName(name))?;
         root.translate(&mut name)
     }
 }

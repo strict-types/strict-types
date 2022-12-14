@@ -26,6 +26,8 @@ pub trait Translate<To: Sized> {
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum TranslateError {
+    InvalidLibName(String),
+
     /// a different type with name `{0}` is already present
     DuplicateName(TypeName),
 
