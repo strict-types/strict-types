@@ -22,6 +22,9 @@
 
 #[macro_use]
 extern crate amplify;
+#[cfg(feature = "serde")]
+#[macro_use]
+extern crate serde_crate as serde;
 
 #[macro_use]
 mod macros;
@@ -31,9 +34,9 @@ pub mod primitive;
 pub mod ast;
 pub mod dtl;
 mod serialize;
-#[cfg(feature = "serde")]
-#[macro_use]
-extern crate serde_crate as serde;
+
+#[cfg(test)]
+pub(crate) mod test;
 
 use std::ops::Deref;
 
@@ -63,7 +66,9 @@ pub struct StenType {
 impl Deref for StenType {
     type Target = Ty<StenType>;
 
-    fn deref(&self) -> &Self::Target { self.ty.deref() }
+    fn deref(&self) -> &Self::Target {
+        self.ty.deref()
+    }
 }
 
 impl StenType {

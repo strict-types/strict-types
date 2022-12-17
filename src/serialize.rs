@@ -30,7 +30,7 @@ use amplify::{confinement, IoError, WriteCounter};
 
 use crate::dtl::LibName;
 use crate::util::{BuildFragment, InvalidIdent, PreFragment, Sizing};
-use crate::{FieldName, Ident, SemVer, TyId};
+use crate::{Ident, SemVer, TyId};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -228,13 +228,15 @@ impl Decode for u128 {
     }
 }
 
-impl Encode for FieldName {
+impl Encode for Ident {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+        let len = self.len() as u8;
+        len.encode(writer)?;
         writer.write_all(self.as_bytes())
     }
 }
 
-impl Decode for FieldName {
+impl Decode for Ident {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let len = u8::decode(reader)?;
         let mut bytes = vec![0u8; len as usize];
@@ -242,7 +244,7 @@ impl Decode for FieldName {
         let ascii = AsciiString::from_ascii(bytes)
             .map_err(|err| err.ascii_error())
             .map_err(InvalidIdent::from)?;
-        FieldName::try_from(ascii).map_err(DecodeError::from)
+        Ident::try_from(ascii).map_err(DecodeError::from)
     }
 }
 
@@ -348,5 +350,49 @@ impl Decode for BuildFragment {
             1u8 => Ident::decode(reader).map(BuildFragment::Digits),
             wrong => Err(DecodeError::WrongEnumId("BuildFragment", wrong)),
         }
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::test::encoding;
+
+    #[test]
+    fn ident_encoding() {
+        encoding(&Ident::from("A"), b"\x01A");
+        encoding(&Ident::from("x"), b"\x01x");
+        encoding(&Ident::from("SomeIdent"), b"\x09SomeIdent");
+        // exactly 32 chars
+        encoding(
+            &Ident::from("a1234567890123456789012345678901"),
+            b"\x20a1234567890123456789012345678901",
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid identifier name: Empty")]
+    fn wrong_ident_empty() {
+        let _ = Ident::from("");
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid identifier name: NonAlphabetic('1')")]
+    fn wrong_ident_num() {
+        let _ = Ident::from("1a");
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "invalid identifier name: Confinement(Oversize { len: 33, max_len: 32 })"
+    )]
+    fn wrong_ident_long() {
+        let _ = Ident::from("a1234567890123456789012345678901_");
+    }
+
+    #[test]
+    #[should_panic(expected = "invalid identifier name: AsAsciiStrError(0)")]
+    fn wrong_ident_utf() {
+        let _ = Ident::from("щось");
     }
 }
