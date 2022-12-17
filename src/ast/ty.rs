@@ -71,7 +71,7 @@ impl RecursiveRef for StenType {}
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct SubTy(Box<Ty>);
+pub struct SubTy(Box<Ty<SubTy>>);
 
 impl StenSchema for SubTy {
     const STEN_TYPE_NAME: &'static str = "SubTy";
@@ -80,7 +80,7 @@ impl StenSchema for SubTy {
 }
 
 impl Deref for SubTy {
-    type Target = Ty;
+    type Target = Ty<Self>;
 
     fn deref(&self) -> &Self::Target { self.0.deref() }
 }
@@ -89,8 +89,8 @@ impl DerefMut for SubTy {
     fn deref_mut(&mut self) -> &mut Self::Target { self.0.deref_mut() }
 }
 
-impl From<Ty> for SubTy {
-    fn from(ty: Ty) -> Self { SubTy(Box::new(ty)) }
+impl From<Ty<SubTy>> for SubTy {
+    fn from(ty: Ty<SubTy>) -> Self { SubTy(Box::new(ty)) }
 }
 
 pub type FieldName = Ident;
@@ -171,7 +171,7 @@ impl Display for Field {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Ty<Ref = SubTy>(TyInner<Ref>)
+pub struct Ty<Ref>(TyInner<Ref>)
 where Ref: TypeRef;
 
 impl<Ref: TypeRef> StenSchema for Ty<Ref> {
@@ -280,11 +280,11 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 }
 
-impl Ty {
+impl Ty<SubTy> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Ty::BYTE.into(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::BYTE.into(), sizing)) }
     pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::ASCII.into(), sizing)) }
-    pub fn option(ty: Ty) -> Self {
+    pub fn option(ty: Ty<SubTy>) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields![
             "None" => Ty::UNIT,
