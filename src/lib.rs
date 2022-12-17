@@ -66,9 +66,7 @@ pub struct StenType {
 impl Deref for StenType {
     type Target = Ty<StenType>;
 
-    fn deref(&self) -> &Self::Target {
-        self.ty.deref()
-    }
+    fn deref(&self) -> &Self::Target { self.ty.deref() }
 }
 
 impl StenType {

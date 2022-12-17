@@ -372,27 +372,19 @@ mod test {
 
     #[test]
     #[should_panic(expected = "invalid identifier name: Empty")]
-    fn wrong_ident_empty() {
-        let _ = Ident::from("");
-    }
+    fn wrong_ident_empty() { let _ = Ident::from(""); }
 
     #[test]
     #[should_panic(expected = "invalid identifier name: NonAlphabetic('1')")]
-    fn wrong_ident_num() {
-        let _ = Ident::from("1a");
-    }
+    fn wrong_ident_num() { let _ = Ident::from("1a"); }
 
     #[test]
     #[should_panic(
         expected = "invalid identifier name: Confinement(Oversize { len: 33, max_len: 32 })"
     )]
-    fn wrong_ident_long() {
-        let _ = Ident::from("a1234567890123456789012345678901_");
-    }
+    fn wrong_ident_long() { let _ = Ident::from("a1234567890123456789012345678901_"); }
 
     #[test]
     #[should_panic(expected = "invalid identifier name: AsAsciiStrError(0)")]
-    fn wrong_ident_utf() {
-        let _ = Ident::from("щось");
-    }
+    fn wrong_ident_utf() { let _ = Ident::from("щось"); }
 }

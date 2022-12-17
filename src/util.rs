@@ -124,9 +124,7 @@ impl Sizing {
         max: u8::MAX as u16,
     };
 
-    pub const fn new(min: u16, max: u16) -> Self {
-        Sizing { min, max }
-    }
+    pub const fn new(min: u16, max: u16) -> Self { Sizing { min, max } }
 }
 
 impl Display for Sizing {
@@ -152,9 +150,7 @@ pub enum Size {
 }
 
 impl PartialOrd for Size {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
 impl Ord for Size {
@@ -180,9 +176,7 @@ impl Add for Size {
 }
 
 impl AddAssign for Size {
-    fn add_assign(&mut self, rhs: Self) {
-        *self = *self + rhs;
-    }
+    fn add_assign(&mut self, rhs: Self) { *self = *self + rhs; }
 }
 
 impl Sum for Size {
