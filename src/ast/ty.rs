@@ -245,7 +245,7 @@ impl<Ref: TypeRef> Ty<Ref> {
         ty
     }
 
-    pub fn string(sizing: Sizing) -> Self { Ty(TyInner::Unicode(sizing)) }
+    pub fn unicode(sizing: Sizing) -> Self { Ty(TyInner::Unicode(sizing)) }
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self {
         let ty = Ty(TyInner::List(ty, sizing));
