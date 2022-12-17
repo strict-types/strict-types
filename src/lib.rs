@@ -27,19 +27,34 @@ extern crate serde_crate as serde;
 use std::ops::Deref;
 
 pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TyIter, TypeRef};
+pub use dtl::{Dependency, EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
 pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
 pub use util::{Ident, SemVer, TypeName, Urn};
 
+/// Type information which can be automatically derived out of -- or provided by a rust type via
+/// implementing [`StenSchema`] trait.
+///
+/// The type contains a recursive information about all nested types, and thus can operate without
+/// any type library.
+///
+/// This form of type information can not be serialized and is only an in-memory representation.
+///
+/// In order to perform type serialization the type has to be [`Translate`]ed into either
+/// [`TypeLib`] or [`TypeSystem`].
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
+    /// Type name which should match rust type name in most of the cases
     pub name: &'static str,
+    /// Type structure abstract syntax tree
     pub ty: Box<Ty<StenType>>,
 }
 
 impl Deref for StenType {
     type Target = Ty<StenType>;
 
-    fn deref(&self) -> &Self::Target { self.ty.deref() }
+    fn deref(&self) -> &Self::Target {
+        self.ty.deref()
+    }
 }
 
 impl StenType {
@@ -65,8 +80,7 @@ impl StenType {
     }
 }
 
-/// A type which can be deterministically represented in terms of
-/// strict encoding schema.
+/// A type which can be deterministically represented in terms of strict encoding schema.
 pub trait StenSchema {
     /// Strict encoding type name.
     const STEN_TYPE_NAME: &'static str;
