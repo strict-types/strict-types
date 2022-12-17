@@ -29,7 +29,7 @@ use amplify::confinement::{Confined, TinyOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
 use crate::dtl::id::TypeLibId;
-use crate::{Ident, SemVer, StenType, Translate, Ty, TyId, TypeName, TypeRef};
+use crate::{Ident, SemVer, StenSchema, StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum LibTy {
@@ -39,6 +39,12 @@ pub enum LibTy {
     Inline(Box<Ty<LibTy>>),
 
     Extern(TypeName, LibAlias, TyId),
+}
+
+impl StenSchema for LibTy {
+    const STEN_TYPE_NAME: &'static str = "LibTy";
+
+    fn sten_ty() -> Ty<StenType> { todo!() }
 }
 
 impl TypeRef for LibTy {

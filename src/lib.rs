@@ -63,6 +63,17 @@ pub struct StenType {
     pub ty: Box<Ty<StenType>>,
 }
 
+impl StenSchema for StenType {
+    const STEN_TYPE_NAME: &'static str = "StenType";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            "name" => Ident::sten_type(),
+            "ty" => Ty::<StenType>::sten_type(),
+        })
+    }
+}
+
 impl Deref for StenType {
     type Target = Ty<StenType>;
 
@@ -81,6 +92,13 @@ impl StenType {
         StenType {
             name: "Byte",
             ty: Box::new(Ty::BYTE),
+        }
+    }
+
+    pub fn ascii() -> StenType {
+        StenType {
+            name: "Ascii",
+            ty: Box::new(Ty::ASCII),
         }
     }
 

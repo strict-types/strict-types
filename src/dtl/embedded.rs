@@ -31,7 +31,7 @@ use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
 
 use crate::ast::NestedRef;
-use crate::{Serialize, Ty, TyId, TypeRef};
+use crate::{Serialize, StenSchema, StenType, Ty, TyId, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum EmbeddedTy {
@@ -39,6 +39,12 @@ pub enum EmbeddedTy {
 
     #[from]
     Inline(Box<Ty<EmbeddedTy>>),
+}
+
+impl StenSchema for EmbeddedTy {
+    const STEN_TYPE_NAME: &'static str = "EmbeddedTy";
+
+    fn sten_ty() -> Ty<StenType> { todo!() }
 }
 
 impl Deref for EmbeddedTy {

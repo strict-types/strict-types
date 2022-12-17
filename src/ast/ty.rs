@@ -30,12 +30,12 @@ use amplify::{confinement, Wrapper};
 
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Encode, Ident, Serialize, StenType, TyId, TyIter};
+use crate::{Encode, Ident, Serialize, StenSchema, StenType, TyId, TyIter};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + Eq + Debug + Encode + Sized {
+pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
     fn id(&self) -> TyId;
 }
 pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
@@ -72,6 +72,12 @@ impl RecursiveRef for StenType {}
     serde(crate = "serde_crate", transparent)
 )]
 pub struct SubTy(Box<Ty>);
+
+impl StenSchema for SubTy {
+    const STEN_TYPE_NAME: &'static str = "SubTy";
+
+    fn sten_ty() -> Ty<StenType> { Ty::composition(fields!(Ty::<StenType>::sten_type())) }
+}
 
 impl Deref for SubTy {
     type Target = Ty;
@@ -167,6 +173,24 @@ impl Display for Field {
 )]
 pub struct Ty<Ref = SubTy>(TyInner<Ref>)
 where Ref: TypeRef;
+
+impl<Ref: TypeRef> StenSchema for Ty<Ref> {
+    const STEN_TYPE_NAME: &'static str = "Ty";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::union(fields! {
+            "Primitive" => Primitive::sten_type(),
+            "Enum" => Variants::sten_type(),
+            "Union" => Fields::<Ref, false>::sten_type(),
+            "Struct" => Fields::<Ref, true>::sten_type(),
+            "Array" => <(Ref, u16)>::sten_type(),
+            "Unicode" => Sizing::sten_type(),
+            "List" => <(Ref, Sizing)>::sten_type(),
+            "Set" => <(Ref, Sizing)>::sten_type(),
+            "Map" => <(KeyTy, Ref, Sizing)>::sten_type(),
+        })
+    }
+}
 
 impl<Ref: TypeRef> Ord for Ty<Ref> {
     fn cmp(&self, other: &Self) -> Ordering { self.id().cmp(&other.id()) }
@@ -371,6 +395,24 @@ pub enum KeyTy {
     Bytes(Sizing),
 }
 
+impl StenSchema for KeyTy {
+    const STEN_TYPE_NAME: &'static str = "KeyTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::union(fields! {
+            "Primitive" => Primitive::sten_type(),
+            "Enum" => Variants::sten_type(),
+            "Array" => u16::sten_type(),
+            "Unicode" => Sizing::sten_type(),
+            "Bytes" => Sizing::sten_type(),
+        })
+    }
+}
+
+impl KeyTy {
+    pub const U8: KeyTy = KeyTy::Primitive(Primitive::U8);
+}
+
 /*
 TODO: Use when const expression generics will arrive
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -392,6 +434,16 @@ pub enum Composition {
 pub struct Fields<Ref: TypeRef = SubTy, const OP: bool = true>(
     Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>,
 );
+
+impl<Ref: TypeRef, const OP: bool> StenSchema for Fields<Ref, OP> {
+    const STEN_TYPE_NAME: &'static str = "Fields";
+
+    fn sten_ty() -> Ty<StenType> {
+        // TODO: Serialize according to this schema
+        let val_ty = <(Option<FieldName>, Ref)>::sten_type();
+        Ty::map(KeyTy::U8, val_ty, Sizing::U8_NONEMPTY)
+    }
+}
 
 impl<Ref: TypeRef, const OP: bool> Deref for Fields<Ref, OP> {
     type Target = Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>;
@@ -462,6 +514,16 @@ where Ref: Display
 )]
 pub struct Variants(Confined<BTreeMap<Field, u8>, 1, { u8::MAX as usize }>);
 
+impl StenSchema for Variants {
+    const STEN_TYPE_NAME: &'static str = "Variants";
+
+    fn sten_ty() -> Ty<StenType> {
+        // TODO: Serialize according to this schema
+        let val_ty = <(Option<FieldName>, u8)>::sten_type();
+        Ty::map(KeyTy::U8, val_ty, Sizing::U8_NONEMPTY)
+    }
+}
+
 impl TryFrom<BTreeMap<Field, u8>> for Variants {
     type Error = confinement::Error;
 
@@ -507,5 +569,61 @@ impl Display for Variants {
             write!(f, "{}= {}", field, val)?;
         }
         Ok(())
+    }
+}
+
+impl<Ref: TypeRef> StenSchema for (Ref, u16) {
+    const STEN_TYPE_NAME: &'static str = "ArrayTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            Ref::sten_type(),
+            u16::sten_type(),
+        })
+    }
+}
+
+impl<Ref: TypeRef> StenSchema for (Ref, Sizing) {
+    const STEN_TYPE_NAME: &'static str = "ListTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            Ref::sten_type(),
+            Sizing::sten_type(),
+        })
+    }
+}
+
+impl<Ref: TypeRef> StenSchema for (KeyTy, Ref, Sizing) {
+    const STEN_TYPE_NAME: &'static str = "ListTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            KeyTy::sten_type(),
+            Ref::sten_type(),
+            Sizing::sten_type(),
+        })
+    }
+}
+
+impl<Ref: TypeRef> StenSchema for (Option<FieldName>, Ref) {
+    const STEN_TYPE_NAME: &'static str = "FieldTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            Option::<FieldName>::sten_type(),
+            Ref::sten_type(),
+        })
+    }
+}
+
+impl StenSchema for (Option<FieldName>, u8) {
+    const STEN_TYPE_NAME: &'static str = "EnumTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            Option::<FieldName>::sten_type(),
+            u8::sten_type(),
+        })
     }
 }

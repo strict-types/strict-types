@@ -30,7 +30,7 @@ use amplify::confinement;
 use amplify::confinement::{Confined, TinyVec};
 
 use crate::dtl::TypeLibId;
-use crate::TyId;
+use crate::{StenSchema, StenType, Ty, TyId};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -63,6 +63,12 @@ pub enum InvalidIdent {
     serde(crate = "serde_crate", transparent)
 )]
 pub struct Ident(Confined<AsciiString, 1, 32>);
+
+impl StenSchema for Ident {
+    const STEN_TYPE_NAME: &'static str = "Ident";
+
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii(Sizing::new(1, 32)) }
+}
 
 impl From<&'static str> for Ident {
     fn from(s: &'static str) -> Self {
@@ -106,6 +112,17 @@ pub type TypeName = Ident;
 pub struct Sizing {
     pub min: u16,
     pub max: u16,
+}
+
+impl StenSchema for Sizing {
+    const STEN_TYPE_NAME: &'static str = "Sizing";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            "min" => u16::sten_type(),
+            "max" => u16::sten_type(),
+        })
+    }
 }
 
 impl Sizing {

@@ -23,6 +23,7 @@
 use std::fmt::{self, Display, Formatter, Write};
 
 use crate::primitive::{NumInfo, NumSize, NumTy};
+use crate::{StenSchema, StenType, Ty};
 
 pub const U8: Primitive = Primitive::unsigned(1);
 pub const U16: Primitive = Primitive::unsigned(2);
@@ -128,7 +129,15 @@ pub const FLOAT_RESERVED_54: Primitive = Primitive(0xFF);
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Primitive(u8);
 
+impl StenSchema for Primitive {
+    const STEN_TYPE_NAME: &'static str = "Primitive";
+
+    fn sten_ty() -> Ty<StenType> { u8::sten_ty() }
+}
+
 impl Primitive {
+    pub const U8: Primitive = Primitive(1);
+
     pub const fn unsigned(bytes: u16) -> Self {
         Primitive(
             NumInfo {
