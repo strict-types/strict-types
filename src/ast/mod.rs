@@ -28,7 +28,7 @@ mod path;
 mod iter;
 
 pub use id::TyId;
-pub use iter::{CheckError, TyIter};
+pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use translate::{Translate, TranslateError};
 pub use ty::{Field, FieldName, Fields, KeyTy, NestedRef, SubTy, Ty, TyInner, TypeRef, Variants};

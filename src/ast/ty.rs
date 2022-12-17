@@ -30,7 +30,7 @@ use amplify::{confinement, Wrapper};
 
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Encode, Ident, Serialize, StenSchema, StenType, TyId, TyIter};
+use crate::{Encode, Ident, Iter, Serialize, StenSchema, StenType, TyId};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 
@@ -41,7 +41,7 @@ pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
 pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
-    fn iter(&self) -> TyIter<Self> { TyIter::from(self) }
+    fn iter(&self) -> Iter<Self> { Iter::from(self) }
 }
 pub trait RecursiveRef: NestedRef {
     fn byte_size(&self) -> Size { self.as_ty().byte_size() }
@@ -328,6 +328,22 @@ where Ref: Display
 }
 
 impl<Ref: NestedRef> Ty<Ref> {
+    pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
+        match self.as_inner() {
+            TyInner::Union(fields) => fields.ty_at(pos),
+            TyInner::Struct(fields) => fields.ty_at(pos),
+            TyInner::Array(ty, _)
+            | TyInner::List(ty, _)
+            | TyInner::Set(ty, _)
+            | TyInner::Map(_, ty, _)
+                if pos > 0 =>
+            {
+                Some(ty)
+            }
+            _ => return None,
+        }
+    }
+
     pub fn try_into_key(self) -> Result<KeyTy, Ty<Ref>> {
         Ok(match self.0 {
             TyInner::Primitive(code) => KeyTy::Primitive(code),

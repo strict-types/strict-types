@@ -40,7 +40,7 @@ pub(crate) mod test;
 
 use std::ops::Deref;
 
-pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TyIter, TypeRef};
+pub use ast::{FieldName, Iter, KeyTy, Translate, Ty, TyId, TypeRef};
 pub use dtl::{Dependency, EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
 pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
 pub use util::{Ident, SemVer, TypeName, Urn};

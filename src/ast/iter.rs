@@ -20,9 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use amplify::Wrapper;
-
-use crate::ast::{NestedRef, Path, Step, SubTy, TyInner};
+use crate::ast::{NestedRef, Path, Step, SubTy};
 use crate::{Cls, Ty};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
@@ -41,16 +39,15 @@ pub enum CheckError {
     /// only {checked} fields were checked out of {total} fields in total
     UncheckedFields { checked: u8, total: u8 },
 }
-
-pub struct TyIter<'ty, Ref: NestedRef> {
-    ty: &'ty Ty<Ref>,
+pub struct IntoIter<Ref: NestedRef> {
+    ty: Ty<Ref>,
     pos: u8,
     current: Path,
 }
 
-impl<'ty, Ref: NestedRef> From<&'ty Ref> for TyIter<'ty, Ref> {
-    fn from(ty: &'ty Ref) -> Self {
-        TyIter {
+impl<Ref: NestedRef> From<Ty<Ref>> for IntoIter<Ref> {
+    fn from(ty: Ty<Ref>) -> Self {
+        IntoIter {
             ty,
             pos: 0,
             current: empty!(),
@@ -58,9 +55,50 @@ impl<'ty, Ref: NestedRef> From<&'ty Ref> for TyIter<'ty, Ref> {
     }
 }
 
+impl<Ref: NestedRef> From<Ref> for IntoIter<Ref> {
+    fn from(ty: Ref) -> Self { Self::from(ty.into_ty()) }
+}
+
+impl<Ref: NestedRef> IntoIterator for Ty<Ref> {
+    type Item = Ref;
+    type IntoIter = IntoIter<Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { IntoIter::from(self) }
+}
+
+impl<Ref: NestedRef> Iterator for IntoIter<Ref> {
+    type Item = Ref;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let ret = self.ty.ty_at(self.pos);
+        self.pos += 1;
+        ret.cloned()
+    }
+}
+
+pub struct Iter<'ty, Ref: NestedRef> {
+    ty: &'ty Ty<Ref>,
+    pos: u8,
+    current: Path,
+}
+
+impl<'ty, Ref: NestedRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
+    fn from(ty: &'ty Ty<Ref>) -> Self {
+        Iter {
+            ty,
+            pos: 0,
+            current: empty!(),
+        }
+    }
+}
+
+impl<'ty, Ref: NestedRef> From<&'ty Ref> for Iter<'ty, Ref> {
+    fn from(ty: &'ty Ref) -> Self { Self::from(ty.as_ty()) }
+}
+
 impl SubTy {
-    pub fn iter(&self) -> TyIter<SubTy> {
-        TyIter {
+    pub fn iter(&self) -> Iter<SubTy> {
+        Iter {
             ty: self,
             pos: 0,
             current: empty!(),
@@ -70,40 +108,22 @@ impl SubTy {
 
 impl<'ty, Ref: NestedRef> IntoIterator for &'ty Ty<Ref> {
     type Item = &'ty Ref;
-    type IntoIter = TyIter<'ty, Ref>;
+    type IntoIter = Iter<'ty, Ref>;
 
-    fn into_iter(self) -> Self::IntoIter {
-        TyIter {
-            ty: self,
-            pos: 0,
-            current: empty!(),
-        }
-    }
+    fn into_iter(self) -> Self::IntoIter { Iter::from(self) }
 }
 
-impl<'ty, Ref: NestedRef + 'ty> Iterator for TyIter<'ty, Ref> {
+impl<'ty, Ref: NestedRef + 'ty> Iterator for Iter<'ty, Ref> {
     type Item = &'ty Ref;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ret = match self.ty.as_inner() {
-            TyInner::Union(fields) => fields.ty_at(self.pos),
-            TyInner::Struct(fields) => fields.ty_at(self.pos),
-            TyInner::Array(ty, _)
-            | TyInner::List(ty, _)
-            | TyInner::Set(ty, _)
-            | TyInner::Map(_, ty, _)
-                if self.pos > 0 =>
-            {
-                Some(ty)
-            }
-            _ => return None,
-        };
+        let ret = self.ty.ty_at(self.pos);
         self.pos += 1;
         ret
     }
 }
 
-impl<'ty, Ref: NestedRef> TyIter<'ty, Ref> {
+impl<'ty, Ref: NestedRef> Iter<'ty, Ref> {
     pub fn check(&mut self, expect: &Ty<Ref>) -> Result<(), CheckError> {
         let found = self.ty.at_path(&self.current).expect("non-existing path");
         if found != expect {
