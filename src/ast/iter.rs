@@ -123,7 +123,7 @@ impl<'ty, Ref: NestedRef + 'ty> Iterator for Iter<'ty, Ref> {
     }
 }
 
-impl<'ty, Ref: NestedRef> Iter<'ty, Ref> {
+impl<Ref: NestedRef> IntoIter<Ref> {
     pub fn check(&mut self, expect: &Ty<Ref>) -> Result<(), CheckError> {
         let found = self.ty.at_path(&self.current).expect("non-existing path");
         if found != expect {

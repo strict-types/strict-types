@@ -38,9 +38,7 @@ mod serialize;
 #[cfg(test)]
 pub(crate) mod test;
 
-use std::ops::Deref;
-
-pub use ast::{FieldName, Iter, KeyTy, Translate, Ty, TyId, TypeRef};
+pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
 pub use dtl::{Dependency, EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
 pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
 pub use util::{Ident, SemVer, TypeName, Urn};
@@ -74,7 +72,7 @@ impl StenSchema for StenType {
     }
 }
 
-impl Deref for StenType {
+impl std::ops::Deref for StenType {
     type Target = Ty<StenType>;
 
     fn deref(&self) -> &Self::Target { self.ty.deref() }
