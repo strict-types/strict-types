@@ -67,7 +67,7 @@ pub struct Ident(Confined<AsciiString, 1, 32>);
 impl StenSchema for Ident {
     const STEN_TYPE_NAME: &'static str = "Ident";
 
-    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii(Sizing::new(1, 32)) }
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii_string(Sizing::new(1, 32)) }
 }
 
 impl From<&'static str> for Ident {

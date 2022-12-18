@@ -204,7 +204,6 @@ impl<Ref: TypeRef> PartialOrd for Ty<Ref> {
 impl<Ref: TypeRef> Ty<Ref> {
     pub const UNIT: Ty<Ref> = Ty(TyInner::Primitive(UNIT));
     pub const BYTE: Ty<Ref> = Ty(TyInner::Primitive(BYTE));
-    pub const ASCII: Ty<Ref> = Ty(TyInner::Primitive(ASCII));
 
     pub const U8: Ty<Ref> = Ty(TyInner::Primitive(U8));
     pub const U16: Ty<Ref> = Ty(TyInner::Primitive(U16));
@@ -284,7 +283,10 @@ impl<Ref: TypeRef> Ty<Ref> {
 impl Ty<SubTy> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Ty::BYTE.into(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::BYTE.into(), sizing)) }
-    pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::ASCII.into(), sizing)) }
+    pub fn ascii_char() -> Self { Ty(TyInner::Enum(variants!(0..=127))) }
+    pub fn ascii_string(sizing: Sizing) -> Self {
+        Ty(TyInner::List(Ty::<SubTy>::ascii_char().into(), sizing))
+    }
     pub fn option(ty: Ty<SubTy>) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields![
@@ -297,7 +299,8 @@ impl Ty<SubTy> {
 impl Ty<StenType> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(StenType::byte(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::byte(), sizing)) }
-    pub fn ascii(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::ascii(), sizing)) }
+    pub fn ascii_char() -> Self { Ty(TyInner::Enum(variants!(0..=127))) }
+    pub fn ascii_string(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::ascii(), sizing)) }
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields![
@@ -427,7 +430,7 @@ impl StenSchema for KeyTy {
 }
 
 impl KeyTy {
-    pub const U8: KeyTy = KeyTy::Primitive(Primitive::U8);
+    pub const U8: KeyTy = KeyTy::Primitive(U8);
 }
 
 /*

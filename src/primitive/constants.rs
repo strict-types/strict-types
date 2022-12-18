@@ -65,7 +65,7 @@ pub const F256: Primitive = Primitive::float(32);
 
 pub const UNIT: Primitive = Primitive(0x00);
 pub const BYTE: Primitive = Primitive(0x40);
-pub const ASCII: Primitive = Primitive(0x80);
+pub const RESERVED: Primitive = Primitive(0x80);
 pub const F16B: Primitive = Primitive(0xC0);
 
 pub const FLOAT_RESERVED_1: Primitive = Primitive(0xC1);
@@ -136,8 +136,6 @@ impl StenSchema for Primitive {
 }
 
 impl Primitive {
-    pub const U8: Primitive = Primitive(1);
-
     pub const fn unsigned(bytes: u16) -> Self {
         Primitive(
             NumInfo {

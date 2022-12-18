@@ -96,7 +96,7 @@ impl StenType {
     pub fn ascii() -> StenType {
         StenType {
             name: "Ascii",
-            ty: Box::new(Ty::ASCII),
+            ty: Box::new(Ty::<StenType>::ascii_char()),
         }
     }
 
