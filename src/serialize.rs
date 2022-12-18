@@ -121,11 +121,11 @@ pub trait Decode: Sized {
 #[repr(u8)]
 pub enum Cls {
     Primitive = 0,
-    Enum = 1,
-    Union = 2,
-    Struct = 3,
-    Array = 4,
-    Unicode = 5,
+    UnicodeChar = 1,
+    Enum = 2,
+    Union = 3,
+    Struct = 4,
+    Array = 5,
     List = 6,
     Set = 7,
     Map = 8,
@@ -134,11 +134,11 @@ pub enum Cls {
 impl Cls {
     pub const ALL: [Cls; 9] = [
         Cls::Primitive,
+        Cls::UnicodeChar,
         Cls::Enum,
         Cls::Union,
         Cls::Struct,
         Cls::Array,
-        Cls::Unicode,
         Cls::List,
         Cls::Set,
         Cls::Map,

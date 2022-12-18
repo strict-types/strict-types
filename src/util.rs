@@ -126,6 +126,8 @@ impl StenSchema for Sizing {
 }
 
 impl Sizing {
+    pub const ONE: Sizing = Sizing { min: 1, max: 1 };
+
     pub const U8: Sizing = Sizing {
         min: 0,
         max: u8::MAX as u16,
@@ -142,6 +144,8 @@ impl Sizing {
     };
 
     pub const fn new(min: u16, max: u16) -> Self { Sizing { min, max } }
+
+    pub const fn fixed(len: u16) -> Self { Sizing { min: len, max: len } }
 }
 
 impl Display for Sizing {

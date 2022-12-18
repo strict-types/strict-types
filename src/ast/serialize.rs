@@ -41,7 +41,7 @@ impl<Ref: TypeRef> TyInner<Ref> {
             TyInner::Union(_) => Cls::Union,
             TyInner::Struct(_) => Cls::Struct,
             TyInner::Array(_, _) => Cls::Array,
-            TyInner::Unicode(_) => Cls::Unicode,
+            TyInner::UnicodeChar => Cls::UnicodeChar,
             TyInner::List(_, _) => Cls::List,
             TyInner::Set(_, _) => Cls::Set,
             TyInner::Map(_, _, _) => Cls::Map,
@@ -55,7 +55,7 @@ impl KeyTy {
             KeyTy::Primitive(_) => Cls::Primitive,
             KeyTy::Enum(_) => Cls::Enum,
             KeyTy::Array(_) => Cls::Array,
-            KeyTy::Unicode(_) => Cls::Unicode,
+            KeyTy::UnicodeStr(_) => Cls::UnicodeChar,
             KeyTy::Bytes(_) => Cls::List,
         }
     }
@@ -77,7 +77,7 @@ impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
                 ty.encode(writer)?;
                 writer.write_all(&len.to_le_bytes())
             }
-            TyInner::Unicode(sizing) => sizing.encode(writer),
+            TyInner::UnicodeChar => Ok(()),
             TyInner::List(ty, sizing) => {
                 ty.encode(writer)?;
                 sizing.encode(writer)
@@ -103,7 +103,7 @@ impl<Ref: TypeRef + Decode> Decode for Ty<Ref> {
             Cls::Union => TyInner::Union(Decode::decode(reader)?),
             Cls::Struct => TyInner::Struct(Decode::decode(reader)?),
             Cls::Array => TyInner::Array(Decode::decode(reader)?, Decode::decode(reader)?),
-            Cls::Unicode => TyInner::Unicode(Decode::decode(reader)?),
+            Cls::UnicodeChar => TyInner::UnicodeChar,
             Cls::List => TyInner::List(Decode::decode(reader)?, Decode::decode(reader)?),
             Cls::Set => TyInner::Set(Decode::decode(reader)?, Decode::decode(reader)?),
             Cls::Map => TyInner::Map(
@@ -152,7 +152,7 @@ impl Encode for KeyTy {
             KeyTy::Primitive(prim) => prim.encode(writer),
             KeyTy::Enum(vars) => vars.encode(writer),
             KeyTy::Array(len) => writer.write_all(&len.to_le_bytes()),
-            KeyTy::Unicode(sizing) => sizing.encode(writer),
+            KeyTy::UnicodeStr(sizing) => sizing.encode(writer),
             KeyTy::Bytes(sizing) => sizing.encode(writer),
         }
     }
@@ -164,7 +164,7 @@ impl Decode for KeyTy {
             Cls::Primitive => KeyTy::Primitive(Decode::decode(reader)?),
             Cls::Enum => KeyTy::Enum(Decode::decode(reader)?),
             Cls::Array => KeyTy::Array(Decode::decode(reader)?),
-            Cls::Unicode => KeyTy::Unicode(Decode::decode(reader)?),
+            Cls::UnicodeChar => KeyTy::UnicodeStr(Decode::decode(reader)?),
             Cls::List => KeyTy::Bytes(Decode::decode(reader)?),
             wrong => return Err(DecodeError::InvalidTyCls(wrong)),
         })

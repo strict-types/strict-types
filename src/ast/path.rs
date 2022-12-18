@@ -127,7 +127,7 @@ impl<Ref: NestedRef> Ty<Ref> {
             TyInner::Union(fields) => fields.len_u8(),
             TyInner::Struct(fields) => fields.len_u8(),
             TyInner::Array(_, _) => 1,
-            TyInner::Unicode(_) => 0,
+            TyInner::UnicodeChar => 0,
             TyInner::List(_, _) | TyInner::Set(_, _) | TyInner::Map(_, _, _) => 1,
         }
     }

@@ -233,6 +233,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub const F128: Ty<Ref> = Ty(TyInner::Primitive(F128));
     pub const F256: Ty<Ref> = Ty(TyInner::Primitive(F256));
 
+    pub const UNICODE: Ty<Ref> = Ty(TyInner::UnicodeChar);
+
     pub fn enumerate(variants: Variants) -> Self { Ty(TyInner::Enum(variants)) }
     pub fn union(fields: Fields<Ref, false>) -> Self {
         let ty = Ty(TyInner::Union(fields));
@@ -244,8 +246,6 @@ impl<Ref: TypeRef> Ty<Ref> {
         assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
         ty
     }
-
-    pub fn unicode(sizing: Sizing) -> Self { Ty(TyInner::Unicode(sizing)) }
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self {
         let ty = Ty(TyInner::List(ty, sizing));
@@ -323,7 +323,7 @@ where Ref: Display
             TyInner::Union(fields) => Display::fmt(fields, f),
             TyInner::Struct(fields) => Display::fmt(fields, f),
             TyInner::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
-            TyInner::Unicode(sizing) => write!(f, "[Char{}]", sizing),
+            TyInner::UnicodeChar => write!(f, "Unicode"),
             TyInner::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
             TyInner::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
             TyInner::Map(key, ty, sizing) => write!(f, "{{{}{}}} -> [{}]", key, sizing, ty),
@@ -354,7 +354,11 @@ impl<Ref: NestedRef> Ty<Ref> {
             TyInner::Enum(vars) => KeyTy::Enum(vars),
             TyInner::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(len),
             TyInner::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(sizing),
-            TyInner::Unicode(sizing) => KeyTy::Unicode(sizing),
+            TyInner::Array(ty, len) if ty.as_ty() == &Ty::UNICODE => {
+                KeyTy::UnicodeStr(Sizing::fixed(len))
+            }
+            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(sizing),
+            TyInner::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
             me @ TyInner::Union(_)
             | me @ TyInner::Struct(_)
             | me @ TyInner::Array(_, _)
@@ -369,11 +373,14 @@ impl<Ref: NestedRef> Ty<Ref> {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum TyInner<Ref: TypeRef = SubTy> {
     Primitive(Primitive),
+    /// We use separate type since unlike primitive it has variable length.
+    /// While unicode character can be expressed as a composite type, it will be very verbose
+    /// expression (union with 256 variants), so instead we built it in.
+    UnicodeChar,
     Enum(Variants),
     Union(Fields<Ref, false>),
     Struct(Fields<Ref, true>),
     Array(Ref, u16),
-    Unicode(Sizing),
     List(Ref, Sizing),
     Set(Ref, Sizing),
     Map(KeyTy, Ref, Sizing),
@@ -391,7 +398,7 @@ impl<Ref: NestedRef> TyInner<Ref> {
             TyInner::Struct(fields) => fields.values().map(|ty| ty.byte_size()).sum(),
             TyInner::Enum(_) => Size::Fixed(1),
             TyInner::Array(_, len) => Size::Fixed(*len),
-            TyInner::Unicode(..) | TyInner::List(..) | TyInner::Set(..) | TyInner::Map(..) => {
+            TyInner::UnicodeChar | TyInner::List(..) | TyInner::Set(..) | TyInner::Map(..) => {
                 Size::Variable
             }
         }
@@ -411,7 +418,7 @@ pub enum KeyTy {
     /// Fixed-size byte array
     #[display("[Byte ^ {0}]")]
     Array(u16),
-    Unicode(Sizing),
+    UnicodeStr(Sizing),
     Bytes(Sizing),
 }
 

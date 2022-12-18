@@ -63,7 +63,7 @@ where Ref: Translate<ToRef>
             TyInner::Union(fields) => TyInner::Union(fields.translate(ctx)?),
             TyInner::Struct(fields) => TyInner::Struct(fields.translate(ctx)?),
             TyInner::Array(ty, len) => TyInner::Array(ty.translate(ctx)?, len),
-            TyInner::Unicode(sizing) => TyInner::Unicode(sizing),
+            TyInner::UnicodeChar => TyInner::UnicodeChar,
             TyInner::List(ty, sizing) => TyInner::List(ty.translate(ctx)?, sizing),
             TyInner::Set(ty, sizing) => TyInner::Set(ty.translate(ctx)?, sizing),
             TyInner::Map(key, ty, sizing) => TyInner::Map(key, ty.translate(ctx)?, sizing),

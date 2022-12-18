@@ -63,7 +63,7 @@ impl<Ref: TypeRef> Ty<Ref> {
                 hasher.update(ty.id().as_bytes());
                 hasher.update(&len.to_le_bytes());
             }
-            TyInner::Unicode(sizing) => sizing.hash(hasher),
+            TyInner::UnicodeChar => {}
             TyInner::List(ty, sizing) => {
                 hasher.update(ty.id().as_bytes());
                 sizing.hash(hasher);
@@ -92,7 +92,7 @@ impl KeyTy {
             KeyTy::Array(len) => {
                 hasher.update(&len.to_le_bytes());
             }
-            KeyTy::Unicode(sizing) | KeyTy::Bytes(sizing) => sizing.hash(hasher),
+            KeyTy::UnicodeStr(sizing) | KeyTy::Bytes(sizing) => sizing.hash(hasher),
         };
     }
 }

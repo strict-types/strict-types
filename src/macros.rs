@@ -42,6 +42,24 @@ macro_rules! fields {
             amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
     };
+    { unnamed $($ord:literal => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeMap::new();
+            $(
+                assert!(m.insert($crate::ast::Field::unnamed($ord), $value.into()).is_none(), "repeated field");
+            )+
+            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
+        }
+    };
+    { $($key:expr => $ord:literal => $value:expr),+ $(,)? } => {
+        {
+            let mut m = ::std::collections::BTreeMap::new();
+            $(
+                assert!(m.insert($crate::ast::Field::named(tn!($key), $ord), $value.into()).is_none(), "repeated field");
+            )+
+            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
+        }
+    };
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let mut c = 0u8;
