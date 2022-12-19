@@ -44,9 +44,6 @@ pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
     fn into_ty(self) -> Ty<Self>;
     fn iter(&self) -> Iter<Self> { Iter::from(self) }
 }
-pub trait RecursiveRef: NestedRef {
-    fn byte_size(&self) -> Size { self.as_ty().byte_size() }
-}
 
 impl TypeRef for StenType {
     fn id(&self) -> SemId { self.as_ty().id() }
@@ -55,7 +52,6 @@ impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
     fn into_ty(self) -> Ty<Self> { *self.ty }
 }
-impl RecursiveRef for StenType {}
 
 pub type FieldName = Ident;
 
