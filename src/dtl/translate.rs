@@ -166,7 +166,7 @@ impl Translate<LibTy> for StenType {
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<LibTy, Self::Error> {
-        let id = self.id();
+        let id = self.as_ty().id();
         let ty = self.into_ty().translate(ctx)?;
         Ok(match ctx.index.get(&id) {
             Some(name) => {

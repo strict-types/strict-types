@@ -31,7 +31,7 @@ use amplify::num::apfloat::Float;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
-use crate::ast::Step;
+use crate::ast::{NestedRef, Step};
 use crate::{Encode, StenSchema, StenType};
 
 pub trait StenWrite: Sized {
@@ -307,7 +307,7 @@ impl<W: io::Write> StenWrite for Writer<W> {
     write_float!(Oct, write_f256);
 
     fn write_enum(&mut self, val: u8, ty: &StenType) -> Result<(), Error> {
-        let Some(variants) = ty.as_enum_variants() else {
+        let Some(variants) = ty.as_ty().as_enum_variants() else {
             panic!("write_enum requires Ty::Enum type")
         };
         if variants.iter().find(|variant| variant.ord == val).is_none() {
@@ -322,7 +322,7 @@ impl<W: io::Write> StenWrite for Writer<W> {
         ty: &StenType,
         inner: &T,
     ) -> Result<(), Error> {
-        let Some(alts) = ty.as_union_fields() else {
+        let Some(alts) = ty.as_ty().as_union_fields() else {
             panic!("write_union requires Ty::Union type")
         };
         let Some((field, alt)) = alts.iter().find(|(field, _)| field.name == Some(tn!(name))) else {

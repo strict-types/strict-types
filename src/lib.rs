@@ -90,12 +90,6 @@ impl StenSchema for StenType {
     }
 }
 
-impl std::ops::Deref for StenType {
-    type Target = Ty<StenType>;
-
-    fn deref(&self) -> &Self::Target { self.ty.deref() }
-}
-
 impl StenType {
     pub fn byte() -> StenType { StenType::new("Byte", Ty::BYTE) }
     pub fn ascii() -> StenType { StenType::new("Ascii", Ty::<StenType>::ascii_char()) }

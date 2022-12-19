@@ -28,6 +28,7 @@ use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
+use crate::ast::NestedRef;
 use crate::util::Sizing;
 use crate::{StenSchema, StenType, Ty};
 
@@ -120,7 +121,7 @@ where
 
     fn sten_ty() -> Ty<StenType> {
         Ty::<StenType>::map(
-            K::sten_type().try_to_key().expect("invalid key type"),
+            K::sten_type().as_ty().try_to_key().expect("invalid key type"),
             V::sten_type(),
             Sizing::new(MIN as u16, MAX as u16),
         )

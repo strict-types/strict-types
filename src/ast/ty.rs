@@ -39,7 +39,7 @@ pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
     fn id(&self) -> SemId;
 }
-pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
+pub trait NestedRef: TypeRef {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
     fn iter(&self) -> Iter<Self> { Iter::from(self) }

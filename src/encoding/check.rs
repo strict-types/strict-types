@@ -31,7 +31,7 @@ use amplify::num::apfloat::Float;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
-use crate::ast::{IntoIter, Step};
+use crate::ast::{IntoIter, NestedRef, Step};
 use crate::util::Sizing;
 use crate::{Encode, StenSchema, StenType, StenWrite, StructWriter, Ty};
 
@@ -110,7 +110,7 @@ impl<'a> StenWrite for CheckedWriter {
     write_float!(Oct, f256, write_f256, F256);
 
     fn write_enum(&mut self, val: u8, ty: &StenType) -> Result<(), io::Error> {
-        let Some(variants) = ty.as_enum_variants() else {
+        let Some(variants) = ty.as_ty().as_enum_variants() else {
             panic!("write_enum requires Ty::Enum type")
         };
         if variants.iter().find(|variant| variant.ord == val).is_none() {
@@ -126,7 +126,7 @@ impl<'a> StenWrite for CheckedWriter {
         ty: &StenType,
         inner: &T,
     ) -> Result<(), io::Error> {
-        let Some(alts) = ty.as_union_fields() else {
+        let Some(alts) = ty.as_ty().as_union_fields() else {
             panic!("write_union requires Ty::Union type")
         };
         let Some((field, alt)) = alts.iter().find(|(field, _)| field.name == Some(tn!(name))) else {
@@ -249,7 +249,7 @@ impl<'a> StenWrite for CheckedWriter {
     {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
         self.iter.check_expect(&Ty::map(
-            K::sten_type().try_to_key().expect("invalid key type"),
+            K::sten_type().as_ty().try_to_key().expect("invalid key type"),
             V::sten_type(),
             Sizing {
                 min: MIN as u16,

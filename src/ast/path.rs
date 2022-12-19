@@ -115,7 +115,7 @@ impl<Ref: NestedRef> Ty<Ref> {
                 (_, _) => None,
             };
             path_so_far.push(step).expect("confinement collection guarantees");
-            ty = res.ok_or_else(|| PathError::new(self, path_so_far.clone()))?;
+            ty = res.ok_or_else(|| PathError::new(self, path_so_far.clone()))?.as_ty();
         }
         Ok(ty)
     }
