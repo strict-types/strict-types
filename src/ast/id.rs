@@ -103,9 +103,8 @@ impl Cls {
 
 impl Variants {
     fn hash(&self, hasher: &mut blake3::Hasher) {
-        for (field, val) in self {
+        for field in self {
             field.hash(hasher);
-            hasher.update(&[*val]);
         }
     }
 }

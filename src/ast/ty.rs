@@ -21,7 +21,7 @@
 // limitations under the License.
 
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::{Deref, DerefMut};
 
@@ -103,6 +103,17 @@ pub struct Field {
     pub ord: u8,
 }
 
+impl StenSchema for Field {
+    const STEN_TYPE_NAME: &'static str = "Field";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::composition(fields! {
+            "name" => Option::<FieldName>::sten_type(),
+            "ord" => u8::sten_type()
+        })
+    }
+}
+
 impl Field {
     pub fn named(name: FieldName, value: u8) -> Field {
         Field {
@@ -158,6 +169,9 @@ impl Display for Field {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if let Some(name) = &self.name {
             write!(f, "{} ", name)?;
+        }
+        if f.alternate() {
+            write!(f, "= {}", self.ord)?;
         }
         Ok(())
     }
@@ -560,61 +574,49 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Variants(Confined<BTreeMap<Field, u8>, 1, { u8::MAX as usize }>);
+pub struct Variants(Confined<BTreeSet<Field>, 1, { u8::MAX as usize }>);
 
 impl StenSchema for Variants {
     const STEN_TYPE_NAME: &'static str = "Variants";
 
-    fn sten_ty() -> Ty<StenType> {
-        // TODO: Serialize according to this schema
-        let val_ty = <(Option<FieldName>, u8)>::sten_type();
-        Ty::map(KeyTy::U8, val_ty, Sizing::U8_NONEMPTY)
-    }
+    fn sten_ty() -> Ty<StenType> { Ty::set(Field::sten_type(), Sizing::U8_NONEMPTY) }
 }
 
-impl TryFrom<BTreeMap<Field, u8>> for Variants {
+impl TryFrom<BTreeSet<Field>> for Variants {
     type Error = confinement::Error;
 
-    fn try_from(inner: BTreeMap<Field, u8>) -> Result<Self, Self::Error> {
+    fn try_from(inner: BTreeSet<Field>) -> Result<Self, Self::Error> {
         Confined::try_from(inner).map(Variants::from)
     }
 }
 
 impl IntoIterator for Variants {
-    type Item = (Field, u8);
-    type IntoIter = std::collections::btree_map::IntoIter<Field, u8>;
+    type Item = Field;
+    type IntoIter = std::collections::btree_set::IntoIter<Field>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
 impl<'a> IntoIterator for &'a Variants {
-    type Item = (&'a Field, &'a u8);
-    type IntoIter = std::collections::btree_map::Iter<'a, Field, u8>;
+    type Item = &'a Field;
+    type IntoIter = std::collections::btree_set::Iter<'a, Field>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
 impl Variants {
-    pub fn into_inner(self) -> BTreeMap<Field, u8> { self.0.into_inner() }
-
-    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Field, u8> {
-        self.0.into_inner().into_keys()
-    }
-
-    pub fn into_values(self) -> std::collections::btree_map::IntoValues<Field, u8> {
-        self.0.into_inner().into_values()
-    }
+    pub fn into_inner(self) -> BTreeSet<Field> { self.0.into_inner() }
 }
 
 impl Display for Variants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
-        for (field, val) in iter {
-            write!(f, "{}= {} | ", field, val)?;
+        for field in iter {
+            write!(f, "{:#} | ", field)?;
         }
-        if let Some((field, val)) = last {
-            write!(f, "{}= {}", field, val)?;
+        if let Some(field) = last {
+            write!(f, "{:#}", field)?;
         }
         Ok(())
     }
@@ -661,17 +663,6 @@ impl<Ref: TypeRef> StenSchema for (Option<FieldName>, Ref) {
         Ty::composition(fields! {
             Option::<FieldName>::sten_type(),
             Ref::sten_type(),
-        })
-    }
-}
-
-impl StenSchema for (Option<FieldName>, u8) {
-    const STEN_TYPE_NAME: &'static str = "EnumTy";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            Option::<FieldName>::sten_type(),
-            u8::sten_type(),
         })
     }
 }

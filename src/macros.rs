@@ -79,33 +79,20 @@ macro_rules! fields {
 macro_rules! variants {
     { $from:literal..=$to:literal } => {
         {
-            let mut m = ::std::collections::BTreeMap::new();
+            let mut m = ::std::collections::BTreeSet::new();
             for i in $from..=$to {
-                assert!(m.insert($crate::ast::Field::unnamed(i), i).is_none(), "repeated enum variant");
+                assert!(m.insert($crate::ast::Field::unnamed(i)), "repeated enum variant");
             }
-            amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
-        }
-    };
-    { $($key:expr => $ord:literal => $value:expr),+ $(,)? } => {
-        {
-            let mut m = ::std::collections::BTreeMap::new();
-            $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), $ord), $value).is_none(), "repeated enum variant");
-            )+
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
-            let mut c = 0u8;
-            let mut m = ::std::collections::BTreeMap::new();
+            let mut m = ::std::collections::BTreeSet::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), c), $value).is_none(), "repeated enum variant");
-                #[allow(unused_assignments)] {
-                    c += 1;
-                }
+                assert!(m.insert($crate::ast::Field::named(tn!($key), $value)), "repeated enum variant");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
-    }
+    };
 }

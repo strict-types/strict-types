@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::{Error, Read, Write};
 
@@ -174,9 +174,8 @@ impl Decode for KeyTy {
 impl Encode for Variants {
     fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
         self.len_u8().encode(writer)?;
-        for (field, val) in self.as_inner() {
+        for field in self.as_inner() {
             field.encode(writer)?;
-            val.encode(writer)?;
         }
         Ok(())
     }
@@ -185,9 +184,10 @@ impl Encode for Variants {
 impl Decode for Variants {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let len = u8::decode(reader)?;
-        let mut map = BTreeMap::new();
+        let mut map = BTreeSet::new();
+        // TODO: Detect wrong order
         for _ in 0..len {
-            map.insert(Decode::decode(reader)?, Decode::decode(reader)?);
+            map.insert(Decode::decode(reader)?);
         }
         Variants::try_from(map).map_err(DecodeError::from)
     }
@@ -228,6 +228,7 @@ impl<Ref: TypeRef + Decode, const OP: bool> Decode for Fields<Ref, OP> {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let len = u8::decode(reader)?;
         let mut map = BTreeMap::new();
+        // TODO: Detect wrong order
         for _ in 0..len {
             map.insert(Decode::decode(reader)?, Decode::decode(reader)?);
         }
