@@ -62,8 +62,8 @@ impl StenSchema for Prim {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::enumerate(variants![
-            "a" => 10 => Prim::A as u8,
-            "b" => 20 => Prim::B as u8,
+            "a" => Prim::A as u8,
+            "b" => Prim::B as u8,
         ])
     }
 }

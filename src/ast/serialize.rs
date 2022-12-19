@@ -22,7 +22,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io;
-use std::io::{Error, Read, Write};
+use std::io::{Error, Read};
 
 use amplify::Wrapper;
 
@@ -30,7 +30,8 @@ use crate::ast::ty::{NestedRef, SubTy};
 use crate::ast::{Field, Fields, TyInner, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
-    Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, Serialize, StenType, Ty, TyId,
+    Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, Serialize, StenType,
+    StenWrite, Ty, TyId,
 };
 
 impl<Ref: TypeRef> TyInner<Ref> {
@@ -66,7 +67,7 @@ impl<Ref: TypeRef + Decode> Deserialize for Ty<Ref> {}
 impl<Ref: TypeRef + Encode> Serialize for Ty<Ref> {}
 
 impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.cls().encode(writer)?;
         match self.as_inner() {
             TyInner::Primitive(prim) => prim.encode(writer),
@@ -75,7 +76,7 @@ impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
             TyInner::Struct(fields) => fields.encode(writer),
             TyInner::Array(ty, len) => {
                 ty.encode(writer)?;
-                writer.write_all(&len.to_le_bytes())
+                len.encode(writer)
             }
             TyInner::UnicodeChar => Ok(()),
             TyInner::List(ty, sizing) => {
@@ -116,7 +117,7 @@ impl<Ref: TypeRef + Decode> Decode for Ty<Ref> {
 }
 
 impl Encode for Primitive {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.into_code().encode(writer)
     }
 }
@@ -128,13 +129,13 @@ impl Decode for Primitive {
 }
 
 impl Encode for StenType {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.as_ty().encode(writer)
     }
 }
 
 impl Encode for SubTy {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.as_ty().encode(writer)
     }
 }
@@ -146,12 +147,12 @@ impl Decode for SubTy {
 }
 
 impl Encode for KeyTy {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.cls().encode(writer)?;
         match self {
             KeyTy::Primitive(prim) => prim.encode(writer),
             KeyTy::Enum(vars) => vars.encode(writer),
-            KeyTy::Array(len) => writer.write_all(&len.to_le_bytes()),
+            KeyTy::Array(len) => len.encode(writer),
             KeyTy::UnicodeStr(sizing) => sizing.encode(writer),
             KeyTy::Bytes(sizing) => sizing.encode(writer),
         }
@@ -172,7 +173,7 @@ impl Decode for KeyTy {
 }
 
 impl Encode for Variants {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.len_u8().encode(writer)?;
         for field in self.as_inner() {
             field.encode(writer)?;
@@ -194,7 +195,7 @@ impl Decode for Variants {
 }
 
 impl Encode for Field {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         if let Some(name) = &self.name {
             name.encode(writer)?;
         } else {
@@ -214,8 +215,8 @@ impl Decode for Field {
 }
 
 impl<Ref: TypeRef + Encode, const OP: bool> Encode for Fields<Ref, OP> {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
-        writer.write(&[self.len_u8()])?;
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+        self.len_u8().encode(writer)?;
         for (name, ty) in self {
             name.encode(writer)?;
             ty.encode(writer)?;
@@ -237,8 +238,8 @@ impl<Ref: TypeRef + Decode, const OP: bool> Decode for Fields<Ref, OP> {
 }
 
 impl Encode for TyId {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
-        writer.write_all(self.as_inner().as_bytes())
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+        writer.write_byte_array(*self.as_bytes())
     }
 }
 

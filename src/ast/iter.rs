@@ -79,17 +79,10 @@ impl<Ref: NestedRef> Iterator for IntoIter<Ref> {
 pub struct Iter<'ty, Ref: NestedRef> {
     ty: &'ty Ty<Ref>,
     pos: u8,
-    current: Path,
 }
 
 impl<'ty, Ref: NestedRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
-    fn from(ty: &'ty Ty<Ref>) -> Self {
-        Iter {
-            ty,
-            pos: 0,
-            current: empty!(),
-        }
-    }
+    fn from(ty: &'ty Ty<Ref>) -> Self { Iter { ty, pos: 0 } }
 }
 
 impl<'ty, Ref: NestedRef> From<&'ty Ref> for Iter<'ty, Ref> {
@@ -97,13 +90,7 @@ impl<'ty, Ref: NestedRef> From<&'ty Ref> for Iter<'ty, Ref> {
 }
 
 impl SubTy {
-    pub fn iter(&self) -> Iter<SubTy> {
-        Iter {
-            ty: self,
-            pos: 0,
-            current: empty!(),
-        }
-    }
+    pub fn iter(&self) -> Iter<SubTy> { Iter { ty: self, pos: 0 } }
 }
 
 impl<'ty, Ref: NestedRef> IntoIterator for &'ty Ty<Ref> {

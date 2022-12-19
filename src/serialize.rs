@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::io::{Error, Read, Write};
+use std::io::{Error, Read};
 use std::{fs, io};
 
 use amplify::ascii::AsciiString;
@@ -30,7 +30,7 @@ use amplify::{confinement, IoError, WriteCounter};
 
 use crate::dtl::LibName;
 use crate::util::{BuildFragment, InvalidIdent, PreFragment, Sizing};
-use crate::{Ident, SemVer, TyId};
+use crate::{Ident, SemVer, StenWrite, TyId, Writer};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -86,9 +86,9 @@ pub trait Deserialize: Decode {
 
 pub trait Serialize: Encode {
     fn serialized_len(&self) -> usize {
-        let mut counter = WriteCounter::default();
+        let mut counter = Writer::from(WriteCounter::default());
         self.encode(&mut counter).expect("counter doesn't error");
-        counter.count
+        counter.unbox().count
     }
 
     fn to_serialized(&self) -> MediumVec<u8> {
@@ -97,19 +97,20 @@ pub trait Serialize: Encode {
             len <= u24::MAX.into_usize(),
             "Ty type guarantees on the data size are broken"
         );
-        let mut ast_data = Vec::with_capacity(len);
+        let mut ast_data = Writer::from(Vec::with_capacity(len));
         self.encode(&mut ast_data).expect("memory writers do not error");
-        MediumVec::try_from(ast_data).expect("Ty type guarantees on the data size are broken")
+        MediumVec::try_from(ast_data.unbox())
+            .expect("Ty type guarantees on the data size are broken")
     }
 
     fn serialize_to_file(&self, path: impl AsRef<std::path::Path>) -> Result<(), io::Error> {
-        let mut file = fs::File::create(path)?;
+        let mut file = Writer::from(fs::File::create(path)?);
         self.encode(&mut file)
     }
 }
 
 pub trait Encode {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error>;
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error>;
 }
 
 pub trait Decode: Sized {
@@ -159,8 +160,8 @@ impl TryFrom<u8> for Cls {
 }
 
 impl Encode for Cls {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), Error> {
-        writer.write_all(&[*self as u8])
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+        (*self as u8).encode(writer)
     }
 }
 
@@ -173,9 +174,7 @@ impl Decode for Cls {
 }
 
 impl Encode for u8 {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), Error> {
-        writer.write_all(&[*self])
-    }
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u8(*self) }
 }
 
 impl Decode for u8 {
@@ -187,9 +186,7 @@ impl Decode for u8 {
 }
 
 impl Encode for u16 {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), Error> {
-        writer.write_all(&self.to_le_bytes())
-    }
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u16(*self) }
 }
 
 impl Decode for u16 {
@@ -201,9 +198,7 @@ impl Decode for u16 {
 }
 
 impl Encode for u24 {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), Error> {
-        writer.write_all(&self.to_le_bytes())
-    }
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u24(*self) }
 }
 
 impl Decode for u24 {
@@ -215,9 +210,7 @@ impl Decode for u24 {
 }
 
 impl Encode for u128 {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), Error> {
-        writer.write_all(&self.to_le_bytes())
-    }
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u128(*self) }
 }
 
 impl Decode for u128 {
@@ -229,10 +222,8 @@ impl Decode for u128 {
 }
 
 impl Encode for Ident {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
-        let len = self.len() as u8;
-        len.encode(writer)?;
-        writer.write_all(self.as_bytes())
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+        writer.write_ascii(self)
     }
 }
 
@@ -249,7 +240,7 @@ impl Decode for Ident {
 }
 
 impl Encode for Sizing {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.min.encode(writer)?;
         self.max.encode(writer)
     }
@@ -262,7 +253,7 @@ impl Decode for Sizing {
 }
 
 impl Encode for SemVer {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
         self.major.encode(writer)?;
         self.minor.encode(writer)?;
         self.patch.encode(writer)?;
@@ -304,7 +295,7 @@ impl Decode for SemVer {
 }
 
 impl Encode for PreFragment {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
         match self {
             PreFragment::Ident(ident) => {
                 0u8.encode(writer)?;
@@ -329,7 +320,7 @@ impl Decode for PreFragment {
 }
 
 impl Encode for BuildFragment {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
         match self {
             BuildFragment::Ident(ident) => {
                 0u8.encode(writer)?;
@@ -351,6 +342,14 @@ impl Decode for BuildFragment {
             wrong => Err(DecodeError::WrongEnumId("BuildFragment", wrong)),
         }
     }
+}
+
+impl Encode for () {
+    fn encode(&self, _writer: &mut impl StenWrite) -> Result<(), Error> { Ok(()) }
+}
+
+impl Decode for () {
+    fn decode(_reader: &mut impl Read) -> Result<Self, DecodeError> { Ok(()) }
 }
 
 #[cfg(test)]

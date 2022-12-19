@@ -22,7 +22,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::io;
-use std::io::{Error, Read, Write};
+use std::io::{Error, Read};
 
 use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::num::u24;
@@ -30,13 +30,15 @@ use amplify::Wrapper;
 
 use crate::dtl::type_lib::Dependency;
 use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
-use crate::{Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, Ty, TyId, TypeName};
+use crate::{
+    Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, StenWrite, Ty, TyId, TypeName,
+};
 
 impl Serialize for TypeSystem {}
 impl Deserialize for TypeSystem {}
 
 impl Encode for TypeSystem {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.count_types().encode(writer)?;
         for ty in self.values() {
             ty.encode(writer)?;
@@ -69,7 +71,7 @@ impl Serialize for TypeLib {}
 impl Deserialize for TypeLib {}
 
 impl Encode for TypeLib {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
         self.name.encode(writer)?;
 
         self.dependencies.len_u8().encode(writer)?;
@@ -132,7 +134,7 @@ impl Decode for TypeLib {
 }
 
 impl Encode for EmbeddedTy {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
             EmbeddedTy::Ref(id) => {
                 0u8.encode(writer)?;
@@ -157,7 +159,7 @@ impl Decode for EmbeddedTy {
 }
 
 impl Encode for LibTy {
-    fn encode(&self, writer: &mut impl io::Write) -> Result<(), io::Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
             LibTy::Named(name, id) => {
                 0u8.encode(writer)?;
@@ -194,7 +196,7 @@ impl Decode for LibTy {
 }
 
 impl Encode for Dependency {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
         self.id.encode(writer)?;
         self.name.encode(writer)?;
         self.ver.encode(writer)
@@ -211,8 +213,8 @@ impl Decode for Dependency {
 }
 
 impl Encode for TypeLibId {
-    fn encode(&self, writer: &mut impl Write) -> Result<(), Error> {
-        writer.write_all(self.as_bytes())
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+        writer.write_byte_array(*self.as_bytes())
     }
 }
 

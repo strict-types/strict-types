@@ -65,12 +65,12 @@ pub trait StenWrite: Sized {
     fn write_f128(&mut self, val: Quad) -> Result<(), Error>;
     fn write_f256(&mut self, val: Oct) -> Result<(), Error>;
 
-    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), Error>;
+    fn write_enum(&mut self, val: u8, ty: &StenType) -> Result<(), Error>;
 
     fn write_union<T: Encode + StenSchema>(
         &mut self,
         var: &'static str,
-        ty: StenType,
+        ty: &StenType,
         inner: &T,
     ) -> Result<(), Error>;
 
@@ -149,14 +149,14 @@ where W: StenWrite
     fn write_f128(&mut self, val: Quad) -> Result<(), Error> { W::write_f128(self, val) }
     fn write_f256(&mut self, val: Oct) -> Result<(), Error> { W::write_f256(self, val) }
 
-    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), Error> {
+    fn write_enum(&mut self, val: u8, ty: &StenType) -> Result<(), Error> {
         W::write_enum(self, val, ty)
     }
 
     fn write_union<T: Encode + StenSchema>(
         &mut self,
         var: &'static str,
-        ty: StenType,
+        ty: &StenType,
         inner: &T,
     ) -> Result<(), Error> {
         W::write_union(self, var, ty, inner)
@@ -226,6 +226,10 @@ where W: StenWrite
 }
 
 pub struct Writer<W: io::Write>(W);
+
+impl Writer<Vec<u8>> {
+    pub fn in_memory() -> Self { Self::from(vec![]) }
+}
 
 impl<W: io::Write> Writer<W> {
     pub fn unbox(self) -> W { self.0 }
@@ -302,8 +306,8 @@ impl<W: io::Write> StenWrite for Writer<W> {
     write_float!(Quad, write_f128);
     write_float!(Oct, write_f256);
 
-    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), Error> {
-        let Some(variants) = ty.into_enum_variants() else {
+    fn write_enum(&mut self, val: u8, ty: &StenType) -> Result<(), Error> {
+        let Some(variants) = ty.as_enum_variants() else {
             panic!("write_enum requires Ty::Enum type")
         };
         if variants.iter().find(|variant| variant.ord == val).is_none() {
@@ -315,31 +319,31 @@ impl<W: io::Write> StenWrite for Writer<W> {
     fn write_union<T: Encode + StenSchema>(
         &mut self,
         name: &'static str,
-        ty: StenType,
+        ty: &StenType,
         inner: &T,
     ) -> Result<(), Error> {
-        let Some(alts) = ty.into_union_fields() else {
+        let Some(alts) = ty.as_union_fields() else {
             panic!("write_union requires Ty::Union type")
         };
         let Some((field, alt)) = alts.iter().find(|(field, _)| field.name == Some(tn!(name))) else {
             panic!("invalid union alternative {}", name);
         };
         let actual_ty = T::sten_type();
-        if ty != actual_ty {
+        if alt != &actual_ty {
             panic!(
                 "wrong data type for union alternative {}; expected {:?}, found {:?}",
                 name, ty, actual_ty
             );
         }
-        field.encode(&mut self)?;
+        field.ord.encode(self)?;
         inner.encode(self)
     }
 
     fn write_option<T: Encode + StenSchema>(&mut self, val: Option<&T>) -> Result<(), Error> {
         let ty = Option::<T>::sten_type();
         match val {
-            Some(val) => self.write_union("Some", ty, val),
-            None => self.write_union("None", ty, &()),
+            Some(val) => self.write_union("Some", &ty, val),
+            None => self.write_union("None", &ty, &()),
         }
     }
 

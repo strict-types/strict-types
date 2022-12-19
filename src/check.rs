@@ -109,8 +109,8 @@ impl<'a> StenWrite for CheckedWriter {
     write_float!(Quad, f128, write_f128, F128);
     write_float!(Oct, f256, write_f256, F256);
 
-    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), io::Error> {
-        let Some(variants) = ty.into_enum_variants() else {
+    fn write_enum(&mut self, val: u8, ty: &StenType) -> Result<(), io::Error> {
+        let Some(variants) = ty.as_enum_variants() else {
             panic!("write_enum requires Ty::Enum type")
         };
         if variants.iter().find(|variant| variant.ord == val).is_none() {
@@ -120,27 +120,31 @@ impl<'a> StenWrite for CheckedWriter {
         Ok(())
     }
 
-    fn write_union<T: Encode>(
+    fn write_union<T: Encode + StenSchema>(
         &mut self,
         name: &'static str,
-        ty: StenType,
+        ty: &StenType,
         inner: &T,
     ) -> Result<(), io::Error> {
-        let Some(alts) = ty.into_union_fields() else {
+        let Some(alts) = ty.as_union_fields() else {
             panic!("write_union requires Ty::Union type")
         };
         let Some((field, alt)) = alts.iter().find(|(field, _)| field.name == Some(tn!(name))) else {
             panic!("invalid union variant {}", name);
         };
-        if alt != &ty {
-            panic!("wrong enum type for variant {}", name);
+        let actual_ty = T::sten_type();
+        if alt != &actual_ty {
+            panic!(
+                "wrong data type for union alternative {}; expected {:?}, found {:?}",
+                name, ty, actual_ty
+            );
         }
-        self.count += 1;
+        field.ord.encode(self)?;
         inner.encode(self)?;
         Ok(())
     }
 
-    fn write_option<T: Encode>(&mut self, val: Option<&T>) -> Result<(), io::Error> {
+    fn write_option<T: Encode + StenSchema>(&mut self, val: Option<&T>) -> Result<(), io::Error> {
         self.count += 1;
         if let Some(val) = val {
             val.encode(self)?;
@@ -245,7 +249,7 @@ impl<'a> StenWrite for CheckedWriter {
     {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
         self.iter.check_expect(&Ty::map(
-            K::sten_type().try_into_key().expect("invalid key type"),
+            K::sten_type().try_to_key().expect("invalid key type"),
             V::sten_type(),
             Sizing {
                 min: MIN as u16,

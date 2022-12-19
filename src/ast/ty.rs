@@ -313,6 +313,27 @@ impl<Ref: TypeRef> Ty<Ref> {
             _ => None,
         }
     }
+
+    pub fn as_union_fields(&self) -> Option<&Fields<Ref, false>> {
+        match self {
+            Ty(TyInner::Union(ref fields)) => Some(fields),
+            _ => None,
+        }
+    }
+
+    pub fn as_struct_fields(&self) -> Option<&Fields<Ref, true>> {
+        match self {
+            Ty(TyInner::Struct(ref fields)) => Some(fields),
+            _ => None,
+        }
+    }
+
+    pub fn as_enum_variants(&self) -> Option<&Variants> {
+        match self {
+            Ty(TyInner::Enum(ref variants)) => Some(variants),
+            _ => None,
+        }
+    }
 }
 
 impl Ty<SubTy> {
@@ -383,23 +404,23 @@ impl<Ref: NestedRef> Ty<Ref> {
         }
     }
 
-    pub fn try_into_key(self) -> Result<KeyTy, Ty<Ref>> {
-        Ok(match self.0 {
-            TyInner::Primitive(code) => KeyTy::Primitive(code),
-            TyInner::Enum(vars) => KeyTy::Enum(vars),
-            TyInner::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(len),
-            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(sizing),
+    pub fn try_to_key(&self) -> Result<KeyTy, &Ty<Ref>> {
+        Ok(match &self.0 {
+            TyInner::Primitive(code) => KeyTy::Primitive(*code),
+            TyInner::Enum(vars) => KeyTy::Enum(vars.clone()),
+            TyInner::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(*len),
+            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(*sizing),
             TyInner::Array(ty, len) if ty.as_ty() == &Ty::UNICODE => {
-                KeyTy::UnicodeStr(Sizing::fixed(len))
+                KeyTy::UnicodeStr(Sizing::fixed(*len))
             }
-            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(sizing),
+            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(*sizing),
             TyInner::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
-            me @ TyInner::Union(_)
-            | me @ TyInner::Struct(_)
-            | me @ TyInner::Array(_, _)
-            | me @ TyInner::List(_, _)
-            | me @ TyInner::Set(_, _)
-            | me @ TyInner::Map(_, _, _) => return Err(Ty::from_inner(me)),
+            TyInner::Union(_)
+            | TyInner::Struct(_)
+            | TyInner::Array(_, _)
+            | TyInner::List(_, _)
+            | TyInner::Set(_, _)
+            | TyInner::Map(_, _, _) => return Err(self),
         })
     }
 }
