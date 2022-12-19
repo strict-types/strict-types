@@ -30,7 +30,7 @@ use amplify::{confinement, Wrapper};
 
 use crate::ast::Iter;
 use crate::primitive::constants::*;
-use crate::util::{Size, Sizing};
+use crate::util::Sizing;
 use crate::{Encode, Ident, LibAlias, SemId, Serialize, StenSchema, StenType, TypeName};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
@@ -371,23 +371,6 @@ impl<Ref: NestedRef> Ty<Ref> {
             | Ty::Set(_, _)
             | Ty::Map(_, _, _) => return Err(self),
         })
-    }
-}
-
-impl<Ref: NestedRef> Ty<Ref> {
-    pub fn byte_size(&self) -> Size {
-        match self {
-            Ty::Primitive(UNIT) | Ty::Primitive(BYTE) => Size::Fixed(1),
-            Ty::Primitive(F16B) => Size::Fixed(2),
-            Ty::Primitive(primitive) => Size::Fixed(primitive.size()),
-            Ty::Union(fields) => {
-                fields.values().map(|alt| alt.as_ty().byte_size()).max().unwrap_or(Size::Fixed(0))
-            }
-            Ty::Struct(fields) => fields.values().map(|ty| ty.byte_size()).sum(),
-            Ty::Enum(_) => Size::Fixed(1),
-            Ty::Array(_, len) => Size::Fixed(*len),
-            Ty::UnicodeChar | Ty::List(..) | Ty::Set(..) | Ty::Map(..) => Size::Variable,
-        }
     }
 }
 

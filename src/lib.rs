@@ -56,6 +56,8 @@ pub use encoding::{
 };
 pub use util::{Ident, SemVer, TypeName, Urn};
 
+// TODO: Check guarantees on type and lib sizing
+
 /// Type information which can be automatically derived out of -- or provided by a rust type via
 /// implementing [`StenSchema`] trait.
 ///

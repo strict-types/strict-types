@@ -20,10 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
-use std::iter::Sum;
-use std::ops::{Add, AddAssign};
 
 use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
@@ -163,6 +160,7 @@ impl Display for Sizing {
     }
 }
 
+/* TODO: Move into layout mod
 /// Measure of a type size in bytes
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]
 pub enum Size {
@@ -214,6 +212,8 @@ impl Sum for Size {
         acc
     }
 }
+ */
+
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display(inner)]
 pub enum PreFragment {
