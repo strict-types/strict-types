@@ -241,6 +241,30 @@ impl Decode for Ident {
     }
 }
 
+impl Encode for Option<Ident> {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+        match self {
+            Some(ident) => ident.encode(writer),
+            None => 0u8.encode(writer),
+        }
+    }
+}
+
+impl Decode for Option<Ident> {
+    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        let len = u8::decode(reader)?;
+        if len == 0 {
+            return Ok(None);
+        }
+        let mut bytes = vec![0u8; len as usize];
+        reader.read_exact(&mut bytes)?;
+        let ascii = AsciiString::from_ascii(bytes)
+            .map_err(|err| err.ascii_error())
+            .map_err(InvalidIdent::from)?;
+        Ident::try_from(ascii).map(Some).map_err(DecodeError::from)
+    }
+}
+
 impl Encode for Sizing {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.min.encode(writer)?;

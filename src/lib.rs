@@ -64,17 +64,11 @@ pub use util::{Ident, SemVer, TypeName, Urn};
 /// The type contains a recursive information about all nested types, and thus can operate without
 /// any type library.
 ///
-/// This form of type information can not be serialized and is only an in-memory representation.
-///
-/// In order to perform type serialization the type has to be [`Translate`]ed into either
-/// [`TypeLib`] or [`TypeSystem`].
-///
-/// Provides guarantees that the type information fits maximum type size requirements, i.e.
-/// serialized AST does not exceed `u24::MAX` bytes.
+/// The type has to be [`Translate`]ed into [`TypeLib`] or [`TypeSystem`].
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
     /// Type name which should match rust type name in most of the cases
-    pub name: TypeName,
+    pub name: Option<TypeName>,
     /// Type structure abstract syntax tree
     pub ty: Box<Ty<StenType>>,
 }
@@ -84,19 +78,26 @@ impl StenSchema for StenType {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::composition(fields! {
-            "name" => TypeName::sten_type(),
+            "name" => <Option<TypeName>>::sten_type(),
             "ty" => Ty::<StenType>::sten_type(),
         })
     }
 }
 
 impl StenType {
-    pub fn byte() -> StenType { StenType::new("Byte", Ty::BYTE) }
-    pub fn ascii() -> StenType { StenType::new("Ascii", Ty::<StenType>::ascii_char()) }
+    pub fn byte() -> StenType { StenType::unnamed(Ty::BYTE) }
+    pub fn ascii_char() -> StenType { StenType::named("Ascii", Ty::<StenType>::ascii_char()) }
 
-    pub fn new(name: &'static str, ty: Ty<StenType>) -> StenType {
+    pub fn unnamed(ty: Ty<StenType>) -> StenType {
         StenType {
-            name: tn!(name),
+            name: None,
+            ty: Box::new(ty),
+        }
+    }
+
+    pub fn named(name: &'static str, ty: Ty<StenType>) -> StenType {
+        StenType {
+            name: Some(tn!(name)),
             ty: Box::new(ty),
         }
     }
@@ -108,7 +109,7 @@ pub trait StenSchema {
     const STEN_TYPE_NAME: &'static str;
 
     /// Returns [`StenType`] representation of this structure
-    fn sten_type() -> StenType { StenType::new(Self::STEN_TYPE_NAME, Self::sten_ty()) }
+    fn sten_type() -> StenType { StenType::named(Self::STEN_TYPE_NAME, Self::sten_ty()) }
 
     /// Returns AST representing strict encoding of the data.
     fn sten_ty() -> Ty<StenType>;

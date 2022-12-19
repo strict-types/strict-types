@@ -76,7 +76,7 @@ impl StenSchema for Message {
             "init" => u8::sten_type(),
             "ping" => <()>::sten_type(),
             "pong" => <()>::sten_type(),
-            "connect" => StenType::new("Connect", Ty::composition(fields![
+            "connect" => StenType::named("Connect", Ty::composition(fields![
                 "host" => Option::<SmallVec<u8>>::sten_type(),
             ])),
         ])

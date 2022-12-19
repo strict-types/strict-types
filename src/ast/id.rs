@@ -21,6 +21,7 @@
 // limitations under the License.
 
 use std::cmp::Ordering;
+use std::hash::Hash;
 
 use amplify::Wrapper;
 
@@ -48,11 +49,11 @@ impl PartialOrd for SemId {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
-pub const STEN_ID_TAG: [u8; 32] = [0u8; 32];
+pub const SEM_ID_TAG: [u8; 32] = [0u8; 32];
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self) -> SemId {
-        let mut hasher = blake3::Hasher::new_keyed(&STEN_ID_TAG);
+        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
         self.hash(&mut hasher);
         SemId(hasher.finalize())
     }
@@ -85,6 +86,21 @@ impl<Ref: TypeRef> Ty<Ref> {
                 sizing.hash(hasher);
             }
         };
+    }
+}
+
+impl StenType {
+    pub fn id(&self) -> SemId {
+        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        self.hash(&mut hasher);
+        SemId(hasher.finalize())
+    }
+
+    fn hash(&self, hasher: &mut blake3::Hasher) {
+        if let Some(ref name) = self.name {
+            hasher.update(name.as_bytes());
+        }
+        self.ty.hash(hasher);
     }
 }
 

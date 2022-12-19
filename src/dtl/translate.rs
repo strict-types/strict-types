@@ -218,14 +218,12 @@ impl StenType {
     }
 
     pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
-        if !self.name.is_empty() {
-            let id = self.ty.id();
+        if let Some(name) = self.name.clone() {
+            let id = self.id();
             match index.get(&id) {
-                None => index.insert(id, self.name.clone()),
-                Some(n) if n != &self.name => {
-                    // TODO: Deal with different names for the same type
-                    // return Err(TranslateError::MultipleNames(id, n.clone(), name))
-                    None
+                None => index.insert(id, name),
+                Some(n) if n != &name => {
+                    return Err(TranslateError::MultipleNames(id, n.clone(), name))
                 }
                 _ => None,
             };

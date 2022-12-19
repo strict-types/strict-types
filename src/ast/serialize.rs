@@ -26,7 +26,6 @@ use std::io::{Error, Read};
 
 use amplify::Wrapper;
 
-use crate::ast::ty::NestedRef;
 use crate::ast::{Field, Fields, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
@@ -131,7 +130,7 @@ impl Decode for Primitive {
 impl Encode for StenType {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.name.encode(writer)?;
-        self.as_ty().encode(writer)
+        self.ty.encode(writer)
     }
 }
 
@@ -196,19 +195,14 @@ impl Decode for Variants {
 
 impl Encode for Field {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        if let Some(name) = &self.name {
-            name.encode(writer)?;
-        } else {
-            0u8.encode(writer)?;
-        }
+        self.name.encode(writer)?;
         self.ord.encode(writer)
     }
 }
 
 impl Decode for Field {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
-        let name = FieldName::decode(reader)?;
-        let name = if name.is_empty() { None } else { Some(name) };
+        let name = Option::<FieldName>::decode(reader)?;
         let ord = Decode::decode(reader)?;
         Ok(Field { name, ord })
     }

@@ -46,7 +46,7 @@ pub trait NestedRef: TypeRef {
 }
 
 impl TypeRef for StenType {
-    fn id(&self) -> SemId { self.as_ty().id() }
+    fn id(&self) -> SemId { StenType::id(self) }
 }
 impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
@@ -307,7 +307,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 impl Ty<StenType> {
     pub fn byte_array(len: u16) -> Self { Ty::Array(StenType::byte(), len) }
     pub fn bytes(sizing: Sizing) -> Self { Ty::List(StenType::byte(), sizing) }
-    pub fn ascii_string(sizing: Sizing) -> Self { Ty::List(StenType::ascii(), sizing) }
+    pub fn ascii_string(sizing: Sizing) -> Self { Ty::List(StenType::ascii_char(), sizing) }
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
         Ty::Union(fields![
