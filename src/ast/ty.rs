@@ -278,6 +278,27 @@ impl<Ref: TypeRef> Ty<Ref> {
             && fields.contains_key(&Field::some())
         )
     }
+
+    pub fn into_union_fields(self) -> Option<Fields<Ref, false>> {
+        match self {
+            Ty(TyInner::Union(fields)) => Some(fields),
+            _ => None,
+        }
+    }
+
+    pub fn into_struct_fields(self) -> Option<Fields<Ref, true>> {
+        match self {
+            Ty(TyInner::Struct(fields)) => Some(fields),
+            _ => None,
+        }
+    }
+
+    pub fn into_enum_variants(self) -> Option<Variants> {
+        match self {
+            Ty(TyInner::Enum(variants)) => Some(variants),
+            _ => None,
+        }
+    }
 }
 
 impl Ty<SubTy> {
