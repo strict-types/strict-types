@@ -132,7 +132,17 @@ impl Decode for Primitive {
 
 impl Encode for StenType {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+        self.name.encode(writer)?;
         self.as_ty().encode(writer)
+    }
+}
+
+impl Decode for StenType {
+    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        Ok(StenType {
+            name: Decode::decode(reader)?,
+            ty: Box::new(Ty::decode(reader)?),
+        })
     }
 }
 
