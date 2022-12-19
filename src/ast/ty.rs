@@ -23,7 +23,7 @@
 use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
-use std::ops::{Deref, DerefMut};
+use std::ops::Deref;
 
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
@@ -48,15 +48,6 @@ pub trait RecursiveRef: NestedRef {
     fn byte_size(&self) -> Size { self.as_ty().byte_size() }
 }
 
-impl TypeRef for SubTy {
-    fn id(&self) -> SemId { self.as_ty().id() }
-}
-impl NestedRef for SubTy {
-    fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
-    fn into_ty(self) -> Ty<Self> { *self.0 }
-}
-impl RecursiveRef for SubTy {}
-
 impl TypeRef for StenType {
     fn id(&self) -> SemId { self.as_ty().id() }
 }
@@ -65,34 +56,6 @@ impl NestedRef for StenType {
     fn into_ty(self) -> Ty<Self> { *self.ty }
 }
 impl RecursiveRef for StenType {}
-
-#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, Debug, From)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
-pub struct SubTy(Box<Ty<SubTy>>);
-
-impl StenSchema for SubTy {
-    const STEN_TYPE_NAME: &'static str = "SubTy";
-
-    fn sten_ty() -> Ty<StenType> { Ty::composition(fields!(Ty::<StenType>::sten_type())) }
-}
-
-impl Deref for SubTy {
-    type Target = Ty<Self>;
-
-    fn deref(&self) -> &Self::Target { self.0.deref() }
-}
-
-impl DerefMut for SubTy {
-    fn deref_mut(&mut self) -> &mut Self::Target { self.0.deref_mut() }
-}
-
-impl From<Ty<SubTy>> for SubTy {
-    fn from(ty: Ty<SubTy>) -> Self { SubTy(Box::new(ty)) }
-}
 
 pub type FieldName = Ident;
 
@@ -341,21 +304,6 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 }
 
-impl Ty<SubTy> {
-    pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Ty::BYTE.into(), len)) }
-    pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::BYTE.into(), sizing)) }
-    pub fn ascii_string(sizing: Sizing) -> Self {
-        Ty(TyInner::List(Ty::<SubTy>::ascii_char().into(), sizing))
-    }
-    pub fn option(ty: Ty<SubTy>) -> Self {
-        // TODO: Check for AST size
-        Ty(TyInner::Union(fields![
-            "None" => Ty::UNIT,
-            "Some" => ty
-        ]))
-    }
-}
-
 impl Ty<StenType> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(StenType::byte(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::byte(), sizing)) }
@@ -433,7 +381,7 @@ impl<Ref: NestedRef> Ty<Ref> {
 
 #[derive(Clone, PartialEq, Eq, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub enum TyInner<Ref: TypeRef = SubTy> {
+pub enum TyInner<Ref: TypeRef = StenType> {
     Primitive(Primitive),
     /// We use separate type since unlike primitive it has variable length.
     /// While unicode character can be expressed as a composite type, it will be very verbose
@@ -522,7 +470,7 @@ pub enum Composition {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Fields<Ref: TypeRef = SubTy, const OP: bool = true>(
+pub struct Fields<Ref: TypeRef = StenType, const OP: bool = true>(
     Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>,
 );
 

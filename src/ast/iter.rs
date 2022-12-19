@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ast::{NestedRef, Path, Step, SubTy};
+use crate::ast::{NestedRef, Path, Step};
 use crate::{Cls, Ty};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
@@ -87,10 +87,6 @@ impl<'ty, Ref: NestedRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
 
 impl<'ty, Ref: NestedRef> From<&'ty Ref> for Iter<'ty, Ref> {
     fn from(ty: &'ty Ref) -> Self { Self::from(ty.as_ty()) }
-}
-
-impl SubTy {
-    pub fn iter(&self) -> Iter<SubTy> { Iter { ty: self, pos: 0 } }
 }
 
 impl<'ty, Ref: NestedRef> IntoIterator for &'ty Ty<Ref> {

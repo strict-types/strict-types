@@ -26,7 +26,7 @@ use std::io::{Error, Read};
 
 use amplify::Wrapper;
 
-use crate::ast::ty::{NestedRef, SubTy};
+use crate::ast::ty::NestedRef;
 use crate::ast::{Field, Fields, TyInner, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
@@ -143,18 +143,6 @@ impl Decode for StenType {
             name: Decode::decode(reader)?,
             ty: Box::new(Ty::decode(reader)?),
         })
-    }
-}
-
-impl Encode for SubTy {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.as_ty().encode(writer)
-    }
-}
-
-impl Decode for SubTy {
-    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
-        Ty::decode(reader).map(SubTy::from)
     }
 }
 
