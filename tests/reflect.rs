@@ -28,7 +28,7 @@ use stens::{Serialize, StenSchema, Urn};
 
 #[test]
 fn reflect() {
-    let lib = TypeLib::with(s!("TypeLib"), TypeLib::sten_type()).unwrap();
+    let lib = TypeLib::with(s!("StEn"), TypeLib::sten_type()).unwrap();
 
     println!("{:#}", Urn::from(lib.id()));
 

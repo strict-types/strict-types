@@ -42,6 +42,9 @@ pub enum TranslateError {
     /// a different type with name `{0}` is already present
     DuplicateName(TypeName),
 
+    /// a type with id {0} has at least two different names `{0}` and `{1}`
+    MultipleNames(TyId, TypeName, TypeName),
+
     /// unknown type with id `{0}`
     UnknownId(TyId),
 

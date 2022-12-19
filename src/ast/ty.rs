@@ -171,7 +171,10 @@ impl Display for Field {
             write!(f, "{} ", name)?;
         }
         if f.alternate() {
-            write!(f, "= {}", self.ord)?;
+            if self.name.is_some() {
+                f.write_str("= ")?;
+            }
+            Display::fmt(&self.ord, f)?;
         }
         Ok(())
     }
@@ -194,15 +197,15 @@ impl<Ref: TypeRef> StenSchema for Ty<Ref> {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
-            "Primitive" => Primitive::sten_type(),
-            "Enum" => Variants::sten_type(),
-            "Union" => Fields::<Ref, false>::sten_type(),
-            "Struct" => Fields::<Ref, true>::sten_type(),
-            "Array" => <(Ref, u16)>::sten_type(),
-            "Unicode" => Sizing::sten_type(),
-            "List" => <(Ref, Sizing)>::sten_type(),
-            "Set" => <(Ref, Sizing)>::sten_type(),
-            "Map" => <(KeyTy, Ref, Sizing)>::sten_type(),
+            "primitive" => Primitive::sten_type(),
+            "enum" => Variants::sten_type(),
+            "union" => Fields::<Ref, false>::sten_type(),
+            "struct" => Fields::<Ref, true>::sten_type(),
+            "array" => <(Ref, u16)>::sten_type(),
+            "unicode" => Sizing::sten_type(),
+            "list" => <(Ref, Sizing)>::sten_type(),
+            "set" => <(Ref, Sizing)>::sten_type(),
+            "map" => <(KeyTy, Ref, Sizing)>::sten_type(),
         })
     }
 }

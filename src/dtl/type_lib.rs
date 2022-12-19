@@ -31,6 +31,7 @@ use crate::ast::{NestedRef, TranslateError};
 use crate::dtl::id::TypeLibId;
 use crate::{Ident, SemVer, StenSchema, StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
+// TODO: Deal with indefinite types in reflections
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub(super) enum LibSubTy {
     Named(TypeName, TyId),

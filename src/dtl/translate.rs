@@ -148,11 +148,11 @@ impl Translate<TypeLib> for StenType {
 
         let index = self.build_index()?;
 
-        let mut ctx = LibBuilder::with(index);
-        let root = self.ty.translate(&mut ctx)?;
+        let mut builder = LibBuilder::with(index);
+        let root = self.ty.translate(&mut builder)?;
 
-        let name = ctx.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
-        let mut lib = ctx.finalize(lib_name.clone())?;
+        let name = builder.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
+        let mut lib = builder.finalize(lib_name.clone())?;
         if lib.types.insert(name.clone(), root)?.is_some() {
             return Err(TranslateError::DuplicateName(name));
         }
@@ -218,26 +218,28 @@ impl StenType {
     }
 
     pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
-        if self.name.is_empty() {
-            return Ok(());
+        if !self.name.is_empty() {
+            let id = self.ty.id();
+            let name = TypeName::from(self.name);
+            match index.get(&id) {
+                None => index.insert(id, name),
+                Some(n) if n != &name => {
+                    // TODO: Deal with different names for the same type
+                    // return Err(TranslateError::MultipleNames(id, n.clone(), name))
+                    None
+                }
+                _ => None,
+            };
         }
 
-        let id = self.ty.id();
-        let name = TypeName::from(self.name);
-        match index.get(&id) {
-            None => index.insert(id, name),
-            Some(n) if n != &name => return Err(TranslateError::DuplicateName(name)),
-            _ => None,
-        };
-
-        self.ty.build_index(index)?;
+        self.ty.index(index)?;
 
         Ok(())
     }
 }
 
 impl Ty<StenType> {
-    pub fn build_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
+    pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
         match self.as_inner() {
             TyInner::Union(fields) => {
                 for ty in fields.values() {
