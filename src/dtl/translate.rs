@@ -27,7 +27,7 @@ use amplify::confinement::{Confined, SmallOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
 use crate::dtl::type_lib::Dependency;
-use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeIndex, TypeLib, TypeSystem};
+use crate::dtl::{EmbeddedRef, LibAlias, LibName, LibRef, TypeIndex, TypeLib, TypeSystem};
 use crate::{SemId, StenType, Translate, Ty, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -67,7 +67,7 @@ pub enum Error {
 #[derive(Default)]
 pub struct LibBuilder {
     index: TypeIndex,
-    types: SmallOrdMap<TypeName, Ty<LibTy>>,
+    types: SmallOrdMap<TypeName, Ty<LibRef>>,
 }
 
 impl LibBuilder {
@@ -91,7 +91,7 @@ impl LibBuilder {
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
     pub(super) dependencies: BTreeMap<LibAlias, Dependency>,
-    types: BTreeMap<(LibAlias, TypeName), Ty<LibTy>>,
+    types: BTreeMap<(LibAlias, TypeName), Ty<LibRef>>,
 }
 
 impl SystemBuilder {
@@ -114,7 +114,7 @@ impl SystemBuilder {
     pub fn finalize(mut self) -> Result<(TypeSystem, Vec<Warning>), Vec<Error>> {
         let mut warnings: Vec<Warning> = empty!();
         let mut errors: Vec<Error> = empty!();
-        let mut lib: BTreeSet<Ty<EmbeddedTy>> = empty!();
+        let mut lib: BTreeSet<Ty<EmbeddedRef>> = empty!();
 
         for ((lib_alias, ty_name), ty) in self.types.clone() {
             match ty.clone().translate(&mut self) {
@@ -161,11 +161,11 @@ impl Translate<TypeLib> for StenType {
     }
 }
 
-impl Translate<LibTy> for StenType {
+impl Translate<LibRef> for StenType {
     type Context = LibBuilder;
     type Error = TranslateError;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<LibTy, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<LibRef, Self::Error> {
         let id = self.as_ty().id();
         let ty = self.into_ty().translate(ctx)?;
         Ok(match ctx.index.get(&id) {
@@ -173,24 +173,24 @@ impl Translate<LibTy> for StenType {
                 if !ctx.types.contains_key(name) {
                     ctx.types.insert(name.clone(), ty)?;
                 }
-                LibTy::Named(name.clone(), id)
+                LibRef::Named(name.clone(), id)
             }
-            None => LibTy::Inline(Box::new(ty)),
+            None => LibRef::Inline(Box::new(ty)),
         })
     }
 }
 
-impl Translate<EmbeddedTy> for LibTy {
+impl Translate<EmbeddedRef> for LibRef {
     type Context = SystemBuilder;
     type Error = Error;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<EmbeddedTy, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<EmbeddedRef, Self::Error> {
         match self {
-            LibTy::Named(_, id) => Ok(EmbeddedTy::Ref(id)),
-            LibTy::Inline(inline_ty) => {
-                inline_ty.translate(ctx).map(Box::new).map(EmbeddedTy::Inline)
+            LibRef::Named(_, id) => Ok(EmbeddedRef::SemId(id)),
+            LibRef::Inline(inline_ty) => {
+                inline_ty.translate(ctx).map(Box::new).map(EmbeddedRef::Inline)
             }
-            LibTy::Extern(ty_name, lib_alias, id) => {
+            LibRef::Extern(ty_name, lib_alias, id) => {
                 let dep =
                     ctx.dependencies.get(&lib_alias).ok_or(Error::UnknownLib(lib_alias.clone()))?;
                 let ty = ctx
@@ -205,7 +205,7 @@ impl Translate<EmbeddedTy> for LibTy {
                         found: ty.id(),
                     });
                 }
-                Ok(EmbeddedTy::Ref(id))
+                Ok(EmbeddedRef::SemId(id))
             }
         }
     }

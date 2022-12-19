@@ -29,7 +29,7 @@ use amplify::num::u24;
 use amplify::Wrapper;
 
 use crate::dtl::type_lib::{Dependency, LibSubTy};
-use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
+use crate::dtl::{EmbeddedRef, LibAlias, LibName, LibRef, TypeLib, TypeLibId, TypeSystem};
 use crate::{
     Decode, DecodeError, Deserialize, Encode, SemId, SemVer, Serialize, StenWrite, Ty, TypeName,
 };
@@ -50,7 +50,7 @@ impl Encode for TypeSystem {
 impl Decode for TypeSystem {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let count = u24::decode(reader)?;
-        let mut lib: BTreeSet<Ty<EmbeddedTy>> = empty!();
+        let mut lib: BTreeSet<Ty<EmbeddedRef>> = empty!();
         let mut prev: Option<SemId> = None;
         for _ in 0..count.into_usize() {
             let ty = Ty::decode(reader)?;
@@ -133,14 +133,14 @@ impl Decode for TypeLib {
     }
 }
 
-impl Encode for EmbeddedTy {
+impl Encode for EmbeddedRef {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
-            EmbeddedTy::Ref(id) => {
+            EmbeddedRef::SemId(id) => {
                 0u8.encode(writer)?;
                 id.encode(writer)
             }
-            EmbeddedTy::Inline(ty) => {
+            EmbeddedRef::Inline(ty) => {
                 1u8.encode(writer)?;
                 ty.encode(writer)
             }
@@ -148,11 +148,11 @@ impl Encode for EmbeddedTy {
     }
 }
 
-impl Decode for EmbeddedTy {
+impl Decode for EmbeddedRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(EmbeddedTy::Ref(Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(Box::new).map(EmbeddedTy::Inline),
+            0u8 => Ok(EmbeddedRef::SemId(Decode::decode(reader)?)),
+            1u8 => Decode::decode(reader).map(Box::new).map(EmbeddedRef::Inline),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }
@@ -176,12 +176,12 @@ impl Encode for LibSubTy {
     }
 }
 
-impl Decode for LibTy {
+impl Decode for LibRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(LibTy::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(Box::new).map(LibTy::Inline),
-            2u8 => Ok(LibTy::Extern(
+            0u8 => Ok(LibRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            1u8 => Decode::decode(reader).map(Box::new).map(LibRef::Inline),
+            2u8 => Ok(LibRef::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
@@ -191,19 +191,19 @@ impl Decode for LibTy {
     }
 }
 
-impl Encode for LibTy {
+impl Encode for LibRef {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
-            LibTy::Named(name, id) => {
+            LibRef::Named(name, id) => {
                 0u8.encode(writer)?;
                 name.encode(writer)?;
                 id.encode(writer)
             }
-            LibTy::Inline(ty) => {
+            LibRef::Inline(ty) => {
                 1u8.encode(writer)?;
                 ty.encode(writer)
             }
-            LibTy::Extern(name, lib_alias, id) => {
+            LibRef::Extern(name, lib_alias, id) => {
                 2u8.encode(writer)?;
                 name.encode(writer)?;
                 lib_alias.encode(writer)?;

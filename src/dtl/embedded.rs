@@ -34,78 +34,78 @@ use crate::ast::NestedRef;
 use crate::{SemId, Serialize, StenSchema, StenType, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub enum EmbeddedTy {
-    Ref(SemId),
+pub enum EmbeddedRef {
+    SemId(SemId),
 
     #[from]
-    Inline(Box<Ty<EmbeddedTy>>),
+    Inline(Box<Ty<EmbeddedRef>>),
 }
 
-impl StenSchema for EmbeddedTy {
+impl StenSchema for EmbeddedRef {
     const STEN_TYPE_NAME: &'static str = "EmbeddedTy";
 
     fn sten_ty() -> Ty<StenType> { todo!() }
 }
 
-impl Deref for EmbeddedTy {
-    type Target = Ty<EmbeddedTy>;
+impl Deref for EmbeddedRef {
+    type Target = Ty<EmbeddedRef>;
 
     fn deref(&self) -> &Self::Target {
         match self {
-            EmbeddedTy::Ref(_) => &Ty::UNIT,
-            EmbeddedTy::Inline(ty) => ty.as_ref(),
+            EmbeddedRef::SemId(_) => &Ty::UNIT,
+            EmbeddedRef::Inline(ty) => ty.as_ref(),
         }
     }
 }
 
-impl TypeRef for EmbeddedTy {
+impl TypeRef for EmbeddedRef {
     fn id(&self) -> SemId {
         match self {
-            EmbeddedTy::Ref(id) => *id,
-            EmbeddedTy::Inline(ty) => ty.id(),
+            EmbeddedRef::SemId(id) => *id,
+            EmbeddedRef::Inline(ty) => ty.id(),
         }
     }
 }
 
-impl NestedRef for EmbeddedTy {
+impl NestedRef for EmbeddedRef {
     fn as_ty(&self) -> &Ty<Self> { self.deref() }
 
     fn into_ty(self) -> Ty<Self> {
         match self {
-            EmbeddedTy::Ref(_) => Ty::UNIT,
-            EmbeddedTy::Inline(ty) => *ty,
+            EmbeddedRef::SemId(_) => Ty::UNIT,
+            EmbeddedRef::Inline(ty) => *ty,
         }
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub struct TypeSystem(MediumOrdMap<SemId, Ty<EmbeddedTy>>);
+pub struct TypeSystem(MediumOrdMap<SemId, Ty<EmbeddedRef>>);
 
 impl Deref for TypeSystem {
-    type Target = BTreeMap<SemId, Ty<EmbeddedTy>>;
+    type Target = BTreeMap<SemId, Ty<EmbeddedRef>>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
 impl IntoIterator for TypeSystem {
-    type Item = (SemId, Ty<EmbeddedTy>);
-    type IntoIter = std::collections::btree_map::IntoIter<SemId, Ty<EmbeddedTy>>;
+    type Item = (SemId, Ty<EmbeddedRef>);
+    type IntoIter = std::collections::btree_map::IntoIter<SemId, Ty<EmbeddedRef>>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
 impl<'lib> IntoIterator for &'lib TypeSystem {
-    type Item = (&'lib SemId, &'lib Ty<EmbeddedTy>);
-    type IntoIter = std::collections::btree_map::Iter<'lib, SemId, Ty<EmbeddedTy>>;
+    type Item = (&'lib SemId, &'lib Ty<EmbeddedRef>);
+    type IntoIter = std::collections::btree_map::Iter<'lib, SemId, Ty<EmbeddedRef>>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
 impl TypeSystem {
-    pub fn try_from_iter<T: IntoIterator<Item = Ty<EmbeddedTy>>>(
+    pub fn try_from_iter<T: IntoIterator<Item = Ty<EmbeddedRef>>>(
         iter: T,
     ) -> Result<Self, confinement::Error> {
-        let mut lib: BTreeMap<SemId, Ty<EmbeddedTy>> = empty!();
+        let mut lib: BTreeMap<SemId, Ty<EmbeddedRef>> = empty!();
         for ty in iter {
             lib.insert(ty.id(), ty);
         }

@@ -47,7 +47,7 @@ pub mod dtl;
 mod encoding;
 
 pub use ast::{FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
-pub use dtl::{Dependency, EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
+pub use dtl::{Dependency, EmbeddedRef, LibAlias, LibName, LibRef, TypeLib, TypeLibId, TypeSystem};
 #[cfg(test)]
 pub(crate) use encoding::test;
 pub use encoding::{

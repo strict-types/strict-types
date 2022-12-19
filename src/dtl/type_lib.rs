@@ -58,16 +58,16 @@ impl TypeRef for LibSubTy {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub enum LibTy {
+pub enum LibRef {
     Named(TypeName, SemId),
 
     #[from]
-    Inline(Box<Ty<LibTy>>),
+    Inline(Box<Ty<LibRef>>),
 
     Extern(TypeName, LibAlias, SemId),
 }
 
-impl StenSchema for LibTy {
+impl StenSchema for LibRef {
     const STEN_TYPE_NAME: &'static str = "LibTy";
 
     fn sten_ty() -> Ty<StenType> {
@@ -79,46 +79,46 @@ impl StenSchema for LibTy {
     }
 }
 
-impl TypeRef for LibTy {
+impl TypeRef for LibRef {
     fn id(&self) -> SemId {
         match self {
-            LibTy::Named(_, id) | LibTy::Extern(_, _, id) => *id,
-            LibTy::Inline(ty) => ty.id(),
+            LibRef::Named(_, id) | LibRef::Extern(_, _, id) => *id,
+            LibRef::Inline(ty) => ty.id(),
         }
     }
 }
 
-impl Deref for LibTy {
+impl Deref for LibRef {
     type Target = Ty<Self>;
 
     fn deref(&self) -> &Self::Target { self.as_ty() }
 }
 
-impl NestedRef for LibTy {
+impl NestedRef for LibRef {
     fn as_ty(&self) -> &Ty<Self> {
         match self {
-            LibTy::Named(_, _) => &Ty::UNIT,
-            LibTy::Inline(ty) => ty.as_ref(),
-            LibTy::Extern(_, _, _) => &Ty::UNIT,
+            LibRef::Named(_, _) => &Ty::UNIT,
+            LibRef::Inline(ty) => ty.as_ref(),
+            LibRef::Extern(_, _, _) => &Ty::UNIT,
         }
     }
 
     fn into_ty(self) -> Ty<Self> {
         match self {
-            LibTy::Named(_, _) => Ty::UNIT,
-            LibTy::Inline(ty) => *ty,
-            LibTy::Extern(_, _, _) => Ty::UNIT,
+            LibRef::Named(_, _) => Ty::UNIT,
+            LibRef::Inline(ty) => *ty,
+            LibRef::Extern(_, _, _) => Ty::UNIT,
         }
     }
 }
 
-impl Display for LibTy {
+impl Display for LibRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibTy::Named(name, _) => write!(f, "{}", name),
-            LibTy::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
-            LibTy::Inline(ty) => write!(f, "{}", ty),
-            LibTy::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            LibRef::Named(name, _) => write!(f, "{}", name),
+            LibRef::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
+            LibRef::Inline(ty) => write!(f, "{}", ty),
+            LibRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
         }
     }
 }
@@ -146,7 +146,7 @@ impl StenSchema for Dependency {
     }
 }
 
-pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibTy>>, 1, { u16::MAX as usize }>;
+pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct TypeLib {
