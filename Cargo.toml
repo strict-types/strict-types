@@ -3,6 +3,7 @@ name = "stens"
 description = "Strict encoding schema"
 version = "0.9.0-beta.1"
 authors = ["Dr. Maxim Orlovsky <orlovsky@ubideco.org>"]
+homepage = "https://strict-encoding.org"
 license = "Apache-2.0"
 keywords = ["encoding", "strict-encoding", "aluvm"]
 categories = ["data-structures", "parser-implementations"]
@@ -27,3 +28,7 @@ base64 = "0.20.0"
 default = []
 all = ["serde"]
 serde = ["serde_crate", "serde_with", "serde_yaml", "amplify/serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustc-args = ["--cfg", "docsrs"]

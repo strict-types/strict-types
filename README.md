@@ -1,4 +1,4 @@
-# Stens: rust implementation of strict encoding schema
+# Rust implementation of strict encoding schema (STENS)
 
 Strict encoding is a deterministic schema-base binary serialization format 
 used for consensus protocols, networking, AluVM and long-term data storage. 

@@ -25,6 +25,7 @@ use std::io;
 
 use crate::{Decode, Encode, Writer};
 
+#[allow(dead_code)]
 pub fn encoding_roundtrip(val: &(impl Encode + Decode + Debug + Eq)) {
     let mut buf = Writer::in_memory();
     val.encode(&mut buf).unwrap();
