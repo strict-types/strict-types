@@ -363,7 +363,7 @@ impl Ty<StenType> {
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
         Ty(TyInner::Union(fields![
-            "None" => StenType::unit(),
+            "None" => <()>::sten_type(),
             "Some" => ty
         ]))
     }

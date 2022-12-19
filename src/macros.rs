@@ -22,7 +22,7 @@
 
 #[macro_export]
 macro_rules! tn {
-    ($name:literal) => {
+    ($name:expr) => {
         $crate::Ident::from($name)
     };
     ($name:ident) => {

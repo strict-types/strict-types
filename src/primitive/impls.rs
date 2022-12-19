@@ -72,13 +72,13 @@ st_impl!(F256, ieee::Oct);
 // panic on `as u16` in the implementation, so the StenType for arrays longer
 // than u16::MAX will not be resolvable.
 impl<const LEN: usize> StenSchema for [u8; LEN] {
-    const STEN_TYPE_NAME: &'static str = "";
+    const STEN_TYPE_NAME: &'static str = "Array";
 
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(LEN as u16) }
 }
 
 impl StenSchema for () {
-    const STEN_TYPE_NAME: &'static str = "";
+    const STEN_TYPE_NAME: &'static str = "Unit";
 
     fn sten_ty() -> Ty<StenType> { Ty::UNIT }
 }
@@ -86,7 +86,7 @@ impl StenSchema for () {
 impl<T> StenSchema for Option<T>
 where T: StenSchema
 {
-    const STEN_TYPE_NAME: &'static str = "";
+    const STEN_TYPE_NAME: &'static str = T::STEN_TYPE_NAME;
 
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::option(T::sten_type()) }
 }
@@ -94,7 +94,7 @@ where T: StenSchema
 impl<T, const MIN: usize, const MAX: usize> StenSchema for Confined<Vec<T>, MIN, MAX>
 where T: StenSchema
 {
-    const STEN_TYPE_NAME: &'static str = "";
+    const STEN_TYPE_NAME: &'static str = "ConfinedVec";
 
     fn sten_ty() -> Ty<StenType> {
         Ty::<StenType>::list(T::sten_type(), Sizing::new(MIN as u16, MAX as u16))
@@ -104,7 +104,7 @@ where T: StenSchema
 impl<T, const MIN: usize, const MAX: usize> StenSchema for Confined<BTreeSet<T>, MIN, MAX>
 where T: StenSchema + Ord
 {
-    const STEN_TYPE_NAME: &'static str = "";
+    const STEN_TYPE_NAME: &'static str = "ConfinedSet";
 
     fn sten_ty() -> Ty<StenType> {
         Ty::<StenType>::set(T::sten_type(), Sizing::new(MIN as u16, MAX as u16))
@@ -116,7 +116,7 @@ where
     K: StenSchema + Ord + Hash,
     V: StenSchema,
 {
-    const STEN_TYPE_NAME: &'static str = "";
+    const STEN_TYPE_NAME: &'static str = "ConfinedTree";
 
     fn sten_ty() -> Ty<StenType> {
         Ty::<StenType>::map(

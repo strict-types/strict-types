@@ -69,7 +69,7 @@ pub use util::{Ident, SemVer, TypeName, Urn};
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
     /// Type name which should match rust type name in most of the cases
-    pub name: &'static str,
+    pub name: TypeName,
     /// Type structure abstract syntax tree
     pub ty: Box<Ty<StenType>>,
 }
@@ -79,7 +79,7 @@ impl StenSchema for StenType {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::composition(fields! {
-            "name" => Ident::sten_type(),
+            "name" => TypeName::sten_type(),
             "ty" => Ty::<StenType>::sten_type(),
         })
     }
@@ -92,30 +92,12 @@ impl std::ops::Deref for StenType {
 }
 
 impl StenType {
-    pub fn unit() -> StenType {
-        StenType {
-            name: "",
-            ty: Box::new(Ty::UNIT),
-        }
-    }
-
-    pub fn byte() -> StenType {
-        StenType {
-            name: "Byte",
-            ty: Box::new(Ty::BYTE),
-        }
-    }
-
-    pub fn ascii() -> StenType {
-        StenType {
-            name: "Ascii",
-            ty: Box::new(Ty::<StenType>::ascii_char()),
-        }
-    }
+    pub fn byte() -> StenType { StenType::new("Byte", Ty::BYTE) }
+    pub fn ascii() -> StenType { StenType::new("Ascii", Ty::<StenType>::ascii_char()) }
 
     pub fn new(name: &'static str, ty: Ty<StenType>) -> StenType {
         StenType {
-            name,
+            name: tn!(name),
             ty: Box::new(ty),
         }
     }
@@ -127,12 +109,7 @@ pub trait StenSchema {
     const STEN_TYPE_NAME: &'static str;
 
     /// Returns [`StenType`] representation of this structure
-    fn sten_type() -> StenType {
-        StenType {
-            name: Self::STEN_TYPE_NAME,
-            ty: Box::new(Self::sten_ty()),
-        }
-    }
+    fn sten_type() -> StenType { StenType::new(Self::STEN_TYPE_NAME, Self::sten_ty()) }
 
     /// Returns AST representing strict encoding of the data.
     fn sten_ty() -> Ty<StenType>;
