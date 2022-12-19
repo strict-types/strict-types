@@ -45,7 +45,7 @@ pub use check::CheckedWriter;
 pub use dtl::{Dependency, EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
 pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
 pub use util::{Ident, SemVer, TypeName, Urn};
-pub use write::{ConfinedWrite, StructWriter, Writer};
+pub use write::{StenWrite, StructWriter, Writer};
 
 /// Type information which can be automatically derived out of -- or provided by a rust type via
 /// implementing [`StenSchema`] trait.

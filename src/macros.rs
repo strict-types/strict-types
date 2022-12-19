@@ -25,6 +25,9 @@ macro_rules! tn {
     ($name:literal) => {
         $crate::Ident::from($name)
     };
+    ($name:ident) => {
+        $crate::Ident::from($name)
+    };
 }
 
 #[macro_export]

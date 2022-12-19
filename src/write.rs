@@ -32,9 +32,9 @@ use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
 use crate::ast::Step;
-use crate::{Encode, Ty, TypeRef};
+use crate::{Encode, StenSchema, StenType};
 
-pub trait ConfinedWrite: Sized {
+pub trait StenWrite: Sized {
     fn step_in(&mut self, step: Step);
     fn step_out(&mut self);
 
@@ -65,15 +65,16 @@ pub trait ConfinedWrite: Sized {
     fn write_f128(&mut self, val: Quad) -> Result<(), Error>;
     fn write_f256(&mut self, val: Oct) -> Result<(), Error>;
 
-    fn write_enum<Ref: TypeRef>(&mut self, val: u8, ty: Ty<Ref>) -> Result<(), Error>;
-    fn write_union<T: Encode, Ref: TypeRef>(
+    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), Error>;
+
+    fn write_union<T: Encode + StenSchema>(
         &mut self,
         var: &'static str,
-        ty: Ty<Ref>,
+        ty: StenType,
         inner: &T,
     ) -> Result<(), Error>;
 
-    fn write_option<T: Encode>(&mut self, val: Option<&T>) -> Result<(), Error>;
+    fn write_option<T: Encode + StenSchema>(&mut self, val: Option<&T>) -> Result<(), Error>;
 
     fn write_byte_array<const LEN: usize>(&mut self, array: [u8; LEN]) -> Result<(), Error>;
 
@@ -97,28 +98,28 @@ pub trait ConfinedWrite: Sized {
         data: &Confined<Vec<T>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        T: Encode;
+        T: Encode + StenSchema;
 
     fn write_set<T, const MIN: usize, const MAX: usize>(
         &mut self,
         data: &Confined<BTreeSet<T>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        T: Encode + Hash + Ord;
+        T: Encode + StenSchema + Hash + Ord;
 
     fn write_map<K, V, const MIN: usize, const MAX: usize>(
         &mut self,
         data: &Confined<BTreeMap<K, V>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        K: Encode + Hash + Ord,
-        V: Encode;
+        K: Encode + StenSchema + Hash + Ord,
+        V: Encode + StenSchema;
 
     fn write_struct(self) -> StructWriter<Self>;
 }
 
-impl<'w, W> ConfinedWrite for &'w mut W
-where W: ConfinedWrite
+impl<'w, W> StenWrite for &'w mut W
+where W: StenWrite
 {
     fn step_in(&mut self, step: Step) { W::step_in(self, step) }
     fn step_out(&mut self) { W::step_out(self) }
@@ -147,20 +148,21 @@ where W: ConfinedWrite
     fn write_f80(&mut self, val: X87DoubleExtended) -> Result<(), Error> { W::write_f80(self, val) }
     fn write_f128(&mut self, val: Quad) -> Result<(), Error> { W::write_f128(self, val) }
     fn write_f256(&mut self, val: Oct) -> Result<(), Error> { W::write_f256(self, val) }
-    fn write_enum<Ref: TypeRef>(&mut self, val: u8, ty: Ty<Ref>) -> Result<(), Error> {
+
+    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), Error> {
         W::write_enum(self, val, ty)
     }
 
-    fn write_union<T: Encode, Ref: TypeRef>(
+    fn write_union<T: Encode + StenSchema>(
         &mut self,
         var: &'static str,
-        ty: Ty<Ref>,
+        ty: StenType,
         inner: &T,
     ) -> Result<(), Error> {
         W::write_union(self, var, ty, inner)
     }
 
-    fn write_option<T: Encode>(&mut self, val: Option<&T>) -> Result<(), Error> {
+    fn write_option<T: Encode + StenSchema>(&mut self, val: Option<&T>) -> Result<(), Error> {
         W::write_option(self, val)
     }
 
@@ -194,7 +196,7 @@ where W: ConfinedWrite
         data: &Confined<Vec<T>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        T: Encode,
+        T: Encode + StenSchema,
     {
         W::write_list(self, data)
     }
@@ -204,7 +206,7 @@ where W: ConfinedWrite
         data: &Confined<BTreeSet<T>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        T: Encode + Hash + Ord,
+        T: Encode + StenSchema + Hash + Ord,
     {
         W::write_set(self, data)
     }
@@ -214,8 +216,8 @@ where W: ConfinedWrite
         data: &Confined<BTreeMap<K, V>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        K: Encode + Hash + Ord,
-        V: Encode,
+        K: Encode + StenSchema + Hash + Ord,
+        V: Encode + StenSchema,
     {
         W::write_map(self, data)
     }
@@ -262,7 +264,7 @@ macro_rules! write_float {
     };
 }
 
-impl<W: io::Write> ConfinedWrite for Writer<W> {
+impl<W: io::Write> StenWrite for Writer<W> {
     fn step_in(&mut self, _step: Step) {}
 
     fn step_out(&mut self) {}
@@ -300,41 +302,41 @@ impl<W: io::Write> ConfinedWrite for Writer<W> {
     write_float!(Quad, write_f128);
     write_float!(Oct, write_f256);
 
-    fn write_enum<Ref: TypeRef>(&mut self, val: u8, ty: Ty<Ref>) -> Result<(), Error> {
+    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), Error> {
         let Some(variants) = ty.into_enum_variants() else {
             panic!("write_enum requires Ty::Enum type")
         };
-        if variants.iter().find(|variant| variant.value == val).is_none() {
+        if variants.iter().find(|variant| variant.ord == val).is_none() {
             panic!("invalid enum variant {}", val);
         }
-        self.0.write_all(&[val]).map_err(Error::from)
+        self.write_u8(val).map_err(Error::from)
     }
 
-    fn write_union<T: Encode, Ref: TypeRef>(
+    fn write_union<T: Encode + StenSchema>(
         &mut self,
         name: &'static str,
-        ty: Ty<Ref>,
+        ty: StenType,
         inner: &T,
     ) -> Result<(), Error> {
         let Some(alts) = ty.into_union_fields() else {
             panic!("write_union requires Ty::Union type")
         };
-        let Some(alt) = alts.get(name) else {
+        let Some((field, alt)) = alts.iter().find(|(field, _)| field.name == Some(tn!(name))) else {
             panic!("invalid union alternative {}", name);
         };
-        let actual_ty = T::confined_type();
-        if alt.ty.as_ref() != &actual_ty {
+        let actual_ty = T::sten_type();
+        if ty != actual_ty {
             panic!(
                 "wrong data type for union alternative {}; expected {:?}, found {:?}",
-                name, alt.ty, actual_ty
+                name, ty, actual_ty
             );
         }
-        self.0.write_all(&[alt.id])?;
-        inner.confined_encode(self)
+        field.encode(&mut self)?;
+        inner.encode(self)
     }
 
-    fn write_option<T: Encode>(&mut self, val: Option<&T>) -> Result<(), Error> {
-        let ty = Option::<T>::confined_type();
+    fn write_option<T: Encode + StenSchema>(&mut self, val: Option<&T>) -> Result<(), Error> {
+        let ty = Option::<T>::sten_type();
         match val {
             Some(val) => self.write_union("Some", ty, val),
             None => self.write_union("None", ty, &()),
@@ -376,7 +378,7 @@ impl<W: io::Write> ConfinedWrite for Writer<W> {
         data: &Confined<Vec<T>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        T: Encode,
+        T: Encode + StenSchema,
     {
         self.write_len(data.len(), MAX)?;
         for item in data {
@@ -390,7 +392,7 @@ impl<W: io::Write> ConfinedWrite for Writer<W> {
         data: &Confined<BTreeSet<T>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        T: Encode + Hash + Ord,
+        T: Encode + StenSchema + Hash + Ord,
     {
         self.write_len(data.len(), MAX)?;
         for item in data {
@@ -404,8 +406,8 @@ impl<W: io::Write> ConfinedWrite for Writer<W> {
         data: &Confined<BTreeMap<K, V>, MIN, MAX>,
     ) -> Result<(), Error>
     where
-        K: Encode + Hash + Ord,
-        V: Encode,
+        K: Encode + StenSchema + Hash + Ord,
+        V: Encode + StenSchema,
     {
         self.write_len(data.len(), MAX)?;
         for (k, v) in data {
@@ -418,13 +420,13 @@ impl<W: io::Write> ConfinedWrite for Writer<W> {
     fn write_struct(self) -> StructWriter<Self> { StructWriter::start(self) }
 }
 
-pub struct StructWriter<W: ConfinedWrite>(W);
+pub struct StructWriter<W: StenWrite>(W);
 
-impl<W: ConfinedWrite> StructWriter<W> {
+impl<W: StenWrite> StructWriter<W> {
     pub fn start(writer: W) -> Self { StructWriter(writer) }
 
     pub fn field(mut self, name: &'static str, data: &impl Encode) -> Result<Self, Error> {
-        self.0.step_in(Step::Field(name));
+        self.0.step_in(Step::NamedField(tn!(name)));
         data.encode(&mut self.0)?;
         self.0.step_out();
         Ok(self)

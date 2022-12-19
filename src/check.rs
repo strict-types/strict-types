@@ -31,17 +31,17 @@ use amplify::num::apfloat::Float;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
 
-use crate::ast::{IntoIter, Step, SubTy};
+use crate::ast::{IntoIter, Step};
 use crate::util::Sizing;
-use crate::{ConfinedWrite, Encode, StructWriter, Ty, TypeRef};
+use crate::{Encode, StenSchema, StenType, StenWrite, StructWriter, Ty};
 
 pub struct CheckedWriter {
-    iter: IntoIter<SubTy>,
+    iter: IntoIter<StenType>,
     count: u16,
 }
 
 impl CheckedWriter {
-    pub fn new(ty: Ty<SubTy>) -> Self {
+    pub fn new(ty: Ty<StenType>) -> Self {
         CheckedWriter {
             iter: IntoIter::from(ty),
             count: 0,
@@ -52,9 +52,9 @@ impl CheckedWriter {
 }
 
 macro_rules! write_num {
-    ($ty:ident, $name:ident) => {
+    ($ty:ident, $name:ident, $con:ident) => {
         fn $name(&mut self, _: $ty) -> Result<(), io::Error> {
-            self.iter.check(&Ty::$ty());
+            self.iter.check_expect(&Ty::$con);
             self.count += $ty::BITS as u16 / 8;
             Ok(())
         }
@@ -62,94 +62,94 @@ macro_rules! write_num {
 }
 
 macro_rules! write_float {
-    ($ty:ident, $id:ident, $name:ident) => {
+    ($ty:ident, $id:ident, $name:ident, $con:ident) => {
         fn $name(&mut self, _: $ty) -> Result<(), io::Error> {
-            self.iter.check(&Ty::$id());
+            self.iter.check_expect(&Ty::$con);
             self.count += $ty::BITS as u16 / 8;
             Ok(())
         }
     };
 }
 
-impl<'a> ConfinedWrite for CheckedWriter {
+impl<'a> StenWrite for CheckedWriter {
     fn step_in(&mut self, step: Step) {
         self.iter.step_in(step).expect("invalid type construction")
     }
     fn step_out(&mut self) { self.iter.step_out().expect("invalid type construction") }
 
-    write_num!(u8, write_u8);
-    write_num!(u16, write_u16);
-    write_num!(u24, write_u24);
-    write_num!(u32, write_u32);
-    write_num!(u64, write_u64);
-    write_num!(u128, write_u128);
-    write_num!(u256, write_u256);
-    write_num!(u512, write_u512);
-    write_num!(u1024, write_u1024);
+    write_num!(u8, write_u8, U8);
+    write_num!(u16, write_u16, U16);
+    write_num!(u24, write_u24, U24);
+    write_num!(u32, write_u32, U32);
+    write_num!(u64, write_u64, U64);
+    write_num!(u128, write_u128, U128);
+    write_num!(u256, write_u256, U256);
+    write_num!(u512, write_u512, U512);
+    write_num!(u1024, write_u1024, U1024);
 
-    write_num!(i8, write_i8);
-    write_num!(i16, write_i16);
-    write_num!(i32, write_i32);
-    write_num!(i64, write_i64);
-    write_num!(i128, write_i128);
-    write_num!(i256, write_i256);
-    write_num!(i512, write_i512);
-    write_num!(i1024, write_i1024);
+    write_num!(i8, write_i8, I8);
+    write_num!(i16, write_i16, I16);
+    write_num!(i32, write_i32, I32);
+    write_num!(i64, write_i64, I64);
+    write_num!(i128, write_i128, I128);
+    write_num!(i256, write_i256, I256);
+    write_num!(i512, write_i512, I512);
+    write_num!(i1024, write_i1024, I1024);
 
     fn write_f16b(&mut self, _: bf16) -> Result<(), io::Error> {
-        self.iter.check(&Ty::f16b());
+        self.iter.check_expect(&Ty::F16B);
         self.count += 2;
         Ok(())
     }
 
-    write_float!(Half, f16, write_f16);
-    write_float!(Single, f32, write_f32);
-    write_float!(Double, f64, write_f64);
-    write_float!(X87DoubleExtended, f80, write_f80);
-    write_float!(Quad, f128, write_f128);
-    write_float!(Oct, f256, write_f256);
+    write_float!(Half, f16, write_f16, F16);
+    write_float!(Single, f32, write_f32, F32);
+    write_float!(Double, f64, write_f64, F64);
+    write_float!(X87DoubleExtended, f80, write_f80, F80);
+    write_float!(Quad, f128, write_f128, F128);
+    write_float!(Oct, f256, write_f256, F256);
 
-    fn write_enum<Ref: TypeRef>(&mut self, val: u8, ty: Ty<Ref>) -> Result<(), io::Error> {
-        let Ty::<Ref>::enumerate(variants) = ty else {
+    fn write_enum(&mut self, val: u8, ty: StenType) -> Result<(), io::Error> {
+        let Some(variants) = ty.into_enum_variants() else {
             panic!("write_enum requires Ty::Enum type")
         };
-        if variants.iter().find(|variant| variant.value == val).is_none() {
+        if variants.iter().find(|variant| variant.ord == val).is_none() {
             panic!("invalid enum variant {}", val);
         }
         self.count += 1;
         Ok(())
     }
 
-    fn write_union<T: Encode, Ref: TypeRef>(
+    fn write_union<T: Encode>(
         &mut self,
         name: &'static str,
-        ty: Ty<Ref>,
+        ty: StenType,
         inner: &T,
     ) -> Result<(), io::Error> {
-        let Ty::<Ref>::union(ref variants) = ty else {
+        let Some(alts) = ty.into_union_fields() else {
             panic!("write_union requires Ty::Union type")
         };
-        let Some(alt) = variants.get(name) else {
+        let Some((field, alt)) = alts.iter().find(|(field, _)| field.name == Some(tn!(name))) else {
             panic!("invalid union variant {}", name);
         };
-        if alt.ty.as_ref() != &ty {
+        if alt != &ty {
             panic!("wrong enum type for variant {}", name);
         }
         self.count += 1;
-        inner.confined_encode(self)?;
+        inner.encode(self)?;
         Ok(())
     }
 
     fn write_option<T: Encode>(&mut self, val: Option<&T>) -> Result<(), io::Error> {
         self.count += 1;
         if let Some(val) = val {
-            val.confined_encode(self)?;
+            val.encode(self)?;
         }
         Ok(())
     }
 
     fn write_byte_array<const LEN: usize>(&mut self, _: [u8; LEN]) -> Result<(), io::Error> {
-        self.iter.check(&Ty::byte_array(LEN as u16));
+        self.iter.check_expect(&Ty::<StenType>::byte_array(LEN as u16));
         self.count += LEN as u16;
         Ok(())
     }
@@ -172,7 +172,10 @@ impl<'a> ConfinedWrite for CheckedWriter {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
         self.count += if MAX < u8::MAX as usize { 1 } else { 2 };
         self.count += s.len() as u16;
-        self.iter.check(&Ty::Ascii(Sizing { min: MIN, max: MAX }));
+        self.iter.check_expect(&Ty::<StenType>::ascii_string(Sizing {
+            min: MIN as u16,
+            max: MAX as u16,
+        }));
         Ok(())
     }
 
@@ -183,7 +186,10 @@ impl<'a> ConfinedWrite for CheckedWriter {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
         self.count += if MAX < u8::MAX as usize { 1 } else { 2 };
         self.count += s.len() as u16;
-        self.iter.check(&Ty::Ascii(Sizing { min: MIN, max: MAX }));
+        self.iter.check_expect(&Ty::<StenType>::ascii_string(Sizing {
+            min: MIN as u16,
+            max: MAX as u16,
+        }));
         Ok(())
     }
 
@@ -192,17 +198,17 @@ impl<'a> ConfinedWrite for CheckedWriter {
         data: &Confined<Vec<T>, MIN, MAX>,
     ) -> Result<(), io::Error>
     where
-        T: Encode,
+        T: Encode + StenSchema,
     {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
-        self.iter.check(&Ty::list(T::confined_type(), Sizing {
+        self.iter.check_expect(&Ty::<StenType>::list(T::sten_type(), Sizing {
             min: MIN as u16,
             max: MAX as u16,
         }));
         self.count += if MAX < u8::MAX as usize { 1 } else { 2 };
         self.step_in(Step::List);
         for item in data {
-            item.confined_encode(&mut *self)?;
+            item.encode(&mut *self)?;
         }
         self.step_out();
         Ok(())
@@ -213,17 +219,17 @@ impl<'a> ConfinedWrite for CheckedWriter {
         data: &Confined<BTreeSet<T>, MIN, MAX>,
     ) -> Result<(), io::Error>
     where
-        T: Encode + Hash + Ord,
+        T: Encode + StenSchema + Hash + Ord,
     {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
-        self.iter.check(&Ty::set(T::confined_type(), Sizing {
+        self.iter.check_expect(&Ty::<StenType>::set(T::sten_type(), Sizing {
             min: MIN as u16,
             max: MAX as u16,
         }));
         self.count += if MAX < u8::MAX as usize { 1 } else { 2 };
         self.step_in(Step::Set);
         for item in data {
-            item.confined_encode(&mut *self)?;
+            item.encode(&mut *self)?;
         }
         self.step_out();
         Ok(())
@@ -234,20 +240,23 @@ impl<'a> ConfinedWrite for CheckedWriter {
         data: &Confined<BTreeMap<K, V>, MIN, MAX>,
     ) -> Result<(), io::Error>
     where
-        K: Encode + Hash + Ord,
-        V: Encode,
+        K: Encode + StenSchema + Hash + Ord,
+        V: Encode + StenSchema,
     {
         assert!(MAX <= u16::MAX as usize, "confinement size must be below u16::MAX");
-        self.iter.check(&Ty::map(
-            K::confined_type().try_into_ty().expect("invalid key type"),
-            V::confined_type(),
-            Sizing { min: MIN, max: MAX },
+        self.iter.check_expect(&Ty::map(
+            K::sten_type().try_into_key().expect("invalid key type"),
+            V::sten_type(),
+            Sizing {
+                min: MIN as u16,
+                max: MAX as u16,
+            },
         ));
         self.count += if MAX < u8::MAX as usize { 1 } else { 2 };
         self.step_in(Step::Map);
         for (k, v) in data {
-            k.confined_encode(&mut *self)?;
-            v.confined_encode(&mut *self)?;
+            k.encode(&mut *self)?;
+            v.encode(&mut *self)?;
         }
         self.step_out();
 
