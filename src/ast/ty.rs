@@ -31,7 +31,7 @@ use amplify::{confinement, Wrapper};
 use crate::ast::Iter;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Encode, Ident, Serialize, StenSchema, StenType, TyId};
+use crate::{Encode, Ident, LibAlias, Serialize, StenSchema, StenType, TyId, TypeName};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 
@@ -277,6 +277,8 @@ impl<Ref: TypeRef> Ty<Ref> {
         ty
     }
 
+    pub fn ascii_char() -> Self { Ty(TyInner::Enum(variants!(0..=127))) }
+
     pub fn is_primitive(&self) -> bool { matches!(self.as_inner(), TyInner::Primitive(_)) }
     pub fn is_compound(&self) -> bool {
         matches!(self.as_inner(), TyInner::Struct(fields)
@@ -339,7 +341,6 @@ impl<Ref: TypeRef> Ty<Ref> {
 impl Ty<SubTy> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(Ty::BYTE.into(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(Ty::BYTE.into(), sizing)) }
-    pub fn ascii_char() -> Self { Ty(TyInner::Enum(variants!(0..=127))) }
     pub fn ascii_string(sizing: Sizing) -> Self {
         Ty(TyInner::List(Ty::<SubTy>::ascii_char().into(), sizing))
     }
@@ -355,7 +356,6 @@ impl Ty<SubTy> {
 impl Ty<StenType> {
     pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(StenType::byte(), len)) }
     pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::byte(), sizing)) }
-    pub fn ascii_char() -> Self { Ty(TyInner::Enum(variants!(0..=127))) }
     pub fn ascii_string(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::ascii(), sizing)) }
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
@@ -414,6 +414,9 @@ impl<Ref: NestedRef> Ty<Ref> {
                 KeyTy::UnicodeStr(Sizing::fixed(*len))
             }
             TyInner::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(*sizing),
+            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::<Ref>::ascii_char() => {
+                KeyTy::AsciiStr(*sizing)
+            }
             TyInner::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
             TyInner::Union(_)
             | TyInner::Struct(_)
@@ -475,6 +478,7 @@ pub enum KeyTy {
     #[display("[Byte ^ {0}]")]
     Array(u16),
     UnicodeStr(Sizing),
+    AsciiStr(Sizing),
     Bytes(Sizing),
 }
 
@@ -483,11 +487,12 @@ impl StenSchema for KeyTy {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
-            "Primitive" => Primitive::sten_type(),
-            "Enum" => Variants::sten_type(),
-            "Array" => u16::sten_type(),
-            "Unicode" => Sizing::sten_type(),
-            "Bytes" => Sizing::sten_type(),
+            "primitive" => Primitive::sten_type(),
+            "enum" => Variants::sten_type(),
+            "array" => u16::sten_type(),
+            "unicodeStr" => Sizing::sten_type(),
+            "asciiStr" => Sizing::sten_type(),
+            "bytes" => Sizing::sten_type(),
         })
     }
 }
@@ -685,5 +690,21 @@ impl<Ref: TypeRef> StenSchema for (Option<FieldName>, Ref) {
             Option::<FieldName>::sten_type(),
             Ref::sten_type(),
         })
+    }
+}
+
+impl StenSchema for (TypeName, TyId) {
+    const STEN_TYPE_NAME: &'static str = "TypeDef";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields!(TypeName::sten_type(), TyId::sten_type()))
+    }
+}
+
+impl StenSchema for (TypeName, LibAlias, TyId) {
+    const STEN_TYPE_NAME: &'static str = "TypeDefFull";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields!(TypeName::sten_type(), LibAlias::sten_type(), TyId::sten_type()))
     }
 }

@@ -26,12 +26,18 @@ use amplify::Wrapper;
 
 use crate::ast::{Field, Fields, TyInner, Variants};
 use crate::util::Sizing;
-use crate::{Cls, KeyTy, Ty, TypeRef};
+use crate::{Cls, KeyTy, StenSchema, StenType, Ty, TypeRef};
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref)]
 #[display("urn:ubideco:sten:{0}")]
 pub struct TyId(blake3::Hash);
+
+impl StenSchema for TyId {
+    const STEN_TYPE_NAME: &'static str = "TyId";
+
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(32) }
+}
 
 impl Ord for TyId {
     fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
@@ -92,7 +98,9 @@ impl KeyTy {
             KeyTy::Array(len) => {
                 hasher.update(&len.to_le_bytes());
             }
-            KeyTy::UnicodeStr(sizing) | KeyTy::Bytes(sizing) => sizing.hash(hasher),
+            KeyTy::AsciiStr(sizing) | KeyTy::UnicodeStr(sizing) | KeyTy::Bytes(sizing) => {
+                sizing.hash(hasher)
+            }
         };
     }
 }

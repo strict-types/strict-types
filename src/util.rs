@@ -143,6 +143,11 @@ impl Sizing {
         max: u8::MAX as u16,
     };
 
+    pub const U16_NONEMPTY: Sizing = Sizing {
+        min: 1,
+        max: u16::MAX,
+    };
+
     pub const fn new(min: u16, max: u16) -> Self { Sizing { min, max } }
 
     pub const fn fixed(len: u16) -> Self { Sizing { min: len, max: len } }
@@ -216,11 +221,33 @@ pub enum PreFragment {
     Digits(u128),
 }
 
+impl StenSchema for PreFragment {
+    const STEN_TYPE_NAME: &'static str = "PreFragment";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::union(fields! {
+            "ident" => Ident::sten_type(),
+            "digits" => u128::sten_type()
+        })
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display(inner)]
 pub enum BuildFragment {
     Ident(Ident),
     Digits(Ident),
+}
+
+impl StenSchema for BuildFragment {
+    const STEN_TYPE_NAME: &'static str = "BuildFragment";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::union(fields! {
+            "ident" => Ident::sten_type(),
+            "digits" => Ident::sten_type()
+        })
+    }
 }
 
 // TODO: Manually implement Ord, PartialOrd
@@ -231,6 +258,20 @@ pub struct SemVer {
     pub patch: u16,
     pub pre: TinyVec<PreFragment>,
     pub build: TinyVec<BuildFragment>,
+}
+
+impl StenSchema for SemVer {
+    const STEN_TYPE_NAME: &'static str = "SemVer";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::composition(fields! {
+            "major" => u16::sten_type(),
+            "minor" => u16::sten_type(),
+            "patch" => u16::sten_type(),
+            "pre" => TinyVec::<PreFragment>::sten_type(),
+            "build" => TinyVec::<BuildFragment>::sten_type(),
+        })
+    }
 }
 
 impl Display for SemVer {

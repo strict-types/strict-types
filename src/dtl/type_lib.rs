@@ -32,6 +32,31 @@ use crate::dtl::id::TypeLibId;
 use crate::{Ident, SemVer, StenSchema, StenType, Translate, Ty, TyId, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+pub(super) enum LibSubTy {
+    Named(TypeName, TyId),
+    Extern(TypeName, LibAlias, TyId),
+}
+
+impl StenSchema for LibSubTy {
+    const STEN_TYPE_NAME: &'static str = "LibSubTy";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::union(fields! {
+            "named" => <(TypeName, TyId)>::sten_type(),
+            "extern" => <(TypeName, LibAlias, TyId)>::sten_type(),
+        })
+    }
+}
+
+impl TypeRef for LibSubTy {
+    fn id(&self) -> TyId {
+        match self {
+            LibSubTy::Named(_, id) | LibSubTy::Extern(_, _, id) => *id,
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum LibTy {
     Named(TypeName, TyId),
 
@@ -44,7 +69,13 @@ pub enum LibTy {
 impl StenSchema for LibTy {
     const STEN_TYPE_NAME: &'static str = "LibTy";
 
-    fn sten_ty() -> Ty<StenType> { todo!() }
+    fn sten_ty() -> Ty<StenType> {
+        Ty::union(fields! {
+            "named" => <(TypeName, TyId)>::sten_type(),
+            "inline" => Ty::<LibSubTy>::sten_type(),
+            "extern" => <(TypeName, LibAlias, TyId)>::sten_type(),
+        })
+    }
 }
 
 impl TypeRef for LibTy {
@@ -102,11 +133,37 @@ pub struct Dependency {
     pub ver: SemVer,
 }
 
+impl StenSchema for Dependency {
+    const STEN_TYPE_NAME: &'static str = "Dependency";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            "id" => TypeLibId::sten_type(),
+            "name" => LibName::sten_type(),
+            "ver" => SemVer::sten_type(),
+        })
+    }
+}
+
+pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibTy>>, 1, { u16::MAX as usize }>;
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdMap<LibAlias, Dependency>,
-    pub types: Confined<BTreeMap<TypeName, Ty<LibTy>>, 1, { u16::MAX as usize }>,
+    pub types: TypeMap,
+}
+
+impl StenSchema for TypeLib {
+    const STEN_TYPE_NAME: &'static str = "TypeLib";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::composition(fields! {
+            "name" => LibName::sten_type(),
+            "dependencies" => TinyOrdMap::<LibAlias, Dependency>::sten_type(),
+            "types" => TypeMap::sten_type()
+        })
+    }
 }
 
 impl TypeLib {

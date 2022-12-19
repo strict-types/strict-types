@@ -20,7 +20,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use amplify::confinement::SmallVec;
+use std::collections::{BTreeMap, BTreeSet};
+use std::hash::Hash;
+
+use amplify::confinement::Confined;
 use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use half::bf16;
@@ -88,10 +91,38 @@ where T: StenSchema
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::option(T::sten_type()) }
 }
 
-impl<T> StenSchema for SmallVec<T>
+impl<T, const MIN: usize, const MAX: usize> StenSchema for Confined<Vec<T>, MIN, MAX>
 where T: StenSchema
 {
     const STEN_TYPE_NAME: &'static str = "";
 
-    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::list(T::sten_type(), Sizing::U16) }
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::list(T::sten_type(), Sizing::new(MIN as u16, MAX as u16))
+    }
+}
+
+impl<T, const MIN: usize, const MAX: usize> StenSchema for Confined<BTreeSet<T>, MIN, MAX>
+where T: StenSchema + Ord
+{
+    const STEN_TYPE_NAME: &'static str = "";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::set(T::sten_type(), Sizing::new(MIN as u16, MAX as u16))
+    }
+}
+
+impl<K, V, const MIN: usize, const MAX: usize> StenSchema for Confined<BTreeMap<K, V>, MIN, MAX>
+where
+    K: StenSchema + Ord + Hash,
+    V: StenSchema,
+{
+    const STEN_TYPE_NAME: &'static str = "";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::<StenType>::map(
+            K::sten_type().try_to_key().expect("invalid key type"),
+            V::sten_type(),
+            Sizing::new(MIN as u16, MAX as u16),
+        )
+    }
 }

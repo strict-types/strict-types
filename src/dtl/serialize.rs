@@ -28,7 +28,7 @@ use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::num::u24;
 use amplify::Wrapper;
 
-use crate::dtl::type_lib::Dependency;
+use crate::dtl::type_lib::{Dependency, LibSubTy};
 use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
 use crate::{
     Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, StenWrite, Ty, TyId, TypeName,
@@ -158,6 +158,39 @@ impl Decode for EmbeddedTy {
     }
 }
 
+impl Encode for LibSubTy {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+        match self {
+            LibSubTy::Named(name, id) => {
+                0u8.encode(writer)?;
+                name.encode(writer)?;
+                id.encode(writer)
+            }
+            LibSubTy::Extern(name, lib_alias, id) => {
+                2u8.encode(writer)?;
+                name.encode(writer)?;
+                lib_alias.encode(writer)?;
+                id.encode(writer)
+            }
+        }
+    }
+}
+
+impl Decode for LibTy {
+    fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
+        match u8::decode(reader)? {
+            0u8 => Ok(LibTy::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            1u8 => Decode::decode(reader).map(Box::new).map(LibTy::Inline),
+            2u8 => Ok(LibTy::Extern(
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+            )),
+            wrong => Err(DecodeError::WrongRef(wrong)),
+        }
+    }
+}
+
 impl Encode for LibTy {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
@@ -180,12 +213,11 @@ impl Encode for LibTy {
     }
 }
 
-impl Decode for LibTy {
+impl Decode for LibSubTy {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(LibTy::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(Box::new).map(LibTy::Inline),
-            2u8 => Ok(LibTy::Extern(
+            0u8 => Ok(LibSubTy::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            2u8 => Ok(LibSubTy::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
