@@ -22,10 +22,10 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
-use amplify::{confinement, Wrapper};
 
-use crate::ast::{NestedRef, TranslateError, TyInner};
+use crate::ast::{NestedRef, TranslateError};
 use crate::dtl::type_lib::Dependency;
 use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeIndex, TypeLib, TypeSystem};
 use crate::{SemId, StenType, Translate, Ty, TypeName};
@@ -239,21 +239,20 @@ impl StenType {
 
 impl Ty<StenType> {
     pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
-        match self.as_inner() {
-            TyInner::Union(fields) => {
+        match self {
+            Ty::Union(fields) => {
                 for ty in fields.values() {
                     ty.index(index)?;
                 }
             }
-            TyInner::Struct(fields) => {
+            Ty::Struct(fields) => {
                 for ty in fields.values() {
                     ty.index(index)?;
                 }
             }
-            TyInner::Array(ty, _)
-            | TyInner::List(ty, _)
-            | TyInner::Set(ty, _)
-            | TyInner::Map(_, ty, _) => ty.index(index)?,
+            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) => {
+                ty.index(index)?
+            }
             _ => {}
         }
         Ok(())

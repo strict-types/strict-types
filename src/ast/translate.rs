@@ -22,9 +22,9 @@
 
 use std::collections::BTreeMap;
 
-use amplify::{confinement, Wrapper};
+use amplify::confinement;
 
-use crate::ast::{Fields, TyInner};
+use crate::ast::Fields;
 use crate::{SemId, Ty, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
@@ -60,16 +60,16 @@ where Ref: Translate<ToRef>
     type Error = <Ref as Translate<ToRef>>::Error;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<Ty<ToRef>, Self::Error> {
-        Ok(match self.into_inner() {
-            TyInner::Primitive(prim) => TyInner::Primitive(prim),
-            TyInner::Enum(vars) => TyInner::Enum(vars),
-            TyInner::Union(fields) => TyInner::Union(fields.translate(ctx)?),
-            TyInner::Struct(fields) => TyInner::Struct(fields.translate(ctx)?),
-            TyInner::Array(ty, len) => TyInner::Array(ty.translate(ctx)?, len),
-            TyInner::UnicodeChar => TyInner::UnicodeChar,
-            TyInner::List(ty, sizing) => TyInner::List(ty.translate(ctx)?, sizing),
-            TyInner::Set(ty, sizing) => TyInner::Set(ty.translate(ctx)?, sizing),
-            TyInner::Map(key, ty, sizing) => TyInner::Map(key, ty.translate(ctx)?, sizing),
+        Ok(match self {
+            Ty::Primitive(prim) => Ty::Primitive(prim),
+            Ty::Enum(vars) => Ty::Enum(vars),
+            Ty::Union(fields) => Ty::Union(fields.translate(ctx)?),
+            Ty::Struct(fields) => Ty::Struct(fields.translate(ctx)?),
+            Ty::Array(ty, len) => Ty::Array(ty.translate(ctx)?, len),
+            Ty::UnicodeChar => Ty::UnicodeChar,
+            Ty::List(ty, sizing) => Ty::List(ty.translate(ctx)?, sizing),
+            Ty::Set(ty, sizing) => Ty::Set(ty.translate(ctx)?, sizing),
+            Ty::Map(key, ty, sizing) => Ty::Map(key, ty.translate(ctx)?, sizing),
         }
         .into())
     }

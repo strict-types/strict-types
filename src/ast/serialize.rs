@@ -27,25 +27,25 @@ use std::io::{Error, Read};
 use amplify::Wrapper;
 
 use crate::ast::ty::NestedRef;
-use crate::ast::{Field, Fields, TyInner, TypeRef, Variants};
+use crate::ast::{Field, Fields, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
     Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, SemId, Serialize, StenType,
     StenWrite, Ty,
 };
 
-impl<Ref: TypeRef> TyInner<Ref> {
+impl<Ref: TypeRef> Ty<Ref> {
     pub const fn cls(&self) -> Cls {
         match self {
-            TyInner::Primitive(_) => Cls::Primitive,
-            TyInner::Enum(_) => Cls::Enum,
-            TyInner::Union(_) => Cls::Union,
-            TyInner::Struct(_) => Cls::Struct,
-            TyInner::Array(_, _) => Cls::Array,
-            TyInner::UnicodeChar => Cls::UnicodeChar,
-            TyInner::List(_, _) => Cls::List,
-            TyInner::Set(_, _) => Cls::Set,
-            TyInner::Map(_, _, _) => Cls::Map,
+            Ty::Primitive(_) => Cls::Primitive,
+            Ty::Enum(_) => Cls::Enum,
+            Ty::Union(_) => Cls::Union,
+            Ty::Struct(_) => Cls::Struct,
+            Ty::Array(_, _) => Cls::Array,
+            Ty::UnicodeChar => Cls::UnicodeChar,
+            Ty::List(_, _) => Cls::List,
+            Ty::Set(_, _) => Cls::Set,
+            Ty::Map(_, _, _) => Cls::Map,
         }
     }
 }
@@ -70,25 +70,25 @@ impl<Ref: TypeRef + Encode> Serialize for Ty<Ref> {}
 impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         self.cls().encode(writer)?;
-        match self.as_inner() {
-            TyInner::Primitive(prim) => prim.encode(writer),
-            TyInner::Enum(vars) => vars.encode(writer),
-            TyInner::Union(fields) => fields.encode(writer),
-            TyInner::Struct(fields) => fields.encode(writer),
-            TyInner::Array(ty, len) => {
+        match self {
+            Ty::Primitive(prim) => prim.encode(writer),
+            Ty::Enum(vars) => vars.encode(writer),
+            Ty::Union(fields) => fields.encode(writer),
+            Ty::Struct(fields) => fields.encode(writer),
+            Ty::Array(ty, len) => {
                 ty.encode(writer)?;
                 len.encode(writer)
             }
-            TyInner::UnicodeChar => Ok(()),
-            TyInner::List(ty, sizing) => {
+            Ty::UnicodeChar => Ok(()),
+            Ty::List(ty, sizing) => {
                 ty.encode(writer)?;
                 sizing.encode(writer)
             }
-            TyInner::Set(ty, sizing) => {
+            Ty::Set(ty, sizing) => {
                 ty.encode(writer)?;
                 sizing.encode(writer)
             }
-            TyInner::Map(key, ty, sizing) => {
+            Ty::Map(key, ty, sizing) => {
                 key.encode(writer)?;
                 ty.encode(writer)?;
                 sizing.encode(writer)
@@ -99,22 +99,20 @@ impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
 
 impl<Ref: TypeRef + Decode> Decode for Ty<Ref> {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
-        Ok(Ty::from_inner(match Cls::decode(reader)? {
-            Cls::Primitive => TyInner::Primitive(Decode::decode(reader)?),
-            Cls::Enum => TyInner::Enum(Decode::decode(reader)?),
-            Cls::Union => TyInner::Union(Decode::decode(reader)?),
-            Cls::Struct => TyInner::Struct(Decode::decode(reader)?),
-            Cls::Array => TyInner::Array(Decode::decode(reader)?, Decode::decode(reader)?),
-            Cls::UnicodeChar => TyInner::UnicodeChar,
+        Ok(match Cls::decode(reader)? {
+            Cls::Primitive => Ty::Primitive(Decode::decode(reader)?),
+            Cls::Enum => Ty::Enum(Decode::decode(reader)?),
+            Cls::Union => Ty::Union(Decode::decode(reader)?),
+            Cls::Struct => Ty::Struct(Decode::decode(reader)?),
+            Cls::Array => Ty::Array(Decode::decode(reader)?, Decode::decode(reader)?),
+            Cls::UnicodeChar => Ty::UnicodeChar,
             Cls::AsciiStr => return Err(DecodeError::InvalidTyCls(Cls::AsciiStr)),
-            Cls::List => TyInner::List(Decode::decode(reader)?, Decode::decode(reader)?),
-            Cls::Set => TyInner::Set(Decode::decode(reader)?, Decode::decode(reader)?),
-            Cls::Map => TyInner::Map(
-                Decode::decode(reader)?,
-                Decode::decode(reader)?,
-                Decode::decode(reader)?,
-            ),
-        }))
+            Cls::List => Ty::List(Decode::decode(reader)?, Decode::decode(reader)?),
+            Cls::Set => Ty::Set(Decode::decode(reader)?, Decode::decode(reader)?),
+            Cls::Map => {
+                Ty::Map(Decode::decode(reader)?, Decode::decode(reader)?, Decode::decode(reader)?)
+            }
+        })
     }
 }
 

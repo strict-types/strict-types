@@ -25,7 +25,7 @@ use std::fmt::{Display, Formatter};
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
 
-use crate::ast::{NestedRef, TyInner};
+use crate::ast::NestedRef;
 use crate::{FieldName, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -95,23 +95,23 @@ impl<Ref: NestedRef> Ty<Ref> {
         let mut path = path.clone();
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
-            let res = match (self.as_inner(), &step) {
-                (TyInner::Struct(fields), Step::NamedField(name)) => {
+            let res = match (self, &step) {
+                (Ty::Struct(fields), Step::NamedField(name)) => {
                     fields.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
                 }
-                (TyInner::Union(variants), Step::NamedField(name)) => {
+                (Ty::Union(variants), Step::NamedField(name)) => {
                     variants.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
                 }
-                (TyInner::Struct(fields), Step::UnnamedField(ord)) => {
+                (Ty::Struct(fields), Step::UnnamedField(ord)) => {
                     fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
                 }
-                (TyInner::Union(variants), Step::UnnamedField(ord)) => {
+                (Ty::Union(variants), Step::UnnamedField(ord)) => {
                     variants.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
                 }
-                (TyInner::Array(ty, _), Step::Index) => Some(ty),
-                (TyInner::List(ty, _), Step::List) => Some(ty),
-                (TyInner::Set(ty, _), Step::Set) => Some(ty),
-                (TyInner::Map(_, ty, _), Step::Map) => Some(ty),
+                (Ty::Array(ty, _), Step::Index) => Some(ty),
+                (Ty::List(ty, _), Step::List) => Some(ty),
+                (Ty::Set(ty, _), Step::Set) => Some(ty),
+                (Ty::Map(_, ty, _), Step::Map) => Some(ty),
                 (_, _) => None,
             };
             path_so_far.push(step).expect("confinement collection guarantees");
@@ -121,14 +121,14 @@ impl<Ref: NestedRef> Ty<Ref> {
     }
 
     pub fn count_subtypes(&self) -> u8 {
-        match self.as_inner() {
-            TyInner::Primitive(_) => 0,
-            TyInner::Enum(_) => 0,
-            TyInner::Union(fields) => fields.len_u8(),
-            TyInner::Struct(fields) => fields.len_u8(),
-            TyInner::Array(_, _) => 1,
-            TyInner::UnicodeChar => 0,
-            TyInner::List(_, _) | TyInner::Set(_, _) | TyInner::Map(_, _, _) => 1,
+        match self {
+            Ty::Primitive(_) => 0,
+            Ty::Enum(_) => 0,
+            Ty::Union(fields) => fields.len_u8(),
+            Ty::Struct(fields) => fields.len_u8(),
+            Ty::Array(_, _) => 1,
+            Ty::UnicodeChar => 0,
+            Ty::List(_, _) | Ty::Set(_, _) | Ty::Map(_, _, _) => 1,
         }
     }
 }

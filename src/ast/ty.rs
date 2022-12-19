@@ -139,17 +139,22 @@ impl Display for Field {
     }
 }
 
-/// Provides guarantees that the type information fits maximum type size
-/// requirements, i.e. the serialized AST does not exceed `u24::MAX` bytes.
-#[derive(Wrapper, Clone, PartialEq, Eq, Debug, From)]
-#[wrapper(Deref)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
-pub struct Ty<Ref>(TyInner<Ref>)
-where Ref: TypeRef;
+#[derive(Clone, PartialEq, Eq, Debug, From)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+pub enum Ty<Ref: TypeRef> {
+    Primitive(Primitive),
+    /// We use separate type since unlike primitive it has variable length.
+    /// While unicode character can be expressed as a composite type, it will be very verbose
+    /// expression (union with 256 variants), so instead we built it in.
+    UnicodeChar,
+    Enum(Variants),
+    Union(Fields<Ref, false>),
+    Struct(Fields<Ref, true>),
+    Array(Ref, u16),
+    List(Ref, Sizing),
+    Set(Ref, Sizing),
+    Map(KeyTy, Ref, Sizing),
+}
 
 impl<Ref: TypeRef> StenSchema for Ty<Ref> {
     const STEN_TYPE_NAME: &'static str = "Ty";
@@ -178,80 +183,79 @@ impl<Ref: TypeRef> PartialOrd for Ty<Ref> {
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub const UNIT: Ty<Ref> = Ty(TyInner::Primitive(UNIT));
-    pub const BYTE: Ty<Ref> = Ty(TyInner::Primitive(BYTE));
+    pub const UNIT: Ty<Ref> = Ty::Primitive(UNIT);
+    pub const BYTE: Ty<Ref> = Ty::Primitive(BYTE);
 
-    pub const U8: Ty<Ref> = Ty(TyInner::Primitive(U8));
-    pub const U16: Ty<Ref> = Ty(TyInner::Primitive(U16));
-    pub const U24: Ty<Ref> = Ty(TyInner::Primitive(U24));
-    pub const U32: Ty<Ref> = Ty(TyInner::Primitive(U32));
-    pub const U64: Ty<Ref> = Ty(TyInner::Primitive(U64));
-    pub const U128: Ty<Ref> = Ty(TyInner::Primitive(U128));
-    pub const U256: Ty<Ref> = Ty(TyInner::Primitive(U256));
-    pub const U512: Ty<Ref> = Ty(TyInner::Primitive(U512));
-    pub const U1024: Ty<Ref> = Ty(TyInner::Primitive(U1024));
+    pub const U8: Ty<Ref> = Ty::Primitive(U8);
+    pub const U16: Ty<Ref> = Ty::Primitive(U16);
+    pub const U24: Ty<Ref> = Ty::Primitive(U24);
+    pub const U32: Ty<Ref> = Ty::Primitive(U32);
+    pub const U64: Ty<Ref> = Ty::Primitive(U64);
+    pub const U128: Ty<Ref> = Ty::Primitive(U128);
+    pub const U256: Ty<Ref> = Ty::Primitive(U256);
+    pub const U512: Ty<Ref> = Ty::Primitive(U512);
+    pub const U1024: Ty<Ref> = Ty::Primitive(U1024);
 
-    pub const I8: Ty<Ref> = Ty(TyInner::Primitive(I8));
-    pub const I16: Ty<Ref> = Ty(TyInner::Primitive(I16));
-    pub const I24: Ty<Ref> = Ty(TyInner::Primitive(I24));
-    pub const I32: Ty<Ref> = Ty(TyInner::Primitive(I32));
-    pub const I64: Ty<Ref> = Ty(TyInner::Primitive(I64));
-    pub const I128: Ty<Ref> = Ty(TyInner::Primitive(I128));
-    pub const I256: Ty<Ref> = Ty(TyInner::Primitive(I256));
-    pub const I512: Ty<Ref> = Ty(TyInner::Primitive(I512));
-    pub const I1024: Ty<Ref> = Ty(TyInner::Primitive(I1024));
+    pub const I8: Ty<Ref> = Ty::Primitive(I8);
+    pub const I16: Ty<Ref> = Ty::Primitive(I16);
+    pub const I24: Ty<Ref> = Ty::Primitive(I24);
+    pub const I32: Ty<Ref> = Ty::Primitive(I32);
+    pub const I64: Ty<Ref> = Ty::Primitive(I64);
+    pub const I128: Ty<Ref> = Ty::Primitive(I128);
+    pub const I256: Ty<Ref> = Ty::Primitive(I256);
+    pub const I512: Ty<Ref> = Ty::Primitive(I512);
+    pub const I1024: Ty<Ref> = Ty::Primitive(I1024);
 
-    pub const F16B: Ty<Ref> = Ty(TyInner::Primitive(F16B));
-    pub const F16: Ty<Ref> = Ty(TyInner::Primitive(F16));
-    pub const F32: Ty<Ref> = Ty(TyInner::Primitive(F32));
-    pub const F64: Ty<Ref> = Ty(TyInner::Primitive(F64));
-    pub const F80: Ty<Ref> = Ty(TyInner::Primitive(F80));
-    pub const F128: Ty<Ref> = Ty(TyInner::Primitive(F128));
-    pub const F256: Ty<Ref> = Ty(TyInner::Primitive(F256));
+    pub const F16B: Ty<Ref> = Ty::Primitive(F16B);
+    pub const F16: Ty<Ref> = Ty::Primitive(F16);
+    pub const F32: Ty<Ref> = Ty::Primitive(F32);
+    pub const F64: Ty<Ref> = Ty::Primitive(F64);
+    pub const F80: Ty<Ref> = Ty::Primitive(F80);
+    pub const F128: Ty<Ref> = Ty::Primitive(F128);
+    pub const F256: Ty<Ref> = Ty::Primitive(F256);
 
-    pub const UNICODE: Ty<Ref> = Ty(TyInner::UnicodeChar);
+    pub const UNICODE: Ty<Ref> = Ty::UnicodeChar;
 
-    pub fn enumerate(variants: Variants) -> Self { Ty(TyInner::Enum(variants)) }
+    pub fn enumerate(variants: Variants) -> Self { Ty::Enum(variants) }
     pub fn union(fields: Fields<Ref, false>) -> Self {
-        let ty = Ty(TyInner::Union(fields));
+        let ty = Ty::Union(fields);
         assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
         ty
     }
     pub fn composition(fields: Fields<Ref, true>) -> Self {
-        let ty = Ty(TyInner::Struct(fields));
+        let ty = Ty::Struct(fields);
         assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
         ty
     }
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self {
-        let ty = Ty(TyInner::List(ty, sizing));
+        let ty = Ty::List(ty, sizing);
         assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
         ty
     }
     pub fn set(ty: Ref, sizing: Sizing) -> Self {
-        let ty = Ty(TyInner::Set(ty, sizing));
+        let ty = Ty::Set(ty, sizing);
         assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
         ty
     }
     pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self {
-        let ty = Ty(TyInner::Map(key, val, sizing));
+        let ty = Ty::Map(key, val, sizing);
         assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
         ty
     }
 
-    pub fn ascii_char() -> Self { Ty(TyInner::Enum(variants!(0..=127))) }
+    pub fn ascii_char() -> Self { Ty::Enum(variants!(0..=127)) }
 
-    pub fn is_primitive(&self) -> bool { matches!(self.as_inner(), TyInner::Primitive(_)) }
+    pub fn is_primitive(&self) -> bool { matches!(self, Ty::Primitive(_)) }
     pub fn is_compound(&self) -> bool {
-        matches!(self.as_inner(), TyInner::Struct(fields)
+        matches!(self, Ty::Struct(fields)
             if fields.len() > 1
             || fields.keys().next().expect("always at least one field").name.is_some())
-            || (matches!(self.as_inner(), TyInner::Enum(_) | TyInner::Union(_) | TyInner::Map(..))
-                && !self.is_option())
+            || (matches!(self, Ty::Enum(_) | Ty::Union(_) | Ty::Map(..)) && !self.is_option())
     }
     pub fn is_option(&self) -> bool {
-        matches!(self.as_inner(),
-            TyInner::Union(fields) if fields.len() == 2
+        matches!(self,
+            Ty::Union(fields) if fields.len() == 2
             && fields.contains_key(&Field::none())
             && fields.contains_key(&Field::some())
         )
@@ -259,57 +263,57 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn into_union_fields(self) -> Option<Fields<Ref, false>> {
         match self {
-            Ty(TyInner::Union(fields)) => Some(fields),
+            Ty::Union(fields) => Some(fields),
             _ => None,
         }
     }
 
     pub fn into_struct_fields(self) -> Option<Fields<Ref, true>> {
         match self {
-            Ty(TyInner::Struct(fields)) => Some(fields),
+            Ty::Struct(fields) => Some(fields),
             _ => None,
         }
     }
 
     pub fn into_enum_variants(self) -> Option<Variants> {
         match self {
-            Ty(TyInner::Enum(variants)) => Some(variants),
+            Ty::Enum(variants) => Some(variants),
             _ => None,
         }
     }
 
     pub fn as_union_fields(&self) -> Option<&Fields<Ref, false>> {
         match self {
-            Ty(TyInner::Union(ref fields)) => Some(fields),
+            Ty::Union(ref fields) => Some(fields),
             _ => None,
         }
     }
 
     pub fn as_struct_fields(&self) -> Option<&Fields<Ref, true>> {
         match self {
-            Ty(TyInner::Struct(ref fields)) => Some(fields),
+            Ty::Struct(ref fields) => Some(fields),
             _ => None,
         }
     }
 
     pub fn as_enum_variants(&self) -> Option<&Variants> {
         match self {
-            Ty(TyInner::Enum(ref variants)) => Some(variants),
+            Ty::Enum(ref variants) => Some(variants),
             _ => None,
         }
     }
 }
 
 impl Ty<StenType> {
-    pub fn byte_array(len: u16) -> Self { Ty(TyInner::Array(StenType::byte(), len)) }
-    pub fn bytes(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::byte(), sizing)) }
-    pub fn ascii_string(sizing: Sizing) -> Self { Ty(TyInner::List(StenType::ascii(), sizing)) }
+    pub fn byte_array(len: u16) -> Self { Ty::Array(StenType::byte(), len) }
+    pub fn bytes(sizing: Sizing) -> Self { Ty::List(StenType::byte(), sizing) }
+    pub fn ascii_string(sizing: Sizing) -> Self { Ty::List(StenType::ascii(), sizing) }
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
-        Ty(TyInner::Union(fields![
+        Ty::Union(fields![
             "None" => <()>::sten_type(),
             "Some" => ty
-        ]))
+        ])
     }
 }
 
@@ -317,34 +321,29 @@ impl<Ref: TypeRef> Display for Ty<Ref>
 where Ref: Display
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self.as_inner() {
-            TyInner::Primitive(prim) => Display::fmt(prim, f),
-            TyInner::Enum(vars) => Display::fmt(vars, f),
-            TyInner::Union(fields) if self.is_option() => {
+        match self {
+            Ty::Primitive(prim) => Display::fmt(prim, f),
+            Ty::Enum(vars) => Display::fmt(vars, f),
+            Ty::Union(fields) if self.is_option() => {
                 write!(f, "{}?", fields.get(&Field::some()).expect("optional"))
             }
-            TyInner::Union(fields) => Display::fmt(fields, f),
-            TyInner::Struct(fields) => Display::fmt(fields, f),
-            TyInner::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
-            TyInner::UnicodeChar => write!(f, "Unicode"),
-            TyInner::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
-            TyInner::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
-            TyInner::Map(key, ty, sizing) => write!(f, "{{{}{}}} -> [{}]", key, sizing, ty),
+            Ty::Union(fields) => Display::fmt(fields, f),
+            Ty::Struct(fields) => Display::fmt(fields, f),
+            Ty::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
+            Ty::UnicodeChar => write!(f, "Unicode"),
+            Ty::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
+            Ty::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
+            Ty::Map(key, ty, sizing) => write!(f, "{{{}{}}} -> [{}]", key, sizing, ty),
         }
     }
 }
 
 impl<Ref: NestedRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
-        match self.as_inner() {
-            TyInner::Union(fields) => fields.ty_at(pos),
-            TyInner::Struct(fields) => fields.ty_at(pos),
-            TyInner::Array(ty, _)
-            | TyInner::List(ty, _)
-            | TyInner::Set(ty, _)
-            | TyInner::Map(_, ty, _)
-                if pos > 0 =>
-            {
+        match self {
+            Ty::Union(fields) => fields.ty_at(pos),
+            Ty::Struct(fields) => fields.ty_at(pos),
+            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
                 Some(ty)
             }
             _ => return None,
@@ -352,61 +351,42 @@ impl<Ref: NestedRef> Ty<Ref> {
     }
 
     pub fn try_to_key(&self) -> Result<KeyTy, &Ty<Ref>> {
-        Ok(match &self.0 {
-            TyInner::Primitive(code) => KeyTy::Primitive(*code),
-            TyInner::Enum(vars) => KeyTy::Enum(vars.clone()),
-            TyInner::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(*len),
-            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(*sizing),
-            TyInner::Array(ty, len) if ty.as_ty() == &Ty::UNICODE => {
+        Ok(match self {
+            Ty::Primitive(code) => KeyTy::Primitive(*code),
+            Ty::Enum(vars) => KeyTy::Enum(vars.clone()),
+            Ty::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(*len),
+            Ty::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(*sizing),
+            Ty::Array(ty, len) if ty.as_ty() == &Ty::UNICODE => {
                 KeyTy::UnicodeStr(Sizing::fixed(*len))
             }
-            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(*sizing),
-            TyInner::List(ty, sizing) if ty.as_ty() == &Ty::<Ref>::ascii_char() => {
+            Ty::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(*sizing),
+            Ty::List(ty, sizing) if ty.as_ty() == &Ty::<Ref>::ascii_char() => {
                 KeyTy::AsciiStr(*sizing)
             }
-            TyInner::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
-            TyInner::Union(_)
-            | TyInner::Struct(_)
-            | TyInner::Array(_, _)
-            | TyInner::List(_, _)
-            | TyInner::Set(_, _)
-            | TyInner::Map(_, _, _) => return Err(self),
+            Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
+            Ty::Union(_)
+            | Ty::Struct(_)
+            | Ty::Array(_, _)
+            | Ty::List(_, _)
+            | Ty::Set(_, _)
+            | Ty::Map(_, _, _) => return Err(self),
         })
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub enum TyInner<Ref: TypeRef = StenType> {
-    Primitive(Primitive),
-    /// We use separate type since unlike primitive it has variable length.
-    /// While unicode character can be expressed as a composite type, it will be very verbose
-    /// expression (union with 256 variants), so instead we built it in.
-    UnicodeChar,
-    Enum(Variants),
-    Union(Fields<Ref, false>),
-    Struct(Fields<Ref, true>),
-    Array(Ref, u16),
-    List(Ref, Sizing),
-    Set(Ref, Sizing),
-    Map(KeyTy, Ref, Sizing),
-}
-
-impl<Ref: NestedRef> TyInner<Ref> {
+impl<Ref: NestedRef> Ty<Ref> {
     pub fn byte_size(&self) -> Size {
         match self {
-            TyInner::Primitive(UNIT) | TyInner::Primitive(BYTE) => Size::Fixed(1),
-            TyInner::Primitive(F16B) => Size::Fixed(2),
-            TyInner::Primitive(primitive) => Size::Fixed(primitive.size()),
-            TyInner::Union(fields) => {
+            Ty::Primitive(UNIT) | Ty::Primitive(BYTE) => Size::Fixed(1),
+            Ty::Primitive(F16B) => Size::Fixed(2),
+            Ty::Primitive(primitive) => Size::Fixed(primitive.size()),
+            Ty::Union(fields) => {
                 fields.values().map(|alt| alt.as_ty().byte_size()).max().unwrap_or(Size::Fixed(0))
             }
-            TyInner::Struct(fields) => fields.values().map(|ty| ty.byte_size()).sum(),
-            TyInner::Enum(_) => Size::Fixed(1),
-            TyInner::Array(_, len) => Size::Fixed(*len),
-            TyInner::UnicodeChar | TyInner::List(..) | TyInner::Set(..) | TyInner::Map(..) => {
-                Size::Variable
-            }
+            Ty::Struct(fields) => fields.values().map(|ty| ty.byte_size()).sum(),
+            Ty::Enum(_) => Size::Fixed(1),
+            Ty::Array(_, len) => Size::Fixed(*len),
+            Ty::UnicodeChar | Ty::List(..) | Ty::Set(..) | Ty::Map(..) => Size::Variable,
         }
     }
 }

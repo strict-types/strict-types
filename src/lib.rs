@@ -66,6 +66,9 @@ pub use util::{Ident, SemVer, TypeName, Urn};
 ///
 /// In order to perform type serialization the type has to be [`Translate`]ed into either
 /// [`TypeLib`] or [`TypeSystem`].
+///
+/// Provides guarantees that the type information fits maximum type size requirements, i.e.
+/// serialized AST does not exceed `u24::MAX` bytes.
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
     /// Type name which should match rust type name in most of the cases

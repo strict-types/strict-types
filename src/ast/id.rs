@@ -24,7 +24,7 @@ use std::cmp::Ordering;
 
 use amplify::Wrapper;
 
-use crate::ast::{Field, Fields, TyInner, Variants};
+use crate::ast::{Field, Fields, Variants};
 use crate::util::Sizing;
 use crate::{Cls, KeyTy, StenSchema, StenType, Ty, TypeRef};
 
@@ -59,27 +59,27 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     fn hash(&self, hasher: &mut blake3::Hasher) {
         self.cls().hash(hasher);
-        match self.as_inner() {
-            TyInner::Primitive(prim) => {
+        match self {
+            Ty::Primitive(prim) => {
                 hasher.update(&[prim.into_code()]);
             }
-            TyInner::Enum(vars) => vars.hash(hasher),
-            TyInner::Union(fields) => fields.hash(hasher),
-            TyInner::Struct(fields) => fields.hash(hasher),
-            TyInner::Array(ty, len) => {
+            Ty::Enum(vars) => vars.hash(hasher),
+            Ty::Union(fields) => fields.hash(hasher),
+            Ty::Struct(fields) => fields.hash(hasher),
+            Ty::Array(ty, len) => {
                 hasher.update(ty.id().as_bytes());
                 hasher.update(&len.to_le_bytes());
             }
-            TyInner::UnicodeChar => {}
-            TyInner::List(ty, sizing) => {
+            Ty::UnicodeChar => {}
+            Ty::List(ty, sizing) => {
                 hasher.update(ty.id().as_bytes());
                 sizing.hash(hasher);
             }
-            TyInner::Set(ty, sizing) => {
+            Ty::Set(ty, sizing) => {
                 hasher.update(ty.id().as_bytes());
                 sizing.hash(hasher);
             }
-            TyInner::Map(key, ty, sizing) => {
+            Ty::Map(key, ty, sizing) => {
                 key.hash(hasher);
                 hasher.update(ty.id().as_bytes());
                 sizing.hash(hasher);
