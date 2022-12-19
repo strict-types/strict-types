@@ -33,19 +33,17 @@ mod util;
 pub mod primitive;
 pub mod ast;
 pub mod dtl;
-mod serialize;
-mod write;
-mod check;
-
-#[cfg(test)]
-pub(crate) mod test;
+mod encoding;
 
 pub use ast::{FieldName, KeyTy, Translate, Ty, TyId, TypeRef};
-pub use check::CheckedWriter;
 pub use dtl::{Dependency, EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
-pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
+#[cfg(test)]
+pub(crate) use encoding::test;
+pub use encoding::{
+    CheckedWriter, Cls, Decode, DecodeError, Deserialize, Encode, Serialize, StenWrite,
+    StructWriter, Writer,
+};
 pub use util::{Ident, SemVer, TypeName, Urn};
-pub use write::{StenWrite, StructWriter, Writer};
 
 /// Type information which can be automatically derived out of -- or provided by a rust type via
 /// implementing [`StenSchema`] trait.
