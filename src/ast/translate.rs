@@ -1,5 +1,5 @@
-// Strict encoding schema library, implementing validation and parsing of strict
-// encoded data against the schema.
+// Strict encoding schema library, implementing validation and parsing
+// strict encoded data against a schema.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
