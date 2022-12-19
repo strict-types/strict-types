@@ -30,8 +30,8 @@ use crate::ast::ty::{NestedRef, SubTy};
 use crate::ast::{Field, Fields, TyInner, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
-    Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, Serialize, StenType,
-    StenWrite, Ty, TyId,
+    Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, SemId, Serialize, StenType,
+    StenWrite, Ty,
 };
 
 impl<Ref: TypeRef> TyInner<Ref> {
@@ -251,16 +251,16 @@ impl<Ref: TypeRef + Decode, const OP: bool> Decode for Fields<Ref, OP> {
     }
 }
 
-impl Encode for TyId {
+impl Encode for SemId {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
         writer.write_byte_array(*self.as_bytes())
     }
 }
 
-impl Decode for TyId {
+impl Decode for SemId {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let mut buf = [0u8; 32];
         reader.read_exact(&mut buf)?;
-        Ok(TyId::from_inner(blake3::Hash::from(buf)))
+        Ok(SemId::from_inner(blake3::Hash::from(buf)))
     }
 }

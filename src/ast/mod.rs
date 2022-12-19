@@ -27,7 +27,7 @@ mod translate;
 mod path;
 mod iter;
 
-pub use id::TyId;
+pub use id::SemId;
 pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use translate::{Translate, TranslateError};

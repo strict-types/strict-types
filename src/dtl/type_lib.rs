@@ -29,13 +29,13 @@ use amplify::confinement::{Confined, TinyOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
 use crate::dtl::id::TypeLibId;
-use crate::{Ident, SemVer, StenSchema, StenType, Translate, Ty, TyId, TypeName, TypeRef};
+use crate::{Ident, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName, TypeRef};
 
 // TODO: Deal with indefinite types in reflections
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub(super) enum LibSubTy {
-    Named(TypeName, TyId),
-    Extern(TypeName, LibAlias, TyId),
+    Named(TypeName, SemId),
+    Extern(TypeName, LibAlias, SemId),
 }
 
 impl StenSchema for LibSubTy {
@@ -43,14 +43,14 @@ impl StenSchema for LibSubTy {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
-            "named" => <(TypeName, TyId)>::sten_type(),
-            "extern" => <(TypeName, LibAlias, TyId)>::sten_type(),
+            "named" => <(TypeName, SemId)>::sten_type(),
+            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
         })
     }
 }
 
 impl TypeRef for LibSubTy {
-    fn id(&self) -> TyId {
+    fn id(&self) -> SemId {
         match self {
             LibSubTy::Named(_, id) | LibSubTy::Extern(_, _, id) => *id,
         }
@@ -59,12 +59,12 @@ impl TypeRef for LibSubTy {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum LibTy {
-    Named(TypeName, TyId),
+    Named(TypeName, SemId),
 
     #[from]
     Inline(Box<Ty<LibTy>>),
 
-    Extern(TypeName, LibAlias, TyId),
+    Extern(TypeName, LibAlias, SemId),
 }
 
 impl StenSchema for LibTy {
@@ -72,15 +72,15 @@ impl StenSchema for LibTy {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
-            "named" => <(TypeName, TyId)>::sten_type(),
+            "named" => <(TypeName, SemId)>::sten_type(),
             "inline" => Ty::<LibSubTy>::sten_type(),
-            "extern" => <(TypeName, LibAlias, TyId)>::sten_type(),
+            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
         })
     }
 }
 
 impl TypeRef for LibTy {
-    fn id(&self) -> TyId {
+    fn id(&self) -> SemId {
         match self {
             LibTy::Named(_, id) | LibTy::Extern(_, _, id) => *id,
             LibTy::Inline(ty) => ty.id(),

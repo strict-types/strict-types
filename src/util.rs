@@ -30,7 +30,7 @@ use amplify::confinement;
 use amplify::confinement::{Confined, TinyVec};
 
 use crate::dtl::TypeLibId;
-use crate::{StenSchema, StenType, Ty, TyId};
+use crate::{SemId, StenSchema, StenType, Ty};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -77,8 +77,8 @@ impl From<&'static str> for Ident {
     }
 }
 
-impl From<TyId> for Ident {
-    fn from(id: TyId) -> Self {
+impl From<SemId> for Ident {
+    fn from(id: SemId) -> Self {
         let mut s = s!("Auto");
         s.extend(id.to_hex()[..8].to_uppercase().chars().take(8));
         let s = AsciiString::from_ascii(s).expect("invalid identifier name");
@@ -308,10 +308,10 @@ impl Display for SemVer {
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 pub enum Urn {
     #[from]
-    #[display("urn:ubideco:sten:lib:{0}", alt = "urn:ubideco:sten:lib:{0:#}")]
+    #[display("urn:sten:lib:{0}", alt = "urn:sten:lib:{0:#}")]
     Lib(TypeLibId),
 
     #[from]
-    #[display("urn:ubideco:sten:{0}", alt = "urn:ubideco:sten:{0:#}")]
-    Type(TyId),
+    #[display("urn:sten:id:{0}", alt = "urn:sten:id:{0:#}")]
+    Type(SemId),
 }

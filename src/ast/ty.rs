@@ -31,13 +31,13 @@ use amplify::{confinement, Wrapper};
 use crate::ast::Iter;
 use crate::primitive::constants::*;
 use crate::util::{Size, Sizing};
-use crate::{Encode, Ident, LibAlias, Serialize, StenSchema, StenType, TyId, TypeName};
+use crate::{Encode, Ident, LibAlias, SemId, Serialize, StenSchema, StenType, TypeName};
 
 pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
-    fn id(&self) -> TyId;
+    fn id(&self) -> SemId;
 }
 pub trait NestedRef: TypeRef + Deref<Target = Ty<Self>> {
     fn as_ty(&self) -> &Ty<Self>;
@@ -49,7 +49,7 @@ pub trait RecursiveRef: NestedRef {
 }
 
 impl TypeRef for SubTy {
-    fn id(&self) -> TyId { self.as_ty().id() }
+    fn id(&self) -> SemId { self.as_ty().id() }
 }
 impl NestedRef for SubTy {
     fn as_ty(&self) -> &Ty<Self> { &self.0.deref() }
@@ -58,7 +58,7 @@ impl NestedRef for SubTy {
 impl RecursiveRef for SubTy {}
 
 impl TypeRef for StenType {
-    fn id(&self) -> TyId { self.as_ty().id() }
+    fn id(&self) -> SemId { self.as_ty().id() }
 }
 impl NestedRef for StenType {
     fn as_ty(&self) -> &Ty<Self> { &self.ty }
@@ -696,18 +696,18 @@ impl<Ref: TypeRef> StenSchema for (Option<FieldName>, Ref) {
     }
 }
 
-impl StenSchema for (TypeName, TyId) {
+impl StenSchema for (TypeName, SemId) {
     const STEN_TYPE_NAME: &'static str = "TypeDef";
 
     fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields!(TypeName::sten_type(), TyId::sten_type()))
+        Ty::composition(fields!(TypeName::sten_type(), SemId::sten_type()))
     }
 }
 
-impl StenSchema for (TypeName, LibAlias, TyId) {
+impl StenSchema for (TypeName, LibAlias, SemId) {
     const STEN_TYPE_NAME: &'static str = "TypeDefFull";
 
     fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields!(TypeName::sten_type(), LibAlias::sten_type(), TyId::sten_type()))
+        Ty::composition(fields!(TypeName::sten_type(), LibAlias::sten_type(), SemId::sten_type()))
     }
 }

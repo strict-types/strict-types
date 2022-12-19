@@ -30,7 +30,7 @@ use amplify::{confinement, IoError, WriteCounter};
 
 use crate::dtl::LibName;
 use crate::util::{BuildFragment, InvalidIdent, PreFragment, Sizing};
-use crate::{Ident, SemVer, StenWrite, TyId, Writer};
+use crate::{Ident, SemId, SemVer, StenWrite, Writer};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -60,10 +60,10 @@ pub enum DecodeError {
     WrongEnumId(&'static str, u8),
 
     /// type {0} occurs multiple times
-    RepeatedType(TyId),
+    RepeatedType(SemId),
 
     /// incorrect ordering of type {0}
-    WrongTypeOrdering(TyId),
+    WrongTypeOrdering(SemId),
 
     /// repeated dependency {0}
     RepeatedDependency(LibName),

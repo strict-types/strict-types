@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use amplify::{confinement, Wrapper};
 
 use crate::ast::{Fields, TyInner};
-use crate::{Ty, TyId, TypeName, TypeRef};
+use crate::{SemId, Ty, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -43,10 +43,10 @@ pub enum TranslateError {
     DuplicateName(TypeName),
 
     /// a type with id {0} has at least two different names `{0}` and `{1}`
-    MultipleNames(TyId, TypeName, TypeName),
+    MultipleNames(SemId, TypeName, TypeName),
 
     /// unknown type with id `{0}`
-    UnknownId(TyId),
+    UnknownId(SemId),
 
     #[from]
     #[display(inner)]

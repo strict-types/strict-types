@@ -31,11 +31,11 @@ use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
 
 use crate::ast::NestedRef;
-use crate::{Serialize, StenSchema, StenType, Ty, TyId, TypeRef};
+use crate::{SemId, Serialize, StenSchema, StenType, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum EmbeddedTy {
-    Ref(TyId),
+    Ref(SemId),
 
     #[from]
     Inline(Box<Ty<EmbeddedTy>>),
@@ -59,7 +59,7 @@ impl Deref for EmbeddedTy {
 }
 
 impl TypeRef for EmbeddedTy {
-    fn id(&self) -> TyId {
+    fn id(&self) -> SemId {
         match self {
             EmbeddedTy::Ref(id) => *id,
             EmbeddedTy::Inline(ty) => ty.id(),
@@ -79,24 +79,24 @@ impl NestedRef for EmbeddedTy {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub struct TypeSystem(MediumOrdMap<TyId, Ty<EmbeddedTy>>);
+pub struct TypeSystem(MediumOrdMap<SemId, Ty<EmbeddedTy>>);
 
 impl Deref for TypeSystem {
-    type Target = BTreeMap<TyId, Ty<EmbeddedTy>>;
+    type Target = BTreeMap<SemId, Ty<EmbeddedTy>>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
 impl IntoIterator for TypeSystem {
-    type Item = (TyId, Ty<EmbeddedTy>);
-    type IntoIter = std::collections::btree_map::IntoIter<TyId, Ty<EmbeddedTy>>;
+    type Item = (SemId, Ty<EmbeddedTy>);
+    type IntoIter = std::collections::btree_map::IntoIter<SemId, Ty<EmbeddedTy>>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
 impl<'lib> IntoIterator for &'lib TypeSystem {
-    type Item = (&'lib TyId, &'lib Ty<EmbeddedTy>);
-    type IntoIter = std::collections::btree_map::Iter<'lib, TyId, Ty<EmbeddedTy>>;
+    type Item = (&'lib SemId, &'lib Ty<EmbeddedTy>);
+    type IntoIter = std::collections::btree_map::Iter<'lib, SemId, Ty<EmbeddedTy>>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
@@ -105,7 +105,7 @@ impl TypeSystem {
     pub fn try_from_iter<T: IntoIterator<Item = Ty<EmbeddedTy>>>(
         iter: T,
     ) -> Result<Self, confinement::Error> {
-        let mut lib: BTreeMap<TyId, Ty<EmbeddedTy>> = empty!();
+        let mut lib: BTreeMap<SemId, Ty<EmbeddedTy>> = empty!();
         for ty in iter {
             lib.insert(ty.id(), ty);
         }

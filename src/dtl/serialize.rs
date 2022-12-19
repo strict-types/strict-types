@@ -31,7 +31,7 @@ use amplify::Wrapper;
 use crate::dtl::type_lib::{Dependency, LibSubTy};
 use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeLib, TypeLibId, TypeSystem};
 use crate::{
-    Decode, DecodeError, Deserialize, Encode, SemVer, Serialize, StenWrite, Ty, TyId, TypeName,
+    Decode, DecodeError, Deserialize, Encode, SemId, SemVer, Serialize, StenWrite, Ty, TypeName,
 };
 
 impl Serialize for TypeSystem {}
@@ -51,7 +51,7 @@ impl Decode for TypeSystem {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let count = u24::decode(reader)?;
         let mut lib: BTreeSet<Ty<EmbeddedTy>> = empty!();
-        let mut prev: Option<TyId> = None;
+        let mut prev: Option<SemId> = None;
         for _ in 0..count.into_usize() {
             let ty = Ty::decode(reader)?;
             if matches!(prev, Some(id) if id > ty.id()) {
@@ -111,7 +111,7 @@ impl Decode for TypeLib {
 
         let len = u16::decode(reader)?;
         let mut types: BTreeMap<_, _> = empty!();
-        let mut prev: Option<TyId> = None;
+        let mut prev: Option<SemId> = None;
         for _ in 0..len {
             let name = TypeName::decode(reader)?;
             let ty = Ty::decode(reader)?;

@@ -28,7 +28,7 @@ use amplify::{confinement, Wrapper};
 use crate::ast::{NestedRef, TranslateError, TyInner};
 use crate::dtl::type_lib::Dependency;
 use crate::dtl::{EmbeddedTy, LibAlias, LibName, LibTy, TypeIndex, TypeLib, TypeSystem};
-use crate::{StenType, Translate, Ty, TyId, TypeName};
+use crate::{SemId, StenType, Translate, Ty, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display(doc_comments)]
@@ -37,7 +37,7 @@ pub enum Warning {
     UnusedImport(LibAlias, Dependency),
 
     /// type {1} from library {0} with id {2} is already known
-    RepeatedType(LibAlias, TypeName, TyId),
+    RepeatedType(LibAlias, TypeName, SemId),
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, From, Error)]
@@ -59,8 +59,8 @@ pub enum Error {
     TypeMismatch {
         dependency: Dependency,
         name: TypeName,
-        expected: TyId,
-        found: TyId,
+        expected: SemId,
+        found: SemId,
     },
 }
 

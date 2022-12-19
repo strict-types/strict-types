@@ -28,32 +28,33 @@ use crate::ast::{Field, Fields, TyInner, Variants};
 use crate::util::Sizing;
 use crate::{Cls, KeyTy, StenSchema, StenType, Ty, TypeRef};
 
+/// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref)]
-#[display("urn:ubideco:sten:{0}")]
-pub struct TyId(blake3::Hash);
+#[display(inner)]
+pub struct SemId(blake3::Hash);
 
-impl StenSchema for TyId {
-    const STEN_TYPE_NAME: &'static str = "TyId";
+impl StenSchema for SemId {
+    const STEN_TYPE_NAME: &'static str = "SemId";
 
     fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(32) }
 }
 
-impl Ord for TyId {
+impl Ord for SemId {
     fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
 }
 
-impl PartialOrd for TyId {
+impl PartialOrd for SemId {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
 pub const STEN_ID_TAG: [u8; 32] = [0u8; 32];
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub fn id(&self) -> TyId {
+    pub fn id(&self) -> SemId {
         let mut hasher = blake3::Hasher::new_keyed(&STEN_ID_TAG);
         self.hash(&mut hasher);
-        TyId(hasher.finalize())
+        SemId(hasher.finalize())
     }
 
     fn hash(&self, hasher: &mut blake3::Hasher) {
