@@ -162,11 +162,11 @@ impl<Ref: TypeRef> StenSchema for Ty<Ref> {
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
             "primitive" => Primitive::sten_type(),
+            "unicode" => <()>::sten_type(),
             "enum" => Variants::sten_type(),
             "union" => Fields::<Ref, false>::sten_type(),
             "struct" => Fields::<Ref, true>::sten_type(),
             "array" => <(Ref, u16)>::sten_type(),
-            "unicode" => Sizing::sten_type(),
             "list" => <(Ref, Sizing)>::sten_type(),
             "set" => <(Ref, Sizing)>::sten_type(),
             "map" => <(KeyTy, Ref, Sizing)>::sten_type(),
