@@ -190,6 +190,7 @@ impl Display for Primitive {
             UNIT => return f.write_str("()"),
             BYTE => return f.write_str("Byte"),
             F16B => return f.write_str("F16b"),
+            RESERVED => unreachable!("reserved primitive value"),
             _ => {}
         }
 

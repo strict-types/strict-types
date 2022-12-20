@@ -154,6 +154,7 @@ impl Display for Sizing {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match (self.min, self.max) {
             (0, u16::MAX) => Ok(()),
+            (0, max) => write!(f, " ^ ..{}", max),
             (min, u16::MAX) => write!(f, " ^ {}..", min),
             (min, max) => write!(f, " ^ {}..{:#04x}", min, max),
         }
