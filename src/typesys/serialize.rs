@@ -32,7 +32,7 @@ impl Serialize for TypeSystem {}
 impl Deserialize for TypeSystem {}
 
 impl Encode for TypeSystem {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, writer: impl StenWrite) -> Result<(), io::Error> {
         self.count_types().encode(writer)?;
         for ty in self.values() {
             ty.encode(writer)?;
@@ -62,7 +62,7 @@ impl Decode for TypeSystem {
 }
 
 impl Encode for EmbeddedRef {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, writer: impl StenWrite) -> Result<(), io::Error> {
         match self {
             EmbeddedRef::SemId(id) => {
                 0u8.encode(writer)?;

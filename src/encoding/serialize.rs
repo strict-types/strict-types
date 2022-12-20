@@ -110,7 +110,7 @@ pub trait Serialize: Encode {
 }
 
 pub trait Encode {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error>;
+    fn encode(&self, writer: impl StenWrite) -> Result<(), io::Error>;
 }
 
 pub trait Decode: Sized {
@@ -162,9 +162,7 @@ impl TryFrom<u8> for Cls {
 }
 
 impl Encode for Cls {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
-        (*self as u8).encode(writer)
-    }
+    fn encode(&self, writer: impl StenWrite) -> Result<(), Error> { (*self as u8).encode(writer) }
 }
 
 impl Decode for Cls {
@@ -176,7 +174,7 @@ impl Decode for Cls {
 }
 
 impl Encode for u8 {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u8(*self) }
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> { writer.write_u8(*self) }
 }
 
 impl Decode for u8 {
@@ -188,7 +186,7 @@ impl Decode for u8 {
 }
 
 impl Encode for u16 {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u16(*self) }
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> { writer.write_u16(*self) }
 }
 
 impl Decode for u16 {
@@ -200,7 +198,7 @@ impl Decode for u16 {
 }
 
 impl Encode for u24 {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u24(*self) }
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> { writer.write_u24(*self) }
 }
 
 impl Decode for u24 {
@@ -212,7 +210,7 @@ impl Decode for u24 {
 }
 
 impl Encode for u128 {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> { writer.write_u128(*self) }
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> { writer.write_u128(*self) }
 }
 
 impl Decode for u128 {
@@ -224,7 +222,7 @@ impl Decode for u128 {
 }
 
 impl Encode for Ident {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
         writer.write_ascii(self)
     }
 }
@@ -242,7 +240,7 @@ impl Decode for Ident {
 }
 
 impl Encode for Option<Ident> {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, writer: impl StenWrite) -> Result<(), io::Error> {
         match self {
             Some(ident) => ident.encode(writer),
             None => 0u8.encode(writer),
@@ -266,8 +264,8 @@ impl Decode for Option<Ident> {
 }
 
 impl Encode for Sizing {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.min.encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.min.encode(&mut writer)?;
         self.max.encode(writer)
     }
 }
@@ -279,17 +277,17 @@ impl Decode for Sizing {
 }
 
 impl Encode for SemVer {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
-        self.major.encode(writer)?;
-        self.minor.encode(writer)?;
-        self.patch.encode(writer)?;
-        self.pre.len_u8().encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
+        self.major.encode(&mut writer)?;
+        self.minor.encode(&mut writer)?;
+        self.patch.encode(&mut writer)?;
+        self.pre.len_u8().encode(&mut writer)?;
         for fragment in &self.pre {
-            fragment.encode(writer)?;
+            fragment.encode(&mut writer)?;
         }
-        self.build.len_u8().encode(writer)?;
+        self.build.len_u8().encode(&mut writer)?;
         for fragment in &self.build {
-            fragment.encode(writer)?;
+            fragment.encode(&mut writer)?;
         }
         Ok(())
     }
@@ -321,14 +319,14 @@ impl Decode for SemVer {
 }
 
 impl Encode for PreFragment {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
         match self {
             PreFragment::Ident(ident) => {
-                0u8.encode(writer)?;
+                0u8.encode(&mut writer)?;
                 ident.encode(writer)
             }
             PreFragment::Digits(dig) => {
-                1u8.encode(writer)?;
+                1u8.encode(&mut writer)?;
                 dig.encode(writer)
             }
         }
@@ -346,14 +344,14 @@ impl Decode for PreFragment {
 }
 
 impl Encode for BuildFragment {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
         match self {
             BuildFragment::Ident(ident) => {
-                0u8.encode(writer)?;
+                0u8.encode(&mut writer)?;
                 ident.encode(writer)
             }
             BuildFragment::Digits(ident) => {
-                1u8.encode(writer)?;
+                1u8.encode(&mut writer)?;
                 ident.encode(writer)
             }
         }
@@ -371,7 +369,7 @@ impl Decode for BuildFragment {
 }
 
 impl Encode for () {
-    fn encode(&self, _writer: &mut impl StenWrite) -> Result<(), Error> { Ok(()) }
+    fn encode(&self, _writer: impl StenWrite) -> Result<(), Error> { Ok(()) }
 }
 
 impl Decode for () {

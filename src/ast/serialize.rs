@@ -62,29 +62,29 @@ impl KeyTy {
 }
 
 impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.cls().encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.cls().encode(&mut writer)?;
         match self {
             Ty::Primitive(prim) => prim.encode(writer),
             Ty::Enum(vars) => vars.encode(writer),
             Ty::Union(fields) => fields.encode(writer),
             Ty::Struct(fields) => fields.encode(writer),
             Ty::Array(ty, len) => {
-                ty.encode(writer)?;
+                ty.encode(&mut writer)?;
                 len.encode(writer)
             }
             Ty::UnicodeChar => Ok(()),
             Ty::List(ty, sizing) => {
-                ty.encode(writer)?;
+                ty.encode(&mut writer)?;
                 sizing.encode(writer)
             }
             Ty::Set(ty, sizing) => {
-                ty.encode(writer)?;
+                ty.encode(&mut writer)?;
                 sizing.encode(writer)
             }
             Ty::Map(key, ty, sizing) => {
-                key.encode(writer)?;
-                ty.encode(writer)?;
+                key.encode(&mut writer)?;
+                ty.encode(&mut writer)?;
                 sizing.encode(writer)
             }
         }
@@ -111,7 +111,7 @@ impl<Ref: TypeRef + Decode> Decode for Ty<Ref> {
 }
 
 impl Encode for Primitive {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, writer: impl StenWrite) -> Result<(), io::Error> {
         self.into_code().encode(writer)
     }
 }
@@ -123,8 +123,8 @@ impl Decode for Primitive {
 }
 
 impl Encode for StenType {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.name.encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.name.encode(&mut writer)?;
         self.ty.encode(writer)
     }
 }
@@ -143,8 +143,8 @@ impl Decode for StenType {
 }
 
 impl Encode for KeyTy {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.cls().encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.cls().encode(&mut writer)?;
         match self {
             KeyTy::Primitive(prim) => prim.encode(writer),
             KeyTy::Enum(vars) => vars.encode(writer),
@@ -171,10 +171,10 @@ impl Decode for KeyTy {
 }
 
 impl Encode for Variants {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.len_u8().encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.len_u8().encode(&mut writer)?;
         for field in self.as_inner() {
-            field.encode(writer)?;
+            field.encode(&mut writer)?;
         }
         Ok(())
     }
@@ -193,8 +193,8 @@ impl Decode for Variants {
 }
 
 impl Encode for Field {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.name.encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.name.encode(&mut writer)?;
         self.ord.encode(writer)
     }
 }
@@ -208,11 +208,11 @@ impl Decode for Field {
 }
 
 impl<Ref: TypeRef + Encode, const OP: bool> Encode for Fields<Ref, OP> {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.len_u8().encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
+        self.len_u8().encode(&mut writer)?;
         for (name, ty) in self {
-            name.encode(writer)?;
-            ty.encode(writer)?;
+            name.encode(&mut writer)?;
+            ty.encode(&mut writer)?;
         }
         Ok(())
     }
@@ -231,7 +231,7 @@ impl<Ref: TypeRef + Decode, const OP: bool> Decode for Fields<Ref, OP> {
 }
 
 impl Encode for SemId {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
         writer.write_byte_array(*self.as_bytes())
     }
 }

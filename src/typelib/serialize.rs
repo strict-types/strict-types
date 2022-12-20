@@ -37,19 +37,19 @@ impl Serialize for TypeLib {}
 impl Deserialize for TypeLib {}
 
 impl Encode for TypeLib {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
-        self.name.encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
+        self.name.encode(&mut writer)?;
 
-        self.dependencies.len_u8().encode(writer)?;
+        self.dependencies.len_u8().encode(&mut writer)?;
         for (alias, dep) in &self.dependencies {
-            alias.encode(writer)?;
-            dep.encode(writer)?;
+            alias.encode(&mut writer)?;
+            dep.encode(&mut writer)?;
         }
 
-        self.types.len_u16().encode(writer)?;
+        self.types.len_u16().encode(&mut writer)?;
         for (name, ty) in &self.types {
-            name.encode(writer)?;
-            ty.encode(writer)?
+            name.encode(&mut writer)?;
+            ty.encode(&mut writer)?
         }
         Ok(())
     }
@@ -101,21 +101,21 @@ impl Decode for TypeLib {
 }
 
 impl Encode for InlineRef {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
         match self {
             InlineRef::Named(name, id) => {
-                0u8.encode(writer)?;
-                name.encode(writer)?;
+                0u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
                 id.encode(writer)
             }
             InlineRef::Extern(name, lib_alias, id) => {
-                2u8.encode(writer)?;
-                name.encode(writer)?;
-                lib_alias.encode(writer)?;
+                2u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
+                lib_alias.encode(&mut writer)?;
                 id.encode(writer)
             }
             InlineRef::Builtin(ty) => {
-                3u8.encode(writer)?;
+                3u8.encode(&mut writer)?;
                 ty.encode(writer)
             }
         }
@@ -138,21 +138,21 @@ impl Decode for InlineRef {
 }
 
 impl Encode for InlineRef1 {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
         match self {
             InlineRef1::Named(name, id) => {
-                0u8.encode(writer)?;
-                name.encode(writer)?;
+                0u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
                 id.encode(writer)
             }
             InlineRef1::Extern(name, lib_alias, id) => {
-                2u8.encode(writer)?;
-                name.encode(writer)?;
-                lib_alias.encode(writer)?;
+                2u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
+                lib_alias.encode(&mut writer)?;
                 id.encode(writer)
             }
             InlineRef1::Builtin(ty) => {
-                3u8.encode(writer)?;
+                3u8.encode(&mut writer)?;
                 ty.encode(writer)
             }
         }
@@ -175,21 +175,21 @@ impl Decode for InlineRef1 {
 }
 
 impl Encode for InlineRef2 {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
         match self {
             InlineRef2::Named(name, id) => {
-                0u8.encode(writer)?;
-                name.encode(writer)?;
+                0u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
                 id.encode(writer)
             }
             InlineRef2::Extern(name, lib_alias, id) => {
-                2u8.encode(writer)?;
-                name.encode(writer)?;
-                lib_alias.encode(writer)?;
+                2u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
+                lib_alias.encode(&mut writer)?;
                 id.encode(writer)
             }
             InlineRef2::Builtin(ty) => {
-                3u8.encode(writer)?;
+                3u8.encode(&mut writer)?;
                 ty.encode(writer)
             }
         }
@@ -212,21 +212,21 @@ impl Decode for InlineRef2 {
 }
 
 impl Encode for LibRef {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
         match self {
             LibRef::Named(name, id) => {
-                0u8.encode(writer)?;
-                name.encode(writer)?;
+                0u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
                 id.encode(writer)
             }
             LibRef::Inline(ty) => {
-                1u8.encode(writer)?;
+                1u8.encode(&mut writer)?;
                 ty.encode(writer)
             }
             LibRef::Extern(name, lib_alias, id) => {
-                2u8.encode(writer)?;
-                name.encode(writer)?;
-                lib_alias.encode(writer)?;
+                2u8.encode(&mut writer)?;
+                name.encode(&mut writer)?;
+                lib_alias.encode(&mut writer)?;
                 id.encode(writer)
             }
         }
@@ -249,9 +249,9 @@ impl Decode for LibRef {
 }
 
 impl Encode for Dependency {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
-        self.id.encode(writer)?;
-        self.name.encode(writer)?;
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
+        self.id.encode(&mut writer)?;
+        self.name.encode(&mut writer)?;
         self.ver.encode(writer)
     }
 }
@@ -266,7 +266,7 @@ impl Decode for Dependency {
 }
 
 impl Encode for TypeLibId {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), Error> {
+    fn encode(&self, mut writer: impl StenWrite) -> Result<(), Error> {
         writer.write_byte_array(*self.as_bytes())
     }
 }

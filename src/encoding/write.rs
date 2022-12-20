@@ -335,7 +335,7 @@ impl<W: io::Write> StenWrite for Writer<W> {
                 name, ty, actual_ty
             );
         }
-        field.ord.encode(self)?;
+        self.write_u8(field.ord)?;
         inner.encode(self)
     }
 
