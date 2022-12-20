@@ -32,22 +32,15 @@ pub trait ToIdent: ToOwned<Owned = String> {}
 impl<T> ToIdent for T where T: ToOwned<Owned = String> {}
 
 pub trait TypedWrite: Sized {
-    type PrimitiveWriter: WritePrimitive<Self>;
     type TupleWriter: WriteTuple<Self>;
     type StructWriter: WriteStruct<Self>;
     type UnionWriter: WriteUnion<Self>;
     type EnumWriter: WriteEnum<Self>;
 
-    fn write_primitive(self) -> Self::PrimitiveWriter;
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter;
     fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter;
     fn write_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionWriter;
     fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter;
-}
-
-pub trait WritePrimitive<P: Sized>: Sized {
-    fn write__(self, value: &impl StrictEncode) -> io::Result<Self>;
-    fn complete(self) -> P;
 }
 
 pub trait WriteTuple<P: Sized>: Sized {

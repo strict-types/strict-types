@@ -25,8 +25,7 @@ use std::io;
 use amplify::WriteCounter;
 
 use crate::encoding::{
-    StrictEncode, ToIdent, TypedWrite, WriteEnum, WritePrimitive, WriteStruct, WriteTuple,
-    WriteUnion,
+    StrictEncode, ToIdent, TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
 
 // TODO: Move to amplify crate
@@ -92,13 +91,10 @@ impl<W: io::Write> StrictWriter<W> {
 }
 
 impl<W: io::Write> TypedWrite for StrictWriter<W> {
-    type PrimitiveWriter = PrimitiveWriter<W>;
     type TupleWriter = TupleWriter<W>;
     type StructWriter = StructWriter<W>;
     type UnionWriter = UnionWriter<W>;
     type EnumWriter = EnumWriter<W>;
-
-    fn write_primitive(self) -> Self::PrimitiveWriter { todo!() }
 
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter {
         todo!()
@@ -144,16 +140,15 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteStruct<P> for StructWr
     fn complete(self) -> P { P::from(self.writer) }
 }
 
-pub struct PrimitiveWriter<W: io::Write> {
-    ns: String,
-    name: Option<String>,
-    writer: StrictWriter<W>,
+pub(crate) struct PrimitiveWriter<W: io::Write>(StrictWriter<W>);
+
+impl<W: io::Write> From<StrictWriter<W>> for PrimitiveWriter<W> {
+    fn from(writer: StrictWriter<W>) -> Self { Self(writer) }
 }
 
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WritePrimitive<P> for PrimitiveWriter<W> {
-    fn write__(self, value: &impl StrictEncode) -> io::Result<Self> { todo!() }
-
-    fn complete(self) -> P { P::from(self.writer) }
+impl<W: io::Write> io::Write for PrimitiveWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> { self.0 .0.write(buf) }
+    fn flush(&mut self) -> io::Result<()> { self.0 .0.flush() }
 }
 
 pub struct TupleWriter<W: io::Write> {
