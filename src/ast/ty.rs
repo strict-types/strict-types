@@ -370,9 +370,7 @@ impl<Ref: NestedRef> Ty<Ref> {
                 KeyTy::UnicodeStr(Sizing::fixed(*len))
             }
             Ty::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(*sizing),
-            Ty::List(ty, sizing) if ty.as_ty() == &Ty::<Ref>::ascii_char() => {
-                KeyTy::AsciiStr(*sizing)
-            }
+            Ty::List(ty, sizing) if ty.as_ty() == &Ty::ascii_char() => KeyTy::AsciiStr(*sizing),
             Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
             Ty::Union(_)
             | Ty::Struct(_)
@@ -423,6 +421,7 @@ impl StenSchema for KeyTy {
 
 impl KeyTy {
     pub const U8: KeyTy = KeyTy::Primitive(U8);
+    pub const BYTE: KeyTy = KeyTy::Primitive(BYTE);
 }
 
 /*
