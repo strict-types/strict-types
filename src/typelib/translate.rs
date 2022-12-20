@@ -136,7 +136,7 @@ impl Translate<LibRef> for StenType {
 
         let ty = self.into_ty().translate(ctx)?;
 
-        Ok(match ctx.builder.index.get(&id) {
+        let lib_ref = match ctx.builder.index.get(&id) {
             Some(name) if !builtin => {
                 if !ctx.builder.types.contains_key(name) {
                     ctx.builder.types.insert(name.clone(), ty)?;
@@ -144,7 +144,11 @@ impl Translate<LibRef> for StenType {
                 LibRef::Named(name.clone(), id)
             }
             _ => LibRef::Inline(ty.translate(ctx)?),
-        })
+        };
+
+        ctx.stack.pop();
+
+        Ok(lib_ref)
     }
 }
 

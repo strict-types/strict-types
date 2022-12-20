@@ -67,8 +67,7 @@ pub use util::{Ident, SemVer, TypeName, Urn};
 /// any type library.
 ///
 /// The type has to be [`Translate`]ed into [`TypeLib`] or [`TypeSystem`].
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[display("{ty}")]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub struct StenType {
     /// Type name which should match rust type name in most of the cases
     pub name: Option<TypeName>,
@@ -105,6 +104,21 @@ impl StenType {
     }
 
     pub fn is_builtin(&self) -> bool { self.ty.is_builtin() }
+}
+
+mod _display {
+    use std::fmt::{self, Display, Formatter};
+
+    use super::StenType;
+
+    impl Display for StenType {
+        fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+            match self.name {
+                Some(ref name) => Display::fmt(name, f),
+                None => Display::fmt(&self.ty, f),
+            }
+        }
+    }
 }
 
 /// A type which can be deterministically represented in terms of strict encoding schema.
