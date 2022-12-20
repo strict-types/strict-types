@@ -93,18 +93,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 }
 
 impl StenType {
-    pub fn id(&self) -> SemId {
-        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
-        self.hash(&mut hasher);
-        SemId(hasher.finalize())
-    }
-
-    fn hash(&self, hasher: &mut blake3::Hasher) {
-        if let Some(ref name) = self.name {
-            hasher.update(name.as_bytes());
-        }
-        self.ty.hash(hasher);
-    }
+    pub fn id(&self) -> SemId { self.id }
 }
 
 impl KeyTy {

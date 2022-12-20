@@ -73,6 +73,9 @@ pub struct StenType {
     pub name: Option<TypeName>,
     /// Type structure abstract syntax tree
     pub ty: Box<Ty<StenType>>,
+
+    /// Cached ID value
+    id: SemId,
 }
 
 impl StenSchema for StenType {
@@ -92,13 +95,16 @@ impl StenType {
     pub fn unnamed(ty: Ty<StenType>) -> StenType {
         StenType {
             name: None,
+            id: ty.id(None),
             ty: Box::new(ty),
         }
     }
 
     pub fn named(name: &'static str, ty: Ty<StenType>) -> StenType {
+        let name = tn!(name);
         StenType {
-            name: Some(tn!(name)),
+            id: ty.id(Some(&name)),
+            name: Some(name),
             ty: Box::new(ty),
         }
     }

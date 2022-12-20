@@ -30,7 +30,7 @@ use crate::ast::{Field, Fields, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
     Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, SemId, Serialize, StenType,
-    StenWrite, Ty,
+    StenWrite, Ty, TypeName,
 };
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -136,9 +136,13 @@ impl Encode for StenType {
 
 impl Decode for StenType {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
+        let name = Option::<TypeName>::decode(reader)?;
+        let ty = Ty::<StenType>::decode(reader)?;
+        let id = ty.id(name.as_ref());
         Ok(StenType {
-            name: Decode::decode(reader)?,
-            ty: Box::new(Ty::decode(reader)?),
+            name,
+            ty: Box::new(ty),
+            id,
         })
     }
 }
