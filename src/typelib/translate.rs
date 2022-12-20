@@ -129,7 +129,6 @@ impl Translate<LibRef> for StenType {
 
     fn translate(self, ctx: &mut Self::Context) -> Result<LibRef, Self::Error> {
         let id = self.id();
-        let builtin = self.is_builtin();
 
         if let Some(ref name) = self.name {
             ctx.top_name = name.clone();
@@ -138,7 +137,7 @@ impl Translate<LibRef> for StenType {
         let ty = self.into_ty().translate(ctx)?;
 
         let lib_ref = match ctx.builder.index.get(&id) {
-            Some(name) if !builtin => {
+            Some(name) => {
                 if !ctx.builder.types.contains_key(name) {
                     ctx.builder.types.insert(name.clone(), ty)?;
                 }

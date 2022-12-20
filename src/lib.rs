@@ -102,8 +102,6 @@ impl StenType {
             ty: Box::new(ty),
         }
     }
-
-    pub fn is_builtin(&self) -> bool { self.ty.is_builtin() }
 }
 
 mod _display {
@@ -129,7 +127,7 @@ pub trait StenSchema {
     /// Returns [`StenType`] representation of this structure
     fn sten_type() -> StenType {
         let ty = Self::sten_ty();
-        if ty.is_builtin() {
+        if Self::STEN_TYPE_NAME.is_empty() {
             StenType::unnamed(ty)
         } else {
             StenType::named(Self::STEN_TYPE_NAME, ty)

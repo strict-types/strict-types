@@ -246,13 +246,6 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(0..=127)) }
 
-    /// Type is builtin if it can be expressed in form of:
-    /// - primitive type
-    /// - option type `T?`
-    /// - collection type
-    pub fn is_builtin(&self) -> bool {
-        self.is_primitive() | self.is_option() | self.is_collection()
-    }
     pub fn is_primitive(&self) -> bool { matches!(self, Ty::Primitive(_) | Ty::UnicodeChar) }
     pub fn is_collection(&self) -> bool {
         matches!(self, Ty::Array(..) | Ty::List(..) | Ty::Set(..) | Ty::Map(..))
