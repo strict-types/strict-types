@@ -38,7 +38,7 @@ pub enum InlineRef {
 }
 
 impl StenSchema for InlineRef {
-    const STEN_TYPE_NAME: &'static str = "LibSubTy";
+    const STEN_TYPE_NAME: &'static str = "InlineRef";
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
@@ -76,7 +76,7 @@ pub enum LibRef {
 }
 
 impl StenSchema for LibRef {
-    const STEN_TYPE_NAME: &'static str = "LibTy";
+    const STEN_TYPE_NAME: &'static str = "LibRef";
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
