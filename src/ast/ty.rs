@@ -32,10 +32,10 @@ use amplify::{confinement, Wrapper};
 use crate::ast::Iter;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::{Encode, Ident, LibAlias, SemId, StenSchema, StenType, TypeName};
+use crate::{Ident, LibAlias, SemId, StenSchema, StenType, TypeName};
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
+pub trait TypeRef: StenSchema + Clone + Eq + Debug + Sized {
     fn id(&self) -> SemId;
 }
 pub trait NestedRef: TypeRef {
@@ -60,6 +60,79 @@ impl TypeRef for KeyTy {
 }
 
 pub type FieldName = Ident;
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
+#[display(lowercase)]
+#[repr(u8)]
+pub enum Cls {
+    Primitive = 0,
+    UnicodeChar = 1,
+    AsciiStr = 2,
+    Enum = 3,
+    Union = 4,
+    Struct = 5,
+    Array = 6,
+    List = 7,
+    Set = 8,
+    Map = 9,
+}
+
+impl Cls {
+    pub const ALL: [Cls; 10] = [
+        Cls::Primitive,
+        Cls::UnicodeChar,
+        Cls::AsciiStr,
+        Cls::Enum,
+        Cls::Union,
+        Cls::Struct,
+        Cls::Array,
+        Cls::List,
+        Cls::Set,
+        Cls::Map,
+    ];
+}
+
+impl TryFrom<u8> for Cls {
+    type Error = u8;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        for cls in Cls::ALL {
+            if cls as u8 == value {
+                return Ok(cls);
+            }
+        }
+        return Err(value);
+    }
+}
+
+impl<Ref: TypeRef> Ty<Ref> {
+    pub const fn cls(&self) -> Cls {
+        match self {
+            Ty::Primitive(_) => Cls::Primitive,
+            Ty::Enum(_) => Cls::Enum,
+            Ty::Union(_) => Cls::Union,
+            Ty::Struct(_) => Cls::Struct,
+            Ty::Array(_, _) => Cls::Array,
+            Ty::UnicodeChar => Cls::UnicodeChar,
+            Ty::List(_, _) => Cls::List,
+            Ty::Set(_, _) => Cls::Set,
+            Ty::Map(_, _, _) => Cls::Map,
+        }
+    }
+}
+
+impl KeyTy {
+    pub const fn cls(&self) -> Cls {
+        match self {
+            KeyTy::Primitive(_) => Cls::Primitive,
+            KeyTy::Enum(_) => Cls::Enum,
+            KeyTy::Array(_) => Cls::Array,
+            KeyTy::UnicodeStr(_) => Cls::UnicodeChar,
+            KeyTy::AsciiStr(_) => Cls::AsciiStr,
+            KeyTy::Bytes(_) => Cls::List,
+        }
+    }
+}
 
 #[derive(Clone, Eq, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]

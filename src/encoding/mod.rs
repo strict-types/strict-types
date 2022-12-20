@@ -20,13 +20,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod serialize;
+mod traits;
+mod error;
+mod read;
 mod write;
-mod check;
 
-#[cfg(test)]
-pub(crate) mod test;
-
-pub use check::CheckedWriter;
-pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
-pub use write::{StenWrite, StructWriter, Writer};
+pub use error::{DecodeError, DeserializeError, SerializeError};
+pub use read::StrictReader;
+pub use traits::*;
+pub use write::{StrictWriter, StructWriter};

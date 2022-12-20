@@ -20,15 +20,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod id;
-mod type_lib;
-mod translate;
-//mod serialize;
+mod serialize;
+mod write;
+mod check;
 
-pub use id::TypeLibId;
-pub use translate::{Error, LibBuilder, Warning};
-pub use type_lib::{
-    Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeLib,
-};
+#[cfg(test)]
+pub(crate) mod test;
+mod builders;
 
-pub type TypeIndex = std::collections::BTreeMap<crate::SemId, crate::TypeName>;
+pub use check::CheckedWriter;
+pub use serialize::{Cls, Decode, DecodeError, Deserialize, Encode, Serialize};
+pub use write::{StenWrite, StructWriter, Writer};

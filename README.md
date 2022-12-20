@@ -6,3 +6,16 @@ This library provides primitives for describing strict encoding schemata,
 validating and parsing structured data using the schema.
 
 To learn more about strict encoding [read the spec](https://www.strict-encoding.org).
+
+Strict encoding schema works with type definitions. It allows:
+- static analysis of data types, like
+  * defining semantic type ids;
+  * specifying exact memory layout;
+  * type equivalence in terms of semantics and memory layout;
+  * size of serialized data
+- composing types into type libraries;
+- versioning type libraries basing on the semantic types;
+
+Current rust implementation additionally allows to build type libraries out of
+rust data types which implement `StrictEncoding` trait -- and ensures that the
+deserialization with `StrictDecode` follows the same memory and semantic layout.

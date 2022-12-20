@@ -26,7 +26,7 @@
     non_snake_case,
     unused_mut,
     unused_imports,
-    dead_code,
+    //dead_code,
     //missing_docs
 )]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
@@ -47,13 +47,9 @@ pub mod typelib;
 //pub mod typesys;
 mod encoding;
 
-pub use ast::{FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
-#[cfg(test)]
-pub(crate) use encoding::test;
-pub use encoding::{
-    CheckedWriter, Cls, Decode, DecodeError, Deserialize, Encode, Serialize, StenWrite,
-    StructWriter, Writer,
-};
+pub use ast::{Cls, FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
+// #[cfg(test)]
+// pub(crate) use encoding::test;
 pub use typelib::{Dependency, LibAlias, LibName, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{Ident, SemVer, TypeName, Urn};
