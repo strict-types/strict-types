@@ -378,12 +378,16 @@ impl<Ref: NestedRef> Ty<Ref> {
 #[display(inner)]
 pub enum KeyTy {
     Primitive(Primitive),
+    #[display("({0})")]
     Enum(Variants),
     /// Fixed-size byte array
     #[display("[Byte ^ {0}]")]
     Array(u16),
+    #[display("[Unicode{0}]")]
     UnicodeStr(Sizing),
+    #[display("[Ascii{0}]")]
     AsciiStr(Sizing),
+    #[display("[Byte{0}]")]
     Bytes(Sizing),
 }
 
