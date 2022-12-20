@@ -22,23 +22,22 @@
 
 use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
-use std::ops::Deref;
 
 use amplify::ascii::AsciiString;
 use amplify::confinement::{Confined, TinyOrdMap};
 
-use crate::ast::{NestedRef, TranslateError};
+use crate::ast::TranslateError;
 use crate::dtl::id::TypeLibId;
 use crate::{Ident, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName, TypeRef};
 
 // TODO: Deal with indefinite types in reflections
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub(super) enum LibSubTy {
+pub enum InlineRef {
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
 
-impl StenSchema for LibSubTy {
+impl StenSchema for InlineRef {
     const STEN_TYPE_NAME: &'static str = "LibSubTy";
 
     fn sten_ty() -> Ty<StenType> {
@@ -49,10 +48,19 @@ impl StenSchema for LibSubTy {
     }
 }
 
-impl TypeRef for LibSubTy {
+impl TypeRef for InlineRef {
     fn id(&self) -> SemId {
         match self {
-            LibSubTy::Named(_, id) | LibSubTy::Extern(_, _, id) => *id,
+            InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => *id,
+        }
+    }
+}
+
+impl Display for InlineRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            InlineRef::Named(name, _) => write!(f, "{}", name),
+            InlineRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
         }
     }
 }
@@ -62,7 +70,7 @@ pub enum LibRef {
     Named(TypeName, SemId),
 
     #[from]
-    Inline(Box<Ty<LibRef>>),
+    Inline(Ty<InlineRef>),
 
     Extern(TypeName, LibAlias, SemId),
 }
@@ -73,7 +81,7 @@ impl StenSchema for LibRef {
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
             "named" => <(TypeName, SemId)>::sten_type(),
-            "inline" => Ty::<LibSubTy>::sten_type(),
+            "inline" => Ty::<InlineRef>::sten_type(),
             "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
         })
     }
@@ -84,30 +92,6 @@ impl TypeRef for LibRef {
         match self {
             LibRef::Named(_, id) | LibRef::Extern(_, _, id) => *id,
             LibRef::Inline(ty) => ty.id(),
-        }
-    }
-}
-
-impl Deref for LibRef {
-    type Target = Ty<Self>;
-
-    fn deref(&self) -> &Self::Target { self.as_ty() }
-}
-
-impl NestedRef for LibRef {
-    fn as_ty(&self) -> &Ty<Self> {
-        match self {
-            LibRef::Named(_, _) => &Ty::UNIT,
-            LibRef::Inline(ty) => ty.as_ref(),
-            LibRef::Extern(_, _, _) => &Ty::UNIT,
-        }
-    }
-
-    fn into_ty(self) -> Ty<Self> {
-        match self {
-            LibRef::Named(_, _) => Ty::UNIT,
-            LibRef::Inline(ty) => *ty,
-            LibRef::Extern(_, _, _) => Ty::UNIT,
         }
     }
 }

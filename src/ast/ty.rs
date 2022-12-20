@@ -45,6 +45,9 @@ pub trait NestedRef: TypeRef {
     fn iter(&self) -> Iter<Self> { Iter::from(self) }
 }
 
+impl TypeRef for SemId {
+    fn id(&self) -> SemId { *self }
+}
 impl TypeRef for StenType {
     fn id(&self) -> SemId { StenType::id(self) }
 }

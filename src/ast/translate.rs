@@ -51,6 +51,12 @@ pub enum TranslateError {
     #[from]
     #[display(inner)]
     Confinement(confinement::Error),
+
+    /// too deep type nesting for type {ty} in {nested_in}
+    NestedInline {
+        nested_in: String,
+        ty: String,
+    },
 }
 
 impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>

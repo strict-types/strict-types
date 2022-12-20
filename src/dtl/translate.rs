@@ -26,9 +26,9 @@ use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
-use crate::dtl::type_lib::Dependency;
-use crate::dtl::{EmbeddedRef, LibAlias, LibName, LibRef, TypeIndex, TypeLib, TypeSystem};
-use crate::{SemId, StenType, Translate, Ty, TypeName};
+use crate::dtl::type_lib::{Dependency, InlineRef};
+use crate::dtl::{LibAlias, LibName, LibRef, TypeIndex, TypeLib, TypeSystem};
+use crate::{EmbeddedRef, SemId, StenType, Translate, Ty, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display(doc_comments)]
@@ -175,8 +175,24 @@ impl Translate<LibRef> for StenType {
                 }
                 LibRef::Named(name.clone(), id)
             }
-            None => LibRef::Inline(Box::new(ty)),
+            None => LibRef::Inline(ty.translate(&mut ())?),
         })
+    }
+}
+
+impl Translate<InlineRef> for LibRef {
+    type Context = ();
+    type Error = TranslateError;
+
+    fn translate(self, _: &mut Self::Context) -> Result<InlineRef, Self::Error> {
+        match self {
+            LibRef::Named(ty_name, id) => Ok(InlineRef::Named(ty_name, id)),
+            LibRef::Extern(ty_name, lib_alias, id) => Ok(InlineRef::Extern(ty_name, lib_alias, id)),
+            LibRef::Inline(ref ty) => Err(TranslateError::NestedInline {
+                nested_in: self.to_string(),
+                ty: ty.to_string(),
+            }),
+        }
     }
 }
 
@@ -187,9 +203,7 @@ impl Translate<EmbeddedRef> for LibRef {
     fn translate(self, ctx: &mut Self::Context) -> Result<EmbeddedRef, Self::Error> {
         match self {
             LibRef::Named(_, id) => Ok(EmbeddedRef::SemId(id)),
-            LibRef::Inline(inline_ty) => {
-                inline_ty.translate(ctx).map(Box::new).map(EmbeddedRef::Inline)
-            }
+            LibRef::Inline(inline_ty) => Ok(EmbeddedRef::Inline(inline_ty.translate(ctx)?)),
             LibRef::Extern(ty_name, lib_alias, id) => {
                 let dep =
                     ctx.dependencies.get(&lib_alias).ok_or(Error::UnknownLib(lib_alias.clone()))?;
@@ -207,6 +221,18 @@ impl Translate<EmbeddedRef> for LibRef {
                 }
                 Ok(EmbeddedRef::SemId(id))
             }
+        }
+    }
+}
+
+impl Translate<SemId> for InlineRef {
+    type Context = SystemBuilder;
+    type Error = Error;
+
+    fn translate(self, _: &mut Self::Context) -> Result<SemId, Self::Error> {
+        match self {
+            InlineRef::Named(_, id) => Ok(id),
+            InlineRef::Extern(_, _, id) => Ok(id),
         }
     }
 }

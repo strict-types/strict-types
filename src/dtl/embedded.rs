@@ -30,7 +30,6 @@ use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
 
-use crate::ast::NestedRef;
 use crate::{SemId, Serialize, StenSchema, StenType, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
@@ -38,24 +37,13 @@ pub enum EmbeddedRef {
     SemId(SemId),
 
     #[from]
-    Inline(Box<Ty<EmbeddedRef>>),
+    Inline(Ty<SemId>),
 }
 
 impl StenSchema for EmbeddedRef {
-    const STEN_TYPE_NAME: &'static str = "EmbeddedTy";
+    const STEN_TYPE_NAME: &'static str = "EmbeddedRef";
 
     fn sten_ty() -> Ty<StenType> { todo!() }
-}
-
-impl Deref for EmbeddedRef {
-    type Target = Ty<EmbeddedRef>;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            EmbeddedRef::SemId(_) => &Ty::UNIT,
-            EmbeddedRef::Inline(ty) => ty.as_ref(),
-        }
-    }
 }
 
 impl TypeRef for EmbeddedRef {
@@ -63,17 +51,6 @@ impl TypeRef for EmbeddedRef {
         match self {
             EmbeddedRef::SemId(id) => *id,
             EmbeddedRef::Inline(ty) => ty.id(),
-        }
-    }
-}
-
-impl NestedRef for EmbeddedRef {
-    fn as_ty(&self) -> &Ty<Self> { self.deref() }
-
-    fn into_ty(self) -> Ty<Self> {
-        match self {
-            EmbeddedRef::SemId(_) => Ty::UNIT,
-            EmbeddedRef::Inline(ty) => *ty,
         }
     }
 }

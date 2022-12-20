@@ -28,10 +28,11 @@ use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::num::u24;
 use amplify::Wrapper;
 
-use crate::dtl::type_lib::{Dependency, LibSubTy};
-use crate::dtl::{EmbeddedRef, LibAlias, LibName, LibRef, TypeLib, TypeLibId, TypeSystem};
+use crate::dtl::type_lib::{Dependency, InlineRef};
+use crate::dtl::{LibAlias, LibName, LibRef, TypeLib, TypeLibId, TypeSystem};
 use crate::{
-    Decode, DecodeError, Deserialize, Encode, SemId, SemVer, Serialize, StenWrite, Ty, TypeName,
+    Decode, DecodeError, Deserialize, EmbeddedRef, Encode, SemId, SemVer, Serialize, StenWrite, Ty,
+    TypeName,
 };
 
 impl Serialize for TypeSystem {}
@@ -152,21 +153,21 @@ impl Decode for EmbeddedRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
             0u8 => Ok(EmbeddedRef::SemId(Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(Box::new).map(EmbeddedRef::Inline),
+            1u8 => Decode::decode(reader).map(EmbeddedRef::Inline),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }
 }
 
-impl Encode for LibSubTy {
+impl Encode for InlineRef {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
-            LibSubTy::Named(name, id) => {
+            InlineRef::Named(name, id) => {
                 0u8.encode(writer)?;
                 name.encode(writer)?;
                 id.encode(writer)
             }
-            LibSubTy::Extern(name, lib_alias, id) => {
+            InlineRef::Extern(name, lib_alias, id) => {
                 2u8.encode(writer)?;
                 name.encode(writer)?;
                 lib_alias.encode(writer)?;
@@ -180,7 +181,7 @@ impl Decode for LibRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
             0u8 => Ok(LibRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(Box::new).map(LibRef::Inline),
+            1u8 => Decode::decode(reader).map(LibRef::Inline),
             2u8 => Ok(LibRef::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
@@ -213,11 +214,11 @@ impl Encode for LibRef {
     }
 }
 
-impl Decode for LibSubTy {
+impl Decode for InlineRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(LibSubTy::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            2u8 => Ok(LibSubTy::Extern(
+            0u8 => Ok(InlineRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            2u8 => Ok(InlineRef::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
