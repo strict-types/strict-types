@@ -114,20 +114,24 @@ impl Encode for InlineRef {
                 lib_alias.encode(writer)?;
                 id.encode(writer)
             }
+            InlineRef::Builtin(ty) => {
+                3u8.encode(writer)?;
+                ty.encode(writer)
+            }
         }
     }
 }
 
-impl Decode for LibRef {
+impl Decode for InlineRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(LibRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(LibRef::Inline),
-            2u8 => Ok(LibRef::Extern(
+            0u8 => Ok(InlineRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            2u8 => Ok(InlineRef::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
             )),
+            3u8 => Decode::decode(reader).map(InlineRef::Builtin),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }
@@ -155,11 +159,12 @@ impl Encode for LibRef {
     }
 }
 
-impl Decode for InlineRef {
+impl Decode for LibRef {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(InlineRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            2u8 => Ok(InlineRef::Extern(
+            0u8 => Ok(LibRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            1u8 => Decode::decode(reader).map(LibRef::Inline),
+            2u8 => Ok(LibRef::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,

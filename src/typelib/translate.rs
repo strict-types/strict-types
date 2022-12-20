@@ -113,15 +113,16 @@ impl Translate<LibRef> for StenType {
 
     fn translate(self, ctx: &mut Self::Context) -> Result<LibRef, Self::Error> {
         let id = self.id();
+        let builtin = self.is_builtin();
         let ty = self.into_ty().translate(ctx)?;
         Ok(match ctx.index.get(&id) {
-            Some(name) => {
+            Some(name) if !builtin => {
                 if !ctx.types.contains_key(name) {
                     ctx.types.insert(name.clone(), ty)?;
                 }
                 LibRef::Named(name.clone(), id)
             }
-            None => LibRef::Inline(ty.translate(&mut ())?),
+            _ => LibRef::Inline(ty.translate(&mut ())?),
         })
     }
 }
@@ -130,14 +131,24 @@ impl Translate<InlineRef> for LibRef {
     type Context = ();
     type Error = TranslateError;
 
-    fn translate(self, _: &mut Self::Context) -> Result<InlineRef, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef, Self::Error> {
         match self {
             LibRef::Named(ty_name, id) => Ok(InlineRef::Named(ty_name, id)),
             LibRef::Extern(ty_name, lib_alias, id) => Ok(InlineRef::Extern(ty_name, lib_alias, id)),
-            LibRef::Inline(ref ty) => Err(TranslateError::NestedInline {
-                nested_in: self.to_string(),
-                ty: ty.to_string(),
-            }),
+            LibRef::Inline(ty) => Ok(InlineRef::Builtin(ty.translate(ctx)?)),
+        }
+    }
+}
+
+impl Translate<SemId> for InlineRef {
+    type Context = ();
+    type Error = TranslateError;
+
+    fn translate(self, _: &mut Self::Context) -> Result<SemId, Self::Error> {
+        match self {
+            InlineRef::Builtin(ref ty) if ty.is_builtin() => Ok(ty.id(None)),
+            InlineRef::Builtin(_) => Err(TranslateError::NestedInline(self.to_string())),
+            InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => Ok(id),
         }
     }
 }

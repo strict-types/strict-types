@@ -102,6 +102,8 @@ impl StenType {
             ty: Box::new(ty),
         }
     }
+
+    pub fn is_builtin(&self) -> bool { self.ty.is_builtin() }
 }
 
 /// A type which can be deterministically represented in terms of strict encoding schema.
@@ -109,15 +111,13 @@ pub trait StenSchema {
     /// Strict encoding type name.
     const STEN_TYPE_NAME: &'static str;
 
-    /// Indicates the the type is built in
-    const STEN_BUILD_IN: bool = false;
-
     /// Returns [`StenType`] representation of this structure
     fn sten_type() -> StenType {
-        if Self::STEN_BUILD_IN {
-            StenType::unnamed(Self::sten_ty())
+        let ty = Self::sten_ty();
+        if ty.is_builtin() {
+            StenType::unnamed(ty)
         } else {
-            StenType::named(Self::STEN_TYPE_NAME, Self::sten_ty())
+            StenType::named(Self::STEN_TYPE_NAME, ty)
         }
     }
 

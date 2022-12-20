@@ -33,6 +33,7 @@ use crate::{Ident, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName,
 // TODO: Deal with indefinite types in reflections
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
+    Builtin(Ty<SemId>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
@@ -52,6 +53,7 @@ impl TypeRef for InlineRef {
     fn id(&self) -> SemId {
         match self {
             InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => *id,
+            InlineRef::Builtin(ty) => ty.id(None),
         }
     }
 }
@@ -61,6 +63,7 @@ impl Display for InlineRef {
         match self {
             InlineRef::Named(name, _) => write!(f, "{}", name),
             InlineRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef::Builtin(ty) => Display::fmt(ty, f),
         }
     }
 }
