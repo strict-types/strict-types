@@ -23,6 +23,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::hash::Hash;
 
+use amplify::ascii::AsciiChar;
 use amplify::confinement::Confined;
 use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
@@ -82,6 +83,12 @@ impl StenSchema for () {
     const STEN_TYPE_NAME: &'static str = "Unit";
 
     fn sten_ty() -> Ty<StenType> { Ty::UNIT }
+}
+
+impl StenSchema for AsciiChar {
+    const STEN_TYPE_NAME: &'static str = "Ascii";
+
+    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii_char() }
 }
 
 impl<T> StenSchema for Option<T>

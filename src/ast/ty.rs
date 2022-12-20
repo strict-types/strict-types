@@ -25,6 +25,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::Deref;
 
+use amplify::ascii::AsciiChar;
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
@@ -302,7 +303,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 impl Ty<StenType> {
     pub fn byte_array(len: u16) -> Self { Ty::Array(StenType::byte(), len) }
     pub fn bytes(sizing: Sizing) -> Self { Ty::List(StenType::byte(), sizing) }
-    pub fn ascii_string(sizing: Sizing) -> Self { Ty::List(StenType::ascii_char(), sizing) }
+    pub fn ascii_string(sizing: Sizing) -> Self { Ty::List(AsciiChar::sten_type(), sizing) }
     pub fn option(ty: StenType) -> Self {
         // TODO: Check for AST size
         Ty::Union(fields![
@@ -328,7 +329,7 @@ where Ref: Display
             Ty::UnicodeChar => write!(f, "Unicode"),
             Ty::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
             Ty::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
-            Ty::Map(key, ty, sizing) => write!(f, "{{{}{}}} -> [{}]", key, sizing, ty),
+            Ty::Map(key, ty, sizing) => write!(f, "{{{} ->{} {}}}", key, sizing, ty),
         }
     }
 }

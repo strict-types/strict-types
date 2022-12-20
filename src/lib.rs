@@ -88,7 +88,6 @@ impl StenSchema for StenType {
 
 impl StenType {
     pub fn byte() -> StenType { StenType::unnamed(Ty::BYTE) }
-    pub fn ascii_char() -> StenType { StenType::named("Ascii", Ty::<StenType>::ascii_char()) }
 
     pub fn unnamed(ty: Ty<StenType>) -> StenType {
         StenType {
