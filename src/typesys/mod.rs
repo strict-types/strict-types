@@ -1,5 +1,3 @@
-// Strict encoding schema library, implementing validation and parsing
-// strict encoded data against a schema.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
@@ -20,17 +18,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! DTL stands for "Data type library".
-
-mod id;
-mod type_lib;
 pub mod embedded;
 mod translate;
 mod serialize;
+mod id;
 
 pub use embedded::{EmbeddedRef, TypeSystem};
-pub use id::TypeLibId;
-pub use translate::{Error, LibBuilder, SystemBuilder, Warning};
-pub use type_lib::{Dependency, LibAlias, LibName, LibRef, TypeLib};
-
-pub type TypeIndex = std::collections::BTreeMap<crate::SemId, crate::TypeName>;
+pub use id::TypeSysId;
+pub use translate::SystemBuilder;

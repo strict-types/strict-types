@@ -28,7 +28,7 @@ use amplify::confinement::{MediumVec, TinyVec};
 use amplify::num::u24;
 use amplify::{confinement, IoError, WriteCounter};
 
-use crate::dtl::LibName;
+use crate::typelib::LibName;
 use crate::util::{BuildFragment, InvalidIdent, PreFragment, Sizing};
 use crate::{Ident, SemId, SemVer, StenWrite, Writer};
 

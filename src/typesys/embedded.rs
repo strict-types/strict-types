@@ -50,7 +50,7 @@ impl TypeRef for EmbeddedRef {
     fn id(&self) -> SemId {
         match self {
             EmbeddedRef::SemId(id) => *id,
-            EmbeddedRef::Inline(ty) => ty.id(),
+            EmbeddedRef::Inline(ty) => ty.id(None),
         }
     }
 }

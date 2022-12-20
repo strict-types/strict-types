@@ -26,7 +26,7 @@ use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
 use amplify::confinement;
 use amplify::confinement::{Confined, TinyVec};
 
-use crate::dtl::TypeLibId;
+use crate::typelib::TypeLibId;
 use crate::{SemId, StenSchema, StenType, Ty};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]

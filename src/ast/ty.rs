@@ -177,14 +177,6 @@ impl<Ref: TypeRef> StenSchema for Ty<Ref> {
     }
 }
 
-impl<Ref: TypeRef> Ord for Ty<Ref> {
-    fn cmp(&self, other: &Self) -> Ordering { self.id().cmp(&other.id()) }
-}
-
-impl<Ref: TypeRef> PartialOrd for Ty<Ref> {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
-}
-
 impl<Ref: TypeRef> Ty<Ref> {
     pub const UNIT: Ty<Ref> = Ty::Primitive(UNIT);
     pub const BYTE: Ty<Ref> = Ty::Primitive(BYTE);

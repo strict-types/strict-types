@@ -27,7 +27,7 @@ use amplify::ascii::AsciiString;
 use amplify::confinement::{Confined, TinyOrdMap};
 
 use crate::ast::TranslateError;
-use crate::dtl::id::TypeLibId;
+use crate::typelib::id::TypeLibId;
 use crate::{Ident, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName, TypeRef};
 
 // TODO: Deal with indefinite types in reflections
@@ -91,7 +91,7 @@ impl TypeRef for LibRef {
     fn id(&self) -> SemId {
         match self {
             LibRef::Named(_, id) | LibRef::Extern(_, _, id) => *id,
-            LibRef::Inline(ty) => ty.id(),
+            LibRef::Inline(ty) => ty.id(None),
         }
     }
 }

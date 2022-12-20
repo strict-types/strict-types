@@ -27,7 +27,7 @@ extern crate amplify;
 
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
-use stens::dtl::{SystemBuilder, TypeLib};
+use stens::typelib::TypeLib;
 use stens::{Serialize, StenSchema, StenType, Urn};
 
 #[repr(u8)]
@@ -123,6 +123,7 @@ fn serialize() {
     println!();
     println!("{}", lib);
 
+    /*
     let mut builder = SystemBuilder::new();
     builder.import(lib);
     match builder.finalize() {
@@ -150,4 +151,5 @@ fn serialize() {
             panic!()
         }
     }
+     */
 }

@@ -20,53 +20,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeMap;
 use std::io;
 use std::io::{Error, Read};
 
 use amplify::confinement::{Confined, TinyOrdMap};
-use amplify::num::u24;
 use amplify::Wrapper;
 
-use crate::dtl::type_lib::{Dependency, InlineRef};
-use crate::dtl::{LibAlias, LibName, LibRef, TypeLib, TypeLibId, TypeSystem};
+use crate::typelib::type_lib::{Dependency, InlineRef};
+use crate::typelib::{LibAlias, LibName, LibRef, TypeLib, TypeLibId};
 use crate::{
-    Decode, DecodeError, Deserialize, EmbeddedRef, Encode, SemId, SemVer, Serialize, StenWrite, Ty,
-    TypeName,
+    Decode, DecodeError, Deserialize, Encode, SemId, SemVer, Serialize, StenWrite, Ty, TypeName,
 };
-
-impl Serialize for TypeSystem {}
-impl Deserialize for TypeSystem {}
-
-impl Encode for TypeSystem {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        self.count_types().encode(writer)?;
-        for ty in self.values() {
-            ty.encode(writer)?;
-        }
-        Ok(())
-    }
-}
-
-impl Decode for TypeSystem {
-    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
-        let count = u24::decode(reader)?;
-        let mut lib: BTreeSet<Ty<EmbeddedRef>> = empty!();
-        let mut prev: Option<SemId> = None;
-        for _ in 0..count.into_usize() {
-            let ty = Ty::decode(reader)?;
-            if matches!(prev, Some(id) if id > ty.id()) {
-                return Err(DecodeError::WrongTypeOrdering(ty.id()));
-            }
-            let id = ty.id();
-            prev = Some(id);
-            if !lib.insert(ty) {
-                return Err(DecodeError::RepeatedType(id));
-            }
-        }
-        TypeSystem::try_from_iter(lib).map_err(DecodeError::from)
-    }
-}
 
 impl Serialize for TypeLib {}
 impl Deserialize for TypeLib {}
@@ -94,6 +59,7 @@ impl Decode for TypeLib {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         let name = LibName::decode(reader)?;
 
+        // TODO: Use generic collection serializers instead
         let len = u8::decode(reader)?;
         let mut dependencies: TinyOrdMap<_, _> = empty!();
         let mut prev = None;
@@ -116,10 +82,10 @@ impl Decode for TypeLib {
         for _ in 0..len {
             let name = TypeName::decode(reader)?;
             let ty = Ty::decode(reader)?;
-            if matches!(prev, Some(id) if id > ty.id()) {
-                return Err(DecodeError::WrongTypeOrdering(ty.id()));
+            let id = ty.id(Some(&name));
+            if matches!(prev, Some(id2) if id2 > id) {
+                return Err(DecodeError::WrongTypeOrdering(id));
             }
-            let id = ty.id();
             prev = Some(id);
             if types.insert(name, ty).is_some() {
                 return Err(DecodeError::RepeatedType(id));
@@ -131,31 +97,6 @@ impl Decode for TypeLib {
             dependencies,
             types: Confined::try_from(types)?,
         })
-    }
-}
-
-impl Encode for EmbeddedRef {
-    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
-        match self {
-            EmbeddedRef::SemId(id) => {
-                0u8.encode(writer)?;
-                id.encode(writer)
-            }
-            EmbeddedRef::Inline(ty) => {
-                1u8.encode(writer)?;
-                ty.encode(writer)
-            }
-        }
-    }
-}
-
-impl Decode for EmbeddedRef {
-    fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
-        match u8::decode(reader)? {
-            0u8 => Ok(EmbeddedRef::SemId(Decode::decode(reader)?)),
-            1u8 => Decode::decode(reader).map(EmbeddedRef::Inline),
-            wrong => Err(DecodeError::WrongRef(wrong)),
-        }
     }
 }
 

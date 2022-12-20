@@ -27,7 +27,7 @@ use amplify::Wrapper;
 
 use crate::ast::{Field, Fields, Variants};
 use crate::util::Sizing;
-use crate::{Cls, KeyTy, StenSchema, StenType, Ty, TypeRef};
+use crate::{Cls, KeyTy, StenSchema, StenType, Ty, TypeName, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -52,8 +52,11 @@ impl PartialOrd for SemId {
 pub const SEM_ID_TAG: [u8; 32] = [0u8; 32];
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub fn id(&self) -> SemId {
+    pub fn id(&self, name: Option<&TypeName>) -> SemId {
         let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        if let Some(ref name) = name {
+            hasher.update(name.as_bytes());
+        }
         self.hash(&mut hasher);
         SemId(hasher.finalize())
     }

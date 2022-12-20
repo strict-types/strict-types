@@ -43,17 +43,19 @@ mod macros;
 mod util;
 pub mod primitive;
 pub mod ast;
-pub mod dtl;
+pub mod typelib;
+//pub mod typesys;
 mod encoding;
 
 pub use ast::{FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
-pub use dtl::{Dependency, EmbeddedRef, LibAlias, LibName, LibRef, TypeLib, TypeLibId, TypeSystem};
 #[cfg(test)]
 pub(crate) use encoding::test;
 pub use encoding::{
     CheckedWriter, Cls, Decode, DecodeError, Deserialize, Encode, Serialize, StenWrite,
     StructWriter, Writer,
 };
+pub use typelib::{Dependency, LibAlias, LibName, LibRef, TypeLib, TypeLibId};
+//pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{Ident, SemVer, TypeName, Urn};
 
 // TODO: Check guarantees on type and lib sizing
