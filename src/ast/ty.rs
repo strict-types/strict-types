@@ -57,6 +57,10 @@ impl NestedRef for StenType {
     fn into_ty(self) -> Ty<Self> { *self.ty }
 }
 
+impl TypeRef for KeyTy {
+    fn id(&self) -> SemId { KeyTy::id(self) }
+}
+
 pub type FieldName = Ident;
 
 #[derive(Clone, Eq, Hash, Debug)]

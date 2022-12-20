@@ -108,6 +108,12 @@ impl StenType {
 }
 
 impl KeyTy {
+    pub fn id(&self) -> SemId {
+        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        self.hash(&mut hasher);
+        SemId(hasher.finalize())
+    }
+
     fn hash(&self, hasher: &mut blake3::Hasher) {
         self.cls().hash(hasher);
         match self {

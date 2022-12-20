@@ -67,7 +67,8 @@ pub use util::{Ident, SemVer, TypeName, Urn};
 /// any type library.
 ///
 /// The type has to be [`Translate`]ed into [`TypeLib`] or [`TypeSystem`].
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display("{ty}")]
 pub struct StenType {
     /// Type name which should match rust type name in most of the cases
     pub name: Option<TypeName>,

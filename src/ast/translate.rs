@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use amplify::confinement;
 
 use crate::ast::Fields;
-use crate::{SemId, Ty, TypeName, TypeRef};
+use crate::{SemId, StenType, Ty, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -37,7 +37,11 @@ pub trait Translate<To: Sized> {
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum TranslateError {
+    /// invalid library name '{0}'
     InvalidLibName(String),
+
+    /// top-level type `{0}` must has a name
+    UnnamedTopType(StenType),
 
     /// a different type with name `{0}` is already present
     DuplicateName(TypeName),
@@ -52,8 +56,8 @@ pub enum TranslateError {
     #[display(inner)]
     Confinement(confinement::Error),
 
-    /// too deep type nesting for type {0}
-    NestedInline(String),
+    /// too deep type nesting for type {2} inside {0}, path {1}
+    NestedInline(TypeName, String, String),
 }
 
 impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>

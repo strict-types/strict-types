@@ -27,6 +27,6 @@ mod serialize;
 
 pub use id::TypeLibId;
 pub use translate::{Error, LibBuilder, Warning};
-pub use type_lib::{Dependency, InlineRef, LibAlias, LibName, LibRef, TypeLib};
+pub use type_lib::{BuiltinRef, Dependency, InlineRef, LibAlias, LibName, LibRef, TypeLib};
 
 pub type TypeIndex = std::collections::BTreeMap<crate::SemId, crate::TypeName>;

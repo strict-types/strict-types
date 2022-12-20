@@ -24,8 +24,10 @@ use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
-use crate::typelib::{Dependency, InlineRef, LibAlias, LibName, LibRef, TypeIndex, TypeLib};
-use crate::{SemId, StenType, Translate, Ty, TypeName};
+use crate::typelib::{
+    BuiltinRef, Dependency, InlineRef, LibAlias, LibName, LibRef, TypeIndex, TypeLib,
+};
+use crate::{KeyTy, SemId, StenType, Translate, Ty, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display(doc_comments)]
@@ -92,43 +94,62 @@ impl Translate<TypeLib> for StenType {
     fn translate(self, lib_name: &mut Self::Context) -> Result<TypeLib, Self::Error> {
         let id = self.id();
 
+        let name = self.name.clone().ok_or_else(|| TranslateError::UnnamedTopType(self.clone()))?;
         let index = self.build_index()?;
 
-        let mut builder = LibBuilder::with(index);
-        let root = self.ty.translate(&mut builder)?;
+        let builder = LibBuilder::with(index);
+        let mut context = NestedContext {
+            top_name: name,
+            builder,
+            stack: empty!(),
+        };
 
-        let name = builder.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
-        let mut lib = builder.finalize(lib_name.clone())?;
-        if lib.types.insert(name.clone(), root)?.is_some() {
-            return Err(TranslateError::DuplicateName(name));
+        let root = self.ty.translate(&mut context)?;
+
+        let name = context.builder.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
+        let mut lib = context.builder.finalize(lib_name.clone())?;
+        if lib.types.insert(name, root)?.is_some() {
+            return Err(TranslateError::DuplicateName(context.top_name));
         }
 
         Ok(lib)
     }
 }
 
+pub struct NestedContext {
+    top_name: TypeName,
+    builder: LibBuilder,
+    stack: Vec<String>,
+}
+
 impl Translate<LibRef> for StenType {
-    type Context = LibBuilder;
+    type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<LibRef, Self::Error> {
         let id = self.id();
         let builtin = self.is_builtin();
+
+        ctx.stack.push(
+            self.name.as_ref().map(TypeName::to_string).unwrap_or_else(|| self.ty.to_string()),
+        );
+
         let ty = self.into_ty().translate(ctx)?;
-        Ok(match ctx.index.get(&id) {
+
+        Ok(match ctx.builder.index.get(&id) {
             Some(name) if !builtin => {
-                if !ctx.types.contains_key(name) {
-                    ctx.types.insert(name.clone(), ty)?;
+                if !ctx.builder.types.contains_key(name) {
+                    ctx.builder.types.insert(name.clone(), ty)?;
                 }
                 LibRef::Named(name.clone(), id)
             }
-            _ => LibRef::Inline(ty.translate(&mut ())?),
+            _ => LibRef::Inline(ty.translate(ctx)?),
         })
     }
 }
 
 impl Translate<InlineRef> for LibRef {
-    type Context = ();
+    type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef, Self::Error> {
@@ -140,16 +161,32 @@ impl Translate<InlineRef> for LibRef {
     }
 }
 
-impl Translate<SemId> for InlineRef {
-    type Context = ();
+impl Translate<BuiltinRef> for InlineRef {
+    type Context = NestedContext;
     type Error = TranslateError;
 
-    fn translate(self, _: &mut Self::Context) -> Result<SemId, Self::Error> {
+    fn translate(self, ctx: &mut Self::Context) -> Result<BuiltinRef, Self::Error> {
         match self {
-            InlineRef::Builtin(ref ty) if ty.is_builtin() => Ok(ty.id(None)),
-            InlineRef::Builtin(_) => Err(TranslateError::NestedInline(self.to_string())),
-            InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => Ok(id),
+            InlineRef::Builtin(ty) => ty.translate(ctx).map(BuiltinRef::Builtin),
+            InlineRef::Named(ty_name, id) => Ok(BuiltinRef::Named(ty_name, id)),
+            InlineRef::Extern(ty_name, lib_alias, id) => {
+                Ok(BuiltinRef::Extern(ty_name, lib_alias, id))
+            }
         }
+    }
+}
+
+impl Translate<KeyTy> for BuiltinRef {
+    type Context = NestedContext;
+    type Error = TranslateError;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<KeyTy, Self::Error> {
+        // We are too deep
+        Err(TranslateError::NestedInline(
+            ctx.top_name.clone(),
+            ctx.stack.join("/"),
+            self.to_string(),
+        ))
     }
 }
 

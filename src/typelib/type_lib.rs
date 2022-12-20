@@ -28,12 +28,11 @@ use amplify::confinement::{Confined, TinyOrdMap};
 
 use crate::ast::TranslateError;
 use crate::typelib::id::TypeLibId;
-use crate::{Ident, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName, TypeRef};
+use crate::{Ident, KeyTy, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName, TypeRef};
 
-// TODO: Deal with indefinite types in reflections
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
-    Builtin(Ty<SemId>),
+    Builtin(Ty<BuiltinRef>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
@@ -43,6 +42,7 @@ impl StenSchema for InlineRef {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
+            "builtin" => <Ty<BuiltinRef>>::sten_type(),
             "named" => <(TypeName, SemId)>::sten_type(),
             "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
         })
@@ -64,6 +64,44 @@ impl Display for InlineRef {
             InlineRef::Named(name, _) => write!(f, "{}", name),
             InlineRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
             InlineRef::Builtin(ty) => Display::fmt(ty, f),
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, From)]
+pub enum BuiltinRef {
+    Builtin(Ty<KeyTy>),
+    Named(TypeName, SemId),
+    Extern(TypeName, LibAlias, SemId),
+}
+
+impl StenSchema for BuiltinRef {
+    const STEN_TYPE_NAME: &'static str = "BuiltinRef";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::union(fields! {
+            "builtin" => <Ty<KeyTy>>::sten_type(),
+            "named" => <(TypeName, SemId)>::sten_type(),
+            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
+        })
+    }
+}
+
+impl TypeRef for BuiltinRef {
+    fn id(&self) -> SemId {
+        match self {
+            BuiltinRef::Named(_, id) | BuiltinRef::Extern(_, _, id) => *id,
+            BuiltinRef::Builtin(ty) => ty.id(None),
+        }
+    }
+}
+
+impl Display for BuiltinRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            BuiltinRef::Named(name, _) => write!(f, "{}", name),
+            BuiltinRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            BuiltinRef::Builtin(ty) => Display::fmt(ty, f),
         }
     }
 }
