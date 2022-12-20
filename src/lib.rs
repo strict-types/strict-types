@@ -110,8 +110,17 @@ pub trait StenSchema {
     /// Strict encoding type name.
     const STEN_TYPE_NAME: &'static str;
 
+    /// Indicates the the type is built in
+    const STEN_BUILD_IN: bool = false;
+
     /// Returns [`StenType`] representation of this structure
-    fn sten_type() -> StenType { StenType::named(Self::STEN_TYPE_NAME, Self::sten_ty()) }
+    fn sten_type() -> StenType {
+        if Self::STEN_BUILD_IN {
+            StenType::unnamed(Self::sten_ty())
+        } else {
+            StenType::named(Self::STEN_TYPE_NAME, Self::sten_ty())
+        }
+    }
 
     /// Returns AST representing strict encoding of the data.
     fn sten_ty() -> Ty<StenType>;
