@@ -32,9 +32,7 @@ use amplify::{confinement, Wrapper};
 use crate::ast::Iter;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::{Encode, Ident, LibAlias, SemId, Serialize, StenSchema, StenType, TypeName};
-
-pub const MAX_SERIALIZED_SIZE: usize = 1 << 24 - 1;
+use crate::{Encode, Ident, LibAlias, SemId, StenSchema, StenType, TypeName};
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
@@ -217,32 +215,12 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub const UNICODE: Ty<Ref> = Ty::UnicodeChar;
 
     pub fn enumerate(variants: Variants) -> Self { Ty::Enum(variants) }
-    pub fn union(fields: Fields<Ref, false>) -> Self {
-        let ty = Ty::Union(fields);
-        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
-        ty
-    }
-    pub fn composition(fields: Fields<Ref, true>) -> Self {
-        let ty = Ty::Struct(fields);
-        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
-        ty
-    }
+    pub fn union(fields: Fields<Ref, false>) -> Self { Ty::Union(fields) }
+    pub fn composition(fields: Fields<Ref, true>) -> Self { Ty::Struct(fields) }
 
-    pub fn list(ty: Ref, sizing: Sizing) -> Self {
-        let ty = Ty::List(ty, sizing);
-        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
-        ty
-    }
-    pub fn set(ty: Ref, sizing: Sizing) -> Self {
-        let ty = Ty::Set(ty, sizing);
-        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
-        ty
-    }
-    pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self {
-        let ty = Ty::Map(key, val, sizing);
-        assert!(ty.serialized_len() <= MAX_SERIALIZED_SIZE);
-        ty
-    }
+    pub fn list(ty: Ref, sizing: Sizing) -> Self { Ty::List(ty, sizing) }
+    pub fn set(ty: Ref, sizing: Sizing) -> Self { Ty::Set(ty, sizing) }
+    pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(0..=127)) }
 

@@ -26,14 +26,32 @@ extern crate amplify;
 use stens::typelib::TypeLib;
 use stens::{Serialize, StenSchema, Urn};
 
+fn pp(data: impl AsRef<[u8]>) {
+    let data = base64::encode(data);
+    let mut data = data.as_str();
+    while data.len() > 80 {
+        let (line, rest) = data.split_at(80);
+        println!("{}", line);
+        data = rest;
+    }
+    println!("{}", data);
+}
+
 #[test]
 fn reflect() {
-    let lib = TypeLib::with(s!("StEn"), TypeLib::sten_type()).unwrap();
+    let root = TypeLib::sten_type();
+    let root_id = root.id();
+    let lib = TypeLib::with(s!("StEn"), root).unwrap();
 
     println!("{:#}", Urn::from(lib.id()));
+    println!("{:#}", Urn::from(root_id));
 
     println!();
     println!("{}", lib);
+    println!("----- BEGIN STEN TYPE LIB -----");
+    println!("Id: {}\n", lib.id());
+    pp(lib.to_serialized());
+    println!("\n----- END STEN TYPE LIB -----\n");
 
     /*
     let mut builder = SystemBuilder::new();
@@ -43,17 +61,9 @@ fn reflect() {
             for warning in warnings {
                 eprintln!("Warning: {}", warning);
             }
-            let data = sys.to_serialized();
-            let data = base64::encode(data.as_inner());
-            let mut data = data.as_str();
             println!("----- BEGIN STEN TYPE SYSTEM -----");
             println!("Id: {}\n", sys.id());
-            while data.len() > 80 {
-                let (line, rest) = data.split_at(80);
-                println!("{}", line);
-                data = rest;
-            }
-            println!("{}", data);
+            pp(sys.to_serialized());
             println!("\n----- END STEN TYPE SYSTEM -----\n");
         }
         Err(errors) => {

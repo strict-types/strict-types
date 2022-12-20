@@ -29,8 +29,7 @@ use amplify::Wrapper;
 use crate::ast::{Field, Fields, TypeRef, Variants};
 use crate::primitive::Primitive;
 use crate::{
-    Cls, Decode, DecodeError, Deserialize, Encode, FieldName, KeyTy, SemId, Serialize, StenType,
-    StenWrite, Ty, TypeName,
+    Cls, Decode, DecodeError, Encode, FieldName, KeyTy, SemId, StenType, StenWrite, Ty, TypeName,
 };
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -61,10 +60,6 @@ impl KeyTy {
         }
     }
 }
-
-impl<Ref: TypeRef + Decode> Deserialize for Ty<Ref> {}
-
-impl<Ref: TypeRef + Encode> Serialize for Ty<Ref> {}
 
 impl<Ref: TypeRef + Encode> Encode for Ty<Ref> {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {

@@ -252,6 +252,9 @@ impl Display for TypeLib {
                 Display::fmt(dep, f)?;
             }
         }
+        if self.dependencies.is_empty() {
+            f.write_str("-- no dependencies\n")?;
+        }
         writeln!(f)?;
         for (name, ty) in &self.types {
             writeln!(f, "data {:16} :: {}", name, ty)?;
