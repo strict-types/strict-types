@@ -240,10 +240,10 @@ impl Translate<SemId> for InlineRef {
 impl StenType {
     pub fn build_index(&self) -> Result<TypeIndex, TranslateError> {
         let mut index = empty!();
-        self.index(&mut index).map(|_| index)
+        self.update_index(&mut index).map(|_| index)
     }
 
-    pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
+    pub fn update_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
         if let Some(name) = self.name.clone() {
             let id = self.id();
             match index.get(&id) {
@@ -255,27 +255,27 @@ impl StenType {
             };
         }
 
-        self.ty.index(index)?;
+        self.ty.update_index(index)?;
 
         Ok(())
     }
 }
 
 impl Ty<StenType> {
-    pub fn index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
+    pub fn update_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
         match self {
             Ty::Union(fields) => {
                 for ty in fields.values() {
-                    ty.index(index)?;
+                    ty.update_index(index)?;
                 }
             }
             Ty::Struct(fields) => {
                 for ty in fields.values() {
-                    ty.index(index)?;
+                    ty.update_index(index)?;
                 }
             }
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) => {
-                ty.index(index)?
+                ty.update_index(index)?
             }
             _ => {}
         }

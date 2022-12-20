@@ -181,7 +181,7 @@ impl Primitive {
 
     pub fn info(self) -> NumInfo { NumInfo::from_code(self.0) }
 
-    pub fn size(self) -> u16 { self.info().size() }
+    pub fn byte_size(self) -> u16 { self.info().byte_size() }
 }
 
 impl Display for Primitive {
@@ -201,6 +201,6 @@ impl Display for Primitive {
             NumTy::Float => 'F',
         })?;
 
-        write!(f, "{}", info.size())
+        write!(f, "{}", info.byte_size() * 8)
     }
 }

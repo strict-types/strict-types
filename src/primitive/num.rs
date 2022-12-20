@@ -39,7 +39,7 @@ impl NumInfo {
 
     pub const fn into_code(self) -> u8 { self.ty.into_code() | self.size.into_code() }
 
-    pub const fn size(self) -> u16 { self.size.size() }
+    pub const fn byte_size(self) -> u16 { self.size.byte_size() }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, Debug)]
@@ -72,7 +72,7 @@ impl NumSize {
         }
     }
 
-    pub const fn size(self) -> u16 {
+    pub const fn byte_size(self) -> u16 {
         match self.0 {
             NumSizeInner::Bytes(bytes) => bytes as u16,
             NumSizeInner::Factored(factor) => 2 * (factor as u16 + 1),
