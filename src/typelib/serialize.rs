@@ -28,7 +28,7 @@ use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::Wrapper;
 
 use crate::typelib::type_lib::{Dependency, InlineRef};
-use crate::typelib::{BuiltinRef, LibAlias, LibName, LibRef, TypeLib, TypeLibId};
+use crate::typelib::{InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeLib, TypeLibId};
 use crate::{
     Decode, DecodeError, Deserialize, Encode, SemId, SemVer, Serialize, StenWrite, Ty, TypeName,
 };
@@ -137,21 +137,21 @@ impl Decode for InlineRef {
     }
 }
 
-impl Encode for BuiltinRef {
+impl Encode for InlineRef1 {
     fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
         match self {
-            BuiltinRef::Named(name, id) => {
+            InlineRef1::Named(name, id) => {
                 0u8.encode(writer)?;
                 name.encode(writer)?;
                 id.encode(writer)
             }
-            BuiltinRef::Extern(name, lib_alias, id) => {
+            InlineRef1::Extern(name, lib_alias, id) => {
                 2u8.encode(writer)?;
                 name.encode(writer)?;
                 lib_alias.encode(writer)?;
                 id.encode(writer)
             }
-            BuiltinRef::Builtin(ty) => {
+            InlineRef1::Builtin(ty) => {
                 3u8.encode(writer)?;
                 ty.encode(writer)
             }
@@ -159,16 +159,53 @@ impl Encode for BuiltinRef {
     }
 }
 
-impl Decode for BuiltinRef {
+impl Decode for InlineRef1 {
     fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
         match u8::decode(reader)? {
-            0u8 => Ok(BuiltinRef::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
-            2u8 => Ok(BuiltinRef::Extern(
+            0u8 => Ok(InlineRef1::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            2u8 => Ok(InlineRef1::Extern(
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
                 Decode::decode(reader)?,
             )),
-            3u8 => Decode::decode(reader).map(BuiltinRef::Builtin),
+            3u8 => Decode::decode(reader).map(InlineRef1::Builtin),
+            wrong => Err(DecodeError::WrongRef(wrong)),
+        }
+    }
+}
+
+impl Encode for InlineRef2 {
+    fn encode(&self, writer: &mut impl StenWrite) -> Result<(), io::Error> {
+        match self {
+            InlineRef2::Named(name, id) => {
+                0u8.encode(writer)?;
+                name.encode(writer)?;
+                id.encode(writer)
+            }
+            InlineRef2::Extern(name, lib_alias, id) => {
+                2u8.encode(writer)?;
+                name.encode(writer)?;
+                lib_alias.encode(writer)?;
+                id.encode(writer)
+            }
+            InlineRef2::Builtin(ty) => {
+                3u8.encode(writer)?;
+                ty.encode(writer)
+            }
+        }
+    }
+}
+
+impl Decode for InlineRef2 {
+    fn decode(reader: &mut impl io::Read) -> Result<Self, DecodeError> {
+        match u8::decode(reader)? {
+            0u8 => Ok(InlineRef2::Named(Decode::decode(reader)?, Decode::decode(reader)?)),
+            2u8 => Ok(InlineRef2::Extern(
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+                Decode::decode(reader)?,
+            )),
+            3u8 => Decode::decode(reader).map(InlineRef2::Builtin),
             wrong => Err(DecodeError::WrongRef(wrong)),
         }
     }

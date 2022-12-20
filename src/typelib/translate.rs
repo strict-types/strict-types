@@ -25,8 +25,9 @@ use amplify::confinement::{Confined, SmallOrdMap};
 
 use crate::ast::{NestedRef, TranslateError};
 use crate::typelib::{
-    BuiltinRef, Dependency, InlineRef, LibAlias, LibName, LibRef, TypeIndex, TypeLib,
+    Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeIndex, TypeLib,
 };
+use crate::util::Sizing;
 use crate::{KeyTy, SemId, StenType, Translate, Ty, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -130,9 +131,9 @@ impl Translate<LibRef> for StenType {
         let id = self.id();
         let builtin = self.is_builtin();
 
-        ctx.stack.push(
-            self.name.as_ref().map(TypeName::to_string).unwrap_or_else(|| self.ty.to_string()),
-        );
+        if let Some(ref name) = self.name {
+            ctx.top_name = name.clone();
+        }
 
         let ty = self.into_ty().translate(ctx)?;
 
@@ -146,8 +147,6 @@ impl Translate<LibRef> for StenType {
             _ => LibRef::Inline(ty.translate(ctx)?),
         };
 
-        ctx.stack.pop();
-
         Ok(lib_ref)
     }
 }
@@ -160,31 +159,69 @@ impl Translate<InlineRef> for LibRef {
         match self {
             LibRef::Named(ty_name, id) => Ok(InlineRef::Named(ty_name, id)),
             LibRef::Extern(ty_name, lib_alias, id) => Ok(InlineRef::Extern(ty_name, lib_alias, id)),
-            LibRef::Inline(ty) => Ok(InlineRef::Builtin(ty.translate(ctx)?)),
-        }
-    }
-}
-
-impl Translate<BuiltinRef> for InlineRef {
-    type Context = NestedContext;
-    type Error = TranslateError;
-
-    fn translate(self, ctx: &mut Self::Context) -> Result<BuiltinRef, Self::Error> {
-        match self {
-            InlineRef::Builtin(ty) => ty.translate(ctx).map(BuiltinRef::Builtin),
-            InlineRef::Named(ty_name, id) => Ok(BuiltinRef::Named(ty_name, id)),
-            InlineRef::Extern(ty_name, lib_alias, id) => {
-                Ok(BuiltinRef::Extern(ty_name, lib_alias, id))
+            LibRef::Inline(ty) => {
+                ctx.stack.push(ty.cls().to_string());
+                let res = ty.translate(ctx).map(InlineRef::Builtin);
+                ctx.stack.pop();
+                res
             }
         }
     }
 }
 
-impl Translate<KeyTy> for BuiltinRef {
+impl Translate<InlineRef1> for InlineRef {
+    type Context = NestedContext;
+    type Error = TranslateError;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef1, Self::Error> {
+        match self {
+            InlineRef::Builtin(ty) => {
+                ctx.stack.push(ty.cls().to_string());
+                let res = ty.translate(ctx).map(InlineRef1::Builtin);
+                ctx.stack.pop();
+                res
+            }
+            InlineRef::Named(ty_name, id) => Ok(InlineRef1::Named(ty_name, id)),
+            InlineRef::Extern(ty_name, lib_alias, id) => {
+                Ok(InlineRef1::Extern(ty_name, lib_alias, id))
+            }
+        }
+    }
+}
+
+impl Translate<InlineRef2> for InlineRef1 {
+    type Context = NestedContext;
+    type Error = TranslateError;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef2, Self::Error> {
+        match self {
+            InlineRef1::Builtin(ty) => {
+                ctx.stack.push(ty.cls().to_string());
+                let res = ty.translate(ctx).map(InlineRef2::Builtin);
+                ctx.stack.pop();
+                res
+            }
+            InlineRef1::Named(ty_name, id) => Ok(InlineRef2::Named(ty_name, id)),
+            InlineRef1::Extern(ty_name, lib_alias, id) => {
+                Ok(InlineRef2::Extern(ty_name, lib_alias, id))
+            }
+        }
+    }
+}
+
+impl Translate<KeyTy> for InlineRef2 {
     type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<KeyTy, Self::Error> {
+        if let InlineRef2::Builtin(ref ty) = self {
+            match ty {
+                Ty::Primitive(code) => return Ok(KeyTy::Primitive(*code)),
+                Ty::Enum(vars) => return Ok(KeyTy::Enum(vars.clone())),
+                Ty::UnicodeChar => return Ok(KeyTy::UnicodeStr(Sizing::ONE)),
+                _ => {}
+            }
+        }
         // We are too deep
         Err(TranslateError::NestedInline(
             ctx.top_name.clone(),

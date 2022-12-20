@@ -32,7 +32,7 @@ use crate::{Ident, KeyTy, SemId, SemVer, StenSchema, StenType, Translate, Ty, Ty
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
-    Builtin(Ty<BuiltinRef>),
+    Builtin(Ty<InlineRef1>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
@@ -42,7 +42,7 @@ impl StenSchema for InlineRef {
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
-            "builtin" => <Ty<BuiltinRef>>::sten_type(),
+            "builtin" => <Ty<InlineRef1 >>::sten_type(),
             "named" => <(TypeName, SemId)>::sten_type(),
             "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
         })
@@ -69,14 +69,52 @@ impl Display for InlineRef {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
-pub enum BuiltinRef {
+pub enum InlineRef1 {
+    Builtin(Ty<InlineRef2>),
+    Named(TypeName, SemId),
+    Extern(TypeName, LibAlias, SemId),
+}
+
+impl StenSchema for InlineRef1 {
+    const STEN_TYPE_NAME: &'static str = "InlineRef1";
+
+    fn sten_ty() -> Ty<StenType> {
+        Ty::union(fields! {
+            "builtin" => <Ty<InlineRef2>>::sten_type(),
+            "named" => <(TypeName, SemId)>::sten_type(),
+            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
+        })
+    }
+}
+
+impl TypeRef for InlineRef1 {
+    fn id(&self) -> SemId {
+        match self {
+            InlineRef1::Named(_, id) | InlineRef1::Extern(_, _, id) => *id,
+            InlineRef1::Builtin(ty) => ty.id(None),
+        }
+    }
+}
+
+impl Display for InlineRef1 {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            InlineRef1::Named(name, _) => write!(f, "{}", name),
+            InlineRef1::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef1::Builtin(ty) => Display::fmt(ty, f),
+        }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, From)]
+pub enum InlineRef2 {
     Builtin(Ty<KeyTy>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
 
-impl StenSchema for BuiltinRef {
-    const STEN_TYPE_NAME: &'static str = "BuiltinRef";
+impl StenSchema for InlineRef2 {
+    const STEN_TYPE_NAME: &'static str = "InlineRef2";
 
     fn sten_ty() -> Ty<StenType> {
         Ty::union(fields! {
@@ -87,21 +125,21 @@ impl StenSchema for BuiltinRef {
     }
 }
 
-impl TypeRef for BuiltinRef {
+impl TypeRef for InlineRef2 {
     fn id(&self) -> SemId {
         match self {
-            BuiltinRef::Named(_, id) | BuiltinRef::Extern(_, _, id) => *id,
-            BuiltinRef::Builtin(ty) => ty.id(None),
+            InlineRef2::Named(_, id) | InlineRef2::Extern(_, _, id) => *id,
+            InlineRef2::Builtin(ty) => ty.id(None),
         }
     }
 }
 
-impl Display for BuiltinRef {
+impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            BuiltinRef::Named(name, _) => write!(f, "{}", name),
-            BuiltinRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
-            BuiltinRef::Builtin(ty) => Display::fmt(ty, f),
+            InlineRef2::Named(name, _) => write!(f, "{}", name),
+            InlineRef2::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef2::Builtin(ty) => Display::fmt(ty, f),
         }
     }
 }
