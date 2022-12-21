@@ -23,6 +23,7 @@
 #[macro_use]
 extern crate amplify;
 
+use amplify::hex::ToHex;
 use stens::encoding::{StrictEncode, StrictWriter};
 use stens::typelib::TypeLib;
 use stens::{tn, LibRef, Ty, Urn};
@@ -45,7 +46,7 @@ fn reflect() {
     let writer = ty.strict_encode(writer).expect("memory encoding");
     println!("----- BEGIN STEN TYPE -----");
     println!("Id: {}\n", ty.id(Some(&tn!("Ty"))));
-    pp(writer.unbox());
+    println!("{}", writer.unbox().to_hex());
     println!("\n----- END STEN TYPE -----\n");
 
     /*
