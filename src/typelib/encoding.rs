@@ -45,10 +45,10 @@ impl StrictEncode for LibRef {
         Ok(match self {
             LibRef::Inline(ty) => u.write_type("inline", ty)?,
             LibRef::Named(ty_name, id) => {
-                u.write_tuple("named").write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }
             LibRef::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")
+                .write_tuple("named")?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?
@@ -79,10 +79,10 @@ impl StrictEncode for InlineRef {
         Ok(match self {
             InlineRef::Builtin(ty) => u.write_type("inline", ty)?,
             InlineRef::Named(ty_name, id) => {
-                u.write_tuple("named").write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }
             InlineRef::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")
+                .write_tuple("named")?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?
@@ -113,10 +113,10 @@ impl StrictEncode for InlineRef1 {
         Ok(match self {
             InlineRef1::Builtin(ty) => u.write_type("inline", ty)?,
             InlineRef1::Named(ty_name, id) => {
-                u.write_tuple("named").write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }
             InlineRef1::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")
+                .write_tuple("named")?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?
@@ -147,10 +147,10 @@ impl StrictEncode for InlineRef2 {
         Ok(match self {
             InlineRef2::Builtin(ty) => u.write_type("inline", ty)?,
             InlineRef2::Named(ty_name, id) => {
-                u.write_tuple("named").write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }
             InlineRef2::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")
+                .write_tuple("named")?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?

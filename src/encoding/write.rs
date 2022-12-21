@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 
 use amplify::WriteCounter;
@@ -96,14 +96,14 @@ impl<W: io::Write> StrictWriter<W> {
 impl<W: io::Write> TypedWrite for StrictWriter<W> {
     type TupleWriter = StructWriter<W>;
     type StructWriter = StructWriter<W>;
-    type UnionDefiner = UnionDefiner<W>;
-    type EnumDefiner = EnumDefiner<W>;
+    type UnionDefiner = UnionWriter<W>;
+    type EnumDefiner = UnionWriter<W>;
 
     fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner {
-        todo!()
+        UnionWriter::with(ns, name, self)
     }
     fn define_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumDefiner {
-        todo!()
+        UnionWriter::with(ns, name, self)
     }
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter {
         StructWriter::with(ns, name, self)
@@ -243,78 +243,155 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteTuple<P> for StructWri
     fn complete(self) -> P { self._complete_write() }
 }
 
-pub struct UnionDefiner<W: io::Write> {
-    ns: Ident,
-    name: Option<Ident>,
-    writer: StrictWriter<W>,
-}
-
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineUnion<P> for UnionDefiner<W> {
-    type TupleDefiner = StructWriter<W>;
-    type StructDefiner = StructWriter<W>;
-    type UnionWriter = UnionWriter<W>;
-
-    fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
-    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
-    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
-    fn complete(self) -> Self::UnionWriter { todo!() }
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
+enum FieldType {
+    Unit,
+    Tuple,
+    Struct,
 }
 
 pub struct UnionWriter<W: io::Write> {
     ns: Ident,
     name: Option<Ident>,
+    fields: BTreeMap<Field, FieldType>,
     writer: StrictWriter<W>,
+    defined: bool,
+    written: bool,
+}
+
+impl<W: io::Write> UnionWriter<W> {
+    fn with(ns: impl ToIdent, name: Option<impl ToIdent>, writer: StrictWriter<W>) -> Self {
+        UnionWriter {
+            ns: ns.to_ident(),
+            name: name.to_maybe_ident(),
+            fields: empty!(),
+            writer,
+            defined: false,
+            written: false,
+        }
+    }
+
+    fn name(&self) -> String {
+        format!("{}.{}", &self.ns, self.name.as_ref().unwrap_or(&tn!("<unnamed>")))
+    }
+
+    fn next_ord(&self) -> u8 { self.fields.keys().max().map(|f| f.ord + 1).unwrap_or_default() }
+
+    fn _define_field(mut self, field: Field, field_type: FieldType) -> Self {
+        assert!(
+            self.fields.insert(field.clone(), field_type).is_some(),
+            "variant {} is already defined as a part of {}",
+            &field,
+            self.name()
+        );
+        self
+    }
+
+    fn _write_field(mut self, field: Field, field_type: FieldType) -> io::Result<Self> {
+        if self.defined {
+            let t = *self.fields.get(&field).expect(&format!(
+                "variant {} was not defined in {}",
+                &field,
+                self.name()
+            ));
+            assert_eq!(
+                t,
+                field_type,
+                "variant {} in {} must be a {:?} while it is written as {:?}",
+                &field,
+                self.name(),
+                t,
+                field_type
+            );
+        } else {
+            self = self._define_field(field.clone(), field_type);
+        }
+        assert!(!self.written, "multiple attempts to write variants of {}", self.name());
+        self.written = true;
+        self.writer = field.ord.strict_encode(self.writer)?;
+        Ok(self)
+    }
+
+    fn _complete_definition<P: Sized + From<StrictWriter<W>>>(mut self) -> P {
+        assert!(
+            !self.fields.is_empty(),
+            "unit or enum {} does not have fields defined",
+            self.name()
+        );
+        self.defined = true;
+        P::from(self.writer)
+    }
+
+    fn _complete_write<P: Sized + From<StrictWriter<W>>>(self) -> P {
+        assert!(!self.written, "not all fields were written for {}", self.name());
+        P::from(self.writer)
+    }
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineUnion<P> for UnionWriter<W> {
+    type TupleDefiner = StructWriter<W>;
+    type StructDefiner = StructWriter<W>;
+    type UnionWriter = UnionWriter<W>;
+
+    fn define_unit(self, name: impl ToIdent) -> Self {
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self._define_field(field, FieldType::Unit)
+    }
+    fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self = self._define_field(field, FieldType::Tuple);
+        StructWriter::with(self.ns, Some(name), self.writer)
+    }
+    fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self = self._define_field(field, FieldType::Struct);
+        StructWriter::with(self.ns, Some(name), self.writer)
+    }
+    fn complete(self) -> Self::UnionWriter { self._complete_definition() }
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWriter<W> {
     type TupleWriter = StructWriter<W>;
     type StructWriter = StructWriter<W>;
 
-    fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
-    fn write_tuple(self, name: impl ToIdent) -> Self::TupleWriter { todo!() }
-    fn write_struct(self, name: impl ToIdent) -> Self::StructWriter { todo!() }
-    fn complete(self) -> P { P::from(self.writer) }
-}
-
-pub struct EnumDefiner<W: io::Write> {
-    ns: Ident,
-    name: Option<Ident>,
-    writer: StrictWriter<W>,
-}
-
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineEnum<P> for EnumDefiner<W> {
-    type EnumWriter = EnumWriter<W>;
-    fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
-    fn complete(self) -> Self::EnumWriter { todo!() }
-}
-
-pub struct EnumWriter<W: io::Write> {
-    ns: Ident,
-    name: Option<Ident>,
-    writer: StrictWriter<W>,
-}
-
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for EnumWriter<W> {
-    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
-    fn complete(self) -> P { P::from(self.writer) }
-}
-
-impl<W: io::Write> From<StrictWriter<W>> for UnionDefiner<W> {
-    fn from(writer: StrictWriter<W>) -> Self {
-        UnionDefiner {
-            ns: tn!(""),
-            name: None,
-            writer,
-        }
+    fn write_unit(self, name: impl ToIdent) -> io::Result<Self> {
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self._write_field(field, FieldType::Unit)
     }
+    fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self = self._write_field(field, FieldType::Tuple)?;
+        Ok(StructWriter::with(self.ns, Some(name), self.writer))
+    }
+    fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self = self._write_field(field, FieldType::Struct)?;
+        Ok(StructWriter::with(self.ns, Some(name), self.writer))
+    }
+    fn complete(self) -> P { self._complete_write() }
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineEnum<P> for UnionWriter<W> {
+    type EnumWriter = UnionWriter<W>;
+    fn define_variant(self, name: impl ToIdent, value: u8) -> Self {
+        let field = Field::named(name.to_ident(), value);
+        self._define_field(field, FieldType::Unit)
+    }
+    fn complete(self) -> Self::EnumWriter { self._complete_definition() }
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for UnionWriter<W> {
+    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
+        debug_assert!(
+            self.defined,
+            "rust type system must prevent calling enum writes before it is defined"
+        );
+        let field = Field::named(name.to_ident(), self.next_ord());
+        self._write_field(field, FieldType::Unit)
+    }
+    fn complete(self) -> P { self._complete_write() }
 }
 
 impl<W: io::Write> From<StrictWriter<W>> for UnionWriter<W> {
-    fn from(writer: StrictWriter<W>) -> Self {
-        UnionWriter {
-            ns: tn!(""),
-            name: None,
-            writer,
-        }
-    }
+    fn from(writer: StrictWriter<W>) -> Self { UnionWriter::with("-", None::<String>, writer) }
 }

@@ -28,7 +28,7 @@ extern crate amplify;
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
 use stens::typelib::TypeLib;
-use stens::{Serialize, StenSchema, StenType, Urn};
+use stens::Urn;
 
 #[repr(u8)]
 pub enum Prim {
@@ -55,62 +55,6 @@ pub struct Complex {
     pub b: TypeB,
     pub prim: Prim,
     pub msg: Message,
-}
-
-impl StenSchema for Prim {
-    const STEN_TYPE_NAME: &'static str = "Prim";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::enumerate(variants![
-            "a" => Prim::A as u8,
-            "b" => Prim::B as u8,
-        ])
-    }
-}
-
-impl StenSchema for Message {
-    const STEN_TYPE_NAME: &'static str = "Message";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! [
-            "init" => u8::sten_type(),
-            "ping" => <()>::sten_type(),
-            "pong" => <()>::sten_type(),
-            "connect" => StenType::named("Connect", Ty::composition(fields![
-                "host" => Option::<SmallVec<u8>>::sten_type(),
-            ])),
-        ])
-    }
-}
-
-impl StenSchema for TypeA {
-    const STEN_TYPE_NAME: &'static str = "TypeA";
-
-    fn sten_ty() -> Ty<StenType> { Ty::composition(fields![u8::sten_type(), u16::sten_type(),]) }
-}
-
-impl StenSchema for TypeB {
-    const STEN_TYPE_NAME: &'static str = "TypeB";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields![
-            "one" => TypeA::sten_type(),
-            "two" => TypeA::sten_type(),
-        ])
-    }
-}
-
-impl StenSchema for Complex {
-    const STEN_TYPE_NAME: &'static str = "Complex";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields![
-            "a" => TypeA::sten_type(),
-            "b" => TypeB::sten_type(),
-            "prim" => Prim::sten_type(),
-            "msg" => Message::sten_type(),
-        ])
-    }
 }
 
 #[test]

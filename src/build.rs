@@ -136,9 +136,9 @@ impl WriteUnion<TypeBuilder> for UnionBuilder {
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 
-    fn write_tuple(self, name: impl ToIdent) -> Self::TupleWriter { todo!() }
+    fn write_tuple(self, name: impl ToIdent) -> io::Result<Self::TupleWriter> { todo!() }
 
-    fn write_struct(self, name: impl ToIdent) -> Self::StructWriter { todo!() }
+    fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter> { todo!() }
 
     fn complete(self) -> TypeBuilder {
         assert!(!self.variants.is_empty(), "building union with zero variants");

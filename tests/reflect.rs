@@ -24,7 +24,7 @@
 extern crate amplify;
 
 use stens::typelib::TypeLib;
-use stens::{Serialize, StenSchema, Urn};
+use stens::Urn;
 
 fn pp(data: impl AsRef<[u8]>) {
     let data = base64::encode(data);

@@ -139,16 +139,16 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
             Ty::Union(fields) => u.write_type("union", fields)?,
             Ty::Struct(fields) => u.write_type("struct", fields)?,
             Ty::Array(ty, len) => {
-                u.write_tuple("array").write_field(ty)?.write_field(len)?.complete()
+                u.write_tuple("array")?.write_field(ty)?.write_field(len)?.complete()
             }
             Ty::List(ty, sizing) => {
-                u.write_tuple("list").write_field(ty)?.write_field(sizing)?.complete()
+                u.write_tuple("list")?.write_field(ty)?.write_field(sizing)?.complete()
             }
             Ty::Set(ty, sizing) => {
-                u.write_tuple("set").write_field(ty)?.write_field(sizing)?.complete()
+                u.write_tuple("set")?.write_field(ty)?.write_field(sizing)?.complete()
             }
             Ty::Map(key, ty, sizing) => u
-                .write_tuple("map")
+                .write_tuple("map")?
                 .write_field(key)?
                 .write_field(ty)?
                 .write_field(sizing)?

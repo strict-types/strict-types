@@ -39,6 +39,9 @@ impl ToIdent for &'static str {
 impl ToIdent for String {
     fn to_ident(&self) -> Ident { Ident::try_from(self.to_owned()).expect("invalid identifier") }
 }
+impl ToIdent for Ident {
+    fn to_ident(&self) -> Ident { self.clone() }
+}
 pub trait ToMaybeIdent {
     fn to_maybe_ident(&self) -> Option<Ident>;
 }
@@ -172,10 +175,10 @@ pub trait WriteUnion<P: Sized>: Sized {
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self>;
     fn write_type(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
-        Ok(self.write_tuple(name).write_field(value)?.complete())
+        Ok(self.write_tuple(name)?.write_field(value)?.complete())
     }
-    fn write_tuple(self, name: impl ToIdent) -> Self::TupleWriter;
-    fn write_struct(self, name: impl ToIdent) -> Self::StructWriter;
+    fn write_tuple(self, name: impl ToIdent) -> io::Result<Self::TupleWriter>;
+    fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter>;
 
     fn complete(self) -> P;
 }
