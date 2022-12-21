@@ -32,9 +32,10 @@ use crate::Ident;
 pub trait ToIdent {
     fn to_ident(&self) -> Ident;
 }
-impl<T> ToIdent for T
-where T: ToOwned<Owned = String>
-{
+impl ToIdent for &'static str {
+    fn to_ident(&self) -> Ident { Ident::from(*self) }
+}
+impl ToIdent for String {
     fn to_ident(&self) -> Ident { Ident::try_from(self.to_owned()).expect("invalid identifier") }
 }
 pub trait ToMaybeIdent {
@@ -52,15 +53,36 @@ pub trait TypedWrite: Sized {
     type UnionWriter: WriteUnion<Self>;
     type EnumWriter: WriteEnum<Self>;
 
+    // TODO: Remove optionals
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter;
+    fn write_type(
+        self,
+        ns: impl ToIdent,
+        name: Option<impl ToIdent>,
+        value: &impl StrictEncode,
+    ) -> io::Result<Self> {
+        Ok(self.write_tuple(ns, name).write_field(value)?.complete())
+    }
     fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter;
     fn write_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionWriter;
     fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter;
 }
 
+pub trait DefineTuple<P: Sized>: Sized {
+    fn define_field<T: StrictEncode>(self) -> Self;
+    fn define_field_ord<T: StrictEncode>(self, ord: u8) -> Self;
+    fn complete(self) -> P;
+}
+
 pub trait WriteTuple<P: Sized>: Sized {
     fn write_field(self, value: &impl StrictEncode) -> io::Result<Self>;
     fn write_field_ord(self, ord: u8, value: &impl StrictEncode) -> io::Result<Self>;
+    fn complete(self) -> P;
+}
+
+pub trait DefineStruct<P: Sized>: Sized {
+    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self;
+    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self;
     fn complete(self) -> P;
 }
 
@@ -76,13 +98,23 @@ pub trait WriteStruct<P: Sized>: Sized {
 }
 
 pub trait WriteEnum<P: Sized>: Sized {
-    fn write_variant(self, name: impl ToIdent, value: u8) -> io::Result<Self>;
+    fn define_variant(self, name: impl ToIdent, value: u8) -> Self;
+    fn write_variant(self, name: impl ToIdent) -> io::Result<Self>;
     fn complete(self) -> P;
 }
 
 pub trait WriteUnion<P: Sized>: Sized {
+    type TupleDefiner: DefineTuple<Self>;
+    type StructDefiner: DefineStruct<Self>;
     type TupleWriter: WriteTuple<Self>;
     type StructWriter: WriteStruct<Self>;
+
+    fn define_unit(self, name: impl ToIdent) -> Self;
+    fn define_type<T: StrictEncode>(self, name: impl ToIdent) -> Self {
+        self.define_tuple(name).define_field::<T>().complete()
+    }
+    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner;
+    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner;
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self>;
     fn write_type(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
@@ -90,6 +122,7 @@ pub trait WriteUnion<P: Sized>: Sized {
     }
     fn write_tuple(self, name: impl ToIdent) -> Self::TupleWriter;
     fn write_struct(self, name: impl ToIdent) -> Self::StructWriter;
+
     fn complete(self) -> P;
 }
 
@@ -97,7 +130,7 @@ pub trait TypedRead: Sized {}
 
 pub trait StrictEncode {
     fn strict_encode_dumb() -> Self;
-    fn strict_encode(&self, writer: &impl TypedWrite) -> io::Result<()>;
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W>;
 }
 
 pub trait StrictDecode: Sized {
@@ -106,25 +139,25 @@ pub trait StrictDecode: Sized {
 
 pub trait Serialize: StrictEncode {
     fn strict_serialized_len(&self) -> io::Result<usize> {
-        let mut counter = StrictWriter::counter();
-        self.strict_encode(&mut counter)?;
-        Ok(counter.unbox().count)
+        let counter = StrictWriter::counter();
+        Ok(self.strict_encode(counter)?.unbox().count)
     }
 
     fn to_strict_serialized<const MAX: usize>(
         &self,
     ) -> Result<Confined<Vec<u8>, 0, MAX>, SerializeError> {
-        let mut ast_data = StrictWriter::in_memory(MAX);
-        self.strict_encode(&mut ast_data)?;
-        Confined::<Vec<u8>, 0, MAX>::try_from(ast_data.unbox()).map_err(SerializeError::from)
+        let ast_data = StrictWriter::in_memory(MAX);
+        let data = self.strict_encode(ast_data)?.unbox();
+        Confined::<Vec<u8>, 0, MAX>::try_from(data).map_err(SerializeError::from)
     }
 
     fn strict_serialize_to_file<const MAX: usize>(
         &self,
         path: impl AsRef<std::path::Path>,
     ) -> Result<(), SerializeError> {
-        let mut file = StrictWriter::with(MAX, fs::File::create(path)?);
-        self.strict_encode(&mut file).map_err(SerializeError::from)
+        let file = StrictWriter::with(MAX, fs::File::create(path)?);
+        self.strict_encode(file)?;
+        Ok(())
     }
 }
 

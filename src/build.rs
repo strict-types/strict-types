@@ -25,7 +25,8 @@ use std::io;
 
 use crate::ast::{Field, Fields, Variants};
 use crate::encoding::{
-    StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+    DefineStruct, DefineTuple, StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum,
+    WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::{LibName, LibRef, Ty, TypeName};
 
@@ -34,8 +35,8 @@ pub struct TypeBuilder {}
 impl TypeBuilder {}
 
 impl TypedWrite for TypeBuilder {
-    type TupleWriter = StructBuilder<Self, false>;
-    type StructWriter = StructBuilder<Self, true>;
+    type TupleWriter = StructBuilder<Self, false, false>;
+    type StructWriter = StructBuilder<Self, true, false>;
     type UnionWriter = UnionBuilder;
     type EnumWriter = EnumBuilder<Self>;
 
@@ -78,11 +79,16 @@ pub struct EnumBuilder<P: BuilderParent> {
 }
 
 impl<P: BuilderParent> WriteEnum<P> for EnumBuilder<P> {
-    fn write_variant(mut self, name: impl ToIdent, value: u8) -> io::Result<Self> {
+    fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
+
+    fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
+        todo!();
+        /*
         let field = Field::named(name.to_ident(), value);
         assert!(self.variants.insert(field), "repeated enum variant name or value");
         self.ord = value + 1;
         Ok(self)
+         */
     }
 
     fn complete(self) -> P {
@@ -101,8 +107,16 @@ pub struct UnionBuilder {
 }
 
 impl WriteUnion<TypeBuilder> for UnionBuilder {
-    type TupleWriter = StructBuilder<Self, false>;
-    type StructWriter = StructBuilder<Self, true>;
+    type TupleDefiner = StructBuilder<Self, false, true>;
+    type StructDefiner = StructBuilder<Self, true, true>;
+    type TupleWriter = StructBuilder<Self, false, false>;
+    type StructWriter = StructBuilder<Self, true, false>;
+
+    fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
+
+    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
+
+    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 
@@ -117,7 +131,7 @@ impl WriteUnion<TypeBuilder> for UnionBuilder {
     }
 }
 
-pub struct StructBuilder<P: BuilderParent, const NAMED: bool> {
+pub struct StructBuilder<P: BuilderParent, const NAMED: bool, const DEFINER: bool> {
     lib: LibName,
     name: Option<TypeName>,
     fields: BTreeMap<Field, LibRef>,
@@ -125,7 +139,7 @@ pub struct StructBuilder<P: BuilderParent, const NAMED: bool> {
     parent: P,
 }
 
-impl<P: BuilderParent, const NAMED: bool> StructBuilder<P, NAMED> {
+impl<P: BuilderParent, const NAMED: bool, const DEFINER: bool> StructBuilder<P, NAMED, DEFINER> {
     pub fn with(lib: LibName, name: Option<TypeName>, parent: P) -> Self {
         StructBuilder {
             lib,
@@ -159,7 +173,15 @@ impl<P: BuilderParent, const NAMED: bool> StructBuilder<P, NAMED> {
     }
 }
 
-impl<P: BuilderParent> WriteStruct<P> for StructBuilder<P, true> {
+impl<P: BuilderParent> DefineStruct<P> for StructBuilder<P, true, true> {
+    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self { todo!() }
+
+    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self { todo!() }
+
+    fn complete(self) -> P { todo!() }
+}
+
+impl<P: BuilderParent> WriteStruct<P> for StructBuilder<P, true, false> {
     fn write_field(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
         let ord = self.ord;
         self.write_field_ord(name, ord, value)
@@ -177,7 +199,15 @@ impl<P: BuilderParent> WriteStruct<P> for StructBuilder<P, true> {
     fn complete(self) -> P { self._complete() }
 }
 
-impl<P: BuilderParent> WriteTuple<P> for StructBuilder<P, false> {
+impl<P: BuilderParent> DefineTuple<P> for StructBuilder<P, false, true> {
+    fn define_field<T: StrictEncode>(self) -> Self { todo!() }
+
+    fn define_field_ord<T: StrictEncode>(self, ord: u8) -> Self { todo!() }
+
+    fn complete(self) -> P { todo!() }
+}
+
+impl<P: BuilderParent> WriteTuple<P> for StructBuilder<P, false, false> {
     fn write_field(self, value: &impl StrictEncode) -> io::Result<Self> {
         let ord = self.ord;
         self.write_field_ord(ord, value)

@@ -26,6 +26,7 @@ mod id;
 mod translate;
 mod path;
 mod iter;
+mod encoding;
 
 pub use id::SemId;
 pub use iter::{CheckError, IntoIter, Iter};

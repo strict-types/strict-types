@@ -25,7 +25,8 @@ use std::io;
 use amplify::WriteCounter;
 
 use crate::encoding::{
-    StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+    DefineStruct, DefineTuple, StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum,
+    WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::Ident;
 
@@ -118,6 +119,20 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
     }
 }
 
+pub struct StructDefiner<W: io::Write> {
+    ns: Ident,
+    name: Option<Ident>,
+    writer: StrictWriter<W>,
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineStruct<P> for StructDefiner<W> {
+    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self { todo!() }
+
+    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self { todo!() }
+
+    fn complete(self) -> P { P::from(self.writer) }
+}
+
 pub struct StructWriter<W: io::Write> {
     ns: Ident,
     name: Option<Ident>,
@@ -125,31 +140,36 @@ pub struct StructWriter<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteStruct<P> for StructWriter<W> {
-    fn write_field(self, _name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
-        value.strict_encode(&self.writer).map(|_| self)
+    fn write_field(mut self, _name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
+        self.writer = value.strict_encode(self.writer)?;
+        Ok(self)
     }
 
     fn write_field_ord(
-        self,
+        mut self,
         _name: impl ToIdent,
         _ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
-        value.strict_encode(&self.writer).map(|_| self)
+        self.writer = value.strict_encode(self.writer)?;
+        Ok(self)
     }
 
     fn complete(self) -> P { P::from(self.writer) }
 }
 
-pub(crate) struct PrimitiveWriter<W: io::Write>(StrictWriter<W>);
-
-impl<W: io::Write> From<StrictWriter<W>> for PrimitiveWriter<W> {
-    fn from(writer: StrictWriter<W>) -> Self { Self(writer) }
+pub struct TupleDefiner<W: io::Write> {
+    ns: Ident,
+    name: Option<Ident>,
+    writer: StrictWriter<W>,
 }
 
-impl<W: io::Write> io::Write for PrimitiveWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> { self.0 .0.write(buf) }
-    fn flush(&mut self) -> io::Result<()> { self.0 .0.flush() }
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineTuple<P> for TupleDefiner<W> {
+    fn define_field<T: StrictEncode>(self) -> Self { todo!() }
+
+    fn define_field_ord<T: StrictEncode>(self, ord: u8) -> Self { todo!() }
+
+    fn complete(self) -> P { P::from(self.writer) }
 }
 
 pub struct TupleWriter<W: io::Write> {
@@ -173,8 +193,16 @@ pub struct UnionWriter<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWriter<W> {
+    type TupleDefiner = TupleDefiner<W>;
+    type StructDefiner = StructDefiner<W>;
     type TupleWriter = TupleWriter<W>;
     type StructWriter = StructWriter<W>;
+
+    fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
+
+    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
+
+    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 
@@ -192,7 +220,9 @@ pub struct EnumWriter<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for EnumWriter<W> {
-    fn write_variant(self, name: impl ToIdent, value: u8) -> io::Result<Self> { todo!() }
+    fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
+
+    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 
     fn complete(self) -> P { P::from(self.writer) }
 }
@@ -205,4 +235,19 @@ impl<W: io::Write> From<StrictWriter<W>> for UnionWriter<W> {
             writer,
         }
     }
+}
+
+pub(crate) struct RawWriter<W: TypedWrite>(StrictWriter<W>);
+
+impl<W: io::Write> RawWriter<W> {
+    pub fn complete(self) -> StrictWriter<W> { self.0 }
+}
+
+impl<W: io::Write> From<StrictWriter<W>> for RawWriter<W> {
+    fn from(writer: StrictWriter<W>) -> Self { Self(writer) }
+}
+
+impl<W: io::Write> io::Write for RawWriter<W> {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> { self.0 .0.write(buf) }
+    fn flush(&mut self) -> io::Result<()> { self.0 .0.flush() }
 }
