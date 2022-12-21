@@ -54,8 +54,8 @@ where T: ToIdent
 pub trait TypedWrite: Sized {
     type TupleWriter: WriteTuple<Self>;
     type StructWriter: WriteStruct<Self>;
-    type UnionDefiner: DefineUnion<Self>;
-    type EnumDefiner: DefineEnum<Self>;
+    type UnionDefiner: DefineUnion<Parent = Self>;
+    type EnumDefiner: DefineEnum<Parent = Self>;
 
     // TODO: Remove optionals
     fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner;
@@ -143,21 +143,24 @@ pub trait WriteStruct<P: Sized>: Sized {
     fn complete(self) -> P;
 }
 
-pub trait DefineEnum<P: Sized>: Sized {
-    type EnumWriter: WriteEnum<P>;
+pub trait DefineEnum: Sized {
+    type Parent: TypedWrite;
+    type EnumWriter: WriteEnum<Parent = Self::Parent>;
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self;
     fn complete(self) -> Self::EnumWriter;
 }
 
-pub trait WriteEnum<P: Sized>: Sized {
+pub trait WriteEnum: Sized {
+    type Parent: TypedWrite;
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self>;
-    fn complete(self) -> P;
+    fn complete(self) -> Self::Parent;
 }
 
-pub trait DefineUnion<P: Sized>: Sized {
+pub trait DefineUnion: Sized {
+    type Parent: TypedWrite;
     type TupleDefiner: DefineTuple<Self>;
     type StructDefiner: DefineStruct<Self>;
-    type UnionWriter: WriteUnion<P>;
+    type UnionWriter: WriteUnion<Parent = Self::Parent>;
 
     fn define_unit(self, name: impl ToIdent) -> Self;
     fn define_type<T: StrictEncode>(self, name: impl ToIdent) -> Self {
@@ -169,7 +172,8 @@ pub trait DefineUnion<P: Sized>: Sized {
     fn complete(self) -> Self::UnionWriter;
 }
 
-pub trait WriteUnion<P: Sized>: Sized {
+pub trait WriteUnion: Sized {
+    type Parent: TypedWrite;
     type TupleWriter: WriteTuple<Self>;
     type StructWriter: WriteStruct<Self>;
 
@@ -180,7 +184,7 @@ pub trait WriteUnion<P: Sized>: Sized {
     fn write_tuple(self, name: impl ToIdent) -> io::Result<Self::TupleWriter>;
     fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter>;
 
-    fn complete(self) -> P;
+    fn complete(self) -> Self::Parent;
 }
 
 pub trait TypedRead: Sized {}

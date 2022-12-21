@@ -257,6 +257,7 @@ pub struct UnionWriter<W: io::Write> {
     writer: StrictWriter<W>,
     defined: bool,
     written: bool,
+    parent_ident: Option<(Ident, Option<Ident>)>,
 }
 
 impl<W: io::Write> UnionWriter<W> {
@@ -268,6 +269,19 @@ impl<W: io::Write> UnionWriter<W> {
             writer,
             defined: false,
             written: false,
+            parent_ident: None,
+        }
+    }
+
+    fn inline(ns: impl ToIdent, name: Option<impl ToIdent>, uw: UnionWriter<W>) -> Self {
+        UnionWriter {
+            ns: ns.to_ident(),
+            name: name.to_maybe_ident(),
+            fields: empty!(),
+            writer: uw.writer,
+            defined: false,
+            written: false,
+            parent_ident: Some((uw.ns, uw.name)),
         }
     }
 
@@ -312,23 +326,24 @@ impl<W: io::Write> UnionWriter<W> {
         Ok(self)
     }
 
-    fn _complete_definition<P: Sized + From<StrictWriter<W>>>(mut self) -> P {
+    fn _complete_definition(mut self) -> Self {
         assert!(
             !self.fields.is_empty(),
             "unit or enum {} does not have fields defined",
             self.name()
         );
         self.defined = true;
-        P::from(self.writer)
+        self
     }
 
-    fn _complete_write<P: Sized + From<StrictWriter<W>>>(self) -> P {
+    fn _complete_write(self) -> StrictWriter<W> {
         assert!(!self.written, "not all fields were written for {}", self.name());
-        P::from(self.writer)
+        self.writer
     }
 }
 
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineUnion<P> for UnionWriter<W> {
+impl<W: io::Write> DefineUnion for UnionWriter<W> {
+    type Parent = StrictWriter<W>;
     type TupleDefiner = StructWriter<W>;
     type StructDefiner = StructWriter<W>;
     type UnionWriter = UnionWriter<W>;
@@ -350,7 +365,8 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineUnion<P> for UnionWri
     fn complete(self) -> Self::UnionWriter { self._complete_definition() }
 }
 
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWriter<W> {
+impl<W: io::Write> WriteUnion for UnionWriter<W> {
+    type Parent = StrictWriter<W>;
     type TupleWriter = StructWriter<W>;
     type StructWriter = StructWriter<W>;
 
@@ -368,10 +384,11 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWrit
         self = self._write_field(field, FieldType::Struct)?;
         Ok(StructWriter::with(self.ns, Some(name), self.writer))
     }
-    fn complete(self) -> P { self._complete_write() }
+    fn complete(self) -> Self::Parent { self._complete_write() }
 }
 
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineEnum<P> for UnionWriter<W> {
+impl<W: io::Write> DefineEnum for UnionWriter<W> {
+    type Parent = StrictWriter<W>;
     type EnumWriter = UnionWriter<W>;
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self {
         let field = Field::named(name.to_ident(), value);
@@ -380,7 +397,8 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineEnum<P> for UnionWrit
     fn complete(self) -> Self::EnumWriter { self._complete_definition() }
 }
 
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for UnionWriter<W> {
+impl<W: io::Write> WriteEnum for UnionWriter<W> {
+    type Parent = StrictWriter<W>;
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
         debug_assert!(
             self.defined,
@@ -389,7 +407,7 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for UnionWrite
         let field = Field::named(name.to_ident(), self.next_ord());
         self._write_field(field, FieldType::Unit)
     }
-    fn complete(self) -> P { self._complete_write() }
+    fn complete(self) -> Self::Parent { self._complete_write() }
 }
 
 impl<W: io::Write> From<StrictWriter<W>> for UnionWriter<W> {

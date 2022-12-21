@@ -38,7 +38,7 @@ impl TypedWrite for TypeBuilder {
     type TupleWriter = StructBuilder<Self, false, false>;
     type StructWriter = StructBuilder<Self, true, false>;
     type UnionDefiner = UnionBuilder;
-    type EnumDefiner = EnumBuilder<Self>;
+    type EnumDefiner = EnumBuilder;
 
     fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner {
         todo!()
@@ -74,15 +74,16 @@ impl BuilderParent for UnionBuilder {
     fn complete(self, lib: LibName, name: Option<TypeName>, ty: Ty<LibRef>) -> Self { todo!() }
 }
 
-pub struct EnumBuilder<P: BuilderParent> {
+pub struct EnumBuilder {
     lib: LibName,
     name: Option<TypeName>,
     variants: BTreeSet<Field>,
     ord: u8,
-    parent: P,
+    parent: TypeBuilder,
 }
 
-impl<P: BuilderParent> DefineEnum<P> for EnumBuilder<P> {
+impl DefineEnum for EnumBuilder {
+    type Parent = TypeBuilder;
     type EnumWriter = Self;
 
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
@@ -90,7 +91,9 @@ impl<P: BuilderParent> DefineEnum<P> for EnumBuilder<P> {
     fn complete(self) -> Self::EnumWriter { todo!() }
 }
 
-impl<P: BuilderParent> WriteEnum<P> for EnumBuilder<P> {
+impl WriteEnum for EnumBuilder {
+    type Parent = TypeBuilder;
+
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
         todo!();
         /*
@@ -101,7 +104,7 @@ impl<P: BuilderParent> WriteEnum<P> for EnumBuilder<P> {
          */
     }
 
-    fn complete(self) -> P {
+    fn complete(self) -> TypeBuilder {
         assert!(!self.variants.is_empty(), "building enum with zero variants");
         let variants = Variants::try_from(self.variants).expect("too many enum variants");
         self.parent.complete(self.lib, self.name, Ty::Enum(variants))
@@ -116,7 +119,8 @@ pub struct UnionBuilder {
     parent: TypeBuilder,
 }
 
-impl DefineUnion<TypeBuilder> for UnionBuilder {
+impl DefineUnion for UnionBuilder {
+    type Parent = TypeBuilder;
     type TupleDefiner = StructBuilder<Self, false, true>;
     type StructDefiner = StructBuilder<Self, true, true>;
     type UnionWriter = Self;
@@ -130,7 +134,8 @@ impl DefineUnion<TypeBuilder> for UnionBuilder {
     fn complete(self) -> Self::UnionWriter { todo!() }
 }
 
-impl WriteUnion<TypeBuilder> for UnionBuilder {
+impl WriteUnion for UnionBuilder {
+    type Parent = TypeBuilder;
     type TupleWriter = StructBuilder<Self, false, false>;
     type StructWriter = StructBuilder<Self, true, false>;
 
