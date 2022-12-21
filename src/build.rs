@@ -56,7 +56,9 @@ impl TypedWrite for TypeBuilder {
         todo!()
     }
 
-    unsafe fn write_raw<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self> { todo!() }
+    unsafe fn _write_raw<const LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
+        todo!()
+    }
 }
 
 pub trait BuilderParent: Sized {
@@ -83,7 +85,7 @@ pub struct EnumBuilder<P: BuilderParent> {
 impl<P: BuilderParent> WriteEnum<P> for EnumBuilder<P> {
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
 
-    fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
+    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
         todo!();
         /*
         let field = Field::named(name.to_ident(), value);

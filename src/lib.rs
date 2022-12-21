@@ -20,6 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#![feature(associated_type_defaults)]
 #![deny(
     non_upper_case_globals,
     non_camel_case_types,
@@ -36,6 +37,7 @@ extern crate amplify;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
+extern crate core;
 
 #[macro_use]
 mod macros;

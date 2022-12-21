@@ -118,7 +118,9 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
         todo!()
     }
 
-    unsafe fn write_raw<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self> { todo!() }
+    unsafe fn _write_raw<const LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
+        todo!()
+    }
 }
 
 pub struct StructDefiner<W: io::Write> {

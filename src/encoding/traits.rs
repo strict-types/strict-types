@@ -23,7 +23,8 @@
 use std::io::{BufRead, Seek};
 use std::{fs, io};
 
-use amplify::confinement::Confined;
+use amplify::confinement::{Collection, Confined};
+use amplify::num::u24;
 
 use super::DecodeError;
 use crate::encoding::{DeserializeError, SerializeError, StrictReader, StrictWriter};
@@ -67,7 +68,46 @@ pub trait TypedWrite: Sized {
     fn write_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionWriter;
     fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter;
 
-    unsafe fn write_raw<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self>;
+    #[doc(hidden)]
+    unsafe fn _write_raw<const MAX_LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self>;
+    #[doc(hidden)]
+    unsafe fn write_raw_array<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self> {
+        self._write_raw::<LEN>(raw)
+    }
+    #[doc(hidden)]
+    unsafe fn write_raw_bytes<const MAX_LEN: usize>(
+        self,
+        bytes: impl AsRef<[u8]>,
+    ) -> io::Result<Self> {
+        self.write_raw_len::<MAX_LEN>(bytes.as_ref().len())?._write_raw::<MAX_LEN>(bytes)
+    }
+    #[doc(hidden)]
+    unsafe fn write_raw_len<const MAX_LEN: usize>(self, len: usize) -> io::Result<Self> {
+        match MAX_LEN {
+            tiny if tiny <= u8::MAX as usize => u8::strict_encode(&(len as u8), self),
+            small if small < u16::MAX as usize => u16::strict_encode(&(len as u16), self),
+            medium if medium < u24::MAX.into_usize() => {
+                u24::strict_encode(&u24::with(len as u32), self)
+            }
+            large if large < u32::MAX as usize => u32::strict_encode(&(len as u32), self),
+            _ => unreachable!("confined collections larger than u32::MAX must not exist"),
+        }
+    }
+    #[doc(hidden)]
+    unsafe fn write_raw_collection<C: Collection, const MIN_LEN: usize, const MAX_LEN: usize>(
+        mut self,
+        col: &Confined<C, MIN_LEN, MAX_LEN>,
+    ) -> io::Result<Self>
+    where
+        for<'a> &'a C: IntoIterator,
+        for<'a> <&'a C as IntoIterator>::Item: StrictEncode,
+    {
+        self = self.write_raw_len::<MAX_LEN>(col.len())?;
+        for item in col {
+            self = item.strict_encode(self)?;
+        }
+        Ok(self)
+    }
 }
 
 pub trait DefineTuple<P: Sized>: Sized {
@@ -130,13 +170,22 @@ pub trait WriteUnion<P: Sized>: Sized {
 
 pub trait TypedRead: Sized {}
 
-pub trait StrictEncode {
-    fn strict_encode_dumb() -> Self;
+pub trait StrictEncode: Sized {
+    type Dumb: StrictEncode = Self;
+    fn strict_encode_dumb() -> Self::Dumb;
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W>;
 }
 
 pub trait StrictDecode: Sized {
     fn strict_decode(reader: &impl TypedRead) -> Result<Self, DecodeError>;
+}
+
+impl<T: StrictEncode<Dumb = T>> StrictEncode for &T {
+    type Dumb = T;
+    fn strict_encode_dumb() -> T { T::strict_encode_dumb() }
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        (*self).strict_encode(writer)
+    }
 }
 
 pub trait Serialize: StrictEncode {
