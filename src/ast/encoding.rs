@@ -20,41 +20,162 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, BTreeSet};
-use std::hash::Hash;
 use std::io;
+use std::ops::Deref;
 
-use amplify::ascii::{AsciiChar, AsciiString};
-use amplify::confinement::Confined;
-use amplify::num::apfloat::{ieee, Float};
-use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 use amplify::Wrapper;
 
-use crate::ast::Step;
-use crate::encoding::{StrictEncode, TypedWrite, WriteUnion};
-use crate::{FieldName, Ident};
+use crate::ast::{Field, Fields, Step, Variants};
+use crate::encoding::{
+    DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
+};
+use crate::util::Sizing;
+use crate::{FieldName, Ident, KeyTy, Ty, TypeRef};
+
+const STEN_LIB: &'static str = "StEn";
 
 impl StrictEncode for Step {
     fn strict_encode_dumb() -> Self { Step::Index }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .write_union("StEn", Some("Step"))
-            .define_type::<FieldName>("NamedField")
-            .define_type::<u8>("UnnamedField")
-            .define_unit("Index")
-            .define_unit("List")
-            .define_unit("Set")
-            .define_unit("Map");
+            .define_union(STEN_LIB, Some("step"))
+            .define_type::<FieldName>("namedField")
+            .define_type::<u8>("unnamedField")
+            .define_unit("index")
+            .define_unit("list")
+            .define_unit("set")
+            .define_unit("map")
+            .complete();
 
         let u = match self {
-            Step::NamedField(name) => u.write_type("NamedField", name),
-            Step::UnnamedField(ord) => u.write_type("UnnamedField", ord),
-            Step::Index => u.write_unit("Index"),
-            Step::List => u.write_unit("List"),
-            Step::Set => u.write_unit("Set"),
-            Step::Map => u.write_unit("Map"),
+            Step::NamedField(name) => u.write_type("namedField", name),
+            Step::UnnamedField(ord) => u.write_type("unnamedField", ord),
+            Step::Index => u.write_unit("index"),
+            Step::List => u.write_unit("list"),
+            Step::Set => u.write_unit("set"),
+            Step::Map => u.write_unit("map"),
         }?;
+
+        Ok(u.complete())
+    }
+}
+
+impl StrictEncode for Sizing {
+    fn strict_encode_dumb() -> Self { Sizing::U16_NONEMPTY }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        Ok(writer
+            .write_struct(STEN_LIB, Some("Sizing"))
+            .write_field("min", &self.min)?
+            .write_field("max", &self.max)?
+            .complete())
+    }
+}
+
+impl StrictEncode for Field {
+    fn strict_encode_dumb() -> Self { Field::unnamed(0) }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        Ok(writer
+            .write_struct(STEN_LIB, Some("Field"))
+            .write_field("name", &self.name)?
+            .write_field("ord", &self.ord)?
+            .complete())
+    }
+}
+
+impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
+    fn strict_encode_dumb() -> Self {
+        fields! {
+            "a" => Ref::strict_encode_dumb()
+        }
+    }
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(STEN_LIB, Some("Fields"), self.deref())
+    }
+}
+
+impl StrictEncode for Variants {
+    fn strict_encode_dumb() -> Self { todo!() }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(STEN_LIB, Some("Variants"), self.deref())
+    }
+}
+
+impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
+    fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        let u = writer
+            .define_union(STEN_LIB, Some("Ty"))
+            .define_type::<u8>("primitive")
+            .define_unit("unicode")
+            .define_type::<Variants>("enum")
+            .define_type::<Fields<Ref, false>>("union")
+            .define_type::<Fields<Ref, true>>("struct");
+        let u = u.define_tuple("array").define_field::<Ref>().define_field::<u16>().complete();
+        let u = u.define_tuple("list").define_field::<Ref>().define_field::<Sizing>().complete();
+        let u = u.define_tuple("Set").define_field::<Ref>().define_field::<Sizing>().complete();
+        let u = u
+            .define_tuple("map")
+            .define_field::<KeyTy>()
+            .define_field::<Ref>()
+            .define_field::<Sizing>()
+            .complete();
+
+        let u = u.complete();
+
+        let u = match self {
+            Ty::Primitive(prim) => u.write_type("primitive", &prim.into_code())?,
+            Ty::UnicodeChar => u.write_unit("unicode")?,
+            Ty::Enum(vars) => u.write_type("enum", vars)?,
+            Ty::Union(fields) => u.write_type("union", fields)?,
+            Ty::Struct(fields) => u.write_type("struct", fields)?,
+            Ty::Array(ty, len) => {
+                u.write_tuple("array").write_field(ty)?.write_field(len)?.complete()
+            }
+            Ty::List(ty, sizing) => {
+                u.write_tuple("list").write_field(ty)?.write_field(sizing)?.complete()
+            }
+            Ty::Set(ty, sizing) => {
+                u.write_tuple("set").write_field(ty)?.write_field(sizing)?.complete()
+            }
+            Ty::Map(key, ty, sizing) => u
+                .write_tuple("map")
+                .write_field(key)?
+                .write_field(ty)?
+                .write_field(sizing)?
+                .complete(),
+        };
+
+        Ok(u.complete())
+    }
+}
+
+impl StrictEncode for KeyTy {
+    fn strict_encode_dumb() -> Self { KeyTy::Array(767) }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        let u = writer
+            .define_union(STEN_LIB, Some("KeyTy"))
+            .define_type::<u8>("primitive")
+            .define_type::<Variants>("enum")
+            .define_type::<u16>("array")
+            .define_type::<Sizing>("unicode")
+            .define_type::<Sizing>("ascii")
+            .define_type::<Sizing>("bytes")
+            .complete();
+
+        let u = match self {
+            KeyTy::Primitive(prim) => u.write_type("primitive", &prim.into_code())?,
+            KeyTy::Enum(vars) => u.write_type("enum", vars)?,
+            KeyTy::Array(len) => u.write_type("array", len)?,
+            KeyTy::UnicodeStr(sizing) => u.write_type("unicode", sizing)?,
+            KeyTy::AsciiStr(sizing) => u.write_type("ascii", sizing)?,
+            KeyTy::Bytes(sizing) => u.write_type("bytes", sizing)?,
+        };
 
         Ok(u.complete())
     }
@@ -65,122 +186,5 @@ impl StrictEncode for Ident {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type("StEn", Some("Ident"), Wrapper::as_inner(self))
-    }
-}
-
-macro_rules! encode_num {
-    ($ty:ty) => {
-        impl StrictEncode for $ty {
-            fn strict_encode_dumb() -> Self { <$ty>::MAX }
-            fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-                unsafe { writer.write_raw_array(self.to_le_bytes()) }
-            }
-        }
-    };
-}
-
-macro_rules! encode_float {
-    ($ty:ty, $len:literal) => {
-        impl StrictEncode for $ty {
-            fn strict_encode_dumb() -> Self { <$ty>::SMALLEST }
-            fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-                let mut be = [0u8; $len];
-                be.copy_from_slice(&self.to_bits().to_le_bytes()[..$len]);
-                unsafe { writer.write_raw_array(be) }
-            }
-        }
-    };
-}
-
-encode_num!(u8);
-encode_num!(u16);
-encode_num!(u24);
-encode_num!(u32);
-encode_num!(u64);
-encode_num!(u128);
-encode_num!(u256);
-encode_num!(u512);
-encode_num!(u1024);
-
-encode_num!(i8);
-encode_num!(i16);
-encode_num!(i32);
-encode_num!(i64);
-encode_num!(i128);
-encode_num!(i256);
-encode_num!(i512);
-encode_num!(i1024);
-
-encode_float!(ieee::Half, 2);
-encode_float!(ieee::Single, 4);
-encode_float!(ieee::Double, 8);
-encode_float!(ieee::X87DoubleExtended, 10);
-encode_float!(ieee::Quad, 16);
-encode_float!(ieee::Oct, 32);
-
-impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
-    for Confined<String, MIN_LEN, MAX_LEN>
-{
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(['a'; MIN_LEN]).expect("hardcoded literal")
-    }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        unsafe { writer.write_raw_bytes::<MAX_LEN>(self.as_bytes()) }
-    }
-}
-
-impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
-    for Confined<AsciiString, MIN_LEN, MAX_LEN>
-{
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter([AsciiChar::a; MIN_LEN]).expect("hardcoded literal")
-    }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        unsafe { writer.write_raw_bytes::<MAX_LEN>(self.as_bytes()) }
-    }
-}
-
-impl<T: StrictEncode<Dumb = T>, const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
-    for Confined<Vec<T>, MIN_LEN, MAX_LEN>
-{
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(vec![T::strict_encode_dumb()]).expect("hardcoded literal")
-    }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        unsafe { writer.write_raw_collection::<Vec<T>, MIN_LEN, MAX_LEN>(self) }
-    }
-}
-
-impl<T: StrictEncode<Dumb = T> + Ord, const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
-    for Confined<BTreeSet<T>, MIN_LEN, MAX_LEN>
-{
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(bset![T::strict_encode_dumb()]).expect("hardcoded literal")
-    }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        unsafe { writer.write_raw_collection::<BTreeSet<T>, MIN_LEN, MAX_LEN>(self) }
-    }
-}
-
-impl<
-        K: StrictEncode<Dumb = K> + Ord + Hash,
-        const MIN_LEN: usize,
-        V: StrictEncode<Dumb = V>,
-        const MAX_LEN: usize,
-    > StrictEncode for Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
-{
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(bmap! { K::strict_encode_dumb() => V::strict_encode_dumb() })
-            .expect("hardcoded literal")
-    }
-    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
-        unsafe {
-            writer = writer.write_raw_len::<MAX_LEN>(self.len())?;
-        }
-        for (k, v) in self {
-            writer = k.strict_encode(writer)?;
-            writer = v.strict_encode(writer)?
-        }
-        Ok(writer)
     }
 }

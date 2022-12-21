@@ -25,8 +25,8 @@ use std::io;
 
 use crate::ast::{Field, Fields, Variants};
 use crate::encoding::{
-    DefineStruct, DefineTuple, StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum,
-    WriteStruct, WriteTuple, WriteUnion,
+    DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, ToIdent, ToMaybeIdent,
+    TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::{LibName, LibRef, Ty, TypeName};
 
@@ -37,8 +37,16 @@ impl TypeBuilder {}
 impl TypedWrite for TypeBuilder {
     type TupleWriter = StructBuilder<Self, false, false>;
     type StructWriter = StructBuilder<Self, true, false>;
-    type UnionWriter = UnionBuilder;
-    type EnumWriter = EnumBuilder<Self>;
+    type UnionDefiner = UnionBuilder;
+    type EnumDefiner = EnumBuilder<Self>;
+
+    fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner {
+        todo!()
+    }
+
+    fn define_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumDefiner {
+        todo!()
+    }
 
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter {
         todo!()
@@ -46,14 +54,6 @@ impl TypedWrite for TypeBuilder {
 
     fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter {
         StructBuilder::with(ns.to_ident(), name.to_maybe_ident(), self)
-    }
-
-    fn write_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionWriter {
-        todo!()
-    }
-
-    fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter {
-        todo!()
     }
 
     unsafe fn _write_raw<const LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
@@ -82,9 +82,15 @@ pub struct EnumBuilder<P: BuilderParent> {
     parent: P,
 }
 
-impl<P: BuilderParent> WriteEnum<P> for EnumBuilder<P> {
+impl<P: BuilderParent> DefineEnum<P> for EnumBuilder<P> {
+    type EnumWriter = Self;
+
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
 
+    fn complete(self) -> Self::EnumWriter { todo!() }
+}
+
+impl<P: BuilderParent> WriteEnum<P> for EnumBuilder<P> {
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
         todo!();
         /*
@@ -110,17 +116,23 @@ pub struct UnionBuilder {
     parent: TypeBuilder,
 }
 
-impl WriteUnion<TypeBuilder> for UnionBuilder {
+impl DefineUnion<TypeBuilder> for UnionBuilder {
     type TupleDefiner = StructBuilder<Self, false, true>;
     type StructDefiner = StructBuilder<Self, true, true>;
-    type TupleWriter = StructBuilder<Self, false, false>;
-    type StructWriter = StructBuilder<Self, true, false>;
+    type UnionWriter = Self;
 
     fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
 
     fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
 
     fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
+
+    fn complete(self) -> Self::UnionWriter { todo!() }
+}
+
+impl WriteUnion<TypeBuilder> for UnionBuilder {
+    type TupleWriter = StructBuilder<Self, false, false>;
+    type StructWriter = StructBuilder<Self, true, false>;
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 

@@ -25,8 +25,8 @@ use std::io;
 use amplify::WriteCounter;
 
 use crate::encoding::{
-    DefineStruct, DefineTuple, StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum,
-    WriteStruct, WriteTuple, WriteUnion,
+    DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, ToIdent, ToMaybeIdent,
+    TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::Ident;
 
@@ -95,8 +95,16 @@ impl<W: io::Write> StrictWriter<W> {
 impl<W: io::Write> TypedWrite for StrictWriter<W> {
     type TupleWriter = TupleWriter<W>;
     type StructWriter = StructWriter<W>;
-    type UnionWriter = UnionWriter<W>;
-    type EnumWriter = EnumWriter<W>;
+    type UnionDefiner = UnionDefiner<W>;
+    type EnumDefiner = EnumDefiner<W>;
+
+    fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner {
+        todo!()
+    }
+
+    fn define_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumDefiner {
+        todo!()
+    }
 
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter {
         todo!()
@@ -108,14 +116,6 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
             name: name.to_maybe_ident(),
             writer: self,
         }
-    }
-
-    fn write_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionWriter {
-        todo!()
-    }
-
-    fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter {
-        todo!()
     }
 
     unsafe fn _write_raw<const LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
@@ -190,6 +190,23 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteTuple<P> for TupleWrit
     fn complete(self) -> P { P::from(self.writer) }
 }
 
+pub struct UnionDefiner<W: io::Write> {
+    ns: Ident,
+    name: Option<Ident>,
+    writer: StrictWriter<W>,
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineUnion<P> for UnionDefiner<W> {
+    type TupleDefiner = TupleDefiner<W>;
+    type StructDefiner = StructDefiner<W>;
+    type UnionWriter = UnionWriter<W>;
+
+    fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
+    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
+    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
+    fn complete(self) -> Self::UnionWriter { todo!() }
+}
+
 pub struct UnionWriter<W: io::Write> {
     ns: Ident,
     name: Option<Ident>,
@@ -197,24 +214,25 @@ pub struct UnionWriter<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWriter<W> {
-    type TupleDefiner = TupleDefiner<W>;
-    type StructDefiner = StructDefiner<W>;
     type TupleWriter = TupleWriter<W>;
     type StructWriter = StructWriter<W>;
 
-    fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
-
-    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
-
-    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
-
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
-
     fn write_tuple(self, name: impl ToIdent) -> Self::TupleWriter { todo!() }
-
     fn write_struct(self, name: impl ToIdent) -> Self::StructWriter { todo!() }
-
     fn complete(self) -> P { P::from(self.writer) }
+}
+
+pub struct EnumDefiner<W: io::Write> {
+    ns: Ident,
+    name: Option<Ident>,
+    writer: StrictWriter<W>,
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineEnum<P> for EnumDefiner<W> {
+    type EnumWriter = EnumWriter<W>;
+    fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
+    fn complete(self) -> Self::EnumWriter { todo!() }
 }
 
 pub struct EnumWriter<W: io::Write> {
@@ -224,11 +242,18 @@ pub struct EnumWriter<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for EnumWriter<W> {
-    fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
-
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
-
     fn complete(self) -> P { P::from(self.writer) }
+}
+
+impl<W: io::Write> From<StrictWriter<W>> for UnionDefiner<W> {
+    fn from(writer: StrictWriter<W>) -> Self {
+        UnionDefiner {
+            ns: tn!(""),
+            name: None,
+            writer,
+        }
+    }
 }
 
 impl<W: io::Write> From<StrictWriter<W>> for UnionWriter<W> {

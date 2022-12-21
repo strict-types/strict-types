@@ -24,6 +24,7 @@ mod traits;
 mod error;
 mod read;
 mod write;
+mod base;
 
 pub use error::{DecodeError, DeserializeError, SerializeError};
 pub use read::StrictReader;
