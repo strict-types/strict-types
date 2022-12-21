@@ -117,6 +117,8 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
     fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter {
         todo!()
     }
+
+    unsafe fn write_raw<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self> { todo!() }
 }
 
 pub struct StructDefiner<W: io::Write> {
@@ -235,19 +237,4 @@ impl<W: io::Write> From<StrictWriter<W>> for UnionWriter<W> {
             writer,
         }
     }
-}
-
-pub(crate) struct RawWriter<W: TypedWrite>(StrictWriter<W>);
-
-impl<W: io::Write> RawWriter<W> {
-    pub fn complete(self) -> StrictWriter<W> { self.0 }
-}
-
-impl<W: io::Write> From<StrictWriter<W>> for RawWriter<W> {
-    fn from(writer: StrictWriter<W>) -> Self { Self(writer) }
-}
-
-impl<W: io::Write> io::Write for RawWriter<W> {
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> { self.0 .0.write(buf) }
-    fn flush(&mut self) -> io::Result<()> { self.0 .0.flush() }
 }

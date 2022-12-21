@@ -28,5 +28,4 @@ mod write;
 pub use error::{DecodeError, DeserializeError, SerializeError};
 pub use read::StrictReader;
 pub use traits::*;
-pub(crate) use write::RawWriter;
 pub use write::{StrictWriter, StructWriter};

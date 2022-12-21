@@ -66,6 +66,8 @@ pub trait TypedWrite: Sized {
     fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter;
     fn write_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionWriter;
     fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter;
+
+    unsafe fn write_raw<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self>;
 }
 
 pub trait DefineTuple<P: Sized>: Sized {

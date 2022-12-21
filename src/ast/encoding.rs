@@ -21,10 +21,9 @@
 // limitations under the License.
 
 use std::io;
-use std::io::Write;
 
 use crate::ast::Step;
-use crate::encoding::{RawWriter, StrictEncode, TypedWrite, WriteUnion};
+use crate::encoding::{StrictEncode, TypedWrite, WriteUnion};
 use crate::{FieldName, Ident};
 
 impl StrictEncode for Step {
@@ -65,6 +64,6 @@ impl StrictEncode for u8 {
     fn strict_encode_dumb() -> Self { 0 }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        RawWriter::from(writer).write_all(&[*self])?.complete()
+        unsafe { writer.write_raw([*self]) }
     }
 }

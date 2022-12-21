@@ -63,6 +63,7 @@ impl<O> From<FromAsciiError<O>> for InvalidIdent {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
+// TODO: Use alphanumeric filter instead; promote type to the amplify library
 pub struct Ident(Confined<AsciiString, 1, 32>);
 
 impl StenSchema for Ident {

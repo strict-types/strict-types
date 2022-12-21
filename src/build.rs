@@ -55,6 +55,8 @@ impl TypedWrite for TypeBuilder {
     fn write_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumWriter {
         todo!()
     }
+
+    unsafe fn write_raw<const LEN: usize>(self, raw: [u8; LEN]) -> io::Result<Self> { todo!() }
 }
 
 pub trait BuilderParent: Sized {
