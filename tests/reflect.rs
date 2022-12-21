@@ -23,8 +23,9 @@
 #[macro_use]
 extern crate amplify;
 
+use stens::encoding::{StrictEncode, StrictWriter};
 use stens::typelib::TypeLib;
-use stens::Urn;
+use stens::{tn, LibRef, Ty, Urn};
 
 fn pp(data: impl AsRef<[u8]>) {
     let data = base64::encode(data);
@@ -39,6 +40,15 @@ fn pp(data: impl AsRef<[u8]>) {
 
 #[test]
 fn reflect() {
+    let ty = Ty::<LibRef>::UnicodeChar;
+    let writer = StrictWriter::in_memory(u16::MAX as usize);
+    let writer = ty.strict_encode(writer).expect("memory encoding");
+    println!("----- BEGIN STEN TYPE -----");
+    println!("Id: {}\n", ty.id(Some(&tn!("Ty"))));
+    pp(writer.unbox());
+    println!("\n----- END STEN TYPE -----\n");
+
+    /*
     let root = TypeLib::sten_type();
     let root_id = root.id();
     let lib = TypeLib::with(s!("StEn"), root).unwrap();
@@ -52,7 +62,7 @@ fn reflect() {
     println!("Id: {}\n", lib.id());
     pp(lib.to_serialized());
     println!("\n----- END STEN TYPE LIB -----\n");
-
+    */
     /*
     let mut builder = SystemBuilder::new();
     builder.import(lib);

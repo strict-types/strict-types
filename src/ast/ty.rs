@@ -188,11 +188,11 @@ impl Ord for Field {
 impl Display for Field {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if let Some(name) = &self.name {
-            write!(f, "{} ", name)?;
+            write!(f, "{}", name)?;
         }
         if f.alternate() {
             if self.name.is_some() {
-                f.write_str("= ")?;
+                f.write_str(" = ")?;
             }
             Display::fmt(&self.ord, f)?;
         }

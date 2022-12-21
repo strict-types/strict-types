@@ -148,7 +148,7 @@ impl<W: io::Write> StructWriter<W> {
     fn _define_field(mut self, field: Field) -> Self {
         assert!(
             self.fields.insert(field.clone()),
-            "field {} is already defined as a part of {}",
+            "field {:#} is already defined as a part of {}",
             &field,
             self.name()
         );
@@ -160,7 +160,7 @@ impl<W: io::Write> StructWriter<W> {
         if self.defined {
             assert!(
                 !self.fields.contains(&field),
-                "field {} was not defined in {}",
+                "field {:#} was not defined in {}",
                 &field,
                 self.name()
             )
@@ -169,7 +169,7 @@ impl<W: io::Write> StructWriter<W> {
         }
         assert!(
             self.ords.remove(&field.ord),
-            "field {} was already written before in {} struct",
+            "field {:#} was already written before in {} struct",
             &field,
             self.name()
         );
@@ -272,15 +272,15 @@ impl<W: io::Write> UnionWriter<W> {
     }
 
     fn name(&self) -> String {
-        format!("{}.{}", &self.ns, self.name.as_ref().unwrap_or(&tn!("<unnamed>")))
+        format!("{}.{}", &self.ns, self.name.as_ref().unwrap_or(&tn!("unnamed")))
     }
 
     fn next_ord(&self) -> u8 { self.fields.keys().max().map(|f| f.ord + 1).unwrap_or_default() }
 
     fn _define_field(mut self, field: Field, field_type: FieldType) -> Self {
         assert!(
-            self.fields.insert(field.clone(), field_type).is_some(),
-            "variant {} is already defined as a part of {}",
+            self.fields.insert(field.clone(), field_type).is_none(),
+            "variant {:#} is already defined as a part of {}",
             &field,
             self.name()
         );
@@ -290,14 +290,14 @@ impl<W: io::Write> UnionWriter<W> {
     fn _write_field(mut self, field: Field, field_type: FieldType) -> io::Result<Self> {
         if self.defined {
             let t = *self.fields.get(&field).expect(&format!(
-                "variant {} was not defined in {}",
+                "variant {:#} was not defined in {}",
                 &field,
                 self.name()
             ));
             assert_eq!(
                 t,
                 field_type,
-                "variant {} in {} must be a {:?} while it is written as {:?}",
+                "variant {:#} in {} must be a {:?} while it is written as {:?}",
                 &field,
                 self.name(),
                 t,

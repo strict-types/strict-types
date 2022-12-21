@@ -47,7 +47,7 @@ pub mod primitive;
 pub mod ast;
 pub mod typelib;
 //pub mod typesys;
-mod encoding;
+pub mod encoding;
 mod build;
 
 pub use ast::{Cls, FieldName, KeyTy, SemId, Translate, Ty, TypeRef};

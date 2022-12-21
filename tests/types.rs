@@ -59,6 +59,7 @@ pub struct Complex {
 
 #[test]
 fn serialize() {
+    /*
     let root = Complex::sten_type();
     let lib = TypeLib::with(s!("Test"), root).unwrap();
 
@@ -66,6 +67,7 @@ fn serialize() {
 
     println!();
     println!("{}", lib);
+    */
 
     /*
     let mut builder = SystemBuilder::new();
