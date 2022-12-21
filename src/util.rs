@@ -22,7 +22,7 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString};
+use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString, FromAsciiError};
 use amplify::confinement;
 use amplify::confinement::{Confined, TinyVec};
 
@@ -48,6 +48,10 @@ pub enum InvalidIdent {
     /// identifier name has invalid length
     #[from]
     Confinement(confinement::Error),
+}
+
+impl<O> From<FromAsciiError<O>> for InvalidIdent {
+    fn from(_: FromAsciiError<O>) -> Self { InvalidIdent::NonAsciiChar }
 }
 
 /// Identifier (field or type name).
@@ -83,8 +87,19 @@ impl From<SemId> for Ident {
     }
 }
 
-impl Ident {
-    pub fn try_from(ascii: AsciiString) -> Result<Self, InvalidIdent> {
+impl TryFrom<String> for Ident {
+    type Error = InvalidIdent;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> {
+        let s = AsciiString::from_ascii(s.as_bytes())?;
+        Ident::try_from(s)
+    }
+}
+
+impl TryFrom<AsciiString> for Ident {
+    type Error = InvalidIdent;
+
+    fn try_from(ascii: AsciiString) -> Result<Self, InvalidIdent> {
         if ascii.is_empty() {
             return Err(InvalidIdent::Empty);
         }

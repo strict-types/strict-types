@@ -46,6 +46,7 @@ pub mod ast;
 pub mod typelib;
 //pub mod typesys;
 mod encoding;
+mod build;
 
 pub use ast::{Cls, FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
 // #[cfg(test)]

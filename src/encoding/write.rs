@@ -25,8 +25,9 @@ use std::io;
 use amplify::WriteCounter;
 
 use crate::encoding::{
-    StrictEncode, ToIdent, TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+    StrictEncode, ToIdent, ToMaybeIdent, TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
+use crate::Ident;
 
 // TODO: Move to amplify crate
 #[derive(Debug)]
@@ -102,8 +103,8 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
 
     fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter {
         StructWriter {
-            ns: ns.to_owned(),
-            name: name.map(|n| n.to_owned()),
+            ns: ns.to_ident(),
+            name: name.to_maybe_ident(),
             writer: self,
         }
     }
@@ -118,8 +119,8 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
 }
 
 pub struct StructWriter<W: io::Write> {
-    ns: String,
-    name: Option<String>,
+    ns: Ident,
+    name: Option<Ident>,
     writer: StrictWriter<W>,
 }
 
@@ -152,8 +153,8 @@ impl<W: io::Write> io::Write for PrimitiveWriter<W> {
 }
 
 pub struct TupleWriter<W: io::Write> {
-    ns: String,
-    name: Option<String>,
+    ns: Ident,
+    name: Option<Ident>,
     writer: StrictWriter<W>,
 }
 
@@ -166,8 +167,8 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteTuple<P> for TupleWrit
 }
 
 pub struct UnionWriter<W: io::Write> {
-    ns: String,
-    name: Option<String>,
+    ns: Ident,
+    name: Option<Ident>,
     writer: StrictWriter<W>,
 }
 
@@ -185,8 +186,8 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWrit
 }
 
 pub struct EnumWriter<W: io::Write> {
-    ns: String,
-    name: Option<String>,
+    ns: Ident,
+    name: Option<Ident>,
     writer: StrictWriter<W>,
 }
 
@@ -199,7 +200,7 @@ impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteEnum<P> for EnumWriter
 impl<W: io::Write> From<StrictWriter<W>> for UnionWriter<W> {
     fn from(writer: StrictWriter<W>) -> Self {
         UnionWriter {
-            ns: "".to_string(),
+            ns: tn!(""),
             name: None,
             writer,
         }

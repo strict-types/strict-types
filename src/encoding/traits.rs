@@ -27,9 +27,24 @@ use amplify::confinement::Confined;
 
 use super::DecodeError;
 use crate::encoding::{DeserializeError, SerializeError, StrictReader, StrictWriter};
+use crate::Ident;
 
-pub trait ToIdent: ToOwned<Owned = String> {}
-impl<T> ToIdent for T where T: ToOwned<Owned = String> {}
+pub trait ToIdent {
+    fn to_ident(&self) -> Ident;
+}
+impl<T> ToIdent for T
+where T: ToOwned<Owned = String>
+{
+    fn to_ident(&self) -> Ident { Ident::try_from(self.to_owned()).expect("invalid identifier") }
+}
+pub trait ToMaybeIdent {
+    fn to_maybe_ident(&self) -> Option<Ident>;
+}
+impl<T> ToMaybeIdent for Option<T>
+where T: ToIdent
+{
+    fn to_maybe_ident(&self) -> Option<Ident> { self.as_ref().map(|n| n.to_ident()) }
+}
 
 pub trait TypedWrite: Sized {
     type TupleWriter: WriteTuple<Self>;
