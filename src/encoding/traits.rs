@@ -52,8 +52,8 @@ where T: ToIdent
 }
 
 pub trait TypedWrite: Sized {
-    type TupleWriter: WriteTuple<Self>;
-    type StructWriter: WriteStruct<Self>;
+    type TupleWriter: WriteTuple<Parent = Self>;
+    type StructWriter: WriteStruct<Parent = Self>;
     type UnionDefiner: DefineUnion<Parent = Self>;
     type EnumDefiner: DefineEnum<Parent = Self>;
 
@@ -114,25 +114,31 @@ pub trait TypedWrite: Sized {
     }
 }
 
-pub trait DefineTuple<P: Sized>: Sized {
+pub trait TypedParent: Sized {}
+
+pub trait DefineTuple: Sized {
+    type Parent: TypedParent;
     fn define_field<T: StrictEncode>(self) -> Self;
     fn define_field_ord<T: StrictEncode>(self, ord: u8) -> Self;
-    fn complete(self) -> P;
+    fn complete(self) -> Self::Parent;
 }
 
-pub trait WriteTuple<P: Sized>: Sized {
+pub trait WriteTuple: Sized {
+    type Parent: TypedParent;
     fn write_field(self, value: &impl StrictEncode) -> io::Result<Self>;
     fn write_field_ord(self, ord: u8, value: &impl StrictEncode) -> io::Result<Self>;
-    fn complete(self) -> P;
+    fn complete(self) -> Self::Parent;
 }
 
-pub trait DefineStruct<P: Sized>: Sized {
+pub trait DefineStruct: Sized {
+    type Parent: TypedParent;
     fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self;
     fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self;
-    fn complete(self) -> P;
+    fn complete(self) -> Self::Parent;
 }
 
-pub trait WriteStruct<P: Sized>: Sized {
+pub trait WriteStruct: Sized {
+    type Parent: TypedParent;
     fn write_field(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self>;
     fn write_field_ord(
         self,
@@ -140,7 +146,7 @@ pub trait WriteStruct<P: Sized>: Sized {
         ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self>;
-    fn complete(self) -> P;
+    fn complete(self) -> Self::Parent;
 }
 
 pub trait DefineEnum: Sized {
@@ -158,8 +164,8 @@ pub trait WriteEnum: Sized {
 
 pub trait DefineUnion: Sized {
     type Parent: TypedWrite;
-    type TupleDefiner: DefineTuple<Self>;
-    type StructDefiner: DefineStruct<Self>;
+    type TupleDefiner: DefineTuple<Parent = Self>;
+    type StructDefiner: DefineStruct<Parent = Self>;
     type UnionWriter: WriteUnion<Parent = Self::Parent>;
 
     fn define_unit(self, name: impl ToIdent) -> Self;
@@ -174,8 +180,8 @@ pub trait DefineUnion: Sized {
 
 pub trait WriteUnion: Sized {
     type Parent: TypedWrite;
-    type TupleWriter: WriteTuple<Self>;
-    type StructWriter: WriteStruct<Self>;
+    type TupleWriter: WriteTuple<Parent = Self>;
+    type StructWriter: WriteStruct<Parent = Self>;
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self>;
     fn write_type(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
