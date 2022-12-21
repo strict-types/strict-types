@@ -24,6 +24,7 @@ mod id;
 mod type_lib;
 mod translate;
 //mod serialize;
+mod encoding;
 
 pub use id::TypeLibId;
 pub use translate::{Error, LibBuilder, Warning};

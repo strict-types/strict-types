@@ -30,9 +30,14 @@ use crate::encoding::{
     DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::util::Sizing;
-use crate::{FieldName, Ident, KeyTy, Ty, TypeRef};
+use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeRef, STEN_LIB};
 
-const STEN_LIB: &'static str = "StEn";
+impl StrictEncode for SemId {
+    fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(STEN_LIB, Some("SemId"), self.as_bytes())
+    }
+}
 
 impl StrictEncode for Step {
     fn strict_encode_dumb() -> Self { Step::Index }

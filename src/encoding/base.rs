@@ -101,6 +101,14 @@ impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
     }
 }
 
+impl<const LEN: usize> StrictEncode for [u8; LEN] {
+    fn strict_encode_dumb() -> Self { [66u8; LEN] }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        unsafe { writer.write_raw_array(*self) }
+    }
+}
+
 impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     for Confined<String, MIN_LEN, MAX_LEN>
 {

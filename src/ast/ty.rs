@@ -29,12 +29,13 @@ use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
 use crate::ast::Iter;
+use crate::encoding::StrictEncode;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
 use crate::{Ident, SemId};
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + Eq + Debug + Sized {
+pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
     fn id(&self) -> SemId;
 }
 pub trait NestedRef: TypeRef {

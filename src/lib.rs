@@ -56,3 +56,5 @@ pub use ast::{Cls, FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
 pub use typelib::{Dependency, LibAlias, LibName, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{Ident, SemVer, TypeName, Urn};
+
+const STEN_LIB: &'static str = "StEn";

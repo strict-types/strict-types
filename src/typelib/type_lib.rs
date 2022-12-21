@@ -108,10 +108,10 @@ impl Display for InlineRef2 {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum LibRef {
-    Named(TypeName, SemId),
-
     #[from]
     Inline(Ty<InlineRef>),
+
+    Named(TypeName, SemId),
 
     Extern(TypeName, LibAlias, SemId),
 }
