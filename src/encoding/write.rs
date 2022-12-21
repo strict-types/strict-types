@@ -20,10 +20,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::BTreeSet;
 use std::io;
 
 use amplify::WriteCounter;
 
+use crate::ast::Field;
 use crate::encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, ToIdent, ToMaybeIdent,
     TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
@@ -88,12 +90,11 @@ impl<W: io::Write> StrictWriter<W> {
     pub fn with(limit: usize, writer: W) -> Self {
         StrictWriter(CountingWriter::with(limit, writer))
     }
-
     pub fn unbox(self) -> W { self.0.unbox() }
 }
 
 impl<W: io::Write> TypedWrite for StrictWriter<W> {
-    type TupleWriter = TupleWriter<W>;
+    type TupleWriter = StructWriter<W>;
     type StructWriter = StructWriter<W>;
     type UnionDefiner = UnionDefiner<W>;
     type EnumDefiner = EnumDefiner<W>;
@@ -101,93 +102,145 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
     fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner {
         todo!()
     }
-
     fn define_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumDefiner {
         todo!()
     }
-
     fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter {
-        todo!()
+        StructWriter::with(ns, name, self)
     }
-
     fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter {
-        StructWriter {
-            ns: ns.to_ident(),
-            name: name.to_maybe_ident(),
-            writer: self,
-        }
+        StructWriter::with(ns, name, self)
     }
-
-    unsafe fn _write_raw<const LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
-        todo!()
+    unsafe fn _write_raw<const LEN: usize>(mut self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
+        use io::Write;
+        self.0.write_all(bytes.as_ref())?;
+        Ok(self)
     }
-}
-
-pub struct StructDefiner<W: io::Write> {
-    ns: Ident,
-    name: Option<Ident>,
-    writer: StrictWriter<W>,
-}
-
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineStruct<P> for StructDefiner<W> {
-    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self { todo!() }
-
-    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self { todo!() }
-
-    fn complete(self) -> P { P::from(self.writer) }
 }
 
 pub struct StructWriter<W: io::Write> {
     ns: Ident,
     name: Option<Ident>,
+    fields: BTreeSet<Field>,
+    ords: BTreeSet<u8>,
     writer: StrictWriter<W>,
+    defined: bool,
+}
+
+impl<W: io::Write> StructWriter<W> {
+    fn with(ns: impl ToIdent, name: Option<impl ToIdent>, writer: StrictWriter<W>) -> Self {
+        StructWriter {
+            ns: ns.to_ident(),
+            name: name.to_maybe_ident(),
+            fields: empty!(),
+            ords: empty!(),
+            writer,
+            defined: false,
+        }
+    }
+
+    fn name(&self) -> String {
+        format!("{}.{}", &self.ns, self.name.as_ref().unwrap_or(&tn!("<unnamed>")))
+    }
+
+    fn next_ord(&self) -> u8 { self.fields.iter().max().map(|f| f.ord + 1).unwrap_or_default() }
+
+    fn _define_field(mut self, field: Field) -> Self {
+        assert!(
+            self.fields.insert(field.clone()),
+            "field {} is already defined as a part of {}",
+            &field,
+            self.name()
+        );
+        self.ords.insert(field.ord);
+        self
+    }
+
+    fn _write_field(mut self, field: Field, value: &impl StrictEncode) -> io::Result<Self> {
+        if self.defined {
+            assert!(
+                !self.fields.contains(&field),
+                "field {} was not defined in {}",
+                &field,
+                self.name()
+            )
+        } else {
+            self = self._define_field(field.clone());
+        }
+        assert!(
+            self.ords.remove(&field.ord),
+            "field {} was already written before in {} struct",
+            &field,
+            self.name()
+        );
+        self.writer = field.ord.strict_encode(self.writer)?;
+        self.writer = value.strict_encode(self.writer)?;
+        Ok(self)
+    }
+
+    fn _complete_definition<P: Sized + From<StrictWriter<W>>>(mut self) -> P {
+        assert!(!self.fields.is_empty(), "struct {} does not have fields defined", self.name());
+        self.defined = true;
+        P::from(self.writer)
+    }
+
+    fn _complete_write<P: Sized + From<StrictWriter<W>>>(self) -> P {
+        assert!(self.ords.is_empty(), "not all fields were written for {}", self.name());
+        P::from(self.writer)
+    }
+}
+
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineStruct<P> for StructWriter<W> {
+    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self {
+        let ord = self.next_ord();
+        DefineStruct::<P>::define_field_ord::<T>(self, name, ord)
+    }
+    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self {
+        let field = Field::named(name.to_ident(), ord);
+        self._define_field(field)
+    }
+    fn complete(self) -> P { self._complete_definition() }
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteStruct<P> for StructWriter<W> {
-    fn write_field(mut self, _name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
-        self.writer = value.strict_encode(self.writer)?;
-        Ok(self)
+    fn write_field(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
+        let ord = self.next_ord();
+        WriteStruct::<P>::write_field_ord(self, name, ord, value)
     }
-
     fn write_field_ord(
-        mut self,
-        _name: impl ToIdent,
-        _ord: u8,
+        self,
+        name: impl ToIdent,
+        ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
-        self.writer = value.strict_encode(self.writer)?;
-        Ok(self)
+        let field = Field::named(name.to_ident(), ord);
+        self._write_field(field, value)
     }
-
-    fn complete(self) -> P { P::from(self.writer) }
+    fn complete(self) -> P { self._complete_write() }
 }
 
-pub struct TupleDefiner<W: io::Write> {
-    ns: Ident,
-    name: Option<Ident>,
-    writer: StrictWriter<W>,
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineTuple<P> for StructWriter<W> {
+    fn define_field<T: StrictEncode>(self) -> Self {
+        let ord = self.next_ord();
+        DefineTuple::<P>::define_field_ord::<T>(self, ord)
+    }
+    fn define_field_ord<T: StrictEncode>(self, ord: u8) -> Self {
+        let field = Field::unnamed(ord);
+        self._define_field(field)
+    }
+    fn complete(self) -> P { self._complete_definition() }
 }
 
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineTuple<P> for TupleDefiner<W> {
-    fn define_field<T: StrictEncode>(self) -> Self { todo!() }
-
-    fn define_field_ord<T: StrictEncode>(self, ord: u8) -> Self { todo!() }
-
-    fn complete(self) -> P { P::from(self.writer) }
-}
-
-pub struct TupleWriter<W: io::Write> {
-    ns: Ident,
-    name: Option<Ident>,
-    writer: StrictWriter<W>,
-}
-
-impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteTuple<P> for TupleWriter<W> {
-    fn write_field(self, value: &impl StrictEncode) -> io::Result<Self> { todo!() }
-
-    fn write_field_ord(self, ord: u8, value: &impl StrictEncode) -> io::Result<Self> { todo!() }
-
-    fn complete(self) -> P { P::from(self.writer) }
+impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteTuple<P> for StructWriter<W> {
+    fn write_field(self, value: &impl StrictEncode) -> io::Result<Self> {
+        let ord = self.next_ord();
+        WriteTuple::<P>::write_field_ord(self, ord, value)
+    }
+    fn write_field_ord(self, ord: u8, value: &impl StrictEncode) -> io::Result<Self> {
+        let field = Field::unnamed(ord);
+        self._write_field(field, value)
+    }
+    fn complete(self) -> P { self._complete_write() }
 }
 
 pub struct UnionDefiner<W: io::Write> {
@@ -197,8 +250,8 @@ pub struct UnionDefiner<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> DefineUnion<P> for UnionDefiner<W> {
-    type TupleDefiner = TupleDefiner<W>;
-    type StructDefiner = StructDefiner<W>;
+    type TupleDefiner = StructWriter<W>;
+    type StructDefiner = StructWriter<W>;
     type UnionWriter = UnionWriter<W>;
 
     fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
@@ -214,7 +267,7 @@ pub struct UnionWriter<W: io::Write> {
 }
 
 impl<W: io::Write, P: Sized + From<StrictWriter<W>>> WriteUnion<P> for UnionWriter<W> {
-    type TupleWriter = TupleWriter<W>;
+    type TupleWriter = StructWriter<W>;
     type StructWriter = StructWriter<W>;
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
