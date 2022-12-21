@@ -30,11 +30,11 @@ use crate::encoding::{
 };
 use crate::{LibName, LibRef, Ty, TypeName};
 
-pub struct TypeBuilder {}
+pub struct LibBuilder {}
 
-impl TypeBuilder {}
+impl LibBuilder {}
 
-impl TypedWrite for TypeBuilder {
+impl TypedWrite for LibBuilder {
     type TupleWriter = StructBuilder<Self, false, false>;
     type StructWriter = StructBuilder<Self, true, false>;
     type UnionDefiner = UnionBuilder;
@@ -65,8 +65,8 @@ pub trait BuilderParent: TypedParent {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef;
     fn complete(self, lib: LibName, name: Option<TypeName>, ty: Ty<LibRef>) -> Self;
 }
-impl TypedParent for TypeBuilder {}
-impl BuilderParent for TypeBuilder {
+impl TypedParent for LibBuilder {}
+impl BuilderParent for LibBuilder {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef { todo!() }
     fn complete(self, lib: LibName, name: Option<TypeName>, ty: Ty<LibRef>) -> Self { todo!() }
 }
@@ -81,11 +81,11 @@ pub struct EnumBuilder {
     name: Option<TypeName>,
     variants: BTreeSet<Field>,
     ord: u8,
-    parent: TypeBuilder,
+    parent: LibBuilder,
 }
 
 impl DefineEnum for EnumBuilder {
-    type Parent = TypeBuilder;
+    type Parent = LibBuilder;
     type EnumWriter = Self;
 
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
@@ -94,7 +94,7 @@ impl DefineEnum for EnumBuilder {
 }
 
 impl WriteEnum for EnumBuilder {
-    type Parent = TypeBuilder;
+    type Parent = LibBuilder;
 
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
         todo!();
@@ -106,7 +106,7 @@ impl WriteEnum for EnumBuilder {
          */
     }
 
-    fn complete(self) -> TypeBuilder {
+    fn complete(self) -> LibBuilder {
         assert!(!self.variants.is_empty(), "building enum with zero variants");
         let variants = Variants::try_from(self.variants).expect("too many enum variants");
         self.parent.complete(self.lib, self.name, Ty::Enum(variants))
@@ -118,11 +118,11 @@ pub struct UnionBuilder {
     name: Option<TypeName>,
     variants: BTreeSet<Field>,
     ord: u8,
-    parent: TypeBuilder,
+    parent: LibBuilder,
 }
 
 impl DefineUnion for UnionBuilder {
-    type Parent = TypeBuilder;
+    type Parent = LibBuilder;
     type TupleDefiner = StructBuilder<Self, false, true>;
     type StructDefiner = StructBuilder<Self, true, true>;
     type UnionWriter = Self;
@@ -137,7 +137,7 @@ impl DefineUnion for UnionBuilder {
 }
 
 impl WriteUnion for UnionBuilder {
-    type Parent = TypeBuilder;
+    type Parent = LibBuilder;
     type TupleWriter = StructBuilder<Self, false, false>;
     type StructWriter = StructBuilder<Self, true, false>;
 
@@ -147,7 +147,7 @@ impl WriteUnion for UnionBuilder {
 
     fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter> { todo!() }
 
-    fn complete(self) -> TypeBuilder {
+    fn complete(self) -> LibBuilder {
         assert!(!self.variants.is_empty(), "building union with zero variants");
         let variants = Variants::try_from(self.variants).expect("too many union variants");
         self.parent.complete(self.lib, self.name, Ty::Enum(variants))
