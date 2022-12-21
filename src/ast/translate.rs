@@ -25,7 +25,8 @@ use std::collections::BTreeMap;
 use amplify::confinement;
 
 use crate::ast::Fields;
-use crate::{SemId, Ty, TypeName, TypeRef};
+use crate::util::InvalidIdent;
+use crate::{Dependency, SemId, Ty, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -37,8 +38,8 @@ pub trait Translate<To: Sized> {
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum TranslateError {
-    /// invalid library name '{0}'
-    InvalidLibName(String),
+    /// invalid library name; {0}
+    InvalidLibName(InvalidIdent),
 
     /// a different type with name `{0}` is already present
     DuplicateName(TypeName),
@@ -48,6 +49,9 @@ pub enum TranslateError {
 
     /// unknown type with id `{0}`
     UnknownId(SemId),
+
+    /// dependency {0} is already present in the library
+    DuplicatedDependency(Dependency),
 
     #[from]
     #[display(inner)]

@@ -24,6 +24,7 @@ use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
 
 use crate::ast::TranslateError;
+use crate::typelib::type_lib::StrictType;
 use crate::typelib::{
     Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeIndex, TypeLib,
 };
@@ -67,7 +68,7 @@ pub enum Error {
 #[derive(Default)]
 pub struct LibBuilder {
     index: TypeIndex,
-    types: SmallOrdMap<TypeName, Ty<LibRef>>,
+    types: SmallOrdMap<TypeName, StrictType>,
 }
 
 impl LibBuilder {

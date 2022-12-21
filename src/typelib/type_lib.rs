@@ -25,8 +25,21 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
 
+use crate::ast::TranslateError;
 use crate::typelib::id::TypeLibId;
 use crate::{Ident, KeyTy, SemId, SemVer, Ty, TypeName, TypeRef};
+
+/// Top-level data type contained within a library.
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display("data {name:16} :: {ty}")]
+pub struct StrictType {
+    pub name: TypeName,
+    pub ty: Ty<LibRef>,
+}
+
+impl StrictType {
+    pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
+}
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
@@ -147,7 +160,7 @@ pub struct Dependency {
     pub ver: SemVer,
 }
 
-pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
+pub type TypeMap = Confined<BTreeMap<TypeName, StrictType>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct TypeLib {
@@ -157,21 +170,42 @@ pub struct TypeLib {
 }
 
 impl TypeLib {
-    /*
-    pub fn with(name: String, root: StenType) -> Result<Self, TranslateError> {
-        let mut name = LibName::try_from(
-            AsciiString::from_ascii(name.clone())
-                .map_err(|_| TranslateError::InvalidLibName(name.clone()))?,
-        )
-        .map_err(|_| TranslateError::InvalidLibName(name))?;
-        root.translate(&mut name)
+    pub fn with(name: LibName, root: StrictType) -> Self {
+        let types = Confined::with((root.name.clone(), root));
+        TypeLib {
+            name,
+            dependencies: empty!(),
+            types,
+        }
     }
-     */
+
+    pub fn import(
+        &mut self,
+        dependency: Dependency,
+        alias: Option<LibAlias>,
+    ) -> Result<(), TranslateError> {
+        let alias = alias.unwrap_or_else(|| dependency.name.clone());
+        if self.dependencies.contains_key(&alias) {
+            return Err(TranslateError::DuplicatedDependency(dependency));
+        }
+        self.dependencies.insert(alias, dependency)?;
+        Ok(())
+    }
+
+    pub fn populate(&mut self, ty: StrictType) -> Result<(), TranslateError> {
+        if self.types.contains_key(&ty.name) {
+            return Err(TranslateError::DuplicateName(ty.name.clone()));
+        }
+        self.types.insert(ty.name.clone(), ty)?;
+        Ok(())
+    }
+
+    // TODO: Check that all dependencies are used
 }
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typemod {}", self.name)?;
+        writeln!(f, "namespace {}", self.name)?;
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
             if alias != &dep.name {
@@ -184,8 +218,8 @@ impl Display for TypeLib {
             f.write_str("-- no dependencies\n")?;
         }
         writeln!(f)?;
-        for (name, ty) in &self.types {
-            writeln!(f, "data {:16} :: {}", name, ty)?;
+        for ty in self.types.values() {
+            writeln!(f, "{}", ty)?;
         }
         Ok(())
     }

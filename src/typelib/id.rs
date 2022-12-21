@@ -55,7 +55,7 @@ impl TypeLib {
     pub fn id(&self) -> TypeLibId {
         let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
         for (name, ty) in self.types.iter() {
-            hasher.update(ty.id(Some(name)).as_bytes());
+            hasher.update(ty.id().as_bytes());
         }
         TypeLibId(hasher.finalize())
     }
