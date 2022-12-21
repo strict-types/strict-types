@@ -23,12 +23,12 @@
 use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
 
-use crate::ast::{NestedRef, TranslateError};
+use crate::ast::TranslateError;
 use crate::typelib::{
     Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeIndex, TypeLib,
 };
 use crate::util::Sizing;
-use crate::{KeyTy, SemId, StenType, Translate, Ty, TypeName};
+use crate::{KeyTy, SemId, Translate, Ty, TypeName};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display(doc_comments)]
@@ -88,6 +88,7 @@ impl LibBuilder {
     }
 }
 
+/*
 impl Translate<TypeLib> for StenType {
     type Context = LibName;
     type Error = TranslateError;
@@ -116,6 +117,7 @@ impl Translate<TypeLib> for StenType {
         Ok(lib)
     }
 }
+*/
 
 pub struct NestedContext {
     top_name: TypeName,
@@ -123,6 +125,7 @@ pub struct NestedContext {
     stack: Vec<String>,
 }
 
+/*
 impl Translate<LibRef> for StenType {
     type Context = NestedContext;
     type Error = TranslateError;
@@ -149,6 +152,7 @@ impl Translate<LibRef> for StenType {
         Ok(lib_ref)
     }
 }
+*/
 
 impl Translate<InlineRef> for LibRef {
     type Context = NestedContext;
@@ -230,6 +234,7 @@ impl Translate<KeyTy> for InlineRef2 {
     }
 }
 
+/*
 impl StenType {
     pub fn build_index(&self) -> Result<TypeIndex, TranslateError> {
         let mut index = empty!();
@@ -275,3 +280,4 @@ impl Ty<StenType> {
         Ok(())
     }
 }
+*/

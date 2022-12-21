@@ -27,7 +27,7 @@ use amplify::confinement;
 use amplify::confinement::{Confined, TinyVec};
 
 use crate::typelib::TypeLibId;
-use crate::{SemId, StenSchema, StenType, Ty};
+use crate::SemId;
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -65,12 +65,6 @@ impl<O> From<FromAsciiError<O>> for InvalidIdent {
 )]
 // TODO: Use alphanumeric filter instead; promote type to the amplify library
 pub struct Ident(Confined<AsciiString, 1, 32>);
-
-impl StenSchema for Ident {
-    const STEN_TYPE_NAME: &'static str = "Ident";
-
-    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::ascii_string(Sizing::new(1, 32)) }
-}
 
 impl From<&'static str> for Ident {
     fn from(s: &'static str) -> Self {
@@ -125,17 +119,6 @@ pub type TypeName = Ident;
 pub struct Sizing {
     pub min: u16,
     pub max: u16,
-}
-
-impl StenSchema for Sizing {
-    const STEN_TYPE_NAME: &'static str = "Sizing";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            "min" => u16::sten_type(),
-            "max" => u16::sten_type(),
-        })
-    }
 }
 
 impl Sizing {
@@ -238,33 +221,11 @@ pub enum PreFragment {
     Digits(u128),
 }
 
-impl StenSchema for PreFragment {
-    const STEN_TYPE_NAME: &'static str = "PreFragment";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::<StenType>::union(fields! {
-            "ident" => Ident::sten_type(),
-            "digits" => u128::sten_type()
-        })
-    }
-}
-
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display(inner)]
 pub enum BuildFragment {
     Ident(Ident),
     Digits(Ident),
-}
-
-impl StenSchema for BuildFragment {
-    const STEN_TYPE_NAME: &'static str = "BuildFragment";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::<StenType>::union(fields! {
-            "ident" => Ident::sten_type(),
-            "digits" => Ident::sten_type()
-        })
-    }
 }
 
 // TODO: Manually implement Ord, PartialOrd
@@ -275,20 +236,6 @@ pub struct SemVer {
     pub patch: u16,
     pub pre: TinyVec<PreFragment>,
     pub build: TinyVec<BuildFragment>,
-}
-
-impl StenSchema for SemVer {
-    const STEN_TYPE_NAME: &'static str = "SemVer";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::<StenType>::composition(fields! {
-            "major" => u16::sten_type(),
-            "minor" => u16::sten_type(),
-            "patch" => u16::sten_type(),
-            "pre" => TinyVec::<PreFragment>::sten_type(),
-            "build" => TinyVec::<BuildFragment>::sten_type(),
-        })
-    }
 }
 
 impl Display for SemVer {

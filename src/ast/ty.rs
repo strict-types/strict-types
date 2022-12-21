@@ -25,17 +25,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::Deref;
 
-use amplify::ascii::AsciiChar;
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
 use crate::ast::Iter;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::{Ident, LibAlias, SemId, StenSchema, StenType, TypeName};
+use crate::{Ident, SemId};
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: StenSchema + Clone + Eq + Debug + Sized {
+pub trait TypeRef: Clone + Eq + Debug + Sized {
     fn id(&self) -> SemId;
 }
 pub trait NestedRef: TypeRef {
@@ -46,13 +45,6 @@ pub trait NestedRef: TypeRef {
 
 impl TypeRef for SemId {
     fn id(&self) -> SemId { *self }
-}
-impl TypeRef for StenType {
-    fn id(&self) -> SemId { StenType::id(self) }
-}
-impl NestedRef for StenType {
-    fn as_ty(&self) -> &Ty<Self> { &self.ty }
-    fn into_ty(self) -> Ty<Self> { *self.ty }
 }
 
 impl TypeRef for KeyTy {
@@ -141,17 +133,6 @@ pub struct Field {
     pub ord: u8,
 }
 
-impl StenSchema for Field {
-    const STEN_TYPE_NAME: &'static str = "Field";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::<StenType>::composition(fields! {
-            "name" => Option::<FieldName>::sten_type(),
-            "ord" => u8::sten_type()
-        })
-    }
-}
-
 impl Field {
     pub fn named(name: FieldName, value: u8) -> Field {
         Field {
@@ -233,24 +214,6 @@ pub enum Ty<Ref: TypeRef> {
     List(Ref, Sizing),
     Set(Ref, Sizing),
     Map(KeyTy, Ref, Sizing),
-}
-
-impl<Ref: TypeRef> StenSchema for Ty<Ref> {
-    const STEN_TYPE_NAME: &'static str = "Ty";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! {
-            "primitive" => Primitive::sten_type(),
-            "unicode" => <()>::sten_type(),
-            "enum" => Variants::sten_type(),
-            "union" => Fields::<Ref, false>::sten_type(),
-            "struct" => Fields::<Ref, true>::sten_type(),
-            "array" => <(Ref, u16)>::sten_type(),
-            "list" => <(Ref, Sizing)>::sten_type(),
-            "set" => <(Ref, Sizing)>::sten_type(),
-            "map" => <(KeyTy, Ref, Sizing)>::sten_type(),
-        })
-    }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -358,19 +321,6 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 }
 
-impl Ty<StenType> {
-    pub fn byte_array(len: u16) -> Self { Ty::Array(StenType::byte(), len) }
-    pub fn bytes(sizing: Sizing) -> Self { Ty::List(StenType::byte(), sizing) }
-    pub fn ascii_string(sizing: Sizing) -> Self { Ty::List(AsciiChar::sten_type(), sizing) }
-    pub fn option(ty: StenType) -> Self {
-        // TODO: Check for AST size
-        Ty::Union(fields![
-            "None" => <()>::sten_type(),
-            "Some" => ty
-        ])
-    }
-}
-
 impl<Ref: TypeRef> Display for Ty<Ref>
 where Ref: Display
 {
@@ -448,21 +398,6 @@ pub enum KeyTy {
     Bytes(Sizing),
 }
 
-impl StenSchema for KeyTy {
-    const STEN_TYPE_NAME: &'static str = "KeyTy";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! {
-            "primitive" => Primitive::sten_type(),
-            "enum" => Variants::sten_type(),
-            "array" => u16::sten_type(),
-            "unicodeStr" => Sizing::sten_type(),
-            "asciiStr" => Sizing::sten_type(),
-            "bytes" => Sizing::sten_type(),
-        })
-    }
-}
-
 impl KeyTy {
     pub const U8: KeyTy = KeyTy::Primitive(U8);
     pub const BYTE: KeyTy = KeyTy::Primitive(BYTE);
@@ -486,19 +421,9 @@ pub enum Composition {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Fields<Ref: TypeRef = StenType, const OP: bool = true>(
+pub struct Fields<Ref: TypeRef, const OP: bool = true>(
     Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>,
 );
-
-impl<Ref: TypeRef, const OP: bool> StenSchema for Fields<Ref, OP> {
-    const STEN_TYPE_NAME: &'static str = "Fields";
-
-    fn sten_ty() -> Ty<StenType> {
-        // TODO: Serialize according to this schema
-        let val_ty = <(Option<FieldName>, Ref)>::sten_type();
-        Ty::map(KeyTy::U8, val_ty, Sizing::U8_NONEMPTY)
-    }
-}
 
 impl<Ref: TypeRef, const OP: bool> Deref for Fields<Ref, OP> {
     type Target = Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>;
@@ -569,12 +494,6 @@ where Ref: Display
 )]
 pub struct Variants(Confined<BTreeSet<Field>, 1, { u8::MAX as usize }>);
 
-impl StenSchema for Variants {
-    const STEN_TYPE_NAME: &'static str = "Variants";
-
-    fn sten_ty() -> Ty<StenType> { Ty::set(Field::sten_type(), Sizing::U8_NONEMPTY) }
-}
-
 impl TryFrom<BTreeSet<Field>> for Variants {
     type Error = confinement::Error;
 
@@ -612,66 +531,5 @@ impl Display for Variants {
             write!(f, "{:#}", field)?;
         }
         Ok(())
-    }
-}
-
-impl<Ref: TypeRef> StenSchema for (Ref, u16) {
-    const STEN_TYPE_NAME: &'static str = "ArrayTy";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            Ref::sten_type(),
-            u16::sten_type(),
-        })
-    }
-}
-
-impl<Ref: TypeRef> StenSchema for (Ref, Sizing) {
-    const STEN_TYPE_NAME: &'static str = "ListTy";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            Ref::sten_type(),
-            Sizing::sten_type(),
-        })
-    }
-}
-
-impl<Ref: TypeRef> StenSchema for (KeyTy, Ref, Sizing) {
-    const STEN_TYPE_NAME: &'static str = "ListTy";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            KeyTy::sten_type(),
-            Ref::sten_type(),
-            Sizing::sten_type(),
-        })
-    }
-}
-
-impl<Ref: TypeRef> StenSchema for (Option<FieldName>, Ref) {
-    const STEN_TYPE_NAME: &'static str = "FieldTy";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            Option::<FieldName>::sten_type(),
-            Ref::sten_type(),
-        })
-    }
-}
-
-impl StenSchema for (TypeName, SemId) {
-    const STEN_TYPE_NAME: &'static str = "TypeDef";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields!(TypeName::sten_type(), SemId::sten_type()))
-    }
-}
-
-impl StenSchema for (TypeName, LibAlias, SemId) {
-    const STEN_TYPE_NAME: &'static str = "TypeDefFull";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields!(TypeName::sten_type(), LibAlias::sten_type(), SemId::sten_type()))
     }
 }

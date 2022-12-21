@@ -21,7 +21,6 @@
 // limitations under the License.
 
 pub mod constants;
-mod builtin;
 mod num;
 
 pub use constants::*;

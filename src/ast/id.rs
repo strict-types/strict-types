@@ -27,19 +27,13 @@ use amplify::Wrapper;
 
 use crate::ast::{Field, Fields, Variants};
 use crate::util::Sizing;
-use crate::{Cls, KeyTy, StenSchema, StenType, Ty, TypeName, TypeRef};
+use crate::{Cls, KeyTy, Ty, TypeName, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref)]
 #[display(inner)]
 pub struct SemId(blake3::Hash);
-
-impl StenSchema for SemId {
-    const STEN_TYPE_NAME: &'static str = "SemId";
-
-    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(32) }
-}
 
 impl Ord for SemId {
     fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
@@ -90,10 +84,6 @@ impl<Ref: TypeRef> Ty<Ref> {
             }
         };
     }
-}
-
-impl StenType {
-    pub fn id(&self) -> SemId { self.id }
 }
 
 impl KeyTy {

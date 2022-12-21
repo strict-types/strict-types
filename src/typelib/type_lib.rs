@@ -23,30 +23,16 @@
 use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
-use amplify::ascii::AsciiString;
 use amplify::confinement::{Confined, TinyOrdMap};
 
-use crate::ast::TranslateError;
 use crate::typelib::id::TypeLibId;
-use crate::{Ident, KeyTy, SemId, SemVer, StenSchema, StenType, Translate, Ty, TypeName, TypeRef};
+use crate::{Ident, KeyTy, SemId, SemVer, Ty, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
     Builtin(Ty<InlineRef1>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
-}
-
-impl StenSchema for InlineRef {
-    const STEN_TYPE_NAME: &'static str = "InlineRef";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! {
-            "builtin" => <Ty<InlineRef1 >>::sten_type(),
-            "named" => <(TypeName, SemId)>::sten_type(),
-            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
-        })
-    }
 }
 
 impl TypeRef for InlineRef {
@@ -75,18 +61,6 @@ pub enum InlineRef1 {
     Extern(TypeName, LibAlias, SemId),
 }
 
-impl StenSchema for InlineRef1 {
-    const STEN_TYPE_NAME: &'static str = "InlineRef1";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! {
-            "builtin" => <Ty<InlineRef2>>::sten_type(),
-            "named" => <(TypeName, SemId)>::sten_type(),
-            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
-        })
-    }
-}
-
 impl TypeRef for InlineRef1 {
     fn id(&self) -> SemId {
         match self {
@@ -111,18 +85,6 @@ pub enum InlineRef2 {
     Builtin(Ty<KeyTy>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
-}
-
-impl StenSchema for InlineRef2 {
-    const STEN_TYPE_NAME: &'static str = "InlineRef2";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! {
-            "builtin" => <Ty<KeyTy>>::sten_type(),
-            "named" => <(TypeName, SemId)>::sten_type(),
-            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
-        })
-    }
 }
 
 impl TypeRef for InlineRef2 {
@@ -152,18 +114,6 @@ pub enum LibRef {
     Inline(Ty<InlineRef>),
 
     Extern(TypeName, LibAlias, SemId),
-}
-
-impl StenSchema for LibRef {
-    const STEN_TYPE_NAME: &'static str = "LibRef";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::union(fields! {
-            "named" => <(TypeName, SemId)>::sten_type(),
-            "inline" => Ty::<InlineRef>::sten_type(),
-            "extern" => <(TypeName, LibAlias, SemId)>::sten_type(),
-        })
-    }
 }
 
 impl TypeRef for LibRef {
@@ -197,18 +147,6 @@ pub struct Dependency {
     pub ver: SemVer,
 }
 
-impl StenSchema for Dependency {
-    const STEN_TYPE_NAME: &'static str = "Dependency";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            "id" => TypeLibId::sten_type(),
-            "name" => LibName::sten_type(),
-            "ver" => SemVer::sten_type(),
-        })
-    }
-}
-
 pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -218,19 +156,8 @@ pub struct TypeLib {
     pub types: TypeMap,
 }
 
-impl StenSchema for TypeLib {
-    const STEN_TYPE_NAME: &'static str = "TypeLib";
-
-    fn sten_ty() -> Ty<StenType> {
-        Ty::composition(fields! {
-            "name" => LibName::sten_type(),
-            "dependencies" => TinyOrdMap::<LibAlias, Dependency>::sten_type(),
-            "types" => TypeMap::sten_type()
-        })
-    }
-}
-
 impl TypeLib {
+    /*
     pub fn with(name: String, root: StenType) -> Result<Self, TranslateError> {
         let mut name = LibName::try_from(
             AsciiString::from_ascii(name.clone())
@@ -239,6 +166,7 @@ impl TypeLib {
         .map_err(|_| TranslateError::InvalidLibName(name))?;
         root.translate(&mut name)
     }
+     */
 }
 
 impl Display for TypeLib {

@@ -24,7 +24,6 @@ use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 
 use crate::typelib::TypeLib;
-use crate::{StenSchema, StenType, Ty};
 
 // TODO: Use real tag
 pub const LIB_ID_TAG: [u8; 32] = [0u8; 32];
@@ -32,12 +31,6 @@ pub const LIB_ID_TAG: [u8; 32] = [0u8; 32];
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]
 pub struct TypeLibId(blake3::Hash);
-
-impl StenSchema for TypeLibId {
-    const STEN_TYPE_NAME: &'static str = "TypeLibId";
-
-    fn sten_ty() -> Ty<StenType> { Ty::<StenType>::byte_array(32) }
-}
 
 impl Ord for TypeLibId {
     fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }

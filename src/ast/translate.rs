@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use amplify::confinement;
 
 use crate::ast::Fields;
-use crate::{SemId, StenType, Ty, TypeName, TypeRef};
+use crate::{SemId, Ty, TypeName, TypeRef};
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -39,9 +39,6 @@ pub trait Translate<To: Sized> {
 pub enum TranslateError {
     /// invalid library name '{0}'
     InvalidLibName(String),
-
-    /// top-level type `{0}` must has a name
-    UnnamedTopType(StenType),
 
     /// a different type with name `{0}` is already present
     DuplicateName(TypeName),
