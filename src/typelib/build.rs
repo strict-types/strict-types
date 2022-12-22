@@ -39,18 +39,20 @@ use crate::{LibName, Ty, TypeLib, TypeName};
 #[derive(Default)]
 pub struct LibBuilder {
     types: SmallOrdMap<TypeName, CompileType>,
-    pub(self) last_compiled: Option<CompileRef>,
+    last_compiled: Option<CompileRef>,
 }
 
 impl LibBuilder {
-    pub(crate) fn new() -> LibBuilder {
+    pub fn new() -> LibBuilder {
         LibBuilder {
             types: default!(),
             last_compiled: None,
         }
     }
 
-    pub(crate) fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
+    pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
+
+    pub fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
         todo!()
         // TODO: translate from CompileType to LibRef
         /*

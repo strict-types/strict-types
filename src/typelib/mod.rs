@@ -25,7 +25,7 @@ mod type_lib;
 mod translate;
 //mod serialize;
 mod encoding;
-mod build;
+pub mod build;
 mod compile;
 
 pub use compile::CompileRef;

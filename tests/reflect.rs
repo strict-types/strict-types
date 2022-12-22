@@ -25,6 +25,7 @@ extern crate amplify;
 
 use amplify::hex::ToHex;
 use stens::encoding::{StrictEncode, StrictWriter};
+use stens::typelib::build::LibBuilder;
 use stens::typelib::TypeLib;
 use stens::{tn, LibRef, Ty, Urn};
 
@@ -41,13 +42,16 @@ fn pp(data: impl AsRef<[u8]>) {
 
 #[test]
 fn reflect() {
+    let builder = LibBuilder::new();
+
     let ty = Ty::<LibRef>::UnicodeChar;
     let writer = StrictWriter::in_memory(u16::MAX as usize);
-    let writer = ty.strict_encode(writer).expect("memory encoding");
-    println!("----- BEGIN STEN TYPE -----");
-    println!("Id: {}\n", ty.id(Some(&tn!("Ty"))));
-    println!("{}", writer.unbox().to_hex());
-    println!("\n----- END STEN TYPE -----\n");
+    let _ = ty.strict_encode(writer).expect("memory encoding");
+
+    let builder = ty.strict_encode(builder).unwrap();
+    for ty in builder.into_types().values() {
+        println!("{}", ty);
+    }
 
     /*
     let root = TypeLib::sten_type();
