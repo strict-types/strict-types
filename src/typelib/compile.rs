@@ -43,6 +43,10 @@ pub enum CompileRef {
     Extern(TypeName, LibAlias),
 }
 
+impl CompileRef {
+    pub fn unit() -> Self { Ty::UNIT.into() }
+}
+
 impl TypeRef for CompileRef {
     fn id(&self) -> SemId { unreachable!("CompileRef must never be called for the id") }
 }

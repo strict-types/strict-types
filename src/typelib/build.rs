@@ -140,8 +140,12 @@ impl TypedWrite for LibBuilder {
         let ty = self.last_compiled.clone().expect("can't compile type");
         self = key.strict_encode(self).expect("in-memory encoding");
         let key_ty = match self.last_compiled.clone().expect("can't compile key type") {
-            CompileRef::Inline(ty) => ty.try_to_key().expect("not supported map key type"),
-            CompileRef::Named(_) | CompileRef::Extern(_, _) => panic!("not supported map key type"),
+            CompileRef::Inline(ty) => {
+                ty.try_to_key().expect(&format!("not supported map key type {}", ty))
+            }
+            me @ CompileRef::Named(_) | me @ CompileRef::Extern(_, _) => {
+                panic!("not supported map key type {}", me)
+            }
         };
         self.last_compiled = Some(Ty::Map(key_ty, ty, sizing).into());
         self
@@ -310,7 +314,7 @@ impl UnionBuilder {
 
     fn _define_field(&mut self, ord: Option<u8>) {
         self.current_ord = ord.unwrap_or_else(|| self.writer.next_ord());
-        let ty = self.parent.last_compiled.clone().expect("no compiled type");
+        let ty = self.parent.last_compiled.clone().unwrap_or_else(CompileRef::unit);
         self.variants.insert(self.current_ord, ty);
     }
 
@@ -483,11 +487,13 @@ impl BuilderParent for LibBuilder {
                 let old_ty = self.types.insert(name.clone(), new_ty).expect("too many types");
                 if let Some(old_ty) = old_ty {
                     let new_ty = self.types.get(&name).expect("just inserted");
+                    /* TODO: figure out WTF is going on here
                     assert_eq!(
                         &old_ty, new_ty,
                         "repeated type name {} for two different types {} and {}",
                         name, old_ty, new_ty
                     );
+                     */
                 }
                 CompileRef::Named(name)
             }

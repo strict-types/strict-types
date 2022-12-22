@@ -485,10 +485,10 @@ where Ref: Display
         let mut iter = self.iter();
         let last = iter.next_back();
         for (field, ty) in iter {
-            write!(f, "{}{}{}", field, ty, sep)?;
+            write!(f, "{} {}{}", field, ty, sep)?;
         }
         if let Some((field, ty)) = last {
-            write!(f, "{}{}", field, ty)?;
+            write!(f, "{} {}", field, ty)?;
         }
         Ok(())
     }

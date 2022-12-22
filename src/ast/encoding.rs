@@ -23,6 +23,7 @@
 use std::io;
 use std::ops::Deref;
 
+use amplify::confinement::TinyOrdMap;
 use amplify::Wrapper;
 
 use crate::ast::{Field, Fields, Step, Variants};
@@ -30,7 +31,7 @@ use crate::encoding::{
     DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::util::Sizing;
-use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeRef};
+use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeName, TypeRef};
 
 impl StrictEncode for SemId {
     fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
@@ -97,7 +98,34 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
         }
     }
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(Some("Fields"), self.deref())
+        struct FieldInfo<R: TypeRef> {
+            name: Option<TypeName>,
+            ty: R,
+        }
+        impl<R: TypeRef> StrictEncode for FieldInfo<R> {
+            fn strict_encode_dumb() -> Self {
+                FieldInfo {
+                    name: None,
+                    ty: R::strict_encode_dumb(),
+                }
+            }
+            fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+                Ok(writer
+                    .write_struct(Some("FieldInfo"))
+                    .write_field("name", &self.name)?
+                    .write_field("ty", &self.ty)?
+                    .complete())
+            }
+        }
+
+        let fields = TinyOrdMap::try_from_iter(self.iter().map(|(field, ty)| {
+            (field.ord, FieldInfo {
+                name: field.name.clone(),
+                ty: ty.clone(),
+            })
+        }))
+        .expect("guaranteed by Fields type");
+        writer.write_type(Some("Fields"), &fields)
     }
 }
 
