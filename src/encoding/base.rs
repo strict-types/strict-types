@@ -108,12 +108,11 @@ impl<T: StrictEncode<Dumb = T> + Copy, const LEN: usize> StrictEncode for [T; LE
 
     fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
-            writer = writer.register_array(&T::strict_encode_dumb(), LEN as u16);
             for item in self {
                 writer = item.strict_encode(writer)?;
             }
         }
-        Ok(writer)
+        Ok(writer.register_array(&T::strict_encode_dumb(), LEN as u16))
     }
 }
 
@@ -153,15 +152,12 @@ impl<T: StrictEncode<Dumb = T>, const MIN_LEN: usize, const MAX_LEN: usize> Stri
     fn strict_encode_dumb() -> Self {
         Self::try_from_iter(vec![T::strict_encode_dumb()]).expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
-            writer
-                .register_list(
-                    &T::strict_encode_dumb(),
-                    Sizing::new(MIN_LEN as u16, MAX_LEN as u16),
-                )
-                .write_raw_collection::<Vec<T>, MIN_LEN, MAX_LEN>(self)
+            writer = writer.write_raw_collection::<Vec<T>, MIN_LEN, MAX_LEN>(self)?;
         }
+        Ok(writer
+            .register_list(&T::strict_encode_dumb(), Sizing::new(MIN_LEN as u16, MAX_LEN as u16)))
     }
 }
 
@@ -171,12 +167,12 @@ impl<T: StrictEncode<Dumb = T> + Ord, const MIN_LEN: usize, const MAX_LEN: usize
     fn strict_encode_dumb() -> Self {
         Self::try_from_iter(bset![T::strict_encode_dumb()]).expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
-            writer
-                .register_set(&T::strict_encode_dumb(), Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
-                .write_raw_collection::<BTreeSet<T>, MIN_LEN, MAX_LEN>(self)
+            writer = writer.write_raw_collection::<BTreeSet<T>, MIN_LEN, MAX_LEN>(self)?;
         }
+        Ok(writer
+            .register_set(&T::strict_encode_dumb(), Sizing::new(MIN_LEN as u16, MAX_LEN as u16)))
     }
 }
 
@@ -193,18 +189,16 @@ impl<
     }
     fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
-            writer = writer
-                .register_map(
-                    &K::strict_encode_dumb(),
-                    &V::strict_encode_dumb(),
-                    Sizing::new(MIN_LEN as u16, MAX_LEN as u16),
-                )
-                .write_raw_len::<MAX_LEN>(self.len())?;
+            writer = writer.write_raw_len::<MAX_LEN>(self.len())?;
         }
         for (k, v) in self {
             writer = k.strict_encode(writer)?;
             writer = v.strict_encode(writer)?
         }
-        Ok(writer)
+        Ok(writer.register_map(
+            &K::strict_encode_dumb(),
+            &V::strict_encode_dumb(),
+            Sizing::new(MIN_LEN as u16, MAX_LEN as u16),
+        ))
     }
 }
