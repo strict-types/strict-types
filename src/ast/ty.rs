@@ -28,7 +28,7 @@ use std::ops::Deref;
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
-use crate::ast::Iter;
+use crate::ast::NestedRef;
 use crate::encoding::StrictEncode;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
@@ -41,13 +41,6 @@ pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
     fn is_byte(&self) -> bool { false }
     fn is_unicode_char(&self) -> bool { false }
     fn is_ascii_char(&self) -> bool { false }
-}
-// TODO: None of the Ref-types implements this, but a lot of implementations on `Ty` are only for
-//       RecursiveRef's. Check how this can be improved
-pub trait RecursiveRef: TypeRef {
-    fn as_ty(&self) -> &Ty<Self>;
-    fn into_ty(self) -> Ty<Self>;
-    fn iter(&self) -> Iter<Self> { Iter::from(self) }
 }
 
 impl TypeRef for SemId {
@@ -351,7 +344,7 @@ where Ref: Display
     }
 }
 
-impl<Ref: RecursiveRef> Ty<Ref> {
+impl<Ref: NestedRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
             Ty::Union(fields) => fields.ty_at(pos),

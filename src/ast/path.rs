@@ -25,7 +25,7 @@ use std::fmt::{Display, Formatter};
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
 
-use crate::ast::RecursiveRef;
+use crate::ast::NestedRef;
 use crate::{FieldName, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -80,16 +80,16 @@ impl Display for Path {
 
 #[derive(Debug, Display, Error)]
 #[display("no type path {path} exists within type {ty:?}")]
-pub struct PathError<'ty, Ref: RecursiveRef> {
+pub struct PathError<'ty, Ref: NestedRef> {
     pub ty: &'ty Ty<Ref>,
     pub path: Path,
 }
 
-impl<'ty, Ref: RecursiveRef> PathError<'ty, Ref> {
+impl<'ty, Ref: NestedRef> PathError<'ty, Ref> {
     pub fn new(ty: &'ty Ty<Ref>, path: Path) -> Self { PathError { ty, path } }
 }
 
-impl<Ref: RecursiveRef> Ty<Ref> {
+impl<Ref: NestedRef> Ty<Ref> {
     pub fn at_path(&self, path: &Path) -> Result<&Self, PathError<Ref>> {
         let mut ty = self;
         let mut path = path.clone();
@@ -115,12 +115,14 @@ impl<Ref: RecursiveRef> Ty<Ref> {
                 (_, _) => None,
             };
             path_so_far.push(step).expect("confinement collection guarantees");
-            ty = res.ok_or_else(|| PathError::new(self, path_so_far.clone()))?.as_ty();
+            ty = res
+                .and_then(|r| r.as_ty())
+                .ok_or_else(|| PathError::new(self, path_so_far.clone()))?
         }
         Ok(ty)
     }
 
-    pub fn count_subtypes(&self) -> u8 {
+    pub fn count_type_refs(&self) -> u8 {
         match self {
             Ty::Primitive(_) => 0,
             Ty::Enum(_) => 0,

@@ -64,6 +64,10 @@ impl LibBuilder {
     pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
 
     pub fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
+        for ty in self.types.into_values() {
+            // for subty in ty.type_refs() {}
+        }
+
         todo!()
         // TODO: translate from CompileType to LibRef
         /*
