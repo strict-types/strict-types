@@ -226,16 +226,20 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 
 pub struct UnionBuilder {
     name: Option<TypeName>,
+    types: BTreeMap<u8, CompileRef>,
     parent: LibBuilder,
     writer: UnionWriter<Sink>,
+    current_ord: u8,
 }
 
 impl UnionBuilder {
     pub fn with(name: Option<TypeName>, parent: LibBuilder) -> Self {
         UnionBuilder {
             name: name.clone(),
+            types: empty!(),
             parent,
             writer: UnionWriter::with(name, StrictWriter::sink()),
+            current_ord: 0,
         }
     }
 
@@ -257,6 +261,7 @@ impl DefineEnum for UnionBuilder {
     type EnumWriter = Self;
 
     fn define_variant(mut self, name: impl ToIdent, value: u8) -> Self {
+        self.current_ord = value;
         self.writer = DefineEnum::define_variant(self.writer, name, value);
         self
     }
@@ -268,6 +273,7 @@ impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
     fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
+        self.current_ord = self.writer.next_ord();
         self.writer = WriteEnum::write_variant(self.writer, name)?;
         Ok(self)
     }
@@ -287,17 +293,20 @@ impl DefineUnion for UnionBuilder {
     type UnionWriter = Self;
 
     fn define_unit(mut self, name: impl ToIdent) -> Self {
+        self.current_ord = self.writer.next_ord();
         self.writer = DefineUnion::define_unit(self.writer, name);
         self
     }
 
     fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
+        self.current_ord = self.writer.next_ord();
         let sink = DefineUnion::define_tuple(self.writer, name);
         self.writer = sink.into_parent();
         StructBuilder::with(None, self)
     }
 
     fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
+        self.current_ord = self.writer.next_ord();
         let sink = DefineUnion::define_struct(self.writer, name);
         self.writer = sink.into_parent();
         StructBuilder::with(None, self)
@@ -312,17 +321,20 @@ impl WriteUnion for UnionBuilder {
     type StructWriter = StructBuilder<Self>;
 
     fn write_unit(mut self, name: impl ToIdent) -> io::Result<Self> {
+        self.current_ord = self.writer.next_ord();
         self.writer = WriteUnion::write_unit(self.writer, name)?;
         Ok(self)
     }
 
     fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
+        self.current_ord = self.writer.next_ord();
         let sink = WriteUnion::write_tuple(self.writer, name)?;
         self.writer = sink.into_parent();
         Ok(StructBuilder::with(None, self))
     }
 
     fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
+        self.current_ord = self.writer.next_ord();
         let sink = WriteUnion::write_struct(self.writer, name)?;
         self.writer = sink.into_parent();
         Ok(StructBuilder::with(None, self))
@@ -366,7 +378,7 @@ impl BuilderParent for LibBuilder {
         let (mut writer, remnant) = self.into_write_split();
         writer = value.strict_encode(writer).expect("too many types in the library");
         self = Self::from_write_split(writer, remnant);
-        let r = self.last_compiled.expect("no type found after strict encoding procedure");
+        let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
         (self, r)
     }
 
@@ -407,6 +419,7 @@ impl BuilderParent for UnionBuilder {
         (self, r)
     }
     fn report_compiled(mut self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
+        self.types.insert(self.current_ord, CompileRef::Inline(Box::new(ty.clone())));
         self.parent = self.parent.report_compiled(name, ty);
         self
     }
