@@ -25,27 +25,22 @@ use std::fmt::{self, Display, Formatter};
 use crate::{LibAlias, SemId, Ty, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub enum NestedRef {
-    Inline(Box<Ty<NestedRef>>),
-    Named(TypeName, SemId),
-    Extern(TypeName, LibAlias, SemId),
+pub enum CompileRef {
+    Inline(Box<Ty<CompileRef>>),
+    Named(TypeName),
+    Extern(TypeName, LibAlias),
 }
 
-impl TypeRef for NestedRef {
-    fn id(&self) -> SemId {
-        match self {
-            NestedRef::Inline(ty) => ty.id(None),
-            NestedRef::Named(_, id) | NestedRef::Extern(_, _, id) => *id,
-        }
-    }
+impl TypeRef for CompileRef {
+    fn id(&self) -> SemId { unreachable!("CompileRef must never be called for the id") }
 }
 
-impl Display for NestedRef {
+impl Display for CompileRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            NestedRef::Inline(ty) => Display::fmt(ty, f),
-            NestedRef::Named(name, _) => write!(f, "{}", name),
-            NestedRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            CompileRef::Inline(ty) => Display::fmt(ty, f),
+            CompileRef::Named(name) => write!(f, "{}", name),
+            CompileRef::Extern(name, lib) => write!(f, "{}.{}", lib, name),
         }
     }
 }

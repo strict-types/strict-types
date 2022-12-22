@@ -28,7 +28,7 @@ mod encoding;
 mod build;
 mod compile;
 
-pub use compile::NestedRef;
+pub use compile::CompileRef;
 pub use id::TypeLibId;
 pub use translate::{Error, Warning};
 pub use type_lib::{
