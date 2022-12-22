@@ -144,7 +144,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         });
         let parent = WriteStruct::complete(self.writer);
         match ty {
-            Some(ty) => parent.complete(ty),
+            Some(ty) => parent.report_finished_type(ty),
             None => parent,
         }
     }
@@ -246,7 +246,7 @@ impl UnionBuilder {
     fn _complete_write(self, ty: Option<StrictType>) -> LibBuilder {
         let _ = WriteUnion::complete(self.writer);
         match ty {
-            Some(ty) => self.parent.complete(ty),
+            Some(ty) => self.parent.report_finished_type(ty),
             None => self.parent,
         }
     }
@@ -352,7 +352,7 @@ impl WriteUnion for UnionBuilder {
 
 pub trait BuilderParent: StrictParent<Sink> {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef;
-    fn complete(self, ty: StrictType) -> Self;
+    fn report_finished_type(self, ty: StrictType) -> Self;
 }
 
 impl TypedParent for LibBuilder {}
@@ -365,7 +365,7 @@ impl StrictParent<Sink> for LibBuilder {
 }
 impl BuilderParent for LibBuilder {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef { todo!() }
-    fn complete(mut self, ty: StrictType) -> Self {
+    fn report_finished_type(mut self, ty: StrictType) -> Self {
         let id = ty.id();
         self.types
             .insert(ty.name.clone(), ty)
@@ -389,8 +389,8 @@ impl StrictParent<Sink> for UnionBuilder {
 }
 impl BuilderParent for UnionBuilder {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef { self.parent.process(value) }
-    fn complete(mut self, ty: StrictType) -> Self {
-        self.parent = self.parent.complete(ty);
+    fn report_finished_type(mut self, ty: StrictType) -> Self {
+        self.parent = self.parent.report_finished_type(ty);
         self
     }
 }
