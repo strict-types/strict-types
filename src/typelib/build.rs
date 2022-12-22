@@ -188,13 +188,11 @@ impl BuilderParent for LibBuilder {
                 let old_ty = self.types.insert(name.clone(), new_ty).expect("too many types");
                 if let Some(old_ty) = old_ty {
                     let new_ty = self.types.get(&name).expect("just inserted");
-                    /* TODO: figure out WTF is going on here
                     assert_eq!(
                         &old_ty, new_ty,
                         "repeated type name {} for two different types {} and {}",
                         name, old_ty, new_ty
                     );
-                     */
                 }
                 CompileRef::Named(name)
             }

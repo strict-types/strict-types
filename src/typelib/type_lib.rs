@@ -51,6 +51,7 @@ pub enum InlineRef {
 }
 
 impl TypeRef for InlineRef {
+    const TYPE_NAME: &'static str = "InlineRef";
     fn id(&self) -> SemId {
         match self {
             InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => *id,
@@ -77,6 +78,7 @@ pub enum InlineRef1 {
 }
 
 impl TypeRef for InlineRef1 {
+    const TYPE_NAME: &'static str = "InlineRef1";
     fn id(&self) -> SemId {
         match self {
             InlineRef1::Named(_, id) | InlineRef1::Extern(_, _, id) => *id,
@@ -103,6 +105,7 @@ pub enum InlineRef2 {
 }
 
 impl TypeRef for InlineRef2 {
+    const TYPE_NAME: &'static str = "InlineRef2";
     fn id(&self) -> SemId {
         match self {
             InlineRef2::Named(_, id) | InlineRef2::Extern(_, _, id) => *id,
@@ -132,6 +135,7 @@ pub enum LibRef {
 }
 
 impl TypeRef for LibRef {
+    const TYPE_NAME: &'static str = "LibRef";
     fn id(&self) -> SemId {
         match self {
             LibRef::Named(_, id) | LibRef::Extern(_, _, id) => *id,

@@ -111,7 +111,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             }
             fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 Ok(writer
-                    .write_struct(Some("FieldInfo"))
+                    .write_struct(Some(format!("Field{}", R::TYPE_NAME)))
                     .write_field("name", &self.name)?
                     .write_field("ty", &self.ty)?
                     .complete())
@@ -125,7 +125,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             })
         }))
         .expect("guaranteed by Fields type");
-        writer.write_type(Some("Fields"), &fields)
+        writer.write_type(Some(format!("FieldList{}", Ref::TYPE_NAME)), &fields)
     }
 }
 
@@ -143,7 +143,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
     fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        let u = writer.define_union(Some("Ty"));
+        let u = writer.define_union(Some(format!("Ty{}", Ref::TYPE_NAME)));
         let u = u
             .define_type::<u8>("primitive")
             .define_unit("unicode")

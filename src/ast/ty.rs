@@ -36,6 +36,7 @@ use crate::{Ident, SemId};
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
+    const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
     fn is_byte(&self) -> bool { false }
     fn is_unicode_char(&self) -> bool { false }
@@ -50,10 +51,12 @@ pub trait RecursiveRef: TypeRef {
 }
 
 impl TypeRef for SemId {
+    const TYPE_NAME: &'static str = "SemId";
     fn id(&self) -> SemId { *self }
 }
 
 impl TypeRef for KeyTy {
+    const TYPE_NAME: &'static str = "KeyTy";
     fn id(&self) -> SemId { KeyTy::id(self) }
 }
 

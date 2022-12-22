@@ -48,6 +48,7 @@ impl CompileRef {
 }
 
 impl TypeRef for CompileRef {
+    const TYPE_NAME: &'static str = "CompileRef";
     fn id(&self) -> SemId { unreachable!("CompileRef must never be called for the id") }
 }
 
