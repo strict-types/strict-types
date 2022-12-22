@@ -152,7 +152,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
             .define_type::<Fields<Ref, true>>("struct");
         let u = u.define_tuple("array").define_field::<Ref>().define_field::<u16>().complete();
         let u = u.define_tuple("list").define_field::<Ref>().define_field::<Sizing>().complete();
-        let u = u.define_tuple("Set").define_field::<Ref>().define_field::<Sizing>().complete();
+        let u = u.define_tuple("set").define_field::<Ref>().define_field::<Sizing>().complete();
         let u = u
             .define_tuple("map")
             .define_field::<KeyTy>()
