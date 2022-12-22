@@ -35,8 +35,9 @@ impl CompileType {
     pub fn new(name: TypeName, ty: Ty<CompileRef>) -> Self { CompileType { name, ty } }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum CompileRef {
+    #[from(Ty<CompileRef>)]
     Inline(Box<Ty<CompileRef>>),
     Named(TypeName),
     Extern(TypeName, LibAlias),

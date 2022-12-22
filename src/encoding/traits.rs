@@ -28,6 +28,8 @@ use amplify::num::u24;
 
 use super::DecodeError;
 use crate::encoding::{DeserializeError, SerializeError, StrictReader, StrictWriter};
+use crate::primitive::Primitive;
+use crate::util::Sizing;
 use crate::Ident;
 
 pub trait ToIdent {
@@ -65,6 +67,18 @@ pub trait TypedWrite: Sized {
         Ok(self.write_tuple(name).write_field(value)?.complete())
     }
     fn write_struct(self, name: Option<impl ToIdent>) -> Self::StructWriter;
+
+    // TODO: Consider making this functions unsafe
+    fn register_primitive(self, prim: Primitive) -> Self { self }
+    fn register_array(self, ty: &impl StrictEncode, len: u16) -> Self { self }
+    fn register_unicode_char(self) -> Self { self }
+    fn register_unicode_string(self, sizing: Sizing) -> Self { self }
+    fn register_ascii_string(self, sizing: Sizing) -> Self { self }
+    fn register_list(self, ty: &impl StrictEncode, sizing: Sizing) -> Self { self }
+    fn register_set(self, ty: &impl StrictEncode, sizing: Sizing) -> Self { self }
+    fn register_map(self, ket: &impl StrictEncode, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+        self
+    }
 
     #[doc(hidden)]
     unsafe fn _write_raw<const MAX_LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self>;

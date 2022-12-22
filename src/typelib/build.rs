@@ -34,6 +34,8 @@ use crate::encoding::{
     StrictWriter, StructWriter, ToIdent, ToMaybeIdent, TypedParent, TypedWrite, UnionWriter,
     WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
+use crate::primitive::Primitive;
+use crate::util::Sizing;
 use crate::{LibName, Ty, TypeLib, TypeName};
 
 #[derive(Default)]
@@ -85,6 +87,64 @@ impl TypedWrite for LibBuilder {
 
     fn write_struct(self, name: Option<impl ToIdent>) -> Self::StructWriter {
         StructBuilder::with(name.to_maybe_ident(), self)
+    }
+
+    fn register_primitive(mut self, prim: Primitive) -> Self {
+        self.last_compiled = Some(Ty::Primitive(prim).into());
+        self
+    }
+
+    fn register_array(mut self, ty: &impl StrictEncode, len: u16) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
+        let ty = self.last_compiled.expect("can't compile type");
+        self.last_compiled = Some(Ty::Array(ty, len).into());
+        self
+    }
+
+    fn register_unicode_char(mut self) -> Self {
+        self.last_compiled = Some(Ty::UnicodeChar.into());
+        self
+    }
+
+    fn register_unicode_string(mut self, sizing: Sizing) -> Self {
+        self.last_compiled = Some(Ty::List(Ty::UnicodeChar.into(), sizing).into());
+        self
+    }
+
+    fn register_ascii_string(mut self, sizing: Sizing) -> Self {
+        self.last_compiled = Some(Ty::List(Ty::ascii_char().into(), sizing).into());
+        self
+    }
+
+    fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
+        let ty = self.last_compiled.expect("can't compile type");
+        self.last_compiled = Some(Ty::List(ty, sizing).into());
+        self
+    }
+
+    fn register_set(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
+        let ty = self.last_compiled.expect("can't compile type");
+        self.last_compiled = Some(Ty::Set(ty, sizing).into());
+        self
+    }
+
+    fn register_map(
+        mut self,
+        key: &impl StrictEncode,
+        ty: &impl StrictEncode,
+        sizing: Sizing,
+    ) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
+        let ty = self.last_compiled.clone().expect("can't compile type");
+        self = key.strict_encode(self).expect("in-memory encoding");
+        let key_ty = match self.last_compiled.clone().expect("can't compile key type") {
+            CompileRef::Inline(ty) => ty.try_to_key().expect("not supported map key type"),
+            CompileRef::Named(_) | CompileRef::Extern(_, _) => panic!("not supported map key type"),
+        };
+        self.last_compiled = Some(Ty::Map(key_ty, ty, sizing).into());
+        self
     }
 
     unsafe fn _write_raw<const LEN: usize>(self, _bytes: impl AsRef<[u8]>) -> io::Result<Self> {

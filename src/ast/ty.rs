@@ -37,6 +37,9 @@ use crate::{Ident, SemId};
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
     fn id(&self) -> SemId;
+    fn is_byte(&self) -> bool { false }
+    fn is_unicode_char(&self) -> bool { false }
+    fn is_ascii_char(&self) -> bool { false }
 }
 // TODO: None of the Ref-types implements this, but a lot of implementations on `Ty` are only for
 //       RecursiveRef's. Check how this can be improved
@@ -356,18 +359,22 @@ impl<Ref: RecursiveRef> Ty<Ref> {
             _ => return None,
         }
     }
+}
+
+impl<Ref: TypeRef> Ty<Ref> {
+    pub fn is_byte(&self) -> bool { matches!(self, x if x == &Ty::BYTE) }
+    pub fn is_unicode_char(&self) -> bool { matches!(self, x if x == &Ty::UNICODE) }
+    pub fn is_ascii_char(&self) -> bool { matches!(self, x if x == &Ty::ascii_char()) }
 
     pub fn try_to_key(&self) -> Result<KeyTy, &Ty<Ref>> {
         Ok(match self {
             Ty::Primitive(code) => KeyTy::Primitive(*code),
             Ty::Enum(vars) => KeyTy::Enum(vars.clone()),
-            Ty::Array(ty, len) if ty.as_ty() == &Ty::BYTE => KeyTy::Array(*len),
-            Ty::List(ty, sizing) if ty.as_ty() == &Ty::BYTE => KeyTy::Bytes(*sizing),
-            Ty::Array(ty, len) if ty.as_ty() == &Ty::UNICODE => {
-                KeyTy::UnicodeStr(Sizing::fixed(*len))
-            }
-            Ty::List(ty, sizing) if ty.as_ty() == &Ty::UNICODE => KeyTy::UnicodeStr(*sizing),
-            Ty::List(ty, sizing) if ty.as_ty() == &Ty::ascii_char() => KeyTy::AsciiStr(*sizing),
+            Ty::Array(ty, len) if ty.is_byte() => KeyTy::Array(*len),
+            Ty::List(ty, sizing) if ty.is_byte() => KeyTy::Bytes(*sizing),
+            Ty::Array(ty, len) if ty.is_unicode_char() => KeyTy::UnicodeStr(Sizing::fixed(*len)),
+            Ty::List(ty, sizing) if ty.is_unicode_char() => KeyTy::UnicodeStr(*sizing),
+            Ty::List(ty, sizing) if ty.is_ascii_char() => KeyTy::AsciiStr(*sizing),
             Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
             Ty::Union(_)
             | Ty::Struct(_)
