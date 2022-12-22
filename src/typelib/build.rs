@@ -444,6 +444,7 @@ impl DefineEnum for UnionBuilder {
     type EnumWriter = Self;
 
     fn define_variant(mut self, name: impl ToIdent, value: u8) -> Self {
+        self.parent = self.parent.report_compiled(None, Ty::U8);
         self._define_field(Some(value));
         self.writer = DefineEnum::define_variant(self.writer, name, value);
         self
@@ -459,6 +460,7 @@ impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
     fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
+        self.parent = self.parent.report_compiled(None, Ty::U8);
         self._write_field(name.to_ident());
         self.writer = WriteEnum::write_variant(self.writer, name)?;
         Ok(self)
@@ -477,6 +479,7 @@ impl DefineUnion for UnionBuilder {
     type UnionWriter = Self;
 
     fn define_unit(mut self, name: impl ToIdent) -> Self {
+        self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self._define_field(None);
         self.writer = DefineUnion::define_unit(self.writer, name);
         self
@@ -508,6 +511,7 @@ impl WriteUnion for UnionBuilder {
     type StructWriter = StructBuilder<Self>;
 
     fn write_unit(mut self, name: impl ToIdent) -> io::Result<Self> {
+        self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self._write_field(name.to_ident());
         self.writer = WriteUnion::write_unit(self.writer, name)?;
         Ok(self)
