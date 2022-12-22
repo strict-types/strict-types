@@ -29,4 +29,4 @@ mod base;
 pub use error::{DecodeError, DeserializeError, SerializeError};
 pub use read::StrictReader;
 pub use traits::*;
-pub use write::{StrictWriter, StructWriter};
+pub use write::{StrictParent, StrictWriter, StructWriter};

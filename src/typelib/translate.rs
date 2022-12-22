@@ -21,13 +21,10 @@
 // limitations under the License.
 
 use amplify::confinement;
-use amplify::confinement::{Confined, SmallOrdMap};
 
 use crate::ast::TranslateError;
-use crate::typelib::type_lib::StrictType;
-use crate::typelib::{
-    Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeIndex, TypeLib,
-};
+use crate::typelib::build::LibBuilder;
+use crate::typelib::{Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibRef};
 use crate::util::Sizing;
 use crate::{KeyTy, SemId, Translate, Ty, TypeName};
 
@@ -63,30 +60,6 @@ pub enum Error {
         expected: SemId,
         found: SemId,
     },
-}
-
-#[derive(Default)]
-pub struct LibBuilder {
-    index: TypeIndex,
-    types: SmallOrdMap<TypeName, StrictType>,
-}
-
-impl LibBuilder {
-    pub(crate) fn with(index: TypeIndex) -> LibBuilder {
-        LibBuilder {
-            index,
-            types: default!(),
-        }
-    }
-
-    pub(crate) fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
-        let types = Confined::try_from(self.types.into_inner())?;
-        Ok(TypeLib {
-            name,
-            dependencies: none!(),
-            types,
-        })
-    }
 }
 
 /*

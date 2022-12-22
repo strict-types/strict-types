@@ -28,7 +28,7 @@ mod encoding;
 mod build;
 
 pub use id::TypeLibId;
-pub use translate::{Error, LibBuilder, Warning};
+pub use translate::{Error, Warning};
 pub use type_lib::{
     Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeLib,
 };

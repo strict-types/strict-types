@@ -58,19 +58,14 @@ pub trait TypedWrite: Sized {
     type EnumDefiner: DefineEnum<Parent = Self>;
 
     // TODO: Remove optionals
-    fn define_union(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::UnionDefiner;
-    fn define_enum(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::EnumDefiner;
+    fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner;
+    fn define_enum(self, name: Option<impl ToIdent>) -> Self::EnumDefiner;
 
-    fn write_tuple(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::TupleWriter;
-    fn write_type(
-        self,
-        ns: impl ToIdent,
-        name: Option<impl ToIdent>,
-        value: &impl StrictEncode,
-    ) -> io::Result<Self> {
-        Ok(self.write_tuple(ns, name).write_field(value)?.complete())
+    fn write_tuple(self, name: Option<impl ToIdent>) -> Self::TupleWriter;
+    fn write_type(self, name: Option<impl ToIdent>, value: &impl StrictEncode) -> io::Result<Self> {
+        Ok(self.write_tuple(name).write_field(value)?.complete())
     }
-    fn write_struct(self, ns: impl ToIdent, name: Option<impl ToIdent>) -> Self::StructWriter;
+    fn write_struct(self, name: Option<impl ToIdent>) -> Self::StructWriter;
 
     #[doc(hidden)]
     unsafe fn _write_raw<const MAX_LEN: usize>(self, bytes: impl AsRef<[u8]>) -> io::Result<Self>;

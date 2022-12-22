@@ -22,14 +22,14 @@
 
 use crate::encoding::{DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteTuple, WriteUnion};
 use crate::typelib::{InlineRef, InlineRef1, InlineRef2};
-use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName, STEN_LIB};
+use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName};
 
 impl StrictEncode for LibRef {
     fn strict_encode_dumb() -> Self { LibRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("LibRef"))
+            .define_union(Some("LibRef"))
             .define_type::<Ty<InlineRef>>("inline")
             .define_tuple("named")
             .define_field::<TypeName>()
@@ -63,7 +63,7 @@ impl StrictEncode for InlineRef {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("InlineRef"))
+            .define_union(Some("InlineRef"))
             .define_type::<Ty<InlineRef1>>("inline")
             .define_tuple("named")
             .define_field::<TypeName>()
@@ -97,7 +97,7 @@ impl StrictEncode for InlineRef1 {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("InlineRef1"))
+            .define_union(Some("InlineRef1"))
             .define_type::<Ty<InlineRef2>>("inline")
             .define_tuple("named")
             .define_field::<TypeName>()
@@ -131,7 +131,7 @@ impl StrictEncode for InlineRef2 {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("InlineRef2"))
+            .define_union(Some("InlineRef2"))
             .define_type::<Ty<KeyTy>>("inline")
             .define_tuple("named")
             .define_field::<TypeName>()

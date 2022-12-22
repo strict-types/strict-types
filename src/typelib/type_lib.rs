@@ -38,6 +38,8 @@ pub struct StrictType {
 }
 
 impl StrictType {
+    pub fn with(name: TypeName, ty: Ty<LibRef>) -> StrictType { StrictType { name, ty } }
+
     pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
 }
 

@@ -88,7 +88,7 @@ impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(STD_LIB, None::<String>)
+            .define_union(None::<String>)
             .define_unit("none")
             .define_type::<T>("some")
             .complete();

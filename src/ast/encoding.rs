@@ -30,12 +30,12 @@ use crate::encoding::{
     DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::util::Sizing;
-use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeRef, STEN_LIB};
+use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeRef};
 
 impl StrictEncode for SemId {
     fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(STEN_LIB, Some("SemId"), self.as_bytes())
+        writer.write_type(Some("SemId"), self.as_bytes())
     }
 }
 
@@ -44,7 +44,7 @@ impl StrictEncode for Step {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("step"))
+            .define_union(Some("step"))
             .define_type::<FieldName>("namedField")
             .define_type::<u8>("unnamedField")
             .define_unit("index")
@@ -71,7 +71,7 @@ impl StrictEncode for Sizing {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
-            .write_struct(STEN_LIB, Some("Sizing"))
+            .write_struct(Some("Sizing"))
             .write_field("min", &self.min)?
             .write_field("max", &self.max)?
             .complete())
@@ -83,7 +83,7 @@ impl StrictEncode for Field {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
-            .write_struct(STEN_LIB, Some("Field"))
+            .write_struct(Some("Field"))
             .write_field("name", &self.name)?
             .write_field("ord", &self.ord)?
             .complete())
@@ -97,7 +97,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
         }
     }
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(STEN_LIB, Some("Fields"), self.deref())
+        writer.write_type(Some("Fields"), self.deref())
     }
 }
 
@@ -105,7 +105,7 @@ impl StrictEncode for Variants {
     fn strict_encode_dumb() -> Self { todo!() }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(STEN_LIB, Some("Variants"), self.deref())
+        writer.write_type(Some("Variants"), self.deref())
     }
 }
 
@@ -114,7 +114,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("Ty"))
+            .define_union(Some("Ty"))
             .define_type::<u8>("primitive")
             .define_unit("unicode")
             .define_type::<Variants>("enum")
@@ -164,7 +164,7 @@ impl StrictEncode for KeyTy {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(STEN_LIB, Some("KeyTy"))
+            .define_union(Some("KeyTy"))
             .define_type::<u8>("primitive")
             .define_type::<Variants>("enum")
             .define_type::<u16>("array")
@@ -190,6 +190,6 @@ impl StrictEncode for Ident {
     fn strict_encode_dumb() -> Self { Ident::from("Dumb") }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type("StEn", Some("Ident"), Wrapper::as_inner(self))
+        writer.write_type(Some("Ident"), Wrapper::as_inner(self))
     }
 }
