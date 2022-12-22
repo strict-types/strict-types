@@ -42,32 +42,23 @@ fn pp(data: impl AsRef<[u8]>) {
 
 #[test]
 fn reflect() {
-    let builder = LibBuilder::new();
+    let root = Ty::<LibRef>::strict_encode_dumb();
 
-    let ty = Ty::<LibRef>::UnicodeChar;
-    let writer = StrictWriter::in_memory(u16::MAX as usize);
-    let _ = ty.strict_encode(writer).expect("memory encoding");
-
-    let builder = ty.strict_encode(builder).unwrap();
-    for ty in builder.into_types().values() {
+    let lib = LibBuilder::new().process(&root).unwrap().compile(tn!("StEn")).unwrap();
+    println!("typedefs {} = {:#}\n", lib.name, lib.id());
+    for ty in lib.types.values() {
         println!("{}", ty);
     }
 
     /*
-    let root = TypeLib::sten_type();
-    let root_id = root.id();
-    let lib = TypeLib::with(s!("StEn"), root).unwrap();
-
-    println!("{:#}", Urn::from(lib.id()));
-    println!("{:#}", Urn::from(root_id));
-
     println!();
     println!("{}", lib);
     println!("----- BEGIN STEN TYPE LIB -----");
     println!("Id: {}\n", lib.id());
     pp(lib.to_serialized());
     println!("\n----- END STEN TYPE LIB -----\n");
-    */
+     */
+
     /*
     let mut builder = SystemBuilder::new();
     builder.import(lib);
@@ -88,6 +79,5 @@ fn reflect() {
             panic!()
         }
     }
-
      */
 }

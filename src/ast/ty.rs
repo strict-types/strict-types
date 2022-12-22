@@ -270,7 +270,7 @@ impl<Ref: TypeRef> Ty<Ref> {
         matches!(self, Ty::Struct(fields)
             if fields.len() > 1
             || fields.keys().next().expect("always at least one field").name.is_some())
-            || (matches!(self, Ty::Enum(_) | Ty::Union(_) | Ty::Map(..)) && !self.is_option())
+            || (matches!(self, Ty::Enum(_) | Ty::Union(_)) && !self.is_option())
     }
     pub fn is_option(&self) -> bool {
         matches!(self,
