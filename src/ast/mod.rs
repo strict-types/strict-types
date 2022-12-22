@@ -22,7 +22,6 @@
 
 mod ty;
 mod id;
-mod translate;
 mod path;
 mod iter;
 mod encoding;
@@ -30,5 +29,4 @@ mod encoding;
 pub use id::SemId;
 pub use iter::{CheckError, IntoIter, Iter, NestedRef};
 pub use path::{Path, PathError, Step};
-pub use translate::{Translate, TranslateError};
 pub use ty::{Cls, Field, FieldName, Fields, KeyTy, Ty, TypeRef, Variants};

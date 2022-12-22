@@ -49,7 +49,7 @@ pub mod typelib;
 //pub mod typesys;
 pub mod encoding;
 
-pub use ast::{Cls, FieldName, KeyTy, SemId, Translate, Ty, TypeRef};
+pub use ast::{Cls, FieldName, KeyTy, SemId, Ty, TypeRef};
 // #[cfg(test)]
 // pub(crate) use encoding::test;
 pub use typelib::{Dependency, LibAlias, LibName, LibRef, TypeLib, TypeLibId};

@@ -20,9 +20,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
-use crate::{LibAlias, SemId, Ty, TypeName, TypeRef};
+use amplify::confinement;
+
+use crate::ast::NestedRef;
+use crate::typelib::build::LibBuilder;
+use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
+use crate::typelib::type_lib::{LibType, TypeMap};
+use crate::{Dependency, LibAlias, LibName, SemId, Ty, TypeLib, TypeName, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -52,6 +59,17 @@ impl TypeRef for CompileRef {
     fn id(&self) -> SemId { unreachable!("CompileRef must never be called for the id") }
 }
 
+impl NestedRef for CompileRef {
+    type Ref = CompileRef;
+
+    fn as_ty(&self) -> Option<&Ty<Self>> {
+        match self {
+            CompileRef::Inline(ty) => Some(ty),
+            CompileRef::Named(_) | CompileRef::Extern(_, _) => None,
+        }
+    }
+}
+
 impl Display for CompileRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -60,5 +78,92 @@ impl Display for CompileRef {
             CompileRef::Named(name) => write!(f, "{}", name),
             CompileRef::Extern(name, lib) => write!(f, "{}.{}", lib, name),
         }
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display(doc_comments)]
+pub enum Warning {
+    /// unused import `{0}` for `{1}`
+    UnusedImport(LibAlias, Dependency),
+
+    /// type {1} from library {0} with id {2} is already known
+    RepeatedType(LibAlias, TypeName, SemId),
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Display, From, Error)]
+#[display(doc_comments)]
+pub enum Error {
+    /// type library {0} is not imported.
+    UnknownLib(LibAlias),
+
+    /// type {2} is not present in the type library {0}. The current version of the library is {1},
+    /// perhaps you need to import a different version.
+    TypeAbsent(LibAlias, Dependency, TypeName),
+
+    #[from]
+    #[display(inner)]
+    Confinement(confinement::Error),
+
+    /// type {name} in {dependency} expected to have a type id {expected} but {found} is found.
+    /// Perhaps a wrong version of the library is used?
+    TypeMismatch {
+        dependency: Dependency,
+        name: TypeName,
+        expected: SemId,
+        found: SemId,
+    },
+}
+
+impl LibBuilder {
+    pub fn compile(self, name: LibName) -> Result<TypeLib, TranslateError> {
+        // TODO: Build dependency list
+
+        let types = self.into_types();
+        for el in types.values() {
+            for subty in el.ty.type_refs() {
+                if let CompileRef::Named(name) = subty {
+                    if !types.contains_key(name) {
+                        return Err(TranslateError::UnknownType {
+                            unknown: name.clone(),
+                            within: el.clone(),
+                        });
+                    }
+                }
+            }
+        }
+
+        let mut old_types = types.into_inner();
+        let mut index = TypeIndex::new();
+        let mut new_types = BTreeMap::<TypeName, LibType>::new();
+        let names = old_types.keys().cloned().collect::<BTreeSet<_>>();
+        while !old_types.is_empty() {
+            for name in &names {
+                let Some(ty) = old_types.get(name).map(|c| &c.ty) else {
+                    continue
+                };
+                let mut ctx = NestedContext {
+                    top_name: name.clone(),
+                    index,
+                    stack: empty!(),
+                };
+                let Ok(ty) = ty.clone().translate(&mut ctx) else {
+                    index = ctx.index;
+                    continue
+                };
+                index = ctx.index;
+                let id = ty.id(Some(name));
+                index.insert(name.clone(), id);
+                new_types.insert(name.clone(), LibType::with(name.clone(), ty));
+                old_types.remove(name);
+            }
+        }
+
+        let types = TypeMap::try_from(new_types)?;
+        Ok(TypeLib {
+            name,
+            dependencies: none!(),
+            types,
+        })
     }
 }

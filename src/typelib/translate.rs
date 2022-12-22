@@ -20,238 +20,198 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::collections::BTreeMap;
+
 use amplify::confinement;
 
-use crate::ast::TranslateError;
-use crate::typelib::build::LibBuilder;
-use crate::typelib::{Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibRef};
-use crate::util::Sizing;
-use crate::{KeyTy, SemId, Translate, Ty, TypeName};
+use crate::ast::Fields;
+use crate::typelib::{
+    CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
+};
+use crate::util::InvalidIdent;
+use crate::{KeyTy, SemId, Ty, TypeName, TypeRef};
 
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[display(doc_comments)]
-pub enum Warning {
-    /// unused import `{0}` for `{1}`
-    UnusedImport(LibAlias, Dependency),
+pub type TypeIndex = std::collections::BTreeMap<TypeName, SemId>;
 
-    /// type {1} from library {0} with id {2} is already known
-    RepeatedType(LibAlias, TypeName, SemId),
+pub trait Translate<To: Sized> {
+    type Context;
+    type Error;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<To, Self::Error>;
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Display, From, Error)]
+#[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
-pub enum Error {
-    /// type library {0} is not imported.
-    UnknownLib(LibAlias),
+pub enum TranslateError {
+    /// invalid library name; {0}
+    InvalidLibName(InvalidIdent),
 
-    /// type {2} is not present in the type library {0}. The current version of the library is {1},
-    /// perhaps you need to import a different version.
-    TypeAbsent(LibAlias, Dependency, TypeName),
+    /// a different type with name `{0}` is already present
+    DuplicateName(TypeName),
+
+    /// a type with id {0} has at least two different names `{0}` and `{1}`
+    MultipleNames(SemId, TypeName, TypeName),
+
+    /// unknown type with id `{0}`
+    UnknownId(SemId),
+
+    /// type `{unknown}` referenced inside `{within}` is not known
+    UnknownType {
+        unknown: TypeName,
+        within: CompileType,
+    },
+
+    /// return type indicating continue operation
+    Continue,
+
+    /// dependency {0} is already present in the library
+    DuplicatedDependency(Dependency),
 
     #[from]
     #[display(inner)]
     Confinement(confinement::Error),
 
-    /// type {name} in {dependency} expected to have a type id {expected} but {found} is found.
-    /// Perhaps a wrong version of the library is used?
-    TypeMismatch {
-        dependency: Dependency,
-        name: TypeName,
-        expected: SemId,
-        found: SemId,
-    },
+    /// too deep type nesting for type {2} inside {0}, path {1}
+    NestedInline(TypeName, String, String),
 }
 
-/*
-impl Translate<TypeLib> for StenType {
-    type Context = LibName;
-    type Error = TranslateError;
+impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>
+where Ref: Translate<ToRef>
+{
+    type Context = <Ref as Translate<ToRef>>::Context;
+    type Error = <Ref as Translate<ToRef>>::Error;
 
-    fn translate(self, lib_name: &mut Self::Context) -> Result<TypeLib, Self::Error> {
-        let id = self.id();
-
-        let name = self.name.clone().ok_or_else(|| TranslateError::UnnamedTopType(self.clone()))?;
-        let index = self.build_index()?;
-
-        let builder = LibBuilder::with(index);
-        let mut context = NestedContext {
-            top_name: name,
-            builder,
-            stack: empty!(),
-        };
-
-        let root = self.ty.translate(&mut context)?;
-
-        let name = context.builder.index.remove(&id).ok_or(TranslateError::UnknownId(id))?;
-        let mut lib = context.builder.finalize(lib_name.clone())?;
-        if lib.types.insert(name, root)?.is_some() {
-            return Err(TranslateError::DuplicateName(context.top_name));
+    fn translate(self, ctx: &mut Self::Context) -> Result<Ty<ToRef>, Self::Error> {
+        Ok(match self {
+            Ty::Primitive(prim) => Ty::Primitive(prim),
+            Ty::Enum(vars) => Ty::Enum(vars),
+            Ty::Union(fields) => Ty::Union(fields.translate(ctx)?),
+            Ty::Struct(fields) => Ty::Struct(fields.translate(ctx)?),
+            Ty::Array(ty, len) => Ty::Array(ty.translate(ctx)?, len),
+            Ty::UnicodeChar => Ty::UnicodeChar,
+            Ty::List(ty, sizing) => Ty::List(ty.translate(ctx)?, sizing),
+            Ty::Set(ty, sizing) => Ty::Set(ty.translate(ctx)?, sizing),
+            Ty::Map(key, ty, sizing) => Ty::Map(key, ty.translate(ctx)?, sizing),
         }
-
-        Ok(lib)
+        .into())
     }
 }
-*/
 
-pub struct NestedContext {
-    top_name: TypeName,
-    builder: LibBuilder,
-    stack: Vec<String>,
+impl<Ref: TypeRef, ToRef: TypeRef, const OP: bool> Translate<Fields<ToRef, OP>> for Fields<Ref, OP>
+where Ref: Translate<ToRef>
+{
+    type Context = <Ref as Translate<ToRef>>::Context;
+    type Error = <Ref as Translate<ToRef>>::Error;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<Fields<ToRef, OP>, Self::Error> {
+        let mut fields = BTreeMap::new();
+        for (name, rf) in self {
+            fields.insert(name, rf.translate(ctx)?);
+        }
+        Ok(Fields::try_from(fields).expect("re-packing existing fields structure"))
+    }
 }
 
-/*
-impl Translate<LibRef> for StenType {
+pub struct NestedContext {
+    pub top_name: TypeName,
+    pub index: TypeIndex,
+    pub stack: Vec<String>,
+}
+
+impl Translate<LibRef> for CompileRef {
     type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<LibRef, Self::Error> {
-        let id = self.id();
-
-        if let Some(ref name) = self.name {
-            ctx.top_name = name.clone();
-        }
-
-        let ty = self.into_ty().translate(ctx)?;
-
-        let lib_ref = match ctx.builder.index.get(&id) {
-            Some(name) => {
-                if !ctx.builder.types.contains_key(name) {
-                    ctx.builder.types.insert(name.clone(), ty)?;
-                }
-                LibRef::Named(name.clone(), id)
+        match self {
+            CompileRef::Inline(ty) => {
+                ctx.stack.push(ty.cls().to_string());
+                let res = ty.translate(ctx).map(LibRef::Inline);
+                ctx.stack.pop();
+                res
             }
-            _ => LibRef::Inline(ty.translate(ctx)?),
-        };
-
-        Ok(lib_ref)
+            CompileRef::Named(name) => {
+                let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
+                Ok(LibRef::Named(name, *id))
+            }
+            CompileRef::Extern(_lib, _name) => todo!(),
+        }
     }
 }
-*/
 
-impl Translate<InlineRef> for LibRef {
+impl Translate<InlineRef> for CompileRef {
     type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef, Self::Error> {
         match self {
-            LibRef::Named(ty_name, id) => Ok(InlineRef::Named(ty_name, id)),
-            LibRef::Extern(ty_name, lib_alias, id) => Ok(InlineRef::Extern(ty_name, lib_alias, id)),
-            LibRef::Inline(ty) => {
+            CompileRef::Inline(ty) => {
                 ctx.stack.push(ty.cls().to_string());
-                let res = ty.translate(ctx).map(InlineRef::Builtin);
+                let res = ty.translate(ctx).map(InlineRef::Inline);
                 ctx.stack.pop();
                 res
             }
+            CompileRef::Named(name) => {
+                let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
+                Ok(InlineRef::Named(name, *id))
+            }
+            CompileRef::Extern(_lib, _name) => todo!(),
         }
     }
 }
 
-impl Translate<InlineRef1> for InlineRef {
+impl Translate<InlineRef1> for CompileRef {
     type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef1, Self::Error> {
         match self {
-            InlineRef::Builtin(ty) => {
+            CompileRef::Inline(ty) => {
                 ctx.stack.push(ty.cls().to_string());
-                let res = ty.translate(ctx).map(InlineRef1::Builtin);
+                let res = ty.translate(ctx).map(InlineRef1::Inline);
                 ctx.stack.pop();
                 res
             }
-            InlineRef::Named(ty_name, id) => Ok(InlineRef1::Named(ty_name, id)),
-            InlineRef::Extern(ty_name, lib_alias, id) => {
-                Ok(InlineRef1::Extern(ty_name, lib_alias, id))
+            CompileRef::Named(name) => {
+                let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
+                Ok(InlineRef1::Named(name, *id))
             }
+            CompileRef::Extern(_lib, _name) => todo!(),
         }
     }
 }
 
-impl Translate<InlineRef2> for InlineRef1 {
+impl Translate<InlineRef2> for CompileRef {
     type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef2, Self::Error> {
         match self {
-            InlineRef1::Builtin(ty) => {
+            CompileRef::Inline(ty) => {
                 ctx.stack.push(ty.cls().to_string());
                 let res = ty.translate(ctx).map(InlineRef2::Builtin);
                 ctx.stack.pop();
                 res
             }
-            InlineRef1::Named(ty_name, id) => Ok(InlineRef2::Named(ty_name, id)),
-            InlineRef1::Extern(ty_name, lib_alias, id) => {
-                Ok(InlineRef2::Extern(ty_name, lib_alias, id))
+            CompileRef::Named(name) => {
+                let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
+                Ok(InlineRef2::Named(name, *id))
             }
+            CompileRef::Extern(_lib, _name) => todo!(),
         }
     }
 }
 
-impl Translate<KeyTy> for InlineRef2 {
+impl Translate<KeyTy> for CompileRef {
     type Context = NestedContext;
     type Error = TranslateError;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<KeyTy, Self::Error> {
-        if let InlineRef2::Builtin(ref ty) = self {
-            match ty {
-                Ty::Primitive(code) => return Ok(KeyTy::Primitive(*code)),
-                Ty::Enum(vars) => return Ok(KeyTy::Enum(vars.clone())),
-                Ty::UnicodeChar => return Ok(KeyTy::UnicodeStr(Sizing::ONE)),
-                _ => {}
-            }
-        }
-        // We are too deep
-        Err(TranslateError::NestedInline(
-            ctx.top_name.clone(),
-            ctx.stack.join("/"),
-            self.to_string(),
-        ))
-    }
-}
-
-/*
-impl StenType {
-    pub fn build_index(&self) -> Result<TypeIndex, TranslateError> {
-        let mut index = empty!();
-        self.update_index(&mut index).map(|_| index)
-    }
-
-    pub fn update_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
-        if let Some(name) = self.name.clone() {
-            let id = self.id();
-            match index.get(&id) {
-                None => index.insert(id, name),
-                Some(n) if n != &name => {
-                    return Err(TranslateError::MultipleNames(id, n.clone(), name))
-                }
-                _ => None,
-            };
-        }
-
-        self.ty.update_index(index)?;
-
-        Ok(())
-    }
-}
-
-impl Ty<StenType> {
-    pub fn update_index(&self, index: &mut TypeIndex) -> Result<(), TranslateError> {
+        let me = self.to_string();
         match self {
-            Ty::Union(fields) => {
-                for ty in fields.values() {
-                    ty.update_index(index)?;
-                }
-            }
-            Ty::Struct(fields) => {
-                for ty in fields.values() {
-                    ty.update_index(index)?;
-                }
-            }
-            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) => {
-                ty.update_index(index)?
-            }
-            _ => {}
+            CompileRef::Inline(ty) => ty.try_to_key().ok(),
+            CompileRef::Named(_) | CompileRef::Extern(_, _) => None,
         }
-        Ok(())
+        .ok_or(TranslateError::NestedInline(ctx.top_name.clone(), ctx.stack.join("/"), me))
     }
 }
-*/

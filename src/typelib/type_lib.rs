@@ -25,27 +25,26 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
 
-use crate::ast::TranslateError;
 use crate::typelib::id::TypeLibId;
+use crate::typelib::translate::TranslateError;
 use crate::{Ident, KeyTy, SemId, SemVer, Ty, TypeName, TypeRef};
 
 /// Top-level data type contained within a library.
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name:16} :: {ty}")]
-pub struct StrictType {
+pub struct LibType {
     pub name: TypeName,
     pub ty: Ty<LibRef>,
 }
 
-impl StrictType {
-    pub fn with(name: TypeName, ty: Ty<LibRef>) -> StrictType { StrictType { name, ty } }
-
+impl LibType {
+    pub fn with(name: TypeName, ty: Ty<LibRef>) -> LibType { LibType { name, ty } }
     pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum InlineRef {
-    Builtin(Ty<InlineRef1>),
+    Inline(Ty<InlineRef1>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
@@ -55,7 +54,7 @@ impl TypeRef for InlineRef {
     fn id(&self) -> SemId {
         match self {
             InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => *id,
-            InlineRef::Builtin(ty) => ty.id(None),
+            InlineRef::Inline(ty) => ty.id(None),
         }
     }
 }
@@ -65,14 +64,14 @@ impl Display for InlineRef {
         match self {
             InlineRef::Named(name, _) => write!(f, "{}", name),
             InlineRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
-            InlineRef::Builtin(ty) => Display::fmt(ty, f),
+            InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum InlineRef1 {
-    Builtin(Ty<InlineRef2>),
+    Inline(Ty<InlineRef2>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
@@ -82,7 +81,7 @@ impl TypeRef for InlineRef1 {
     fn id(&self) -> SemId {
         match self {
             InlineRef1::Named(_, id) | InlineRef1::Extern(_, _, id) => *id,
-            InlineRef1::Builtin(ty) => ty.id(None),
+            InlineRef1::Inline(ty) => ty.id(None),
         }
     }
 }
@@ -92,7 +91,7 @@ impl Display for InlineRef1 {
         match self {
             InlineRef1::Named(name, _) => write!(f, "{}", name),
             InlineRef1::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
-            InlineRef1::Builtin(ty) => Display::fmt(ty, f),
+            InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }
@@ -128,9 +127,7 @@ impl Display for InlineRef2 {
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
-
     Named(TypeName, SemId),
-
     Extern(TypeName, LibAlias, SemId),
 }
 
@@ -166,7 +163,7 @@ pub struct Dependency {
     pub ver: SemVer,
 }
 
-pub type TypeMap = Confined<BTreeMap<TypeName, StrictType>, 1, { u16::MAX as usize }>;
+pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct TypeLib {
@@ -176,7 +173,7 @@ pub struct TypeLib {
 }
 
 impl TypeLib {
-    pub fn with(name: LibName, root: StrictType) -> Self {
+    pub fn with(name: LibName, root: LibType) -> Self {
         let types = Confined::with((root.name.clone(), root));
         TypeLib {
             name,
@@ -198,7 +195,7 @@ impl TypeLib {
         Ok(())
     }
 
-    pub fn populate(&mut self, ty: StrictType) -> Result<(), TranslateError> {
+    pub fn populate(&mut self, ty: LibType) -> Result<(), TranslateError> {
         if self.types.contains_key(&ty.name) {
             return Err(TranslateError::DuplicateName(ty.name.clone()));
         }

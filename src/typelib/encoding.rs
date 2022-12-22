@@ -104,7 +104,7 @@ impl StrictEncode for InlineRef {
             .complete();
 
         Ok(match self {
-            InlineRef::Builtin(ty) => u.write_type("inline", ty)?,
+            InlineRef::Inline(ty) => u.write_type("inline", ty)?,
             InlineRef::Named(ty_name, id) => {
                 u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }
@@ -138,7 +138,7 @@ impl StrictEncode for InlineRef1 {
             .complete();
 
         Ok(match self {
-            InlineRef1::Builtin(ty) => u.write_type("inline", ty)?,
+            InlineRef1::Inline(ty) => u.write_type("inline", ty)?,
             InlineRef1::Named(ty_name, id) => {
                 u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }

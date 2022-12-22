@@ -25,13 +25,10 @@ mod type_lib;
 mod translate;
 mod encoding;
 pub mod build;
-mod compile;
+pub mod compile;
 
-pub use compile::CompileRef;
+pub use compile::{CompileRef, CompileType};
 pub use id::TypeLibId;
-pub use translate::{Error, Warning};
 pub use type_lib::{
     Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeLib,
 };
-
-pub type TypeIndex = std::collections::BTreeMap<crate::SemId, crate::TypeName>;

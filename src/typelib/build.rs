@@ -24,7 +24,6 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement;
 use amplify::confinement::SmallOrdMap;
 
 use super::compile::{CompileRef, CompileType};
@@ -36,7 +35,7 @@ use crate::encoding::{
 };
 use crate::primitive::Primitive;
 use crate::util::Sizing;
-use crate::{FieldName, LibName, Ty, TypeLib, TypeName};
+use crate::{FieldName, Ty, TypeName};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -62,22 +61,6 @@ impl LibBuilder {
     }
 
     pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
-
-    pub fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
-        for ty in self.types.into_values() {
-            // for subty in ty.type_refs() {}
-        }
-
-        todo!()
-        // TODO: translate from CompileType to LibRef
-        /*
-        let types = Confined::try_from(self.types.into_inner())?;
-        Ok(TypeLib {
-            name,
-            dependencies: none!(),
-            types,
-        })*/
-    }
 }
 
 impl TypedWrite for LibBuilder {
