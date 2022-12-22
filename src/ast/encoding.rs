@@ -143,8 +143,8 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
     fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        let u = writer
-            .define_union(Some("Ty"))
+        let u = writer.define_union(Some("Ty"));
+        let u = u
             .define_type::<u8>("primitive")
             .define_unit("unicode")
             .define_type::<Variants>("enum")
