@@ -198,3 +198,14 @@ impl Display for Primitive {
         write!(f, "{}", info.byte_size() * 8)
     }
 }
+
+#[cfg(test)]
+mod test {
+    use crate::primitive::U8;
+
+    #[test]
+    fn u8() {
+        let prim = U8;
+        assert_eq!(prim.byte_size(), 1);
+    }
+}

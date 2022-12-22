@@ -58,7 +58,7 @@ impl NumSize {
 
     pub(super) const fn from_code(id: u8) -> Self {
         let code = id & 0x1F;
-        NumSize(match id & 0x20 / 0x20 {
+        NumSize(match (id & 0x20) / 0x20 {
             0 => NumSizeInner::Bytes(code),
             1 => NumSizeInner::Factored(code),
             _ => unreachable!(),
