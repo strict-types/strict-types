@@ -62,10 +62,10 @@ impl LibBuilder {
 }
 
 impl TypedWrite for LibBuilder {
-    type TupleWriter = StructBuilder<Self, false, false>;
-    type StructWriter = StructBuilder<Self, true, false>;
+    type TupleWriter = StructBuilder<Self>;
+    type StructWriter = StructBuilder<Self>;
     type UnionDefiner = UnionBuilder;
-    type EnumDefiner = EnumBuilder;
+    type EnumDefiner = UnionBuilder;
 
     fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner {
         todo!() // UnionBuilder::with(name.to_maybe_ident(), self)
@@ -89,13 +89,13 @@ impl TypedWrite for LibBuilder {
     }
 }
 
-pub struct StructBuilder<P: BuilderParent, const NAMED: bool, const DEFINER: bool> {
+pub struct StructBuilder<P: BuilderParent> {
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
     types: BTreeMap<u8, LibRef>,
 }
 
-impl<P: BuilderParent, const NAMED: bool, const DEFINER: bool> StructBuilder<P, NAMED, DEFINER> {
+impl<P: BuilderParent> StructBuilder<P> {
     pub fn with(name: Option<TypeName>, parent: P) -> Self {
         StructBuilder {
             name: name.clone(),
@@ -147,7 +147,7 @@ impl<P: BuilderParent, const NAMED: bool, const DEFINER: bool> StructBuilder<P, 
     }
 }
 
-impl<P: BuilderParent> DefineStruct for StructBuilder<P, true, true> {
+impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
     type Parent = P;
 
     fn define_field<T: StrictEncode>(mut self, name: impl ToIdent) -> Self {
@@ -164,7 +164,7 @@ impl<P: BuilderParent> DefineStruct for StructBuilder<P, true, true> {
     fn complete(self) -> P { self._complete_definition() }
 }
 
-impl<P: BuilderParent> WriteStruct for StructBuilder<P, true, false> {
+impl<P: BuilderParent> WriteStruct for StructBuilder<P> {
     type Parent = P;
 
     fn write_field(mut self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
@@ -186,7 +186,7 @@ impl<P: BuilderParent> WriteStruct for StructBuilder<P, true, false> {
     fn complete(self) -> P { self._complete_write() }
 }
 
-impl<P: BuilderParent> DefineTuple for StructBuilder<P, false, true> {
+impl<P: BuilderParent> DefineTuple for StructBuilder<P> {
     type Parent = P;
 
     fn define_field<T: StrictEncode>(mut self) -> Self {
@@ -203,7 +203,7 @@ impl<P: BuilderParent> DefineTuple for StructBuilder<P, false, true> {
     fn complete(self) -> P { self._complete_definition() }
 }
 
-impl<P: BuilderParent> WriteTuple for StructBuilder<P, false, false> {
+impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
     type Parent = P;
 
     fn write_field(mut self, value: &impl StrictEncode) -> io::Result<Self> {
@@ -220,14 +220,14 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P, false, false> {
     fn complete(self) -> P { self._complete_write() }
 }
 
-pub struct EnumBuilder {
+pub struct UnionBuilder {
     name: Option<TypeName>,
     variants: BTreeSet<Field>,
     ord: u8,
     parent: LibBuilder,
 }
 
-impl DefineEnum for EnumBuilder {
+impl DefineEnum for UnionBuilder {
     type Parent = LibBuilder;
     type EnumWriter = Self;
 
@@ -236,7 +236,7 @@ impl DefineEnum for EnumBuilder {
     fn complete(self) -> Self::EnumWriter { todo!() }
 }
 
-impl WriteEnum for EnumBuilder {
+impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
     fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
@@ -259,17 +259,10 @@ impl WriteEnum for EnumBuilder {
     }
 }
 
-pub struct UnionBuilder {
-    name: Option<TypeName>,
-    variants: BTreeSet<Field>,
-    ord: u8,
-    parent: LibBuilder,
-}
-
 impl DefineUnion for UnionBuilder {
     type Parent = LibBuilder;
-    type TupleDefiner = StructBuilder<Self, false, true>;
-    type StructDefiner = StructBuilder<Self, true, true>;
+    type TupleDefiner = StructBuilder<Self>;
+    type StructDefiner = StructBuilder<Self>;
     type UnionWriter = Self;
 
     fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
@@ -283,8 +276,8 @@ impl DefineUnion for UnionBuilder {
 
 impl WriteUnion for UnionBuilder {
     type Parent = LibBuilder;
-    type TupleWriter = StructBuilder<Self, false, false>;
-    type StructWriter = StructBuilder<Self, true, false>;
+    type TupleWriter = StructBuilder<Self>;
+    type StructWriter = StructBuilder<Self>;
 
     fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 
