@@ -43,7 +43,7 @@ impl StrictType {
     pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum InlineRef {
     Builtin(Ty<InlineRef1>),
     Named(TypeName, SemId),
@@ -69,7 +69,7 @@ impl Display for InlineRef {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum InlineRef1 {
     Builtin(Ty<InlineRef2>),
     Named(TypeName, SemId),
@@ -95,7 +95,7 @@ impl Display for InlineRef1 {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum InlineRef2 {
     Builtin(Ty<KeyTy>),
     Named(TypeName, SemId),

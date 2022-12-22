@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ast::{NestedRef, Path, Step};
+use crate::ast::{Path, RecursiveRef, Step};
 use crate::{Cls, Ty};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
@@ -39,13 +39,13 @@ pub enum CheckError {
     /// only {checked} fields were checked out of {total} fields in total
     UncheckedFields { checked: u8, total: u8 },
 }
-pub struct IntoIter<Ref: NestedRef> {
+pub struct IntoIter<Ref: RecursiveRef> {
     ty: Ty<Ref>,
     pos: u8,
     current: Path,
 }
 
-impl<Ref: NestedRef> From<Ty<Ref>> for IntoIter<Ref> {
+impl<Ref: RecursiveRef> From<Ty<Ref>> for IntoIter<Ref> {
     fn from(ty: Ty<Ref>) -> Self {
         IntoIter {
             ty,
@@ -55,18 +55,18 @@ impl<Ref: NestedRef> From<Ty<Ref>> for IntoIter<Ref> {
     }
 }
 
-impl<Ref: NestedRef> From<Ref> for IntoIter<Ref> {
+impl<Ref: RecursiveRef> From<Ref> for IntoIter<Ref> {
     fn from(ty: Ref) -> Self { Self::from(ty.into_ty()) }
 }
 
-impl<Ref: NestedRef> IntoIterator for Ty<Ref> {
+impl<Ref: RecursiveRef> IntoIterator for Ty<Ref> {
     type Item = Ref;
     type IntoIter = IntoIter<Ref>;
 
     fn into_iter(self) -> Self::IntoIter { IntoIter::from(self) }
 }
 
-impl<Ref: NestedRef> Iterator for IntoIter<Ref> {
+impl<Ref: RecursiveRef> Iterator for IntoIter<Ref> {
     type Item = Ref;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -76,27 +76,27 @@ impl<Ref: NestedRef> Iterator for IntoIter<Ref> {
     }
 }
 
-pub struct Iter<'ty, Ref: NestedRef> {
+pub struct Iter<'ty, Ref: RecursiveRef> {
     ty: &'ty Ty<Ref>,
     pos: u8,
 }
 
-impl<'ty, Ref: NestedRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
+impl<'ty, Ref: RecursiveRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
     fn from(ty: &'ty Ty<Ref>) -> Self { Iter { ty, pos: 0 } }
 }
 
-impl<'ty, Ref: NestedRef> From<&'ty Ref> for Iter<'ty, Ref> {
+impl<'ty, Ref: RecursiveRef> From<&'ty Ref> for Iter<'ty, Ref> {
     fn from(ty: &'ty Ref) -> Self { Self::from(ty.as_ty()) }
 }
 
-impl<'ty, Ref: NestedRef> IntoIterator for &'ty Ty<Ref> {
+impl<'ty, Ref: RecursiveRef> IntoIterator for &'ty Ty<Ref> {
     type Item = &'ty Ref;
     type IntoIter = Iter<'ty, Ref>;
 
     fn into_iter(self) -> Self::IntoIter { Iter::from(self) }
 }
 
-impl<'ty, Ref: NestedRef + 'ty> Iterator for Iter<'ty, Ref> {
+impl<'ty, Ref: RecursiveRef + 'ty> Iterator for Iter<'ty, Ref> {
     type Item = &'ty Ref;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -106,7 +106,7 @@ impl<'ty, Ref: NestedRef + 'ty> Iterator for Iter<'ty, Ref> {
     }
 }
 
-impl<Ref: NestedRef> IntoIter<Ref> {
+impl<Ref: RecursiveRef> IntoIter<Ref> {
     pub(crate) fn check_expect(&mut self, expect: &Ty<Ref>) {
         self.check(expect).expect("invalid type")
     }

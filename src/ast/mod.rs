@@ -32,4 +32,4 @@ pub use id::SemId;
 pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use translate::{Translate, TranslateError};
-pub use ty::{Cls, Field, FieldName, Fields, KeyTy, NestedRef, Ty, TypeRef, Variants};
+pub use ty::{Cls, Field, FieldName, Fields, KeyTy, RecursiveRef, Ty, TypeRef, Variants};

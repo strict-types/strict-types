@@ -20,19 +20,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod id;
-mod type_lib;
-mod translate;
-//mod serialize;
-mod encoding;
-mod build;
-mod compile;
+use std::fmt::{self, Display, Formatter};
 
-pub use compile::NestedRef;
-pub use id::TypeLibId;
-pub use translate::{Error, Warning};
-pub use type_lib::{
-    Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeLib,
-};
+use crate::{LibAlias, SemId, Ty, TypeName, TypeRef};
 
-pub type TypeIndex = std::collections::BTreeMap<crate::SemId, crate::TypeName>;
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum NestedRef {
+    Inline(Box<Ty<NestedRef>>),
+    Named(TypeName, SemId),
+    Extern(TypeName, LibAlias, SemId),
+}
+
+impl TypeRef for NestedRef {
+    fn id(&self) -> SemId {
+        match self {
+            NestedRef::Inline(ty) => ty.id(None),
+            NestedRef::Named(_, id) | NestedRef::Extern(_, _, id) => *id,
+        }
+    }
+}
+
+impl Display for NestedRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            NestedRef::Inline(ty) => Display::fmt(ty, f),
+            NestedRef::Named(name, _) => write!(f, "{}", name),
+            NestedRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+        }
+    }
+}

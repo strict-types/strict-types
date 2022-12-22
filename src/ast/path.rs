@@ -25,7 +25,7 @@ use std::fmt::{Display, Formatter};
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
 
-use crate::ast::NestedRef;
+use crate::ast::RecursiveRef;
 use crate::{FieldName, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -80,16 +80,16 @@ impl Display for Path {
 
 #[derive(Debug, Display, Error)]
 #[display("no type path {path} exists within type {ty:?}")]
-pub struct PathError<'ty, Ref: NestedRef> {
+pub struct PathError<'ty, Ref: RecursiveRef> {
     pub ty: &'ty Ty<Ref>,
     pub path: Path,
 }
 
-impl<'ty, Ref: NestedRef> PathError<'ty, Ref> {
+impl<'ty, Ref: RecursiveRef> PathError<'ty, Ref> {
     pub fn new(ty: &'ty Ty<Ref>, path: Path) -> Self { PathError { ty, path } }
 }
 
-impl<Ref: NestedRef> Ty<Ref> {
+impl<Ref: RecursiveRef> Ty<Ref> {
     pub fn at_path(&self, path: &Path) -> Result<&Self, PathError<Ref>> {
         let mut ty = self;
         let mut path = path.clone();

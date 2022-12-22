@@ -21,7 +21,7 @@
 // limitations under the License.
 
 use crate::encoding::{DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteTuple, WriteUnion};
-use crate::typelib::{InlineRef, InlineRef1, InlineRef2};
+use crate::typelib::{InlineRef, InlineRef1, InlineRef2, NestedRef};
 use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName};
 
 impl StrictEncode for LibRef {
@@ -48,6 +48,40 @@ impl StrictEncode for LibRef {
                 u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
             }
             LibRef::Extern(ty_name, lib_name, id) => u
+                .write_tuple("named")?
+                .write_field(ty_name)?
+                .write_field(lib_name)?
+                .write_field(id)?
+                .complete(),
+        }
+        .complete())
+    }
+}
+
+impl StrictEncode for NestedRef {
+    fn strict_encode_dumb() -> Self { NestedRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
+
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+        let u = writer
+            .define_union(Some("NestedRef"))
+            .define_type::<Ty<NestedRef>>("inline")
+            .define_tuple("named")
+            .define_field::<TypeName>()
+            .define_field::<SemId>()
+            .complete()
+            .define_tuple("extern")
+            .define_field::<TypeName>()
+            .define_field::<LibName>()
+            .define_field::<SemId>()
+            .complete()
+            .complete();
+
+        Ok(match self {
+            NestedRef::Inline(ty) => u.write_type("inline", ty.as_ref())?,
+            NestedRef::Named(ty_name, id) => {
+                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
+            }
+            NestedRef::Extern(ty_name, lib_name, id) => u
                 .write_tuple("named")?
                 .write_field(ty_name)?
                 .write_field(lib_name)?

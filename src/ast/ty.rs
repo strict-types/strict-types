@@ -38,7 +38,9 @@ use crate::{Ident, SemId};
 pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
     fn id(&self) -> SemId;
 }
-pub trait NestedRef: TypeRef {
+// TODO: None of the Ref-types implements this, but a lot of implementations on `Ty` are only for
+//       RecursiveRef's. Check how this can be improved
+pub trait RecursiveRef: TypeRef {
     fn as_ty(&self) -> &Ty<Self>;
     fn into_ty(self) -> Ty<Self>;
     fn iter(&self) -> Iter<Self> { Iter::from(self) }
@@ -343,7 +345,7 @@ where Ref: Display
     }
 }
 
-impl<Ref: NestedRef> Ty<Ref> {
+impl<Ref: RecursiveRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
             Ty::Union(fields) => fields.ty_at(pos),
