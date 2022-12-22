@@ -248,9 +248,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         Ok(self)
     }
 
-    fn _complete_definition(self) -> P { DefineStruct::complete(self.writer) }
-
-    fn _complete_write(self) -> P {
+    fn _build_struct(&self) -> Ty<CompileRef> {
         let fields = self
             .writer
             .fields()
@@ -262,7 +260,17 @@ impl<P: BuilderParent> StructBuilder<P> {
             .collect::<BTreeMap<_, _>>();
         let fields = Fields::try_from(fields)
             .expect(&format!("structure {} has invalid number of fields", self.name()));
-        WriteStruct::complete(self.writer).report_compiled(self.name.clone(), Ty::Struct(fields))
+        Ty::Struct(fields)
+    }
+
+    fn _complete_definition(self) -> P {
+        let ty = self._build_struct();
+        DefineStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+    }
+
+    fn _complete_write(self) -> P {
+        let ty = self._build_struct();
+        WriteStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
     }
 }
 
