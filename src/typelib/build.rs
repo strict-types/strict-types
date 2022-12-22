@@ -27,11 +27,11 @@ use std::io::Sink;
 use amplify::confinement;
 use amplify::confinement::{Confined, SmallOrdMap};
 
-use crate::ast::{Field, Fields, Variants};
+use crate::ast::{Fields, Variants};
 use crate::encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, StrictParent, StrictWriter,
-    StructWriter, ToIdent, ToMaybeIdent, TypedParent, TypedWrite, WriteEnum, WriteStruct,
-    WriteTuple, WriteUnion,
+    StructWriter, ToIdent, ToMaybeIdent, TypedParent, TypedWrite, UnionWriter, WriteEnum,
+    WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::typelib::type_lib::StrictType;
 use crate::typelib::TypeIndex;
@@ -133,7 +133,10 @@ impl<P: BuilderParent> StructBuilder<P> {
                 .writer
                 .fields()
                 .iter()
-                .map(|f| (f.clone(), self.types.get(&f.ord).expect("type guarantees").clone()))
+                .map(|field| {
+                    let lib_ref = self.types.get(&field.ord).expect("type guarantees");
+                    (field.clone(), lib_ref.clone())
+                })
                 .collect::<BTreeMap<_, _>>();
             let fields = Fields::try_from(fields)
                 .expect(&format!("structure {} has invalid number of fields", name));
@@ -222,9 +225,54 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 
 pub struct UnionBuilder {
     name: Option<TypeName>,
-    variants: BTreeSet<Field>,
-    ord: u8,
     parent: LibBuilder,
+    writer: UnionWriter<Sink>,
+    types: BTreeMap<u8, LibRef>,
+}
+
+impl UnionBuilder {
+    pub fn with(name: Option<TypeName>, parent: LibBuilder) -> Self {
+        UnionBuilder {
+            name: name.clone(),
+            parent,
+            writer: UnionWriter::with(name, StrictWriter::sink()),
+            types: empty!(),
+        }
+    }
+
+    fn _define_field<T: StrictEncode>(mut self, ord: u8) -> Self {
+        let ty = self.parent.process(&T::strict_encode_dumb());
+        self.types.insert(ord, ty).expect("checked by self.writer");
+        self
+    }
+
+    fn _write_field(mut self, ord: u8, value: &impl StrictEncode) -> io::Result<Self> {
+        let expect_ty = self.types.get(&ord).expect("type guarantees");
+        let ty = self.parent.process(value);
+        assert_eq!(
+            expect_ty,
+            &ty,
+            "variant #{} in {} has a wrong type {} (expected {})",
+            ord,
+            self.writer.name(),
+            ty,
+            expect_ty
+        );
+        Ok(self)
+    }
+
+    fn _complete_definition(mut self) -> UnionBuilder {
+        self.writer = DefineUnion::complete(self.writer);
+        self
+    }
+
+    fn _complete_write(self, ty: Option<StrictType>) -> LibBuilder {
+        let _ = WriteUnion::complete(self.writer);
+        match ty {
+            Some(ty) => self.parent.complete(ty),
+            None => self.parent,
+        }
+    }
 }
 
 impl DefineEnum for UnionBuilder {
@@ -233,29 +281,22 @@ impl DefineEnum for UnionBuilder {
 
     fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
 
-    fn complete(self) -> Self::EnumWriter { todo!() }
+    fn complete(self) -> Self::EnumWriter { self._complete_definition() }
 }
 
 impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
-    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
-        todo!();
-        /*
-        let field = Field::named(name.to_ident(), value);
-        assert!(self.variants.insert(field), "repeated enum variant name or value");
-        self.ord = value + 1;
-        Ok(self)
-         */
-    }
+    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
 
     fn complete(self) -> LibBuilder {
-        assert!(!self.variants.is_empty(), "building enum with zero variants");
-        let variants = Variants::try_from(self.variants).expect("too many enum variants");
-        match self.name {
-            Some(name) => self.parent.complete(StrictType::with(name, Ty::Enum(variants))),
-            None => self.parent,
-        }
+        let ty = self.name.as_ref().map(|name| {
+            let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
+            let fields = Variants::try_from(fields)
+                .expect(&format!("enum {} has invalid number of variants", name));
+            StrictType::with(name.clone(), Ty::Enum(fields))
+        });
+        self._complete_write(ty)
     }
 }
 
@@ -271,7 +312,7 @@ impl DefineUnion for UnionBuilder {
 
     fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
 
-    fn complete(self) -> Self::UnionWriter { todo!() }
+    fn complete(self) -> Self::UnionWriter { self._complete_definition() }
 }
 
 impl WriteUnion for UnionBuilder {
@@ -286,12 +327,21 @@ impl WriteUnion for UnionBuilder {
     fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter> { todo!() }
 
     fn complete(self) -> LibBuilder {
-        assert!(!self.variants.is_empty(), "building union with zero variants");
-        let variants = Variants::try_from(self.variants).expect("too many union variants");
-        match self.name {
-            Some(name) => self.parent.complete(StrictType::with(name, Ty::Enum(variants))),
-            None => self.parent,
-        }
+        let ty = self.name.as_ref().map(|name| {
+            let fields = self
+                .writer
+                .variants()
+                .keys()
+                .map(|field| {
+                    let lib_ref = self.types.get(&field.ord).expect("type guarantees");
+                    (field.clone(), lib_ref.clone())
+                })
+                .collect::<BTreeMap<_, _>>();
+            let fields = Fields::try_from(fields)
+                .expect(&format!("union {} has invalid number of variants", name));
+            StrictType::with(name.clone(), Ty::Union(fields))
+        });
+        self._complete_write(ty)
     }
 }
 
@@ -323,5 +373,8 @@ impl StrictParent<Sink> for UnionBuilder {
 }
 impl BuilderParent for UnionBuilder {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef { self.parent.process(value) }
-    fn complete(self, ty: StrictType) -> Self { todo!() }
+    fn complete(mut self, ty: StrictType) -> Self {
+        self.parent = self.parent.complete(ty);
+        self
+    }
 }

@@ -266,7 +266,7 @@ impl<W: io::Write, P: StrictParent<W>> WriteTuple for StructWriter<W, P> {
 }
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Debug)]
-enum FieldType {
+pub enum FieldType {
     Unit,
     Tuple,
     Struct,
@@ -274,40 +274,48 @@ enum FieldType {
 
 pub struct UnionWriter<W: io::Write> {
     name: Option<Ident>,
-    fields: BTreeMap<Field, FieldType>,
-    writer: StrictWriter<W>,
+    variants: BTreeMap<Field, FieldType>,
+    parent: StrictWriter<W>,
     written: bool,
     parent_ident: Option<Ident>,
 }
 
 impl<W: io::Write> UnionWriter<W> {
-    fn with(name: Option<impl ToIdent>, writer: StrictWriter<W>) -> Self {
+    pub fn with(name: Option<impl ToIdent>, parent: StrictWriter<W>) -> Self {
         UnionWriter {
             name: name.to_maybe_ident(),
-            fields: empty!(),
-            writer,
+            variants: empty!(),
+            parent,
             written: false,
             parent_ident: None,
         }
     }
 
-    fn inline(name: Option<impl ToIdent>, uw: UnionWriter<W>) -> Self {
+    pub fn inline(name: Option<impl ToIdent>, uw: UnionWriter<W>) -> Self {
         UnionWriter {
             name: name.to_maybe_ident(),
-            fields: empty!(),
-            writer: uw.writer,
+            variants: empty!(),
+            parent: uw.parent,
             written: false,
             parent_ident: uw.name,
         }
     }
 
-    fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("unnamed") }
+    pub fn is_written(&self) -> bool { self.written }
 
-    fn next_ord(&self) -> u8 { self.fields.keys().max().map(|f| f.ord + 1).unwrap_or_default() }
+    pub fn as_parent_mut(&mut self) -> &mut StrictWriter<W> { &mut self.parent }
+
+    pub fn variants(&self) -> &BTreeMap<Field, FieldType> { &self.variants }
+
+    pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
+
+    pub fn next_ord(&self) -> u8 {
+        self.variants.keys().max().map(|f| f.ord + 1).unwrap_or_default()
+    }
 
     fn _define_field(mut self, field: Field, field_type: FieldType) -> Self {
         assert!(
-            self.fields.insert(field.clone(), field_type).is_none(),
+            self.variants.insert(field.clone(), field_type).is_none(),
             "variant {:#} is already defined as a part of {}",
             &field,
             self.name()
@@ -317,7 +325,7 @@ impl<W: io::Write> UnionWriter<W> {
 
     fn _write_field(mut self, name: Ident, field_type: FieldType) -> io::Result<Self> {
         let (field, t) = self
-            .fields
+            .variants
             .iter()
             .find(|(f, _)| f.name.as_ref() == Some(&name))
             .expect(&format!("variant {:#} was not defined in {}", &name, self.name()));
@@ -332,13 +340,13 @@ impl<W: io::Write> UnionWriter<W> {
         );
         assert!(!self.written, "multiple attempts to write variants of {}", self.name());
         self.written = true;
-        self.writer = field.ord.strict_encode(self.writer)?;
+        self.parent = field.ord.strict_encode(self.parent)?;
         Ok(self)
     }
 
     fn _complete_definition(self) -> Self {
         assert!(
-            !self.fields.is_empty(),
+            !self.variants.is_empty(),
             "unit or enum {} does not have fields defined",
             self.name()
         );
@@ -347,7 +355,7 @@ impl<W: io::Write> UnionWriter<W> {
 
     fn _complete_write(self) -> StrictWriter<W> {
         assert!(self.written, "not a single variant is written for {}", self.name());
-        self.writer
+        self.parent
     }
 }
 
@@ -428,8 +436,8 @@ impl<W: io::Write> StrictParent<W> for UnionWriter<W> {
     fn from_split(writer: StrictWriter<W>, remnant: Self::Remnant) -> Self {
         Self {
             name: remnant.name,
-            fields: remnant.fields,
-            writer,
+            variants: remnant.variants,
+            parent: writer,
             written: remnant.written,
             parent_ident: remnant.parent_ident,
         }
@@ -437,11 +445,11 @@ impl<W: io::Write> StrictParent<W> for UnionWriter<W> {
     fn split_typed_write(self) -> (StrictWriter<W>, Self::Remnant) {
         let remnant = UnionWriter {
             name: self.name,
-            fields: self.fields,
-            writer: StrictWriter::<Vec<u8>>::in_memory(0),
+            variants: self.variants,
+            parent: StrictWriter::<Vec<u8>>::in_memory(0),
             written: self.written,
             parent_ident: self.parent_ident,
         };
-        (self.writer, remnant)
+        (self.parent, remnant)
     }
 }
