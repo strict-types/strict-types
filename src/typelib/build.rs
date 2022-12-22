@@ -365,7 +365,18 @@ impl StrictParent<Sink> for LibBuilder {
 }
 impl BuilderParent for LibBuilder {
     fn process(&mut self, value: &impl StrictEncode) -> LibRef { todo!() }
-    fn complete(self, ty: StrictType) -> Self { todo!() }
+    fn complete(mut self, ty: StrictType) -> Self {
+        let id = ty.id();
+        self.types
+            .insert(ty.name.clone(), ty)
+            .expect("too many types")
+            .expect("repeated type name");
+        self.index.insert(id, ty.name.clone()).expect(&format!(
+            "type with the same id as {} is already present within the library",
+            id
+        ));
+        self
+    }
 }
 
 impl TypedParent for UnionBuilder {}
