@@ -25,39 +25,41 @@ use std::io;
 use std::io::Sink;
 
 use amplify::confinement;
-use amplify::confinement::{Confined, SmallOrdMap};
+use amplify::confinement::SmallOrdMap;
 
+use super::compile::{CompileRef, CompileType};
 use crate::ast::{Fields, Variants};
 use crate::encoding::{
-    DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, StrictParent, StrictWriter,
-    StructWriter, ToIdent, ToMaybeIdent, TypedParent, TypedWrite, UnionWriter, WriteEnum,
-    WriteStruct, WriteTuple, WriteUnion,
+    DefineEnum, DefineStruct, DefineTuple, DefineUnion, SplitParent, StrictEncode, StrictParent,
+    StrictWriter, StructWriter, ToIdent, ToMaybeIdent, TypedParent, TypedWrite, UnionWriter,
+    WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
-use crate::typelib::type_lib::StrictType;
-use crate::typelib::TypeIndex;
-use crate::{LibName, LibRef, Ty, TypeLib, TypeName};
+use crate::{LibName, Ty, TypeLib, TypeName};
 
 #[derive(Default)]
 pub struct LibBuilder {
-    index: TypeIndex,
-    types: SmallOrdMap<TypeName, StrictType>,
+    types: SmallOrdMap<TypeName, CompileType>,
+    pub(self) last_compiled: Option<CompileRef>,
 }
 
 impl LibBuilder {
-    pub(crate) fn with(index: TypeIndex) -> LibBuilder {
+    pub(crate) fn new() -> LibBuilder {
         LibBuilder {
-            index,
             types: default!(),
+            last_compiled: None,
         }
     }
 
     pub(crate) fn finalize(self, name: LibName) -> Result<TypeLib, confinement::Error> {
+        todo!()
+        // TODO: translate from CompileType to LibRef
+        /*
         let types = Confined::try_from(self.types.into_inner())?;
         Ok(TypeLib {
             name,
             dependencies: none!(),
             types,
-        })
+        })*/
     }
 }
 
@@ -92,7 +94,7 @@ impl TypedWrite for LibBuilder {
 pub struct StructBuilder<P: BuilderParent> {
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
-    types: BTreeMap<u8, LibRef>,
+    types: BTreeMap<u8, CompileRef>,
 }
 
 impl<P: BuilderParent> StructBuilder<P> {
@@ -104,15 +106,21 @@ impl<P: BuilderParent> StructBuilder<P> {
         }
     }
 
+    pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
+
     fn _define_field<T: StrictEncode>(mut self, ord: u8) -> Self {
-        let ty = self.writer.as_parent_mut().process(&T::strict_encode_dumb());
+        let (parent, remnant) = self.writer.into_parent_split();
+        let (parent, ty) = parent.compile_type(&T::strict_encode_dumb());
+        self.writer = StructWriter::from_parent_split(parent, remnant);
         self.types.insert(ord, ty).expect("checked by self.writer");
         self
     }
 
     fn _write_field(mut self, ord: u8, value: &impl StrictEncode) -> io::Result<Self> {
+        let (parent, remnant) = self.writer.into_parent_split();
+        let (parent, ty) = parent.compile_type(value);
+        self.writer = StructWriter::from_parent_split(parent, remnant);
         let expect_ty = self.types.get(&ord).expect("type guarantees");
-        let ty = self.writer.as_parent_mut().process(value);
         assert_eq!(
             expect_ty,
             &ty,
@@ -128,25 +136,18 @@ impl<P: BuilderParent> StructBuilder<P> {
     fn _complete_definition(self) -> P { DefineStruct::complete(self.writer) }
 
     fn _complete_write(self) -> P {
-        let ty = self.name.map(|name| {
-            let fields = self
-                .writer
-                .fields()
-                .iter()
-                .map(|field| {
-                    let lib_ref = self.types.get(&field.ord).expect("type guarantees");
-                    (field.clone(), lib_ref.clone())
-                })
-                .collect::<BTreeMap<_, _>>();
-            let fields = Fields::try_from(fields)
-                .expect(&format!("structure {} has invalid number of fields", name));
-            StrictType::with(name, Ty::Struct(fields))
-        });
-        let parent = WriteStruct::complete(self.writer);
-        match ty {
-            Some(ty) => parent.report_finished_type(ty),
-            None => parent,
-        }
+        let fields = self
+            .writer
+            .fields()
+            .iter()
+            .map(|field| {
+                let lib_ref = self.types.get(&field.ord).expect("type guarantees");
+                (field.clone(), lib_ref.clone())
+            })
+            .collect::<BTreeMap<_, _>>();
+        let fields = Fields::try_from(fields)
+            .expect(&format!("structure {} has invalid number of fields", self.name()));
+        WriteStruct::complete(self.writer).report_compiled(self.name.clone(), Ty::Struct(fields))
     }
 }
 
@@ -238,17 +239,16 @@ impl UnionBuilder {
         }
     }
 
+    pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
+
     fn _complete_definition(mut self) -> UnionBuilder {
         self.writer = DefineUnion::complete(self.writer);
         self
     }
 
-    fn _complete_write(self, ty: Option<StrictType>) -> LibBuilder {
+    fn _complete_write(self, ty: Ty<CompileRef>) -> LibBuilder {
         let _ = WriteUnion::complete(self.writer);
-        match ty {
-            Some(ty) => self.parent.report_finished_type(ty),
-            None => self.parent,
-        }
+        self.parent.report_compiled(self.name, ty)
     }
 }
 
@@ -273,13 +273,10 @@ impl WriteEnum for UnionBuilder {
     }
 
     fn complete(self) -> LibBuilder {
-        let ty = self.name.as_ref().map(|name| {
-            let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
-            let fields = Variants::try_from(fields)
-                .expect(&format!("enum {} has invalid number of variants", name));
-            StrictType::with(name.clone(), Ty::Enum(fields))
-        });
-        self._complete_write(ty)
+        let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
+        let fields = Variants::try_from(fields)
+            .expect(&format!("enum {} has invalid number of variants", self.name()));
+        self._complete_write(Ty::Enum(fields))
     }
 }
 
@@ -332,49 +329,65 @@ impl WriteUnion for UnionBuilder {
     }
 
     fn complete(self) -> LibBuilder {
-        let ty = self.name.as_ref().map(|name| {
-            let fields = self
-                .writer
-                .variants()
-                .keys()
-                .map(|field| {
-                    let lib_ref = self.types.get(&field.ord).expect("type guarantees");
-                    (field.clone(), lib_ref.clone())
-                })
-                .collect::<BTreeMap<_, _>>();
-            let fields = Fields::try_from(fields)
-                .expect(&format!("union {} has invalid number of variants", name));
-            StrictType::with(name.clone(), Ty::Union(fields))
-        });
-        self._complete_write(ty)
+        let fields = self
+            .writer
+            .variants()
+            .keys()
+            .map(|field| {
+                let lib_ref = self.types.get(&field.ord).expect("type guarantees");
+                (field.clone(), lib_ref.clone())
+            })
+            .collect::<BTreeMap<_, _>>();
+        let fields = Fields::try_from(fields)
+            .expect(&format!("union {} has invalid number of variants", self.name()));
+        self._complete_write(Ty::Union(fields))
     }
 }
 
 pub trait BuilderParent: StrictParent<Sink> {
-    fn process(&mut self, value: &impl StrictEncode) -> LibRef;
-    fn report_finished_type(self, ty: StrictType) -> Self;
+    /// Converts strict-encodable value into a type information. Must be propagated back to the
+    /// lib builder which does the TypedWrite implementation to call strict encode on the type
+    fn compile_type(self, value: &impl StrictEncode) -> (Self, CompileRef);
+    /// Notifies lib builder about complete type built, even for unnamed inline types, such that it
+    /// can register last compiled type for the `compile_type` procedure.
+    fn report_compiled(self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self;
 }
 
 impl TypedParent for LibBuilder {}
 impl StrictParent<Sink> for LibBuilder {
     type Remnant = LibBuilder;
-    fn from_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
-    fn split_typed_write(self) -> (StrictWriter<Sink>, Self::Remnant) {
+    fn from_write_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
+    fn into_write_split(self) -> (StrictWriter<Sink>, Self::Remnant) {
         (StrictWriter::sink(), self)
     }
 }
 impl BuilderParent for LibBuilder {
-    fn process(&mut self, value: &impl StrictEncode) -> LibRef { todo!() }
-    fn report_finished_type(mut self, ty: StrictType) -> Self {
-        let id = ty.id();
-        self.types
-            .insert(ty.name.clone(), ty)
-            .expect("too many types")
-            .expect("repeated type name");
-        self.index.insert(id, ty.name.clone()).expect(&format!(
-            "type with the same id as {} is already present within the library",
-            id
-        ));
+    fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
+        let (mut writer, remnant) = self.into_write_split();
+        writer = value.strict_encode(writer).expect("too many types in the library");
+        self = Self::from_write_split(writer, remnant);
+        let r = self.last_compiled.expect("no type found after strict encoding procedure");
+        (self, r)
+    }
+
+    fn report_compiled(mut self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
+        let r = match name {
+            Some(name) => {
+                let new_ty = CompileType::new(name.clone(), ty);
+                let old_ty = self.types.insert(name.clone(), new_ty).expect("too many types");
+                if let Some(old_ty) = old_ty {
+                    let new_ty = self.types.get(&name).expect("just inserted");
+                    assert_eq!(
+                        &old_ty, new_ty,
+                        "repeated type name {} for two different types {} and {}",
+                        name, old_ty, new_ty
+                    );
+                }
+                CompileRef::Named(name)
+            }
+            None => CompileRef::Inline(Box::new(ty)),
+        };
+        self.last_compiled = Some(r);
         self
     }
 }
@@ -382,15 +395,19 @@ impl BuilderParent for LibBuilder {
 impl TypedParent for UnionBuilder {}
 impl StrictParent<Sink> for UnionBuilder {
     type Remnant = UnionBuilder;
-    fn from_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
-    fn split_typed_write(self) -> (StrictWriter<Sink>, Self::Remnant) {
+    fn from_write_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
+    fn into_write_split(self) -> (StrictWriter<Sink>, Self::Remnant) {
         (StrictWriter::sink(), self)
     }
 }
 impl BuilderParent for UnionBuilder {
-    fn process(&mut self, value: &impl StrictEncode) -> LibRef { self.parent.process(value) }
-    fn report_finished_type(mut self, ty: StrictType) -> Self {
-        self.parent = self.parent.report_finished_type(ty);
+    fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
+        let (parent, r) = self.parent.compile_type(value);
+        self.parent = parent;
+        (self, r)
+    }
+    fn report_compiled(mut self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
+        self.parent = self.parent.report_compiled(name, ty);
         self
     }
 }

@@ -147,17 +147,13 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
 
     pub fn is_defined(&self) -> bool { self.defined }
 
-    pub fn as_parent_mut(&mut self) -> &mut P { &mut self.parent }
-
     pub fn field_ord(&self, field_name: &FieldName) -> Option<u8> {
         self.fields.iter().find(|f| f.name.as_ref() == Some(field_name)).map(|f| f.ord)
     }
 
     pub fn fields(&self) -> &BTreeSet<Field> { &self.fields }
 
-    pub fn name(&self) -> &str {
-        self.name.as_ref().map(|n| n.as_str()).unwrap_or_else(|| "<unnamed>")
-    }
+    pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
     pub fn next_ord(&self) -> u8 { self.fields.iter().max().map(|f| f.ord + 1).unwrap_or_default() }
 
@@ -191,10 +187,10 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
             &field,
             self.name()
         );
-        let (mut writer, remnant) = self.parent.split_typed_write();
+        let (mut writer, remnant) = self.parent.into_write_split();
         writer = field.ord.strict_encode(writer)?;
         writer = value.strict_encode(writer)?;
-        self.parent = P::from_split(writer, remnant);
+        self.parent = P::from_write_split(writer, remnant);
         Ok(self)
     }
 
@@ -304,8 +300,6 @@ impl<W: io::Write> UnionWriter<W> {
     }
 
     pub fn is_written(&self) -> bool { self.written }
-
-    pub fn as_parent_mut(&mut self) -> &mut StrictWriter<W> { &mut self.parent }
 
     pub fn variants(&self) -> &BTreeMap<Field, FieldType> { &self.variants }
 
@@ -423,19 +417,19 @@ impl<W: io::Write> WriteEnum for UnionWriter<W> {
 
 pub trait StrictParent<W: io::Write>: TypedParent {
     type Remnant;
-    fn from_split(writer: StrictWriter<W>, remnant: Self::Remnant) -> Self;
-    fn split_typed_write(self) -> (StrictWriter<W>, Self::Remnant);
+    fn from_write_split(writer: StrictWriter<W>, remnant: Self::Remnant) -> Self;
+    fn into_write_split(self) -> (StrictWriter<W>, Self::Remnant);
 }
 impl<W: io::Write> TypedParent for StrictWriter<W> {}
 impl<W: io::Write> TypedParent for UnionWriter<W> {}
 impl<W: io::Write> StrictParent<W> for StrictWriter<W> {
     type Remnant = ();
-    fn from_split(writer: StrictWriter<W>, _: Self::Remnant) -> Self { writer }
-    fn split_typed_write(self) -> (StrictWriter<W>, Self::Remnant) { (self, ()) }
+    fn from_write_split(writer: StrictWriter<W>, _: Self::Remnant) -> Self { writer }
+    fn into_write_split(self) -> (StrictWriter<W>, Self::Remnant) { (self, ()) }
 }
 impl<W: io::Write> StrictParent<W> for UnionWriter<W> {
     type Remnant = UnionWriter<Vec<u8>>;
-    fn from_split(writer: StrictWriter<W>, remnant: Self::Remnant) -> Self {
+    fn from_write_split(writer: StrictWriter<W>, remnant: Self::Remnant) -> Self {
         Self {
             name: remnant.name,
             variants: remnant.variants,
@@ -444,14 +438,55 @@ impl<W: io::Write> StrictParent<W> for UnionWriter<W> {
             parent_ident: remnant.parent_ident,
         }
     }
-    fn split_typed_write(self) -> (StrictWriter<W>, Self::Remnant) {
+    fn into_write_split(self) -> (StrictWriter<W>, Self::Remnant) {
         let remnant = UnionWriter {
             name: self.name,
             variants: self.variants,
-            parent: StrictWriter::<Vec<u8>>::in_memory(0),
+            parent: StrictWriter::in_memory(0),
             written: self.written,
             parent_ident: self.parent_ident,
         };
         (self.parent, remnant)
     }
+}
+
+pub trait SplitParent {
+    type Parent: TypedParent;
+    type Remnant;
+    fn from_parent_split(parent: Self::Parent, remnant: Self::Remnant) -> Self;
+    fn into_parent_split(self) -> (Self::Parent, Self::Remnant);
+}
+impl<W: io::Write, P: StrictParent<W>> SplitParent for StructWriter<W, P> {
+    type Parent = P;
+    type Remnant = StructWriter<Vec<u8>, ParentDumb>;
+    fn from_parent_split(parent: P, remnant: Self::Remnant) -> Self {
+        Self {
+            name: remnant.name,
+            fields: remnant.fields,
+            parent,
+            defined: remnant.defined,
+            ords: remnant.ords,
+            _phantom: none!(),
+        }
+    }
+    fn into_parent_split(self) -> (P, Self::Remnant) {
+        let remnant = StructWriter::<Vec<u8>, ParentDumb> {
+            name: self.name,
+            fields: self.fields,
+            parent: none!(),
+            defined: self.defined,
+            ords: self.ords,
+            _phantom: none!(),
+        };
+        (self.parent, remnant)
+    }
+}
+
+#[derive(Default)]
+pub struct ParentDumb;
+impl TypedParent for ParentDumb {}
+impl<W: io::Write> StrictParent<W> for ParentDumb {
+    type Remnant = ();
+    fn from_write_split(_: StrictWriter<W>, _: Self::Remnant) -> Self { unreachable!() }
+    fn into_write_split(self) -> (StrictWriter<W>, Self::Remnant) { unreachable!() }
 }

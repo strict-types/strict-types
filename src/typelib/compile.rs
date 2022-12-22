@@ -24,6 +24,17 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::{LibAlias, SemId, Ty, TypeName, TypeRef};
 
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display("data {name} :: {ty}")]
+pub struct CompileType {
+    pub name: TypeName,
+    pub ty: Ty<CompileRef>,
+}
+
+impl CompileType {
+    pub fn new(name: TypeName, ty: Ty<CompileRef>) -> Self { CompileType { name, ty } }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub enum CompileRef {
     Inline(Box<Ty<CompileRef>>),
