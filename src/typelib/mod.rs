@@ -23,7 +23,6 @@
 mod id;
 mod type_lib;
 mod translate;
-//mod serialize;
 mod encoding;
 pub mod build;
 mod compile;

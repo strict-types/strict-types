@@ -25,6 +25,8 @@ mod error;
 mod read;
 mod write;
 mod base;
+#[cfg(test)]
+pub(crate) mod test;
 
 pub use error::{DecodeError, DeserializeError, SerializeError};
 pub use read::StrictReader;

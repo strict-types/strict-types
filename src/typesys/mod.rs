@@ -20,7 +20,6 @@
 
 pub mod embedded;
 mod translate;
-mod serialize;
 mod id;
 
 pub use embedded::{EmbeddedRef, TypeSystem};

@@ -20,6 +20,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+/*
+       reader.read_union("Test", Some("Example"), |field, r| match field {
+           f!(0u8, "init") => Example::Init(r.read_type()),
+           f!(2u8, "connect") => Example::Connect {
+               host: r.read_struct().read_field("host").complete(),
+           },
+       })
+*/
+
 use std::io;
 
 use crate::encoding::TypedRead;
