@@ -57,7 +57,6 @@ pub trait TypedWrite: Sized {
     type UnionDefiner: DefineUnion<Parent = Self>;
     type EnumDefiner: DefineEnum<Parent = Self>;
 
-    // TODO: Remove optionals
     fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner;
     fn define_enum(self, name: Option<impl ToIdent>) -> Self::EnumDefiner;
 

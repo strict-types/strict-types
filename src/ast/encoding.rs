@@ -44,7 +44,7 @@ impl StrictEncode for Step {
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(Some("step"))
+            .define_union(Some("Step"))
             .define_type::<FieldName>("namedField")
             .define_type::<u8>("unnamedField")
             .define_unit("index")
