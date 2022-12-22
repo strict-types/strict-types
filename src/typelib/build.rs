@@ -36,7 +36,7 @@ use crate::encoding::{
 };
 use crate::primitive::Primitive;
 use crate::util::Sizing;
-use crate::{LibName, Ty, TypeLib, TypeName};
+use crate::{FieldName, LibName, Ty, TypeLib, TypeName};
 
 #[derive(Default)]
 pub struct LibBuilder {
@@ -156,7 +156,7 @@ impl TypedWrite for LibBuilder {
 pub struct StructBuilder<P: BuilderParent> {
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
-    types: BTreeMap<u8, CompileRef>,
+    fields: BTreeMap<u8, CompileRef>,
 }
 
 impl<P: BuilderParent> StructBuilder<P> {
@@ -164,7 +164,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         StructBuilder {
             name: name.clone(),
             writer: StructWriter::with(name, parent),
-            types: empty!(),
+            fields: empty!(),
         }
     }
 
@@ -174,7 +174,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(&T::strict_encode_dumb());
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        self.types.insert(ord, ty).expect("checked by self.writer");
+        let _ = self.fields.insert(ord, ty); // type repetition is checked by self.parent
         self
     }
 
@@ -182,16 +182,17 @@ impl<P: BuilderParent> StructBuilder<P> {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(value);
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        let expect_ty = self.types.get(&ord).expect("type guarantees");
-        assert_eq!(
-            expect_ty,
-            &ty,
-            "field #{} in {} has a wrong type {} (expected {})",
-            ord,
-            self.writer.name(),
-            ty,
-            expect_ty
-        );
+        if let Some(expect_ty) = self.fields.insert(ord, ty.clone()) {
+            assert_eq!(
+                expect_ty,
+                ty,
+                "field #{} in {} has a wrong type {} (expected {})",
+                ord,
+                self.writer.name(),
+                ty,
+                expect_ty
+            );
+        }
         Ok(self)
     }
 
@@ -203,7 +204,7 @@ impl<P: BuilderParent> StructBuilder<P> {
             .fields()
             .iter()
             .map(|field| {
-                let lib_ref = self.types.get(&field.ord).expect("type guarantees");
+                let lib_ref = self.fields.get(&field.ord).expect("type guarantees");
                 (field.clone(), lib_ref.clone())
             })
             .collect::<BTreeMap<_, _>>();
@@ -288,7 +289,7 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 
 pub struct UnionBuilder {
     name: Option<TypeName>,
-    types: BTreeMap<u8, CompileRef>,
+    variants: BTreeMap<u8, CompileRef>,
     parent: LibBuilder,
     writer: UnionWriter<Sink>,
     current_ord: u8,
@@ -298,7 +299,7 @@ impl UnionBuilder {
     pub fn with(name: Option<TypeName>, parent: LibBuilder) -> Self {
         UnionBuilder {
             name: name.clone(),
-            types: empty!(),
+            variants: empty!(),
             parent,
             writer: UnionWriter::with(name, StrictWriter::sink()),
             current_ord: 0,
@@ -307,8 +308,47 @@ impl UnionBuilder {
 
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
-    fn _complete_definition(mut self) -> UnionBuilder {
+    fn _define_field(&mut self, ord: Option<u8>) {
+        self.current_ord = ord.unwrap_or_else(|| self.writer.next_ord());
+        let ty = self.parent.last_compiled.clone().expect("no compiled type");
+        self.variants.insert(self.current_ord, ty);
+    }
+
+    fn _write_field(&mut self, name: FieldName) {
+        self.current_ord = self.writer.ord_by_name(&name).expect(&format!(
+            "writing field {} of {} without declaration",
+            name,
+            self.name()
+        ));
+        let ty = self.parent.last_compiled.clone().expect("no compiled type");
+        self.variants.insert(self.current_ord, ty);
+    }
+
+    fn _build_union(&self) -> Ty<CompileRef> {
+        let fields = self
+            .writer
+            .variants()
+            .keys()
+            .map(|field| {
+                let lib_ref = self.variants.get(&field.ord).expect("type guarantees");
+                (field.clone(), lib_ref.clone())
+            })
+            .collect::<BTreeMap<_, _>>();
+        let fields = Fields::try_from(fields)
+            .expect(&format!("union {} has invalid number of variants", self.name()));
+        Ty::Union(fields)
+    }
+
+    fn _build_enum(&self) -> Ty<CompileRef> {
+        let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
+        let fields = Variants::try_from(fields)
+            .expect(&format!("enum {} has invalid number of variants", self.name()));
+        Ty::Enum(fields)
+    }
+
+    fn _complete_definition(mut self, ty: Ty<CompileRef>) -> UnionBuilder {
         self.writer = DefineUnion::complete(self.writer);
+        self.parent = self.parent.report_compiled(self.name.clone(), ty);
         self
     }
 
@@ -323,28 +363,29 @@ impl DefineEnum for UnionBuilder {
     type EnumWriter = Self;
 
     fn define_variant(mut self, name: impl ToIdent, value: u8) -> Self {
-        self.current_ord = value;
+        self._define_field(Some(value));
         self.writer = DefineEnum::define_variant(self.writer, name, value);
         self
     }
 
-    fn complete(self) -> Self::EnumWriter { self._complete_definition() }
+    fn complete(self) -> Self::EnumWriter {
+        let ty = self._build_enum();
+        self._complete_definition(ty)
+    }
 }
 
 impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
     fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
-        self.current_ord = self.writer.next_ord();
+        self._write_field(name.to_ident());
         self.writer = WriteEnum::write_variant(self.writer, name)?;
         Ok(self)
     }
 
     fn complete(self) -> LibBuilder {
-        let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
-        let fields = Variants::try_from(fields)
-            .expect(&format!("enum {} has invalid number of variants", self.name()));
-        self._complete_write(Ty::Enum(fields))
+        let ty = self._build_enum();
+        self._complete_write(ty)
     }
 }
 
@@ -355,26 +396,29 @@ impl DefineUnion for UnionBuilder {
     type UnionWriter = Self;
 
     fn define_unit(mut self, name: impl ToIdent) -> Self {
-        self.current_ord = self.writer.next_ord();
+        self._define_field(None);
         self.writer = DefineUnion::define_unit(self.writer, name);
         self
     }
 
     fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
-        self.current_ord = self.writer.next_ord();
+        self._define_field(None);
         let sink = DefineUnion::define_tuple(self.writer, name);
         self.writer = sink.into_parent();
         StructBuilder::with(None, self)
     }
 
     fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
-        self.current_ord = self.writer.next_ord();
+        self._define_field(None);
         let sink = DefineUnion::define_struct(self.writer, name);
         self.writer = sink.into_parent();
         StructBuilder::with(None, self)
     }
 
-    fn complete(self) -> Self::UnionWriter { self._complete_definition() }
+    fn complete(self) -> Self::UnionWriter {
+        let ty = self._build_union();
+        self._complete_definition(ty)
+    }
 }
 
 impl WriteUnion for UnionBuilder {
@@ -383,38 +427,28 @@ impl WriteUnion for UnionBuilder {
     type StructWriter = StructBuilder<Self>;
 
     fn write_unit(mut self, name: impl ToIdent) -> io::Result<Self> {
-        self.current_ord = self.writer.next_ord();
+        self._write_field(name.to_ident());
         self.writer = WriteUnion::write_unit(self.writer, name)?;
         Ok(self)
     }
 
     fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
-        self.current_ord = self.writer.next_ord();
+        self._write_field(name.to_ident());
         let sink = WriteUnion::write_tuple(self.writer, name)?;
         self.writer = sink.into_parent();
         Ok(StructBuilder::with(None, self))
     }
 
     fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
-        self.current_ord = self.writer.next_ord();
+        self._write_field(name.to_ident());
         let sink = WriteUnion::write_struct(self.writer, name)?;
         self.writer = sink.into_parent();
         Ok(StructBuilder::with(None, self))
     }
 
     fn complete(self) -> LibBuilder {
-        let fields = self
-            .writer
-            .variants()
-            .keys()
-            .map(|field| {
-                let lib_ref = self.types.get(&field.ord).expect("type guarantees");
-                (field.clone(), lib_ref.clone())
-            })
-            .collect::<BTreeMap<_, _>>();
-        let fields = Fields::try_from(fields)
-            .expect(&format!("union {} has invalid number of variants", self.name()));
-        self._complete_write(Ty::Union(fields))
+        let ty = self._build_union();
+        self._complete_write(ty)
     }
 }
 
@@ -437,9 +471,7 @@ impl StrictParent<Sink> for LibBuilder {
 }
 impl BuilderParent for LibBuilder {
     fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
-        let (mut writer, remnant) = self.into_write_split();
-        writer = value.strict_encode(writer).expect("too many types in the library");
-        self = Self::from_write_split(writer, remnant);
+        self = value.strict_encode(self).expect("too many types in the library");
         let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
         (self, r)
     }
@@ -481,7 +513,7 @@ impl BuilderParent for UnionBuilder {
         (self, r)
     }
     fn report_compiled(mut self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
-        self.types.insert(self.current_ord, CompileRef::Inline(Box::new(ty.clone())));
+        self.variants.insert(self.current_ord, CompileRef::Inline(Box::new(ty.clone())));
         self.parent = self.parent.report_compiled(name, ty);
         self
     }

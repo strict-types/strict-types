@@ -102,7 +102,9 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
 }
 
 impl StrictEncode for Variants {
-    fn strict_encode_dumb() -> Self { todo!() }
+    fn strict_encode_dumb() -> Self {
+        variants! { 0..=5 }
+    }
 
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(Some("Variants"), self.deref())

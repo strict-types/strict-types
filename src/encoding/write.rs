@@ -305,6 +305,10 @@ impl<W: io::Write> UnionWriter<W> {
 
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
+    pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
+        self.variants.keys().find(|f| f.name.as_ref() == Some(name)).map(|f| f.ord)
+    }
+
     pub fn next_ord(&self) -> u8 {
         self.variants.keys().max().map(|f| f.ord + 1).unwrap_or_default()
     }
@@ -319,7 +323,7 @@ impl<W: io::Write> UnionWriter<W> {
         self
     }
 
-    fn _write_field(mut self, name: Ident, field_type: FieldType) -> io::Result<Self> {
+    fn _write_field(mut self, name: FieldName, field_type: FieldType) -> io::Result<Self> {
         let (field, t) = self
             .variants
             .iter()
