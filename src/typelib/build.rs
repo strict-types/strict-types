@@ -68,11 +68,11 @@ impl TypedWrite for LibBuilder {
     type EnumDefiner = UnionBuilder;
 
     fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner {
-        todo!() // UnionBuilder::with(name.to_maybe_ident(), self)
+        UnionBuilder::with(name.to_maybe_ident(), self)
     }
 
     fn define_enum(self, name: Option<impl ToIdent>) -> Self::EnumDefiner {
-        todo!() // UnionBuilder::with(name.to_maybe_ident(), self)
+        UnionBuilder::with(name.to_maybe_ident(), self)
     }
 
     fn write_tuple(self, name: Option<impl ToIdent>) -> Self::TupleWriter {
@@ -227,7 +227,6 @@ pub struct UnionBuilder {
     name: Option<TypeName>,
     parent: LibBuilder,
     writer: UnionWriter<Sink>,
-    types: BTreeMap<u8, LibRef>,
 }
 
 impl UnionBuilder {
@@ -236,29 +235,7 @@ impl UnionBuilder {
             name: name.clone(),
             parent,
             writer: UnionWriter::with(name, StrictWriter::sink()),
-            types: empty!(),
         }
-    }
-
-    fn _define_field<T: StrictEncode>(mut self, ord: u8) -> Self {
-        let ty = self.parent.process(&T::strict_encode_dumb());
-        self.types.insert(ord, ty).expect("checked by self.writer");
-        self
-    }
-
-    fn _write_field(mut self, ord: u8, value: &impl StrictEncode) -> io::Result<Self> {
-        let expect_ty = self.types.get(&ord).expect("type guarantees");
-        let ty = self.parent.process(value);
-        assert_eq!(
-            expect_ty,
-            &ty,
-            "variant #{} in {} has a wrong type {} (expected {})",
-            ord,
-            self.writer.name(),
-            ty,
-            expect_ty
-        );
-        Ok(self)
     }
 
     fn _complete_definition(mut self) -> UnionBuilder {
@@ -279,7 +256,10 @@ impl DefineEnum for UnionBuilder {
     type Parent = LibBuilder;
     type EnumWriter = Self;
 
-    fn define_variant(self, name: impl ToIdent, value: u8) -> Self { todo!() }
+    fn define_variant(mut self, name: impl ToIdent, value: u8) -> Self {
+        self.writer = DefineEnum::define_variant(self.writer, name, value);
+        self
+    }
 
     fn complete(self) -> Self::EnumWriter { self._complete_definition() }
 }
@@ -287,7 +267,10 @@ impl DefineEnum for UnionBuilder {
 impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
-    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
+    fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
+        self.writer = WriteEnum::write_variant(self.writer, name)?;
+        Ok(self)
+    }
 
     fn complete(self) -> LibBuilder {
         let ty = self.name.as_ref().map(|name| {
@@ -306,11 +289,22 @@ impl DefineUnion for UnionBuilder {
     type StructDefiner = StructBuilder<Self>;
     type UnionWriter = Self;
 
-    fn define_unit(self, name: impl ToIdent) -> Self { todo!() }
+    fn define_unit(mut self, name: impl ToIdent) -> Self {
+        self.writer = DefineUnion::define_unit(self.writer, name);
+        self
+    }
 
-    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner { todo!() }
+    fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
+        let sink = DefineUnion::define_tuple(self.writer, name);
+        self.writer = sink.into_parent();
+        StructBuilder::with(None, self)
+    }
 
-    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner { todo!() }
+    fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
+        let sink = DefineUnion::define_struct(self.writer, name);
+        self.writer = sink.into_parent();
+        StructBuilder::with(None, self)
+    }
 
     fn complete(self) -> Self::UnionWriter { self._complete_definition() }
 }
@@ -320,11 +314,22 @@ impl WriteUnion for UnionBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
 
-    fn write_unit(self, name: impl ToIdent) -> io::Result<Self> { todo!() }
+    fn write_unit(mut self, name: impl ToIdent) -> io::Result<Self> {
+        self.writer = WriteUnion::write_unit(self.writer, name)?;
+        Ok(self)
+    }
 
-    fn write_tuple(self, name: impl ToIdent) -> io::Result<Self::TupleWriter> { todo!() }
+    fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
+        let sink = WriteUnion::write_tuple(self.writer, name)?;
+        self.writer = sink.into_parent();
+        Ok(StructBuilder::with(None, self))
+    }
 
-    fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter> { todo!() }
+    fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
+        let sink = WriteUnion::write_struct(self.writer, name)?;
+        self.writer = sink.into_parent();
+        Ok(StructBuilder::with(None, self))
+    }
 
     fn complete(self) -> LibBuilder {
         let ty = self.name.as_ref().map(|name| {

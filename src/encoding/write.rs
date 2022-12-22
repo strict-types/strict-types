@@ -161,6 +161,8 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
 
     pub fn next_ord(&self) -> u8 { self.fields.iter().max().map(|f| f.ord + 1).unwrap_or_default() }
 
+    pub fn into_parent(self) -> P { self.parent }
+
     fn _define_field(mut self, field: Field) -> Self {
         assert!(
             self.fields.insert(field.clone()),
@@ -372,12 +374,12 @@ impl<W: io::Write> DefineUnion for UnionWriter<W> {
     fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
         let field = Field::named(name.to_ident(), self.next_ord());
         self = self._define_field(field, FieldType::Tuple);
-        StructWriter::with(Some(name), self)
+        StructWriter::with(None::<String>, self)
     }
     fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
         let field = Field::named(name.to_ident(), self.next_ord());
         self = self._define_field(field, FieldType::Struct);
-        StructWriter::with(Some(name), self)
+        StructWriter::with(None::<String>, self)
     }
     fn complete(self) -> Self::UnionWriter { self._complete_definition() }
 }
@@ -392,11 +394,11 @@ impl<W: io::Write> WriteUnion for UnionWriter<W> {
     }
     fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
         self = self._write_field(name.to_ident(), FieldType::Tuple)?;
-        Ok(StructWriter::with(Some(name), self))
+        Ok(StructWriter::with(None::<String>, self))
     }
     fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
         self = self._write_field(name.to_ident(), FieldType::Struct)?;
-        Ok(StructWriter::with(Some(name), self))
+        Ok(StructWriter::with(None::<String>, self))
     }
     fn complete(self) -> Self::Parent { self._complete_write() }
 }
