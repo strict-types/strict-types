@@ -1,24 +1,34 @@
 [package]
 name = "stens"
-description = "Strict encoding schema library"
-version = "0.7.1"
-authors = ["Dr. Maxim Orlovsky <orlovsky@lnp-bp.org>"]
-license = "MIT"
-keywords = ["encoding", "internet2", "web4", "aluvm", "lnpbp"]
-categories = ["data-structures", "parser-implementations", "web-programming"]
+description = "Strict encoding schema"
+version = "0.9.0-beta.1"
+authors = ["Dr. Maxim Orlovsky <orlovsky@ubideco.org>"]
+homepage = "https://strict-encoding.org"
+license = "Apache-2.0"
+keywords = ["encoding", "strict-encoding", "aluvm"]
+categories = ["data-structures", "parser-implementations"]
 edition = "2021"
-rust-version = "1.59.0"
+rust-version = "1.60.0"
 readme = "README.md"
-exclude = [".github", "Dockerfile", ".dockerignore", "contrib", "doc", "shell"]
+exclude = [".github", "contrib"]
 
 [dependencies]
-amplify = "3.12.1"
-strict_encoding = { version = "0.8.0", default-features = false, features = ["derive"] }
+amplify = { version = "4.0.0-beta.6", features = ["apfloat"] }
+half = "2.1.0"
+blake3 = "1.3.3"
+mnemonic = "1.0.1"
 serde_crate = { package = "serde", version = "1", optional = true }
-serde_with = { version = "1", optional = true }
-serde_yaml = { version = "0.8", optional = true }
+serde_with = { version = "2", optional = true }
+serde_yaml = { version = "0.9", optional = true }
+
+[dev-dependencies]
+base64 = "0.20.0"
 
 [features]
 default = []
 all = ["serde"]
-serde = ["serde_crate", "serde_with", "serde_yaml"]
+serde = ["serde_crate", "serde_with", "serde_yaml", "amplify/serde"]
+
+[package.metadata.docs.rs]
+all-features = true
+rustc-args = ["--cfg", "docsrs"]

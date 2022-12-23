@@ -19,3 +19,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+mod id;
+mod type_lib;
+mod translate;
+mod encoding;
+pub mod build;
+pub mod compile;
+
+pub use compile::{CompileRef, CompileType};
+pub use id::TypeLibId;
+pub use type_lib::{
+    Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibName, LibRef, TypeLib,
+};

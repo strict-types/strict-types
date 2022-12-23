@@ -19,3 +19,14 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+mod ty;
+mod id;
+mod path;
+mod iter;
+mod encoding;
+
+pub use id::SemId;
+pub use iter::{CheckError, IntoIter, Iter, NestedRef};
+pub use path::{Path, PathError, Step};
+pub use ty::{Cls, Field, FieldName, Fields, KeyTy, Ty, TypeRef, Variants};

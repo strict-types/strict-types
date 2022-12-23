@@ -19,3 +19,16 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+mod traits;
+mod error;
+mod read;
+mod write;
+mod base;
+#[cfg(test)]
+pub(crate) mod test;
+
+pub use error::{DecodeError, DeserializeError, SerializeError};
+pub use read::StrictReader;
+pub use traits::*;
+pub use write::{SplitParent, StrictParent, StrictWriter, StructWriter, UnionWriter};

@@ -19,3 +19,25 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
+use std::fmt::Debug;
+use std::io;
+
+use crate::{Decode, Encode, Writer};
+
+#[allow(dead_code)]
+pub fn encoding_roundtrip(val: &(impl Encode + Decode + Debug + Eq)) {
+    let mut buf = Writer::in_memory();
+    val.encode(&mut buf).unwrap();
+    let val2 = Decode::decode(&mut io::Cursor::new(buf.unbox())).unwrap();
+    assert_eq!(val, &val2);
+}
+
+pub fn encoding(val: &(impl Encode + Decode + Debug + Eq), expect: impl AsRef<[u8]>) {
+    let mut buf = Writer::in_memory();
+    val.encode(&mut buf).unwrap();
+    let buf = buf.unbox();
+    assert_eq!(&buf[..], expect.as_ref());
+    let val2 = Decode::decode(&mut io::Cursor::new(buf)).unwrap();
+    assert_eq!(val, &val2);
+}
