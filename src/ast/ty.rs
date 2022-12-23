@@ -32,10 +32,10 @@ use amplify::{confinement, Wrapper};
 use crate::ast::Iter;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::{Encode, Ident, LibAlias, SemId, StenSchema, StenType, TypeName};
+use crate::{Ident, LibAlias, SemId, StenSchema, StenType, TypeName};
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: StenSchema + Clone + Eq + Debug + Encode + Sized {
+pub trait TypeRef: StenSchema + Clone + Eq + Debug + Sized {
     fn id(&self) -> SemId;
 }
 pub trait NestedRef: TypeRef {

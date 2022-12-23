@@ -28,9 +28,7 @@ use amplify::Wrapper;
 
 use crate::ast::{Field, Fields, TypeRef, Variants};
 use crate::primitive::Primitive;
-use crate::{
-    Cls, Decode, DecodeError, Encode, FieldName, KeyTy, SemId, StenType, StenWrite, Ty, TypeName,
-};
+use crate::{Cls, Decode, DecodeError, Encode, FieldName, KeyTy, SemId, StenWrite, Ty};
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub const fn cls(&self) -> Cls {
@@ -119,26 +117,6 @@ impl Encode for Primitive {
 impl Decode for Primitive {
     fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
         u8::decode(reader).map(Primitive::from_code)
-    }
-}
-
-impl Encode for StenType {
-    fn encode(&self, mut writer: impl StenWrite) -> Result<(), io::Error> {
-        self.name.encode(&mut writer)?;
-        self.ty.encode(writer)
-    }
-}
-
-impl Decode for StenType {
-    fn decode(reader: &mut impl Read) -> Result<Self, DecodeError> {
-        let name = Option::<TypeName>::decode(reader)?;
-        let ty = Ty::<StenType>::decode(reader)?;
-        let id = ty.id(name.as_ref());
-        Ok(StenType {
-            name,
-            ty: Box::new(ty),
-            id,
-        })
     }
 }
 

@@ -28,7 +28,7 @@ extern crate amplify;
 use amplify::confinement::SmallVec;
 use stens::ast::Ty;
 use stens::typelib::TypeLib;
-use stens::{Serialize, StenSchema, StenType, Urn};
+use stens::{StenSchema, StenType, Urn};
 
 #[repr(u8)]
 pub enum Prim {
