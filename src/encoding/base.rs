@@ -123,7 +123,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe {
             writer
-                .register_unicode_string(Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
+                .register_unicode(Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
                 .write_raw_bytes::<MAX_LEN>(self.as_bytes())
         }
     }
@@ -138,7 +138,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe {
             writer
-                .register_ascii_string(Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
+                .register_ascii(Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
                 .write_raw_bytes::<MAX_LEN>(self.as_bytes())
         }
     }

@@ -113,56 +113,51 @@ impl TypedWrite for LibBuilder {
         inner(builder)
     }
 
-    fn register_primitive(mut self, prim: Primitive) -> Self {
+    unsafe fn register_primitive(mut self, prim: Primitive) -> Self {
         self.last_compiled = Some(Ty::Primitive(prim).into());
         self
     }
 
-    fn register_array(mut self, ty: &impl StrictEncode, len: u16) -> Self {
-        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
+    unsafe fn register_array(mut self, ty: &impl StrictEncode, len: u16) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::Array(ty, len).into());
         self
     }
 
-    fn register_unicode_char(mut self) -> Self {
-        self.last_compiled = Some(Ty::UnicodeChar.into());
-        self
-    }
-
-    fn register_unicode_string(mut self, sizing: Sizing) -> Self {
+    unsafe fn register_unicode(mut self, sizing: Sizing) -> Self {
         self.last_compiled = Some(Ty::List(Ty::UnicodeChar.into(), sizing).into());
         self
     }
 
-    fn register_ascii_string(mut self, sizing: Sizing) -> Self {
+    unsafe fn register_ascii(mut self, sizing: Sizing) -> Self {
         self.last_compiled = Some(Ty::List(Ty::ascii_char().into(), sizing).into());
         self
     }
 
-    fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
-        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
+    unsafe fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::List(ty, sizing).into());
         self
     }
 
-    fn register_set(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
-        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
+    unsafe fn register_set(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+        self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::Set(ty, sizing).into());
         self
     }
 
-    fn register_map(
+    unsafe fn register_map(
         mut self,
         key: &impl StrictEncode,
         ty: &impl StrictEncode,
         sizing: Sizing,
     ) -> Self {
-        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
+        self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.clone().expect("can't compile type");
-        self = unsafe { key.strict_encode(self).expect("in-memory encoding") };
+        self = key.strict_encode(self).expect("in-memory encoding");
         let key_ty = match self.last_compiled.clone().expect("can't compile key type") {
             CompileRef::Inline(ty) => {
                 ty.try_to_key().expect(&format!("not supported map key type {}", ty))

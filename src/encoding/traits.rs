@@ -72,15 +72,25 @@ pub trait TypedWrite: Sized {
         self.write_tuple(lib, name, |writer| Ok(writer.write_field(value)?.complete()))
     }
 
-    // TODO: Consider making this functions unsafe
-    fn register_primitive(self, prim: Primitive) -> Self { self }
-    fn register_array(self, ty: &impl StrictEncode, len: u16) -> Self { self }
-    fn register_unicode_char(self) -> Self { self }
-    fn register_unicode_string(self, sizing: Sizing) -> Self { self }
-    fn register_ascii_string(self, sizing: Sizing) -> Self { self }
-    fn register_list(self, ty: &impl StrictEncode, sizing: Sizing) -> Self { self }
-    fn register_set(self, ty: &impl StrictEncode, sizing: Sizing) -> Self { self }
-    fn register_map(self, ket: &impl StrictEncode, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+    #[doc(hidden)]
+    unsafe fn register_primitive(self, prim: Primitive) -> Self { self }
+    #[doc(hidden)]
+    unsafe fn register_array(self, ty: &impl StrictEncode, len: u16) -> Self { self }
+    #[doc(hidden)]
+    unsafe fn register_unicode(self, sizing: Sizing) -> Self { self }
+    #[doc(hidden)]
+    unsafe fn register_ascii(self, sizing: Sizing) -> Self { self }
+    #[doc(hidden)]
+    unsafe fn register_list(self, ty: &impl StrictEncode, sizing: Sizing) -> Self { self }
+    #[doc(hidden)]
+    unsafe fn register_set(self, ty: &impl StrictEncode, sizing: Sizing) -> Self { self }
+    #[doc(hidden)]
+    unsafe fn register_map(
+        self,
+        ket: &impl StrictEncode,
+        ty: &impl StrictEncode,
+        sizing: Sizing,
+    ) -> Self {
         self
     }
 
