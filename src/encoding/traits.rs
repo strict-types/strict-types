@@ -32,25 +32,25 @@ use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::Ident;
 
-pub trait ToIdent {
-    fn to_ident(&self) -> Ident;
+pub trait IntoIdent {
+    fn into_ident(self) -> Ident;
 }
-impl ToIdent for &'static str {
-    fn to_ident(&self) -> Ident { Ident::from(*self) }
+impl IntoIdent for &'static str {
+    fn into_ident(self) -> Ident { Ident::from(self) }
 }
-impl ToIdent for String {
-    fn to_ident(&self) -> Ident { Ident::try_from(self.to_owned()).expect("invalid identifier") }
+impl IntoIdent for String {
+    fn into_ident(self) -> Ident { Ident::try_from(self).expect("invalid identifier") }
 }
-impl ToIdent for Ident {
-    fn to_ident(&self) -> Ident { self.clone() }
+impl IntoIdent for Ident {
+    fn into_ident(self) -> Ident { self }
 }
-pub trait ToMaybeIdent {
-    fn to_maybe_ident(&self) -> Option<Ident>;
+pub trait IntoMaybeIdent {
+    fn into_maybe_ident(self) -> Option<Ident>;
 }
-impl<T> ToMaybeIdent for Option<T>
-where T: ToIdent
+impl<T> IntoMaybeIdent for Option<T>
+where T: IntoIdent
 {
-    fn to_maybe_ident(&self) -> Option<Ident> { self.as_ref().map(|n| n.to_ident()) }
+    fn into_maybe_ident(self) -> Option<Ident> { self.map(|n| n.into_ident()) }
 }
 
 pub trait TypedWrite: Sized {
@@ -59,14 +59,18 @@ pub trait TypedWrite: Sized {
     type UnionDefiner: DefineUnion<Parent = Self>;
     type EnumDefiner: DefineEnum<Parent = Self>;
 
-    fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner;
-    fn define_enum(self, name: Option<impl ToIdent>) -> Self::EnumDefiner;
+    fn define_union(self, name: Option<impl IntoIdent>) -> Self::UnionDefiner;
+    fn define_enum(self, name: Option<impl IntoIdent>) -> Self::EnumDefiner;
 
-    fn write_tuple(self, name: Option<impl ToIdent>) -> Self::TupleWriter;
-    fn write_type(self, name: Option<impl ToIdent>, value: &impl StrictEncode) -> io::Result<Self> {
+    fn write_tuple(self, name: Option<impl IntoIdent>) -> Self::TupleWriter;
+    fn write_type(
+        self,
+        name: Option<impl IntoIdent>,
+        value: &impl StrictEncode,
+    ) -> io::Result<Self> {
         Ok(self.write_tuple(name).write_field(value)?.complete())
     }
-    fn write_struct(self, name: Option<impl ToIdent>) -> Self::StructWriter;
+    fn write_struct(self, name: Option<impl IntoIdent>) -> Self::StructWriter;
 
     // TODO: Consider making this functions unsafe
     fn register_primitive(self, prim: Primitive) -> Self { self }
@@ -140,17 +144,17 @@ pub trait WriteTuple: Sized {
 
 pub trait DefineStruct: Sized {
     type Parent: TypedParent;
-    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self;
-    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self;
+    fn define_field<T: StrictEncode>(self, name: impl IntoIdent) -> Self;
+    fn define_field_ord<T: StrictEncode>(self, name: impl IntoIdent, ord: u8) -> Self;
     fn complete(self) -> Self::Parent;
 }
 
 pub trait WriteStruct: Sized {
     type Parent: TypedParent;
-    fn write_field(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self>;
+    fn write_field(self, name: impl IntoIdent, value: &impl StrictEncode) -> io::Result<Self>;
     fn write_field_ord(
         self,
-        name: impl ToIdent,
+        name: impl IntoIdent,
         ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self>;
@@ -160,13 +164,13 @@ pub trait WriteStruct: Sized {
 pub trait DefineEnum: Sized {
     type Parent: TypedWrite;
     type EnumWriter: WriteEnum<Parent = Self::Parent>;
-    fn define_variant(self, name: impl ToIdent, value: u8) -> Self;
+    fn define_variant(self, name: impl IntoIdent, value: u8) -> Self;
     fn complete(self) -> Self::EnumWriter;
 }
 
 pub trait WriteEnum: Sized {
     type Parent: TypedWrite;
-    fn write_variant(self, name: impl ToIdent) -> io::Result<Self>;
+    fn write_variant(self, name: impl IntoIdent) -> io::Result<Self>;
     fn complete(self) -> Self::Parent;
 }
 
@@ -176,12 +180,12 @@ pub trait DefineUnion: Sized {
     type StructDefiner: DefineStruct<Parent = Self>;
     type UnionWriter: WriteUnion<Parent = Self::Parent>;
 
-    fn define_unit(self, name: impl ToIdent) -> Self;
-    fn define_type<T: StrictEncode>(self, name: impl ToIdent) -> Self {
+    fn define_unit(self, name: impl IntoIdent) -> Self;
+    fn define_type<T: StrictEncode>(self, name: impl IntoIdent) -> Self {
         self.define_tuple(name).define_field::<T>().complete()
     }
-    fn define_tuple(self, name: impl ToIdent) -> Self::TupleDefiner;
-    fn define_struct(self, name: impl ToIdent) -> Self::StructDefiner;
+    fn define_tuple(self, name: impl IntoIdent) -> Self::TupleDefiner;
+    fn define_struct(self, name: impl IntoIdent) -> Self::StructDefiner;
 
     fn complete(self) -> Self::UnionWriter;
 }
@@ -191,12 +195,12 @@ pub trait WriteUnion: Sized {
     type TupleWriter: WriteTuple<Parent = Self>;
     type StructWriter: WriteStruct<Parent = Self>;
 
-    fn write_unit(self, name: impl ToIdent) -> io::Result<Self>;
-    fn write_type(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
+    fn write_unit(self, name: impl IntoIdent) -> io::Result<Self>;
+    fn write_type(self, name: impl IntoIdent, value: &impl StrictEncode) -> io::Result<Self> {
         Ok(self.write_tuple(name)?.write_field(value)?.complete())
     }
-    fn write_tuple(self, name: impl ToIdent) -> io::Result<Self::TupleWriter>;
-    fn write_struct(self, name: impl ToIdent) -> io::Result<Self::StructWriter>;
+    fn write_tuple(self, name: impl IntoIdent) -> io::Result<Self::TupleWriter>;
+    fn write_struct(self, name: impl IntoIdent) -> io::Result<Self::StructWriter>;
 
     fn complete(self) -> Self::Parent;
 }
