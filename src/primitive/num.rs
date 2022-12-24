@@ -87,6 +87,7 @@ enum NumSizeInner {
     Bytes(u8),
     /// Lowest 5 bits contain a factor defining the size according to the
     /// equation `16 * (2 + factor)`
+    // TODO: Ensure that U256 doesn't have two encodings with both variants
     Factored(u8),
 }
 

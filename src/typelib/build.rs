@@ -30,12 +30,12 @@ use super::compile::{CompileRef, CompileType};
 use crate::ast::{Fields, Variants};
 use crate::encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, SplitParent, StrictEncode, StrictParent,
-    StrictWriter, StructWriter, ToIdent, ToMaybeIdent, TypedParent, TypedWrite, UnionWriter,
-    WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+    StrictWriter, StructWriter, TypedParent, TypedWrite, UnionWriter, WriteEnum, WriteStruct,
+    WriteTuple, WriteUnion,
 };
 use crate::primitive::Primitive;
 use crate::util::Sizing;
-use crate::{FieldName, Ty, TypeName};
+use crate::{FieldName, LibName, Ty, TypeName};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -60,7 +60,9 @@ impl LibBuilder {
         }
     }
 
-    pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> { ty.strict_encode(self) }
+    pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> {
+        unsafe { ty.strict_encode(self) }
+    }
 
     pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
 }
@@ -71,64 +73,83 @@ impl TypedWrite for LibBuilder {
     type UnionDefiner = UnionBuilder;
     type EnumDefiner = UnionBuilder;
 
-    fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner {
-        UnionBuilder::with(name.to_maybe_ident(), self)
+    fn write_union(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::UnionDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = UnionBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn define_enum(self, name: Option<impl ToIdent>) -> Self::EnumDefiner {
-        UnionBuilder::with(name.to_maybe_ident(), self)
+    fn write_enum(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::EnumDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = UnionBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn write_tuple(self, name: Option<impl ToIdent>) -> Self::TupleWriter {
-        StructBuilder::with(name.to_maybe_ident(), self)
+    fn write_tuple(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = StructBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn write_struct(self, name: Option<impl ToIdent>) -> Self::StructWriter {
-        StructBuilder::with(name.to_maybe_ident(), self)
+    fn write_struct(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = StructBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn register_primitive(mut self, prim: Primitive) -> Self {
+    unsafe fn register_primitive(mut self, prim: Primitive) -> Self {
         self.last_compiled = Some(Ty::Primitive(prim).into());
         self
     }
 
-    fn register_array(mut self, ty: &impl StrictEncode, len: u16) -> Self {
+    unsafe fn register_array(mut self, ty: &impl StrictEncode, len: u16) -> Self {
         self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::Array(ty, len).into());
         self
     }
 
-    fn register_unicode_char(mut self) -> Self {
-        self.last_compiled = Some(Ty::UnicodeChar.into());
-        self
-    }
-
-    fn register_unicode_string(mut self, sizing: Sizing) -> Self {
+    unsafe fn register_unicode(mut self, sizing: Sizing) -> Self {
         self.last_compiled = Some(Ty::List(Ty::UnicodeChar.into(), sizing).into());
         self
     }
 
-    fn register_ascii_string(mut self, sizing: Sizing) -> Self {
+    unsafe fn register_ascii(mut self, sizing: Sizing) -> Self {
         self.last_compiled = Some(Ty::List(Ty::ascii_char().into(), sizing).into());
         self
     }
 
-    fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+    unsafe fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
         self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::List(ty, sizing).into());
         self
     }
 
-    fn register_set(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
+    unsafe fn register_set(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
         self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::Set(ty, sizing).into());
         self
     }
 
-    fn register_map(
+    unsafe fn register_map(
         mut self,
         key: &impl StrictEncode,
         ty: &impl StrictEncode,
@@ -165,7 +186,7 @@ impl StrictParent<Sink> for LibBuilder {
 }
 impl BuilderParent for LibBuilder {
     fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
-        self = value.strict_encode(self).expect("too many types in the library");
+        self = unsafe { value.strict_encode(self).expect("too many types in the library") };
         let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
         (self, r)
     }
@@ -193,14 +214,16 @@ impl BuilderParent for LibBuilder {
 }
 
 pub struct StructBuilder<P: BuilderParent> {
+    lib: LibName,
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
     fields: BTreeMap<u8, CompileRef>,
 }
 
 impl<P: BuilderParent> StructBuilder<P> {
-    pub fn with(name: Option<TypeName>, parent: P) -> Self {
+    pub fn with(lib: LibName, name: Option<TypeName>, parent: P) -> Self {
         StructBuilder {
+            lib,
             name: name.clone(),
             writer: StructWriter::with(name, parent),
             fields: empty!(),
@@ -264,14 +287,14 @@ impl<P: BuilderParent> StructBuilder<P> {
 impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
     type Parent = P;
 
-    fn define_field<T: StrictEncode>(mut self, name: impl ToIdent) -> Self {
-        let ord = self.writer.field_ord(&name.to_ident()).expect("StructWriter is broken");
-        self.writer = DefineStruct::define_field::<T>(self.writer, name.to_ident());
+    fn define_field<T: StrictEncode>(mut self, name: FieldName) -> Self {
+        let ord = self.writer.field_ord(&name).expect("StructWriter is broken");
+        self.writer = DefineStruct::define_field::<T>(self.writer, name);
         self._define_field::<T>(ord)
     }
 
-    fn define_field_ord<T: StrictEncode>(mut self, name: impl ToIdent, ord: u8) -> Self {
-        self.writer = DefineStruct::define_field_ord::<T>(self.writer, name.to_ident(), ord);
+    fn define_field_ord<T: StrictEncode>(mut self, name: FieldName, ord: u8) -> Self {
+        self.writer = DefineStruct::define_field_ord::<T>(self.writer, name, ord);
         self._define_field::<T>(ord)
     }
 
@@ -281,19 +304,19 @@ impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
 impl<P: BuilderParent> WriteStruct for StructBuilder<P> {
     type Parent = P;
 
-    fn write_field(mut self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
+    fn write_field(mut self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
         let ord = self.writer.next_ord();
-        self.writer = WriteStruct::write_field(self.writer, name.to_ident(), value)?;
+        self.writer = WriteStruct::write_field(self.writer, name, value)?;
         self._write_field(ord, value)
     }
 
     fn write_field_ord(
         mut self,
-        name: impl ToIdent,
+        name: FieldName,
         ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
-        self.writer = WriteStruct::write_field_ord(self.writer, name.to_ident(), ord, value)?;
+        self.writer = WriteStruct::write_field_ord(self.writer, name, ord, value)?;
         self._write_field(ord, value)
     }
 
@@ -335,6 +358,7 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 }
 
 pub struct UnionBuilder {
+    lib: LibName,
     name: Option<TypeName>,
     variants: BTreeMap<u8, CompileRef>,
     parent: LibBuilder,
@@ -343,8 +367,9 @@ pub struct UnionBuilder {
 }
 
 impl UnionBuilder {
-    pub fn with(name: Option<TypeName>, parent: LibBuilder) -> Self {
+    pub fn with(lib: LibName, name: Option<TypeName>, parent: LibBuilder) -> Self {
         UnionBuilder {
+            lib,
             name: name.clone(),
             variants: empty!(),
             parent,
@@ -430,7 +455,7 @@ impl DefineEnum for UnionBuilder {
     type Parent = LibBuilder;
     type EnumWriter = Self;
 
-    fn define_variant(mut self, name: impl ToIdent, value: u8) -> Self {
+    fn define_variant(mut self, name: FieldName, value: u8) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::U8);
         self._define_field(Some(value));
         self.writer = DefineEnum::define_variant(self.writer, name, value);
@@ -446,9 +471,10 @@ impl DefineEnum for UnionBuilder {
 impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
-    fn write_variant(mut self, name: impl ToIdent) -> io::Result<Self> {
+    fn write_variant(mut self, name: FieldName) -> io::Result<Self> {
+        let name = name;
         self.parent = self.parent.report_compiled(None, Ty::U8);
-        self._write_field(name.to_ident());
+        self._write_field(name.clone());
         self.writer = WriteEnum::write_variant(self.writer, name)?;
         Ok(self)
     }
@@ -465,25 +491,25 @@ impl DefineUnion for UnionBuilder {
     type StructDefiner = StructBuilder<Self>;
     type UnionWriter = Self;
 
-    fn define_unit(mut self, name: impl ToIdent) -> Self {
+    fn define_unit(mut self, name: FieldName) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self._define_field(None);
         self.writer = DefineUnion::define_unit(self.writer, name);
         self
     }
 
-    fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
+    fn define_tuple(mut self, name: FieldName) -> Self::TupleDefiner {
         self._define_field(None);
         let sink = DefineUnion::define_tuple(self.writer, name);
         self.writer = sink.into_parent();
-        StructBuilder::with(None, self)
+        StructBuilder::with(self.lib.clone(), None, self)
     }
 
-    fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
+    fn define_struct(mut self, name: FieldName) -> Self::StructDefiner {
         self._define_field(None);
         let sink = DefineUnion::define_struct(self.writer, name);
         self.writer = sink.into_parent();
-        StructBuilder::with(None, self)
+        StructBuilder::with(self.lib.clone(), None, self)
     }
 
     fn complete(self) -> Self::UnionWriter {
@@ -497,25 +523,28 @@ impl WriteUnion for UnionBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
 
-    fn write_unit(mut self, name: impl ToIdent) -> io::Result<Self> {
+    fn write_unit(mut self, name: FieldName) -> io::Result<Self> {
+        let name = name;
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
-        self._write_field(name.to_ident());
+        self._write_field(name.clone());
         self.writer = WriteUnion::write_unit(self.writer, name)?;
         Ok(self)
     }
 
-    fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
-        self._write_field(name.to_ident());
+    fn write_tuple(mut self, name: FieldName) -> io::Result<Self::TupleWriter> {
+        let name = name;
+        self._write_field(name.clone());
         let sink = WriteUnion::write_tuple(self.writer, name)?;
         self.writer = sink.into_parent();
-        Ok(StructBuilder::with(None, self))
+        Ok(StructBuilder::with(self.lib.clone(), None, self))
     }
 
-    fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
-        self._write_field(name.to_ident());
+    fn write_struct(mut self, name: FieldName) -> io::Result<Self::StructWriter> {
+        let name = name;
+        self._write_field(name.clone());
         let sink = WriteUnion::write_struct(self.writer, name)?;
         self.writer = sink.into_parent();
-        Ok(StructBuilder::with(None, self))
+        Ok(StructBuilder::with(self.lib.clone(), None, self))
     }
 
     fn complete(self) -> LibBuilder {

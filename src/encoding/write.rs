@@ -29,10 +29,10 @@ use amplify::WriteCounter;
 
 use crate::ast::Field;
 use crate::encoding::{
-    DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, ToIdent, ToMaybeIdent,
-    TypedParent, TypedWrite, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+    DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, TypedParent, TypedWrite,
+    WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
-use crate::{FieldName, Ident};
+use crate::{FieldName, LibName, TypeName};
 
 // TODO: Move to amplify crate
 #[derive(Debug)]
@@ -105,18 +105,46 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
     type UnionDefiner = UnionWriter<W>;
     type EnumDefiner = UnionWriter<W>;
 
-    fn define_union(self, name: Option<impl ToIdent>) -> Self::UnionDefiner {
-        UnionWriter::with(name, self)
+    fn write_union(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::UnionDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = UnionWriter::with(name, self);
+        inner(writer)
     }
-    fn define_enum(self, name: Option<impl ToIdent>) -> Self::EnumDefiner {
-        UnionWriter::with(name, self)
+
+    fn write_enum(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::EnumDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = UnionWriter::with(name, self);
+        inner(writer)
     }
-    fn write_tuple(self, name: Option<impl ToIdent>) -> Self::TupleWriter {
-        StructWriter::with(name, self)
+
+    fn write_tuple(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = StructWriter::with(name, self);
+        inner(writer)
     }
-    fn write_struct(self, name: Option<impl ToIdent>) -> Self::StructWriter {
-        StructWriter::with(name, self)
+
+    fn write_struct(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = StructWriter::with(name, self);
+        inner(writer)
     }
+
     unsafe fn _write_raw<const LEN: usize>(mut self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
         use io::Write;
         self.0.write_all(bytes.as_ref())?;
@@ -125,7 +153,7 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
 }
 
 pub struct StructWriter<W: io::Write, P: StrictParent<W>> {
-    name: Option<Ident>,
+    name: Option<TypeName>,
     fields: BTreeSet<Field>,
     ords: BTreeSet<u8>,
     parent: P,
@@ -134,9 +162,9 @@ pub struct StructWriter<W: io::Write, P: StrictParent<W>> {
 }
 
 impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
-    pub fn with(name: Option<impl ToIdent>, parent: P) -> Self {
+    pub fn with(name: Option<TypeName>, parent: P) -> Self {
         StructWriter {
-            name: name.to_maybe_ident(),
+            name,
             fields: empty!(),
             ords: empty!(),
             parent,
@@ -188,8 +216,8 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
             self.name()
         );
         let (mut writer, remnant) = self.parent.into_write_split();
-        writer = field.ord.strict_encode(writer)?;
-        writer = value.strict_encode(writer)?;
+        writer = unsafe { field.ord.strict_encode(writer)? };
+        writer = unsafe { value.strict_encode(writer)? };
         self.parent = P::from_write_split(writer, remnant);
         Ok(self)
     }
@@ -208,12 +236,12 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
 
 impl<W: io::Write, P: StrictParent<W>> DefineStruct for StructWriter<W, P> {
     type Parent = P;
-    fn define_field<T: StrictEncode>(self, name: impl ToIdent) -> Self {
+    fn define_field<T: StrictEncode>(self, name: FieldName) -> Self {
         let ord = self.next_ord();
         DefineStruct::define_field_ord::<T>(self, name, ord)
     }
-    fn define_field_ord<T: StrictEncode>(self, name: impl ToIdent, ord: u8) -> Self {
-        let field = Field::named(name.to_ident(), ord);
+    fn define_field_ord<T: StrictEncode>(self, name: FieldName, ord: u8) -> Self {
+        let field = Field::named(name, ord);
         self._define_field(field)
     }
     fn complete(self) -> P { self._complete_definition() }
@@ -221,17 +249,17 @@ impl<W: io::Write, P: StrictParent<W>> DefineStruct for StructWriter<W, P> {
 
 impl<W: io::Write, P: StrictParent<W>> WriteStruct for StructWriter<W, P> {
     type Parent = P;
-    fn write_field(self, name: impl ToIdent, value: &impl StrictEncode) -> io::Result<Self> {
+    fn write_field(self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
         let ord = self.next_ord();
         WriteStruct::write_field_ord(self, name, ord, value)
     }
     fn write_field_ord(
         self,
-        name: impl ToIdent,
+        name: FieldName,
         ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
-        let field = Field::named(name.to_ident(), ord);
+        let field = Field::named(name, ord);
         self._write_field(field, value)
     }
     fn complete(self) -> P { self._complete_write() }
@@ -271,17 +299,17 @@ pub enum FieldType {
 }
 
 pub struct UnionWriter<W: io::Write> {
-    name: Option<Ident>,
+    name: Option<TypeName>,
     variants: BTreeMap<Field, FieldType>,
     parent: StrictWriter<W>,
     written: bool,
-    parent_ident: Option<Ident>,
+    parent_ident: Option<TypeName>,
 }
 
 impl<W: io::Write> UnionWriter<W> {
-    pub fn with(name: Option<impl ToIdent>, parent: StrictWriter<W>) -> Self {
+    pub fn with(name: Option<TypeName>, parent: StrictWriter<W>) -> Self {
         UnionWriter {
-            name: name.to_maybe_ident(),
+            name,
             variants: empty!(),
             parent,
             written: false,
@@ -289,9 +317,9 @@ impl<W: io::Write> UnionWriter<W> {
         }
     }
 
-    pub fn inline(name: Option<impl ToIdent>, uw: UnionWriter<W>) -> Self {
+    pub fn inline(_lib: LibName, name: Option<TypeName>, uw: UnionWriter<W>) -> Self {
         UnionWriter {
-            name: name.to_maybe_ident(),
+            name,
             variants: empty!(),
             parent: uw.parent,
             written: false,
@@ -340,7 +368,7 @@ impl<W: io::Write> UnionWriter<W> {
         );
         assert!(!self.written, "multiple attempts to write variants of {}", self.name());
         self.written = true;
-        self.parent = field.ord.strict_encode(self.parent)?;
+        self.parent = unsafe { field.ord.strict_encode(self.parent)? };
         Ok(self)
     }
 
@@ -365,19 +393,19 @@ impl<W: io::Write> DefineUnion for UnionWriter<W> {
     type StructDefiner = StructWriter<W, Self>;
     type UnionWriter = UnionWriter<W>;
 
-    fn define_unit(self, name: impl ToIdent) -> Self {
-        let field = Field::named(name.to_ident(), self.next_ord());
+    fn define_unit(self, name: FieldName) -> Self {
+        let field = Field::named(name, self.next_ord());
         self._define_field(field, FieldType::Unit)
     }
-    fn define_tuple(mut self, name: impl ToIdent) -> Self::TupleDefiner {
-        let field = Field::named(name.to_ident(), self.next_ord());
+    fn define_tuple(mut self, name: FieldName) -> Self::TupleDefiner {
+        let field = Field::named(name, self.next_ord());
         self = self._define_field(field, FieldType::Tuple);
-        StructWriter::with(None::<String>, self)
+        StructWriter::with(None, self)
     }
-    fn define_struct(mut self, name: impl ToIdent) -> Self::StructDefiner {
-        let field = Field::named(name.to_ident(), self.next_ord());
+    fn define_struct(mut self, name: FieldName) -> Self::StructDefiner {
+        let field = Field::named(name, self.next_ord());
         self = self._define_field(field, FieldType::Struct);
-        StructWriter::with(None::<String>, self)
+        StructWriter::with(None, self)
     }
     fn complete(self) -> Self::UnionWriter { self._complete_definition() }
 }
@@ -387,16 +415,16 @@ impl<W: io::Write> WriteUnion for UnionWriter<W> {
     type TupleWriter = StructWriter<W, Self>;
     type StructWriter = StructWriter<W, Self>;
 
-    fn write_unit(self, name: impl ToIdent) -> io::Result<Self> {
-        self._write_field(name.to_ident(), FieldType::Unit)
+    fn write_unit(self, name: FieldName) -> io::Result<Self> {
+        self._write_field(name, FieldType::Unit)
     }
-    fn write_tuple(mut self, name: impl ToIdent) -> io::Result<Self::TupleWriter> {
-        self = self._write_field(name.to_ident(), FieldType::Tuple)?;
-        Ok(StructWriter::with(None::<String>, self))
+    fn write_tuple(mut self, name: FieldName) -> io::Result<Self::TupleWriter> {
+        self = self._write_field(name, FieldType::Tuple)?;
+        Ok(StructWriter::with(None, self))
     }
-    fn write_struct(mut self, name: impl ToIdent) -> io::Result<Self::StructWriter> {
-        self = self._write_field(name.to_ident(), FieldType::Struct)?;
-        Ok(StructWriter::with(None::<String>, self))
+    fn write_struct(mut self, name: FieldName) -> io::Result<Self::StructWriter> {
+        self = self._write_field(name, FieldType::Struct)?;
+        Ok(StructWriter::with(None, self))
     }
     fn complete(self) -> Self::Parent { self._complete_write() }
 }
@@ -404,8 +432,8 @@ impl<W: io::Write> WriteUnion for UnionWriter<W> {
 impl<W: io::Write> DefineEnum for UnionWriter<W> {
     type Parent = StrictWriter<W>;
     type EnumWriter = UnionWriter<W>;
-    fn define_variant(self, name: impl ToIdent, value: u8) -> Self {
-        let field = Field::named(name.to_ident(), value);
+    fn define_variant(self, name: FieldName, value: u8) -> Self {
+        let field = Field::named(name, value);
         self._define_field(field, FieldType::Unit)
     }
     fn complete(self) -> Self::EnumWriter { self._complete_definition() }
@@ -413,8 +441,8 @@ impl<W: io::Write> DefineEnum for UnionWriter<W> {
 
 impl<W: io::Write> WriteEnum for UnionWriter<W> {
     type Parent = StrictWriter<W>;
-    fn write_variant(self, name: impl ToIdent) -> io::Result<Self> {
-        self._write_field(name.to_ident(), FieldType::Unit)
+    fn write_variant(self, name: FieldName) -> io::Result<Self> {
+        self._write_field(name, FieldType::Unit)
     }
     fn complete(self) -> Self::Parent { self._complete_write() }
 }

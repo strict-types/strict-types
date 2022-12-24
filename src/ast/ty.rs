@@ -32,7 +32,7 @@ use crate::ast::NestedRef;
 use crate::encoding::StrictEncode;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::{Ident, SemId};
+use crate::{FieldName, SemId};
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
@@ -52,8 +52,6 @@ impl TypeRef for KeyTy {
     const TYPE_NAME: &'static str = "KeyTy";
     fn id(&self) -> SemId { KeyTy::id(self) }
 }
-
-pub type FieldName = Ident;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[display(lowercase)]
@@ -209,6 +207,7 @@ pub enum Ty<Ref: TypeRef> {
     /// While unicode character can be expressed as a composite type, it will be very verbose
     /// expression (union with 256 variants), so instead we built it in.
     UnicodeChar,
+    // TODO: Do not assign to an enum a separate `Cls` and instead encode it as a Union
     Enum(Variants),
     Union(Fields<Ref, false>),
     Struct(Fields<Ref, true>),

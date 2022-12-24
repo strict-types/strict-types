@@ -21,16 +21,6 @@
 // limitations under the License.
 
 #[macro_export]
-macro_rules! tn {
-    ($name:expr) => {
-        $crate::Ident::from($name)
-    };
-    ($name:ident) => {
-        $crate::Ident::from($name)
-    };
-}
-
-#[macro_export]
 macro_rules! fields {
     { $($value:expr),+ $(,)? } => {
         {
@@ -58,7 +48,7 @@ macro_rules! fields {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), $ord), $value.into()).is_none(), "repeated field");
+                assert!(m.insert($crate::ast::Field::named(fname!($key), $ord), $value.into()).is_none(), "repeated field");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
@@ -68,7 +58,7 @@ macro_rules! fields {
             let mut c = 0u8;
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), c), $value.into()).is_none(), "repeated field");
+                assert!(m.insert($crate::ast::Field::named(fname!($key), c), $value.into()).is_none(), "repeated field");
                 #[allow(unused_assignments)] {
                     c += 1;
                 }
