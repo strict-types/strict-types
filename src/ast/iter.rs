@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ast::{Path, Step};
+use crate::ast::Path;
 use crate::{Cls, Ty, TypeRef};
 
 pub trait NestedRef: TypeRef {
@@ -48,17 +48,10 @@ pub enum CheckError {
 pub struct IntoIter<Ref: NestedRef> {
     ty: Ty<Ref>,
     pos: u8,
-    current: Path,
 }
 
 impl<Ref: NestedRef> From<Ty<Ref>> for IntoIter<Ref> {
-    fn from(ty: Ty<Ref>) -> Self {
-        IntoIter {
-            ty,
-            pos: 0,
-            current: empty!(),
-        }
-    }
+    fn from(ty: Ty<Ref>) -> Self { IntoIter { ty, pos: 0 } }
 }
 
 impl<Ref: NestedRef> IntoIterator for Ty<Ref> {
@@ -109,44 +102,5 @@ impl<'ty, Ref: NestedRef + 'ty> Iterator for Iter<'ty, Ref> {
         let ret = self.ty.ty_at(self.pos);
         self.pos += 1;
         ret
-    }
-}
-
-impl<Ref: NestedRef> IntoIter<Ref> {
-    pub(crate) fn check_expect(&mut self, expect: &Ty<Ref>) {
-        self.check(expect).expect("invalid type")
-    }
-
-    pub fn check(&mut self, expect: &Ty<Ref>) -> Result<(), CheckError> {
-        let found = self.ty.at_path(&self.current).expect("non-existing path");
-        if found != expect {
-            Err(CheckError::TypeMismatch {
-                found: found.cls(),
-                expected: expect.cls(),
-                path: self.current.clone(),
-            })
-        } else {
-            Ok(())
-        }
-    }
-
-    pub fn step_in(&mut self, step: Step) -> Result<(), CheckError> {
-        self.current.push(step).expect("Ty guarantees on the structure depth are broken");
-        self.ty
-            .at_path(&self.current)
-            .map(|_| ())
-            .map_err(|_| CheckError::NoSubtypes(self.ty.cls(), self.current.clone()))
-    }
-
-    pub fn step_out(&mut self) -> Result<(), CheckError> {
-        let total = self.ty.count_type_refs();
-        if self.pos < total {
-            return Err(CheckError::UncheckedFields {
-                checked: self.pos,
-                total,
-            });
-        }
-        self.current.pop().expect("at top level of the type");
-        Ok(())
     }
 }
