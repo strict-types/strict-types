@@ -21,6 +21,7 @@
 // limitations under the License.
 
 use std::io;
+use std::str::FromStr;
 
 use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString, FromAsciiError};
 use amplify::confinement::Confined;
@@ -90,11 +91,17 @@ impl<O> From<FromAsciiError<O>> for InvalidIdent {
 )]
 pub struct Ident(Confined<AsciiString, 1, 32>);
 
-impl From<&'static str> for Ident {
-    fn from(s: &'static str) -> Self {
-        let ascii = AsciiString::from_ascii(s).expect("invalid identifier name");
-        Ident::try_from(ascii).expect("invalid identifier name")
+impl FromStr for Ident {
+    type Err = InvalidIdent;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = AsciiString::from_ascii(s.as_bytes())?;
+        Ident::try_from(s)
     }
+}
+
+impl From<&'static str> for Ident {
+    fn from(s: &'static str) -> Self { Self::from_str(s).expect("invalid identifier name") }
 }
 
 impl TryFrom<String> for Ident {
@@ -136,7 +143,7 @@ impl StrictEncode for Ident {
 }
 
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[wrapper(Deref, Display)]
+#[wrapper(Deref, Display, FromStr)]
 #[wrapper_mut(DerefMut)]
 #[cfg_attr(
     feature = "serde",
@@ -164,7 +171,7 @@ impl StrictEncode for TypeName {
 }
 
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[wrapper(Deref, Display)]
+#[wrapper(Deref, Display, FromStr)]
 #[wrapper_mut(DerefMut)]
 #[cfg_attr(
     feature = "serde",
@@ -192,7 +199,7 @@ impl StrictEncode for FieldName {
 }
 
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[wrapper(Deref, Display)]
+#[wrapper(Deref, Display, FromStr)]
 #[wrapper_mut(DerefMut)]
 #[cfg_attr(
     feature = "serde",
