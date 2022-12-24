@@ -55,6 +55,7 @@ pub fn encoding_roundtrip<T: StrictEncode + StrictDecode + Debug + Eq>(val: &T) 
     assert_eq!(val, &val2);
 }
 
+#[allow(dead_code)]
 pub fn encoding<T: StrictEncode + StrictDecode + Debug + Eq>(val: &T, expect: impl AsRef<[u8]>) {
     let data = encode(val);
     assert_eq!(&data[..], expect.as_ref());

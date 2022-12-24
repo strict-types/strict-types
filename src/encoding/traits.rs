@@ -32,6 +32,7 @@ use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::{FieldName, TypeName};
 
+#[allow(unused_variables)]
 pub trait TypedWrite: Sized {
     type TupleWriter: WriteTuple<Parent = Self>;
     type StructWriter: WriteStruct<Parent = Self>;
