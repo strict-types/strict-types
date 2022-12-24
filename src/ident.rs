@@ -27,7 +27,7 @@ use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
 use crate::encoding::{StrictEncode, TypedWrite};
-use crate::{SemId, STEN_LIB};
+use crate::STEN_LIB;
 
 #[macro_export]
 macro_rules! tn {
@@ -94,16 +94,6 @@ impl From<&'static str> for Ident {
     fn from(s: &'static str) -> Self {
         let ascii = AsciiString::from_ascii(s).expect("invalid identifier name");
         Ident::try_from(ascii).expect("invalid identifier name")
-    }
-}
-
-// TODO: Remove this
-impl From<SemId> for Ident {
-    fn from(id: SemId) -> Self {
-        let mut s = s!("Auto");
-        s.extend(id.to_hex()[..8].to_uppercase().chars().take(8));
-        let s = AsciiString::from_ascii(s).expect("invalid identifier name");
-        Ident::try_from(s).expect("invalid identifier name")
     }
 }
 
