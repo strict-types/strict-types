@@ -24,6 +24,7 @@ use std::io;
 use std::ops::Deref;
 
 use amplify::confinement::TinyOrdMap;
+use bitcoin_hashes::{sha256, Hash};
 
 use crate::ast::{Field, Fields, Step, Variants};
 use crate::encoding::{
@@ -33,9 +34,9 @@ use crate::util::Sizing;
 use crate::{FieldName, KeyTy, SemId, Ty, TypeRef, STEN_LIB};
 
 impl StrictEncode for SemId {
-    fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
+    fn strict_encode_dumb() -> Self { SemId::from(sha256::Hash::from_inner([5u8; 32])) }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(libname!(STEN_LIB), tn!("SemId"), self.as_bytes())
+        writer.write_type(libname!(STEN_LIB), tn!("SemId"), &self.into_inner())
     }
 }
 

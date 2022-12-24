@@ -23,6 +23,8 @@
 use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 
+use bitcoin_hashes::{sha256, Hash, HashEngine};
+
 use crate::typelib::TypeLib;
 
 // TODO: Use real tag
@@ -30,10 +32,10 @@ pub const LIB_ID_TAG: [u8; 32] = [0u8; 32];
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]
-pub struct TypeLibId(blake3::Hash);
+pub struct TypeLibId(sha256::Hash);
 
 impl Ord for TypeLibId {
-    fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
+    fn cmp(&self, other: &Self) -> Ordering { self.0.into_inner().cmp(&other.0.into_inner()) }
 }
 
 impl PartialOrd for TypeLibId {
@@ -43,7 +45,7 @@ impl PartialOrd for TypeLibId {
 impl Display for TypeLibId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
-            let m = mnemonic::to_string(&self.as_bytes()[14..18]);
+            let m = mnemonic::to_string(&self.into_inner()[14..18]);
             write!(f, "{}#{}", self.0, m)
         } else {
             write!(f, "{}", self.0)
@@ -53,10 +55,10 @@ impl Display for TypeLibId {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        let mut hasher = sha256::HashEngine::default();
         for ty in self.types.values() {
-            hasher.update(ty.id().as_bytes());
+            hasher.input(&ty.id().into_inner());
         }
-        TypeLibId(hasher.finalize())
+        TypeLibId(sha256::Hash::from_engine(hasher))
     }
 }
