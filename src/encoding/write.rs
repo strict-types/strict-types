@@ -188,8 +188,8 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
             self.name()
         );
         let (mut writer, remnant) = self.parent.into_write_split();
-        writer = field.ord.strict_encode(writer)?;
-        writer = value.strict_encode(writer)?;
+        writer = unsafe { field.ord.strict_encode(writer)? };
+        writer = unsafe { value.strict_encode(writer)? };
         self.parent = P::from_write_split(writer, remnant);
         Ok(self)
     }
@@ -340,7 +340,7 @@ impl<W: io::Write> UnionWriter<W> {
         );
         assert!(!self.written, "multiple attempts to write variants of {}", self.name());
         self.written = true;
-        self.parent = field.ord.strict_encode(self.parent)?;
+        self.parent = unsafe { field.ord.strict_encode(self.parent)? };
         Ok(self)
     }
 

@@ -60,7 +60,9 @@ impl LibBuilder {
         }
     }
 
-    pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> { ty.strict_encode(self) }
+    pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> {
+        unsafe { ty.strict_encode(self) }
+    }
 
     pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
 }
@@ -93,7 +95,7 @@ impl TypedWrite for LibBuilder {
     }
 
     fn register_array(mut self, ty: &impl StrictEncode, len: u16) -> Self {
-        self = ty.strict_encode(self).expect("in-memory encoding");
+        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::Array(ty, len).into());
         self
@@ -115,14 +117,14 @@ impl TypedWrite for LibBuilder {
     }
 
     fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
-        self = ty.strict_encode(self).expect("in-memory encoding");
+        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::List(ty, sizing).into());
         self
     }
 
     fn register_set(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
-        self = ty.strict_encode(self).expect("in-memory encoding");
+        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
         let ty = self.last_compiled.expect("can't compile type");
         self.last_compiled = Some(Ty::Set(ty, sizing).into());
         self
@@ -134,9 +136,9 @@ impl TypedWrite for LibBuilder {
         ty: &impl StrictEncode,
         sizing: Sizing,
     ) -> Self {
-        self = ty.strict_encode(self).expect("in-memory encoding");
+        self = unsafe { ty.strict_encode(self).expect("in-memory encoding") };
         let ty = self.last_compiled.clone().expect("can't compile type");
-        self = key.strict_encode(self).expect("in-memory encoding");
+        self = unsafe { key.strict_encode(self).expect("in-memory encoding") };
         let key_ty = match self.last_compiled.clone().expect("can't compile key type") {
             CompileRef::Inline(ty) => {
                 ty.try_to_key().expect(&format!("not supported map key type {}", ty))
@@ -165,7 +167,7 @@ impl StrictParent<Sink> for LibBuilder {
 }
 impl BuilderParent for LibBuilder {
     fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
-        self = value.strict_encode(self).expect("too many types in the library");
+        self = unsafe { value.strict_encode(self).expect("too many types in the library") };
         let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
         (self, r)
     }

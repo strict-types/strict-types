@@ -206,7 +206,7 @@ pub trait TypedRead: Sized {}
 pub trait StrictEncode: Sized {
     type Dumb: StrictEncode = Self;
     fn strict_encode_dumb() -> Self::Dumb;
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W>;
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W>;
 }
 
 pub trait StrictDecode: Sized {
@@ -216,22 +216,22 @@ pub trait StrictDecode: Sized {
 impl<T: StrictEncode<Dumb = T>> StrictEncode for &T {
     type Dumb = T;
     fn strict_encode_dumb() -> T { T::strict_encode_dumb() }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        (*self).strict_encode(writer)
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        unsafe { (*self).strict_encode(writer) }
     }
 }
 
 pub trait Serialize: StrictEncode {
     fn strict_serialized_len(&self) -> io::Result<usize> {
         let counter = StrictWriter::counter();
-        Ok(self.strict_encode(counter)?.unbox().count)
+        Ok(unsafe { self.strict_encode(counter)? }.unbox().count)
     }
 
     fn to_strict_serialized<const MAX: usize>(
         &self,
     ) -> Result<Confined<Vec<u8>, 0, MAX>, SerializeError> {
         let ast_data = StrictWriter::in_memory(MAX);
-        let data = self.strict_encode(ast_data)?.unbox();
+        let data = unsafe { self.strict_encode(ast_data)? }.unbox();
         Confined::<Vec<u8>, 0, MAX>::try_from(data).map_err(SerializeError::from)
     }
 
@@ -240,7 +240,9 @@ pub trait Serialize: StrictEncode {
         path: impl AsRef<std::path::Path>,
     ) -> Result<(), SerializeError> {
         let file = StrictWriter::with(MAX, fs::File::create(path)?);
-        self.strict_encode(file)?;
+        unsafe {
+            self.strict_encode(file)?;
+        }
         Ok(())
     }
 }

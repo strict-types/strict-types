@@ -27,7 +27,7 @@ use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName};
 impl StrictEncode for LibRef {
     fn strict_encode_dumb() -> Self { LibRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
             .define_union(Some("LibRef"))
             .define_type::<Ty<InlineRef>>("inline")
@@ -61,7 +61,7 @@ impl StrictEncode for LibRef {
 impl StrictEncode for CompileRef {
     fn strict_encode_dumb() -> Self { CompileRef::Named(tn!("Some")) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
             .define_union(Some("CompileRef"))
             .define_type::<Ty<CompileRef>>("inline")
@@ -88,7 +88,7 @@ impl StrictEncode for CompileRef {
 impl StrictEncode for InlineRef {
     fn strict_encode_dumb() -> Self { InlineRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
             .define_union(Some("InlineRef"))
             .define_type::<Ty<InlineRef1>>("inline")
@@ -122,7 +122,7 @@ impl StrictEncode for InlineRef {
 impl StrictEncode for InlineRef1 {
     fn strict_encode_dumb() -> Self { InlineRef1::Named(tn!("Some"), SemId::strict_encode_dumb()) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
             .define_union(Some("InlineRef1"))
             .define_type::<Ty<InlineRef2>>("inline")
@@ -156,7 +156,7 @@ impl StrictEncode for InlineRef1 {
 impl StrictEncode for InlineRef2 {
     fn strict_encode_dumb() -> Self { InlineRef2::Named(tn!("Some"), SemId::strict_encode_dumb()) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
             .define_union(Some("InlineRef2"))
             .define_type::<Ty<KeyTy>>("inline")

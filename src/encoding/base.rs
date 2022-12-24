@@ -39,7 +39,7 @@ macro_rules! encode_num {
     ($ty:ty, $id:ident) => {
         impl StrictEncode for $ty {
             fn strict_encode_dumb() -> Self { <$ty>::MAX }
-            fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+            unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 unsafe { writer.register_primitive($id).write_raw_array(self.to_le_bytes()) }
             }
         }
@@ -50,7 +50,7 @@ macro_rules! encode_float {
     ($ty:ty, $len:literal, $id:ident) => {
         impl StrictEncode for $ty {
             fn strict_encode_dumb() -> Self { <$ty>::SMALLEST }
-            fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+            unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 let mut be = [0u8; $len];
                 be.copy_from_slice(&self.to_bits().to_le_bytes()[..$len]);
                 unsafe { writer.register_primitive($id).write_raw_array(be) }
@@ -88,7 +88,7 @@ encode_float!(ieee::Oct, 32, F256);
 impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
     fn strict_encode_dumb() -> Self { Some(T::strict_encode_dumb()) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
             .define_union(None::<String>)
             .define_unit("none")
@@ -106,7 +106,7 @@ impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
 impl<T: StrictEncode<Dumb = T> + Copy, const LEN: usize> StrictEncode for [T; LEN] {
     fn strict_encode_dumb() -> Self { [T::strict_encode_dumb(); LEN] }
 
-    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             for item in self {
                 writer = item.strict_encode(writer)?;
@@ -122,7 +122,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     fn strict_encode_dumb() -> Self {
         Self::try_from_iter(['a'; MIN_LEN]).expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe {
             writer
                 .register_unicode_string(Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
@@ -137,7 +137,7 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     fn strict_encode_dumb() -> Self {
         Self::try_from_iter([AsciiChar::a; MIN_LEN]).expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe {
             writer
                 .register_ascii_string(Sizing::new(MIN_LEN as u16, MAX_LEN as u16))
@@ -152,7 +152,7 @@ impl<T: StrictEncode<Dumb = T>, const MIN_LEN: usize, const MAX_LEN: usize> Stri
     fn strict_encode_dumb() -> Self {
         Self::try_from_iter(vec![T::strict_encode_dumb()]).expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             writer = writer.write_raw_collection::<Vec<T>, MIN_LEN, MAX_LEN>(self)?;
         }
@@ -167,7 +167,7 @@ impl<T: StrictEncode<Dumb = T> + Ord, const MIN_LEN: usize, const MAX_LEN: usize
     fn strict_encode_dumb() -> Self {
         Self::try_from_iter(bset![T::strict_encode_dumb()]).expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             writer = writer.write_raw_collection::<BTreeSet<T>, MIN_LEN, MAX_LEN>(self)?;
         }
@@ -187,7 +187,7 @@ impl<
         Self::try_from_iter(bmap! { K::strict_encode_dumb() => V::strict_encode_dumb() })
             .expect("hardcoded literal")
     }
-    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             writer = writer.write_raw_len::<MAX_LEN>(self.len())?;
         }

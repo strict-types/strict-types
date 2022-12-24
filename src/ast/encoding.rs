@@ -35,7 +35,7 @@ use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeName, TypeRef};
 
 impl StrictEncode for SemId {
     fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(Some("SemId"), self.as_bytes())
     }
 }
@@ -43,7 +43,7 @@ impl StrictEncode for SemId {
 impl StrictEncode for Step {
     fn strict_encode_dumb() -> Self { Step::Index }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
             .define_union(Some("Step"))
             .define_type::<FieldName>("namedField")
@@ -70,7 +70,7 @@ impl StrictEncode for Step {
 impl StrictEncode for Sizing {
     fn strict_encode_dumb() -> Self { Sizing::U16_NONEMPTY }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
             .write_struct(Some("Sizing"))
             .write_field("min", &self.min)?
@@ -82,7 +82,7 @@ impl StrictEncode for Sizing {
 impl StrictEncode for Field {
     fn strict_encode_dumb() -> Self { Field::unnamed(0) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
             .write_struct(Some("Field"))
             .write_field("name", &self.name)?
@@ -97,7 +97,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             "a" => Ref::strict_encode_dumb()
         }
     }
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         struct FieldInfo<R: TypeRef> {
             name: Option<TypeName>,
             ty: R,
@@ -109,7 +109,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
                     ty: R::strict_encode_dumb(),
                 }
             }
-            fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+            unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 Ok(writer
                     .write_struct(Some(format!("Field{}", R::TYPE_NAME)))
                     .write_field("name", &self.name)?
@@ -134,7 +134,7 @@ impl StrictEncode for Variants {
         variants! { 0..=5 }
     }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(Some("Variants"), self.deref())
     }
 }
@@ -142,7 +142,7 @@ impl StrictEncode for Variants {
 impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
     fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer.define_union(Some(format!("Ty{}", Ref::TYPE_NAME)));
         let u = u
             .define_type::<u8>("primitive")
@@ -192,7 +192,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
 impl StrictEncode for KeyTy {
     fn strict_encode_dumb() -> Self { KeyTy::Array(767) }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
             .define_union(Some("KeyTy"))
             .define_type::<u8>("primitive")
@@ -219,7 +219,7 @@ impl StrictEncode for KeyTy {
 impl StrictEncode for Ident {
     fn strict_encode_dumb() -> Self { Ident::from("Dumb") }
 
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(Some("Ident"), Wrapper::as_inner(self))
     }
 }
