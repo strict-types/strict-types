@@ -28,7 +28,7 @@ use crate::SemId;
 
 #[macro_export]
 macro_rules! tn {
-    ($name:expr) => {
+    ($name:literal) => {
         $crate::TypeName::from($name).into()
     };
     ($name:ident) => {
@@ -43,7 +43,7 @@ macro_rules! tn {
 
 #[macro_export]
 macro_rules! fname {
-    ($name:expr) => {
+    ($name:literal) => {
         $crate::FieldName::from($name).into()
     };
     ($name:ident) => {
