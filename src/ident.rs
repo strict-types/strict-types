@@ -20,11 +20,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString, FromAsciiError};
-use amplify::confinement;
-use amplify::confinement::Confined;
+use std::io;
 
-use crate::SemId;
+use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString, FromAsciiError};
+use amplify::confinement::Confined;
+use amplify::{confinement, Wrapper};
+
+use crate::encoding::{StrictEncode, TypedWrite};
+use crate::{SemId, STEN_LIB};
 
 #[macro_export]
 macro_rules! tn {
@@ -85,7 +88,6 @@ impl<O> From<FromAsciiError<O>> for InvalidIdent {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-// TODO: Use alphanumeric filter instead; promote type to the amplify library
 pub struct Ident(Confined<AsciiString, 1, 32>);
 
 impl From<&'static str> for Ident {
@@ -95,6 +97,7 @@ impl From<&'static str> for Ident {
     }
 }
 
+// TODO: Remove this
 impl From<SemId> for Ident {
     fn from(id: SemId) -> Self {
         let mut s = s!("Auto");
@@ -134,4 +137,94 @@ impl TryFrom<AsciiString> for Ident {
     }
 }
 
-pub type TypeName = Ident;
+impl StrictEncode for Ident {
+    fn strict_encode_dumb() -> Self { Ident::from("DumbIdent") }
+
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(libname!(STEN_LIB), tn!("Ident"), Wrapper::as_inner(self))
+    }
+}
+
+#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[wrapper(Deref, Display)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct TypeName(Ident);
+
+impl From<&'static str> for TypeName {
+    fn from(ident: &'static str) -> Self { TypeName(Ident::from(ident)) }
+}
+
+impl TryFrom<String> for TypeName {
+    type Error = InvalidIdent;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> { Ident::try_from(s).map(Self) }
+}
+
+impl StrictEncode for TypeName {
+    fn strict_encode_dumb() -> Self { TypeName::from("DumbTypeName") }
+
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(libname!(STEN_LIB), tn!("TypeName"), Wrapper::as_inner(self))
+    }
+}
+
+#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[wrapper(Deref, Display)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct FieldName(Ident);
+
+impl From<&'static str> for FieldName {
+    fn from(ident: &'static str) -> Self { FieldName(Ident::from(ident)) }
+}
+
+impl TryFrom<String> for FieldName {
+    type Error = InvalidIdent;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> { Ident::try_from(s).map(Self) }
+}
+
+impl StrictEncode for FieldName {
+    fn strict_encode_dumb() -> Self { FieldName::from("DumbFieldName") }
+
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(libname!(STEN_LIB), tn!("FieldName"), Wrapper::as_inner(self))
+    }
+}
+
+#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[wrapper(Deref, Display)]
+#[wrapper_mut(DerefMut)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct LibName(Ident);
+
+impl From<&'static str> for LibName {
+    fn from(ident: &'static str) -> Self { LibName(Ident::from(ident)) }
+}
+
+impl TryFrom<String> for LibName {
+    type Error = InvalidIdent;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> { Ident::try_from(s).map(Self) }
+}
+
+impl StrictEncode for LibName {
+    fn strict_encode_dumb() -> Self { LibName::from("DumbLibName") }
+
+    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_type(libname!(STEN_LIB), tn!("LibName"), Wrapper::as_inner(self))
+    }
+}

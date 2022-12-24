@@ -23,10 +23,10 @@
 #[macro_export]
 macro_rules! libname {
     ($name:literal) => {
-        $crate::TypeName::from($name).into()
+        $crate::LibName::from($name)
     };
     ($name:ident) => {
-        $crate::TypeName::from($name).into()
+        $crate::LibName::from($name)
     };
 }
 
@@ -58,7 +58,7 @@ macro_rules! fields {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), $ord), $value.into()).is_none(), "repeated field");
+                assert!(m.insert($crate::ast::Field::named(fname!($key), $ord), $value.into()).is_none(), "repeated field");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
@@ -68,7 +68,7 @@ macro_rules! fields {
             let mut c = 0u8;
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), c), $value.into()).is_none(), "repeated field");
+                assert!(m.insert($crate::ast::Field::named(fname!($key), c), $value.into()).is_none(), "repeated field");
                 #[allow(unused_assignments)] {
                     c += 1;
                 }

@@ -32,7 +32,7 @@ use crate::encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, StrictEncode, TypedParent, TypedWrite,
     WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
-use crate::{FieldName, Ident, LibName, TypeName};
+use crate::{FieldName, LibName, TypeName};
 
 // TODO: Move to amplify crate
 #[derive(Debug)]
@@ -125,7 +125,7 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
 }
 
 pub struct StructWriter<W: io::Write, P: StrictParent<W>> {
-    name: Option<Ident>,
+    name: Option<TypeName>,
     fields: BTreeSet<Field>,
     ords: BTreeSet<u8>,
     parent: P,
@@ -208,11 +208,11 @@ impl<W: io::Write, P: StrictParent<W>> StructWriter<W, P> {
 
 impl<W: io::Write, P: StrictParent<W>> DefineStruct for StructWriter<W, P> {
     type Parent = P;
-    fn define_field<T: StrictEncode>(self, name: TypeName) -> Self {
+    fn define_field<T: StrictEncode>(self, name: FieldName) -> Self {
         let ord = self.next_ord();
         DefineStruct::define_field_ord::<T>(self, name, ord)
     }
-    fn define_field_ord<T: StrictEncode>(self, name: TypeName, ord: u8) -> Self {
+    fn define_field_ord<T: StrictEncode>(self, name: FieldName, ord: u8) -> Self {
         let field = Field::named(name, ord);
         self._define_field(field)
     }
@@ -221,13 +221,13 @@ impl<W: io::Write, P: StrictParent<W>> DefineStruct for StructWriter<W, P> {
 
 impl<W: io::Write, P: StrictParent<W>> WriteStruct for StructWriter<W, P> {
     type Parent = P;
-    fn write_field(self, name: TypeName, value: &impl StrictEncode) -> io::Result<Self> {
+    fn write_field(self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
         let ord = self.next_ord();
         WriteStruct::write_field_ord(self, name, ord, value)
     }
     fn write_field_ord(
         self,
-        name: TypeName,
+        name: FieldName,
         ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
@@ -275,7 +275,7 @@ pub struct UnionWriter<W: io::Write> {
     variants: BTreeMap<Field, FieldType>,
     parent: StrictWriter<W>,
     written: bool,
-    parent_ident: Option<Ident>,
+    parent_ident: Option<TypeName>,
 }
 
 impl<W: io::Write> UnionWriter<W> {
@@ -289,7 +289,7 @@ impl<W: io::Write> UnionWriter<W> {
         }
     }
 
-    pub fn inline(lib: LibName, name: Option<TypeName>, uw: UnionWriter<W>) -> Self {
+    pub fn inline(_lib: LibName, name: Option<TypeName>, uw: UnionWriter<W>) -> Self {
         UnionWriter {
             name,
             variants: empty!(),

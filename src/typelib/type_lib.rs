@@ -27,7 +27,7 @@ use amplify::confinement::{Confined, TinyOrdMap};
 
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
-use crate::{Ident, KeyTy, SemId, SemVer, Ty, TypeName, TypeRef};
+use crate::{KeyTy, LibName, SemId, SemVer, Ty, TypeName, TypeRef};
 
 /// Top-level data type contained within a library.
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -152,8 +152,7 @@ impl Display for LibRef {
     }
 }
 
-pub type LibAlias = Ident;
-pub type LibName = Ident;
+pub type LibAlias = LibName;
 
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
 #[display("typelib {name}@{ver} {id:#}")]

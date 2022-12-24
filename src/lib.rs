@@ -50,11 +50,11 @@ pub mod typelib;
 //pub mod typesys;
 pub mod encoding;
 
-pub use ast::{Cls, FieldName, KeyTy, SemId, Ty, TypeRef};
-pub use ident::{Ident, InvalidIdent, TypeName};
+pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
+pub use ident::{FieldName, Ident, InvalidIdent, LibName, TypeName};
 // #[cfg(test)]
 // pub(crate) use encoding::test;
-pub use typelib::{Dependency, LibAlias, LibName, LibRef, TypeLib, TypeLibId};
+pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{SemVer, Urn};
 

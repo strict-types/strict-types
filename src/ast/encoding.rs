@@ -24,14 +24,13 @@ use std::io;
 use std::ops::Deref;
 
 use amplify::confinement::TinyOrdMap;
-use amplify::Wrapper;
 
 use crate::ast::{Field, Fields, Step, Variants};
 use crate::encoding::{
     DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::util::Sizing;
-use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeName, TypeRef, STEN_LIB};
+use crate::{FieldName, KeyTy, SemId, Ty, TypeRef, STEN_LIB};
 
 impl StrictEncode for SemId {
     fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
@@ -99,7 +98,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
     }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         struct FieldInfo<R: TypeRef> {
-            name: Option<TypeName>,
+            name: Option<FieldName>,
             ty: R,
         }
         impl<R: TypeRef> StrictEncode for FieldInfo<R> {
@@ -200,7 +199,7 @@ impl StrictEncode for KeyTy {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(libname!(STEN_LIB), fname!("KeyTy"))
+            .define_union(libname!(STEN_LIB), tn!("KeyTy"))
             .define_type::<u8>(fname!("primitive"))
             .define_type::<Variants>(fname!("enum"))
             .define_type::<u16>(fname!("array"))
@@ -219,13 +218,5 @@ impl StrictEncode for KeyTy {
         };
 
         Ok(u.complete())
-    }
-}
-
-impl StrictEncode for Ident {
-    fn strict_encode_dumb() -> Self { Ident::from("Dumb") }
-
-    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(libname!(STEN_LIB), tn!("Ident"), Wrapper::as_inner(self))
     }
 }

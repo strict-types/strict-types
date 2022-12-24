@@ -268,13 +268,13 @@ impl<P: BuilderParent> StructBuilder<P> {
 impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
     type Parent = P;
 
-    fn define_field<T: StrictEncode>(mut self, name: TypeName) -> Self {
+    fn define_field<T: StrictEncode>(mut self, name: FieldName) -> Self {
         let ord = self.writer.field_ord(&name).expect("StructWriter is broken");
         self.writer = DefineStruct::define_field::<T>(self.writer, name);
         self._define_field::<T>(ord)
     }
 
-    fn define_field_ord<T: StrictEncode>(mut self, name: TypeName, ord: u8) -> Self {
+    fn define_field_ord<T: StrictEncode>(mut self, name: FieldName, ord: u8) -> Self {
         self.writer = DefineStruct::define_field_ord::<T>(self.writer, name, ord);
         self._define_field::<T>(ord)
     }
@@ -285,7 +285,7 @@ impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
 impl<P: BuilderParent> WriteStruct for StructBuilder<P> {
     type Parent = P;
 
-    fn write_field(mut self, name: TypeName, value: &impl StrictEncode) -> io::Result<Self> {
+    fn write_field(mut self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
         let ord = self.writer.next_ord();
         self.writer = WriteStruct::write_field(self.writer, name, value)?;
         self._write_field(ord, value)
@@ -293,7 +293,7 @@ impl<P: BuilderParent> WriteStruct for StructBuilder<P> {
 
     fn write_field_ord(
         mut self,
-        name: TypeName,
+        name: FieldName,
         ord: u8,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
@@ -436,7 +436,7 @@ impl DefineEnum for UnionBuilder {
     type Parent = LibBuilder;
     type EnumWriter = Self;
 
-    fn define_variant(mut self, name: TypeName, value: u8) -> Self {
+    fn define_variant(mut self, name: FieldName, value: u8) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::U8);
         self._define_field(Some(value));
         self.writer = DefineEnum::define_variant(self.writer, name, value);
@@ -452,7 +452,7 @@ impl DefineEnum for UnionBuilder {
 impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
-    fn write_variant(mut self, name: TypeName) -> io::Result<Self> {
+    fn write_variant(mut self, name: FieldName) -> io::Result<Self> {
         let name = name;
         self.parent = self.parent.report_compiled(None, Ty::U8);
         self._write_field(name.clone());
@@ -472,21 +472,21 @@ impl DefineUnion for UnionBuilder {
     type StructDefiner = StructBuilder<Self>;
     type UnionWriter = Self;
 
-    fn define_unit(mut self, name: TypeName) -> Self {
+    fn define_unit(mut self, name: FieldName) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self._define_field(None);
         self.writer = DefineUnion::define_unit(self.writer, name);
         self
     }
 
-    fn define_tuple(mut self, name: TypeName) -> Self::TupleDefiner {
+    fn define_tuple(mut self, name: FieldName) -> Self::TupleDefiner {
         self._define_field(None);
         let sink = DefineUnion::define_tuple(self.writer, name);
         self.writer = sink.into_parent();
         StructBuilder::with(self.lib.clone(), None, self)
     }
 
-    fn define_struct(mut self, name: TypeName) -> Self::StructDefiner {
+    fn define_struct(mut self, name: FieldName) -> Self::StructDefiner {
         self._define_field(None);
         let sink = DefineUnion::define_struct(self.writer, name);
         self.writer = sink.into_parent();
@@ -504,7 +504,7 @@ impl WriteUnion for UnionBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
 
-    fn write_unit(mut self, name: TypeName) -> io::Result<Self> {
+    fn write_unit(mut self, name: FieldName) -> io::Result<Self> {
         let name = name;
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self._write_field(name.clone());
@@ -512,7 +512,7 @@ impl WriteUnion for UnionBuilder {
         Ok(self)
     }
 
-    fn write_tuple(mut self, name: TypeName) -> io::Result<Self::TupleWriter> {
+    fn write_tuple(mut self, name: FieldName) -> io::Result<Self::TupleWriter> {
         let name = name;
         self._write_field(name.clone());
         let sink = WriteUnion::write_tuple(self.writer, name)?;
@@ -520,7 +520,7 @@ impl WriteUnion for UnionBuilder {
         Ok(StructBuilder::with(self.lib.clone(), None, self))
     }
 
-    fn write_struct(mut self, name: TypeName) -> io::Result<Self::StructWriter> {
+    fn write_struct(mut self, name: FieldName) -> io::Result<Self::StructWriter> {
         let name = name;
         self._write_field(name.clone());
         let sink = WriteUnion::write_struct(self.writer, name)?;

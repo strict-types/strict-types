@@ -32,7 +32,7 @@ use crate::ast::NestedRef;
 use crate::encoding::StrictEncode;
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::{Ident, SemId};
+use crate::{FieldName, SemId};
 
 /// Glue for constructing ASTs.
 pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
@@ -52,8 +52,6 @@ impl TypeRef for KeyTy {
     const TYPE_NAME: &'static str = "KeyTy";
     fn id(&self) -> SemId { KeyTy::id(self) }
 }
-
-pub type FieldName = Ident;
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[display(lowercase)]
