@@ -90,14 +90,14 @@ impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(None::<String>)
-            .define_unit("none")
-            .define_type::<T>("some")
+            .define_union(None)
+            .define_unit(tn!("none"))
+            .define_type::<T>(tn!("some"))
             .complete();
 
         Ok(match self {
-            None => u.write_unit("none"),
-            Some(val) => u.write_type("some", val),
+            None => u.write_unit(tn!("none")),
+            Some(val) => u.write_type(tn!("some"), val),
         }?
         .complete())
     }

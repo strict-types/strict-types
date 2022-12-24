@@ -29,13 +29,13 @@ impl StrictEncode for LibRef {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(Some("LibRef"))
-            .define_type::<Ty<InlineRef>>("inline")
-            .define_tuple("named")
+            .define_union(tn!("LibRef"))
+            .define_type::<Ty<InlineRef>>(fname!("inline"))
+            .define_tuple(fname!("named"))
             .define_field::<TypeName>()
             .define_field::<SemId>()
             .complete()
-            .define_tuple("extern")
+            .define_tuple(fname!("extern"))
             .define_field::<TypeName>()
             .define_field::<LibName>()
             .define_field::<SemId>()
@@ -43,12 +43,12 @@ impl StrictEncode for LibRef {
             .complete();
 
         Ok(match self {
-            LibRef::Inline(ty) => u.write_type("inline", ty)?,
+            LibRef::Inline(ty) => u.write_type(fname!("inline"), ty)?,
             LibRef::Named(ty_name, id) => {
-                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple(fname!("named"))?.write_field(ty_name)?.write_field(id)?.complete()
             }
             LibRef::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")?
+                .write_tuple(fname!("named"))?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?
@@ -63,23 +63,27 @@ impl StrictEncode for CompileRef {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(Some("CompileRef"))
-            .define_type::<Ty<CompileRef>>("inline")
-            .define_tuple("named")
+            .define_union(tn!("CompileRef"))
+            .define_type::<Ty<CompileRef>>(fname!("inline"))
+            .define_tuple(fname!("named"))
             .define_field::<TypeName>()
             .complete()
-            .define_tuple("extern")
+            .define_tuple(fname!("extern"))
             .define_field::<TypeName>()
             .define_field::<LibName>()
             .complete()
             .complete();
 
         Ok(match self {
-            CompileRef::Inline(ty) => u.write_type("inline", ty.as_ref())?,
-            CompileRef::Named(ty_name) => u.write_tuple("named")?.write_field(ty_name)?.complete(),
-            CompileRef::Extern(ty_name, lib_name) => {
-                u.write_tuple("named")?.write_field(ty_name)?.write_field(lib_name)?.complete()
+            CompileRef::Inline(ty) => u.write_type(fname!("inline"), ty.as_ref())?,
+            CompileRef::Named(ty_name) => {
+                u.write_tuple(fname!("named"))?.write_field(ty_name)?.complete()
             }
+            CompileRef::Extern(ty_name, lib_name) => u
+                .write_tuple(fname!("named"))?
+                .write_field(ty_name)?
+                .write_field(lib_name)?
+                .complete(),
         }
         .complete())
     }
@@ -90,13 +94,13 @@ impl StrictEncode for InlineRef {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(Some("InlineRef"))
-            .define_type::<Ty<InlineRef1>>("inline")
-            .define_tuple("named")
+            .define_union(tn!("InlineRef"))
+            .define_type::<Ty<InlineRef1>>(fname!("inline"))
+            .define_tuple(fname!("named"))
             .define_field::<TypeName>()
             .define_field::<SemId>()
             .complete()
-            .define_tuple("extern")
+            .define_tuple(fname!("extern"))
             .define_field::<TypeName>()
             .define_field::<LibName>()
             .define_field::<SemId>()
@@ -104,12 +108,12 @@ impl StrictEncode for InlineRef {
             .complete();
 
         Ok(match self {
-            InlineRef::Inline(ty) => u.write_type("inline", ty)?,
+            InlineRef::Inline(ty) => u.write_type(fname!("inline"), ty)?,
             InlineRef::Named(ty_name, id) => {
-                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple(fname!("named"))?.write_field(ty_name)?.write_field(id)?.complete()
             }
             InlineRef::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")?
+                .write_tuple(fname!("named"))?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?
@@ -124,13 +128,13 @@ impl StrictEncode for InlineRef1 {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(Some("InlineRef1"))
-            .define_type::<Ty<InlineRef2>>("inline")
-            .define_tuple("named")
+            .define_union(tn!("InlineRef1"))
+            .define_type::<Ty<InlineRef2>>(fname!("inline"))
+            .define_tuple(fname!("named"))
             .define_field::<TypeName>()
             .define_field::<SemId>()
             .complete()
-            .define_tuple("extern")
+            .define_tuple(fname!("extern"))
             .define_field::<TypeName>()
             .define_field::<LibName>()
             .define_field::<SemId>()
@@ -138,12 +142,12 @@ impl StrictEncode for InlineRef1 {
             .complete();
 
         Ok(match self {
-            InlineRef1::Inline(ty) => u.write_type("inline", ty)?,
+            InlineRef1::Inline(ty) => u.write_type(fname!("inline"), ty)?,
             InlineRef1::Named(ty_name, id) => {
-                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple(fname!("named"))?.write_field(ty_name)?.write_field(id)?.complete()
             }
             InlineRef1::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")?
+                .write_tuple(fname!("named"))?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?
@@ -158,13 +162,13 @@ impl StrictEncode for InlineRef2 {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(Some("InlineRef2"))
-            .define_type::<Ty<KeyTy>>("inline")
-            .define_tuple("named")
+            .define_union(tn!("InlineRef2"))
+            .define_type::<Ty<KeyTy>>(fname!("inline"))
+            .define_tuple(fname!("named"))
             .define_field::<TypeName>()
             .define_field::<SemId>()
             .complete()
-            .define_tuple("extern")
+            .define_tuple(fname!("extern"))
             .define_field::<TypeName>()
             .define_field::<LibName>()
             .define_field::<SemId>()
@@ -172,12 +176,12 @@ impl StrictEncode for InlineRef2 {
             .complete();
 
         Ok(match self {
-            InlineRef2::Builtin(ty) => u.write_type("inline", ty)?,
+            InlineRef2::Builtin(ty) => u.write_type(fname!("inline"), ty)?,
             InlineRef2::Named(ty_name, id) => {
-                u.write_tuple("named")?.write_field(ty_name)?.write_field(id)?.complete()
+                u.write_tuple(fname!("named"))?.write_field(ty_name)?.write_field(id)?.complete()
             }
             InlineRef2::Extern(ty_name, lib_name, id) => u
-                .write_tuple("named")?
+                .write_tuple(fname!("named"))?
                 .write_field(ty_name)?
                 .write_field(lib_name)?
                 .write_field(id)?

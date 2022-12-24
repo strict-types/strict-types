@@ -36,7 +36,7 @@ use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeName, TypeRef};
 impl StrictEncode for SemId {
     fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(Some("SemId"), self.as_bytes())
+        writer.write_type(tn!("SemId"), self.as_bytes())
     }
 }
 
@@ -45,22 +45,22 @@ impl StrictEncode for Step {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(Some("Step"))
-            .define_type::<FieldName>("namedField")
-            .define_type::<u8>("unnamedField")
-            .define_unit("index")
-            .define_unit("list")
-            .define_unit("set")
-            .define_unit("map")
+            .define_union(tn!("Step"))
+            .define_type::<FieldName>(fname!("namedField"))
+            .define_type::<u8>(fname!("unnamedField"))
+            .define_unit(fname!("index"))
+            .define_unit(fname!("list"))
+            .define_unit(fname!("set"))
+            .define_unit(fname!("map"))
             .complete();
 
         let u = match self {
-            Step::NamedField(name) => u.write_type("namedField", name),
-            Step::UnnamedField(ord) => u.write_type("unnamedField", ord),
-            Step::Index => u.write_unit("index"),
-            Step::List => u.write_unit("list"),
-            Step::Set => u.write_unit("set"),
-            Step::Map => u.write_unit("map"),
+            Step::NamedField(name) => u.write_type(fname!("namedField"), name),
+            Step::UnnamedField(ord) => u.write_type(fname!("unnamedField"), ord),
+            Step::Index => u.write_unit(fname!("index")),
+            Step::List => u.write_unit(fname!("list")),
+            Step::Set => u.write_unit(fname!("set")),
+            Step::Map => u.write_unit(fname!("map")),
         }?;
 
         Ok(u.complete())
@@ -72,9 +72,9 @@ impl StrictEncode for Sizing {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
-            .write_struct(Some("Sizing"))
-            .write_field("min", &self.min)?
-            .write_field("max", &self.max)?
+            .write_struct(tn!("Sizing"))
+            .write_field(fname!("min"), &self.min)?
+            .write_field(fname!("max"), &self.max)?
             .complete())
     }
 }
@@ -84,9 +84,9 @@ impl StrictEncode for Field {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
-            .write_struct(Some("Field"))
-            .write_field("name", &self.name)?
-            .write_field("ord", &self.ord)?
+            .write_struct(tn!("Field"))
+            .write_field(fname!("name"), &self.name)?
+            .write_field(fname!("ord"), &self.ord)?
             .complete())
     }
 }
@@ -111,9 +111,9 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             }
             unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 Ok(writer
-                    .write_struct(Some(format!("Field{}", R::TYPE_NAME)))
-                    .write_field("name", &self.name)?
-                    .write_field("ty", &self.ty)?
+                    .write_struct(tn!("Field{}", R::TYPE_NAME))
+                    .write_field(fname!("name"), &self.name)?
+                    .write_field(fname!("ty"), &self.ty)?
                     .complete())
             }
         }
@@ -125,7 +125,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             })
         }))
         .expect("guaranteed by Fields type");
-        writer.write_type(Some(format!("FieldList{}", Ref::TYPE_NAME)), &fields)
+        writer.write_type(tn!("FieldList{}", Ref::TYPE_NAME), &fields)
     }
 }
 
@@ -135,7 +135,7 @@ impl StrictEncode for Variants {
     }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(Some("Variants"), self.deref())
+        writer.write_type(tn!("Variants"), self.deref())
     }
 }
 
@@ -143,18 +143,24 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
     fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        let u = writer.define_union(Some(format!("Ty{}", Ref::TYPE_NAME)));
+        let u = writer.define_union(tn!("Ty{}", Ref::TYPE_NAME));
         let u = u
-            .define_type::<u8>("primitive")
-            .define_unit("unicode")
-            .define_type::<Variants>("enum")
-            .define_type::<Fields<Ref, false>>("union")
-            .define_type::<Fields<Ref, true>>("struct");
-        let u = u.define_tuple("array").define_field::<Ref>().define_field::<u16>().complete();
-        let u = u.define_tuple("list").define_field::<Ref>().define_field::<Sizing>().complete();
-        let u = u.define_tuple("set").define_field::<Ref>().define_field::<Sizing>().complete();
+            .define_type::<u8>(fname!("primitive"))
+            .define_unit(fname!("unicode"))
+            .define_type::<Variants>(fname!("enum"))
+            .define_type::<Fields<Ref, false>>(fname!("union"))
+            .define_type::<Fields<Ref, true>>(fname!("struct"));
+        let u =
+            u.define_tuple(fname!("array")).define_field::<Ref>().define_field::<u16>().complete();
         let u = u
-            .define_tuple("map")
+            .define_tuple(fname!("list"))
+            .define_field::<Ref>()
+            .define_field::<Sizing>()
+            .complete();
+        let u =
+            u.define_tuple(fname!("set")).define_field::<Ref>().define_field::<Sizing>().complete();
+        let u = u
+            .define_tuple(fname!("map"))
             .define_field::<KeyTy>()
             .define_field::<Ref>()
             .define_field::<Sizing>()
@@ -163,22 +169,22 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
         let u = u.complete();
 
         let u = match self {
-            Ty::Primitive(prim) => u.write_type("primitive", &prim.into_code())?,
-            Ty::UnicodeChar => u.write_unit("unicode")?,
-            Ty::Enum(vars) => u.write_type("enum", vars)?,
-            Ty::Union(fields) => u.write_type("union", fields)?,
-            Ty::Struct(fields) => u.write_type("struct", fields)?,
+            Ty::Primitive(prim) => u.write_type(fname!("primitive"), &prim.into_code())?,
+            Ty::UnicodeChar => u.write_unit(fname!("unicode"))?,
+            Ty::Enum(vars) => u.write_type(fname!("enum"), vars)?,
+            Ty::Union(fields) => u.write_type(fname!("union"), fields)?,
+            Ty::Struct(fields) => u.write_type(fname!("struct"), fields)?,
             Ty::Array(ty, len) => {
-                u.write_tuple("array")?.write_field(ty)?.write_field(len)?.complete()
+                u.write_tuple(fname!("array"))?.write_field(ty)?.write_field(len)?.complete()
             }
             Ty::List(ty, sizing) => {
-                u.write_tuple("list")?.write_field(ty)?.write_field(sizing)?.complete()
+                u.write_tuple(fname!("list"))?.write_field(ty)?.write_field(sizing)?.complete()
             }
             Ty::Set(ty, sizing) => {
-                u.write_tuple("set")?.write_field(ty)?.write_field(sizing)?.complete()
+                u.write_tuple(fname!("set"))?.write_field(ty)?.write_field(sizing)?.complete()
             }
             Ty::Map(key, ty, sizing) => u
-                .write_tuple("map")?
+                .write_tuple(fname!("map"))?
                 .write_field(key)?
                 .write_field(ty)?
                 .write_field(sizing)?
@@ -194,22 +200,22 @@ impl StrictEncode for KeyTy {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(Some("KeyTy"))
-            .define_type::<u8>("primitive")
-            .define_type::<Variants>("enum")
-            .define_type::<u16>("array")
-            .define_type::<Sizing>("unicode")
-            .define_type::<Sizing>("ascii")
-            .define_type::<Sizing>("bytes")
+            .define_union(fname!("KeyTy"))
+            .define_type::<u8>(fname!("primitive"))
+            .define_type::<Variants>(fname!("enum"))
+            .define_type::<u16>(fname!("array"))
+            .define_type::<Sizing>(fname!("unicode"))
+            .define_type::<Sizing>(fname!("ascii"))
+            .define_type::<Sizing>(fname!("bytes"))
             .complete();
 
         let u = match self {
-            KeyTy::Primitive(prim) => u.write_type("primitive", &prim.into_code())?,
-            KeyTy::Enum(vars) => u.write_type("enum", vars)?,
-            KeyTy::Array(len) => u.write_type("array", len)?,
-            KeyTy::UnicodeStr(sizing) => u.write_type("unicode", sizing)?,
-            KeyTy::AsciiStr(sizing) => u.write_type("ascii", sizing)?,
-            KeyTy::Bytes(sizing) => u.write_type("bytes", sizing)?,
+            KeyTy::Primitive(prim) => u.write_type(fname!("primitive"), &prim.into_code())?,
+            KeyTy::Enum(vars) => u.write_type(fname!("enum"), vars)?,
+            KeyTy::Array(len) => u.write_type(fname!("array"), len)?,
+            KeyTy::UnicodeStr(sizing) => u.write_type(fname!("unicode"), sizing)?,
+            KeyTy::AsciiStr(sizing) => u.write_type(fname!("ascii"), sizing)?,
+            KeyTy::Bytes(sizing) => u.write_type(fname!("bytes"), sizing)?,
         };
 
         Ok(u.complete())
@@ -220,6 +226,6 @@ impl StrictEncode for Ident {
     fn strict_encode_dumb() -> Self { Ident::from("Dumb") }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(Some("Ident"), Wrapper::as_inner(self))
+        writer.write_type(tn!("Ident"), Wrapper::as_inner(self))
     }
 }
