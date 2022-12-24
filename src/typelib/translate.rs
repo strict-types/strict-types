@@ -25,10 +25,10 @@ use std::collections::BTreeMap;
 use amplify::confinement;
 
 use crate::ast::Fields;
+use crate::ident::InvalidIdent;
 use crate::typelib::{
     CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
 };
-use crate::util::InvalidIdent;
 use crate::{KeyTy, SemId, Ty, TypeName, TypeRef};
 
 pub type TypeIndex = std::collections::BTreeMap<TypeName, SemId>;

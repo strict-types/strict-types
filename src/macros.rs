@@ -31,31 +31,6 @@ macro_rules! libname {
 }
 
 #[macro_export]
-macro_rules! tn {
-    ($name:expr) => {
-        $crate::TypeName::from($name).into()
-    };
-    ($name:ident) => {
-        $crate::TypeName::from($name).into()
-    };
-    ($name:literal, $($arg:expr),+) => {
-        $crate::TypeName::try_from(format!($name, $($arg),+))
-            .expect("invalid type name from formatter")
-            .into()
-    };
-}
-
-#[macro_export]
-macro_rules! fname {
-    ($name:expr) => {
-        $crate::FieldName::from($name).into()
-    };
-    ($name:ident) => {
-        $crate::FieldName::from($name).into()
-    };
-}
-
-#[macro_export]
 macro_rules! fields {
     { $($value:expr),+ $(,)? } => {
         {

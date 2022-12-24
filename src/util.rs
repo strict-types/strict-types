@@ -22,97 +22,10 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use amplify::ascii::{AsAsciiStrError, AsciiChar, AsciiString, FromAsciiError};
-use amplify::confinement;
-use amplify::confinement::{Confined, TinyVec};
+use amplify::confinement::TinyVec;
 
 use crate::typelib::TypeLibId;
-use crate::SemId;
-
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
-#[display(doc_comments)]
-pub enum InvalidIdent {
-    /// ident must contain at least one character
-    Empty,
-
-    /// identifier name must start with alphabetic character and not `{0}`
-    NonAlphabetic(AsciiChar),
-
-    /// identifier name contains invalid character `{0}`
-    InvalidChar(AsciiChar),
-
-    #[from(AsAsciiStrError)]
-    /// identifier name contains non-ASCII character(s)
-    NonAsciiChar,
-
-    /// identifier name has invalid length
-    #[from]
-    Confinement(confinement::Error),
-}
-
-impl<O> From<FromAsciiError<O>> for InvalidIdent {
-    fn from(_: FromAsciiError<O>) -> Self { InvalidIdent::NonAsciiChar }
-}
-
-/// Identifier (field or type name).
-#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[wrapper(Deref, Display)]
-#[wrapper_mut(DerefMut)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
-// TODO: Use alphanumeric filter instead; promote type to the amplify library
-pub struct Ident(Confined<AsciiString, 1, 32>);
-
-impl From<&'static str> for Ident {
-    fn from(s: &'static str) -> Self {
-        let ascii = AsciiString::from_ascii(s).expect("invalid identifier name");
-        Ident::try_from(ascii).expect("invalid identifier name")
-    }
-}
-
-impl From<SemId> for Ident {
-    fn from(id: SemId) -> Self {
-        let mut s = s!("Auto");
-        s.extend(id.to_hex()[..8].to_uppercase().chars().take(8));
-        let s = AsciiString::from_ascii(s).expect("invalid identifier name");
-        Ident::try_from(s).expect("invalid identifier name")
-    }
-}
-
-impl TryFrom<String> for Ident {
-    type Error = InvalidIdent;
-
-    fn try_from(s: String) -> Result<Self, Self::Error> {
-        let s = AsciiString::from_ascii(s.as_bytes())?;
-        Ident::try_from(s)
-    }
-}
-
-impl TryFrom<AsciiString> for Ident {
-    type Error = InvalidIdent;
-
-    fn try_from(ascii: AsciiString) -> Result<Self, InvalidIdent> {
-        if ascii.is_empty() {
-            return Err(InvalidIdent::Empty);
-        }
-        let first = ascii[0];
-        if !first.is_alphabetic() {
-            return Err(InvalidIdent::NonAlphabetic(first));
-        }
-        if let Some(ch) =
-            ascii.as_slice().iter().copied().find(|ch| !ch.is_ascii_alphanumeric() && *ch != b'_')
-        {
-            return Err(InvalidIdent::InvalidChar(ch));
-        }
-        let s = Confined::try_from(ascii)?;
-        Ok(Self(s))
-    }
-}
-
-pub type TypeName = Ident;
+use crate::{Ident, SemId};
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
