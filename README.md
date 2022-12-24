@@ -1,9 +1,12 @@
 # Rust implementation of strict encoding schema (STENS)
 
 Strict encoding is a deterministic schema-base binary serialization format 
-used for consensus protocols, networking, AluVM and long-term data storage. 
+for algebraic types (ADT) which provides automatic strong type checking. It is
+used in consensus protocols, networking, AluVM and long-term data storage. 
+
 This library provides primitives for describing strict encoding schemata, 
-validating and parsing structured data using the schema.
+validating and parsing structured data using the schema and for on-the-fly
+checking of algebraic data type serialziation/deserialization.
 
 To learn more about strict encoding [read the spec](https://www.strict-encoding.org).
 
