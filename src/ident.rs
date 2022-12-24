@@ -55,6 +55,16 @@ macro_rules! fname {
     };
 }
 
+#[macro_export]
+macro_rules! libname {
+    ($name:literal) => {
+        $crate::LibName::from($name)
+    };
+    ($name:ident) => {
+        $crate::LibName::from($name)
+    };
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum InvalidIdent {

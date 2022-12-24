@@ -21,16 +21,6 @@
 // limitations under the License.
 
 #[macro_export]
-macro_rules! libname {
-    ($name:literal) => {
-        $crate::LibName::from($name)
-    };
-    ($name:ident) => {
-        $crate::LibName::from($name)
-    };
-}
-
-#[macro_export]
 macro_rules! fields {
     { $($value:expr),+ $(,)? } => {
         {

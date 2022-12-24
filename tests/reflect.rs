@@ -21,13 +21,11 @@
 // limitations under the License.
 
 #[macro_use]
-extern crate amplify;
+extern crate stens;
 
-use amplify::hex::ToHex;
-use stens::encoding::{StrictEncode, StrictWriter};
+use stens::encoding::StrictEncode;
 use stens::typelib::build::LibBuilder;
-use stens::typelib::TypeLib;
-use stens::{tn, LibRef, Ty, Urn};
+use stens::{LibRef, Ty};
 
 fn pp(data: impl AsRef<[u8]>) {
     let data = base64::encode(data);
@@ -44,7 +42,7 @@ fn pp(data: impl AsRef<[u8]>) {
 fn reflect() {
     let root = Ty::<LibRef>::strict_encode_dumb();
 
-    let lib = LibBuilder::new().process(&root).unwrap().compile(tn!("StEn")).unwrap();
+    let lib = LibBuilder::new().process(&root).unwrap().compile(libname!("StEn")).unwrap();
     println!("typedefs {} = {:#}\n", lib.name, lib.id());
     for ty in lib.types.values() {
         println!("{}", ty);
