@@ -207,6 +207,7 @@ pub enum Ty<Ref: TypeRef> {
     /// While unicode character can be expressed as a composite type, it will be very verbose
     /// expression (union with 256 variants), so instead we built it in.
     UnicodeChar,
+    // TODO: Do not assign to an enum a separate `Cls` and instead encode it as a Union
     Enum(Variants),
     Union(Fields<Ref, false>),
     Struct(Fields<Ref, true>),
