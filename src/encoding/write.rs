@@ -105,18 +105,46 @@ impl<W: io::Write> TypedWrite for StrictWriter<W> {
     type UnionDefiner = UnionWriter<W>;
     type EnumDefiner = UnionWriter<W>;
 
-    fn define_union(self, _lib: LibName, name: Option<TypeName>) -> Self::UnionDefiner {
-        UnionWriter::with(name, self)
+    fn write_union(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::UnionDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = UnionWriter::with(name, self);
+        inner(writer)
     }
-    fn define_enum(self, _lib: LibName, name: Option<TypeName>) -> Self::EnumDefiner {
-        UnionWriter::with(name, self)
+
+    fn write_enum(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::EnumDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = UnionWriter::with(name, self);
+        inner(writer)
     }
-    fn write_tuple(self, _lib: LibName, name: Option<TypeName>) -> Self::TupleWriter {
-        StructWriter::with(name, self)
+
+    fn write_tuple(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = StructWriter::with(name, self);
+        inner(writer)
     }
-    fn write_struct(self, _lib: LibName, name: Option<TypeName>) -> Self::StructWriter {
-        StructWriter::with(name, self)
+
+    fn write_struct(
+        self,
+        _lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let writer = StructWriter::with(name, self);
+        inner(writer)
     }
+
     unsafe fn _write_raw<const LEN: usize>(mut self, bytes: impl AsRef<[u8]>) -> io::Result<Self> {
         use io::Write;
         self.0.write_all(bytes.as_ref())?;

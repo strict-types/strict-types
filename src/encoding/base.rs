@@ -89,17 +89,15 @@ impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
     fn strict_encode_dumb() -> Self { Some(T::strict_encode_dumb()) }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        let u = writer
-            .define_union(libname!(STD_LIB), None)
-            .define_unit(fname!("none"))
-            .define_type::<T>(fname!("some"))
-            .complete();
+        writer.write_union(libname!(STD_LIB), None, |u| {
+            let u = u.define_unit(fname!("none")).define_type::<T>(fname!("some")).complete();
 
-        Ok(match self {
-            None => u.write_unit(fname!("none")),
-            Some(val) => u.write_type(fname!("some"), val),
-        }?
-        .complete())
+            Ok(match self {
+                None => u.write_unit(fname!("none")),
+                Some(val) => u.write_type(fname!("some"), val),
+            }?
+            .complete())
+        })
     }
 }
 

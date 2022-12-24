@@ -39,19 +39,38 @@ pub trait TypedWrite: Sized {
     type UnionDefiner: DefineUnion<Parent = Self>;
     type EnumDefiner: DefineEnum<Parent = Self>;
 
-    fn define_union(self, lib: LibName, name: Option<TypeName>) -> Self::UnionDefiner;
-    fn define_enum(self, lib: LibName, name: Option<TypeName>) -> Self::EnumDefiner;
-
-    fn write_tuple(self, lib: LibName, name: Option<TypeName>) -> Self::TupleWriter;
+    fn write_union(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::UnionDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self>;
+    fn write_enum(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::EnumDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self>;
+    fn write_tuple(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
+    ) -> io::Result<Self>;
+    fn write_struct(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
+    ) -> io::Result<Self>;
     fn write_type(
         self,
         lib: LibName,
         name: Option<TypeName>,
         value: &impl StrictEncode,
     ) -> io::Result<Self> {
-        Ok(self.write_tuple(lib, name).write_field(value)?.complete())
+        self.write_tuple(lib, name, |writer| Ok(writer.write_field(value)?.complete()))
     }
-    fn write_struct(self, lib: LibName, name: Option<TypeName>) -> Self::StructWriter;
 
     // TODO: Consider making this functions unsafe
     fn register_primitive(self, prim: Primitive) -> Self { self }

@@ -73,20 +73,44 @@ impl TypedWrite for LibBuilder {
     type UnionDefiner = UnionBuilder;
     type EnumDefiner = UnionBuilder;
 
-    fn define_union(self, lib: LibName, name: Option<TypeName>) -> Self::UnionDefiner {
-        UnionBuilder::with(lib, name, self)
+    fn write_union(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::UnionDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = UnionBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn define_enum(self, lib: LibName, name: Option<TypeName>) -> Self::EnumDefiner {
-        UnionBuilder::with(lib, name, self)
+    fn write_enum(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::EnumDefiner) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = UnionBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn write_tuple(self, lib: LibName, name: Option<TypeName>) -> Self::TupleWriter {
-        StructBuilder::with(lib, name, self)
+    fn write_tuple(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = StructBuilder::with(lib, name, self);
+        inner(builder)
     }
 
-    fn write_struct(self, lib: LibName, name: Option<TypeName>) -> Self::StructWriter {
-        StructBuilder::with(lib, name, self)
+    fn write_struct(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
+    ) -> io::Result<Self> {
+        let builder = StructBuilder::with(lib, name, self);
+        inner(builder)
     }
 
     fn register_primitive(mut self, prim: Primitive) -> Self {
