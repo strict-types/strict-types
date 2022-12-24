@@ -22,22 +22,42 @@
 
 use std::fmt::Debug;
 use std::io;
+use std::io::BufRead;
 
-use crate::{Decode, Encode, Writer};
+use amplify::confinement::Confined;
+
+use crate::encoding::{StrictDecode, StrictEncode, StrictReader, StrictWriter};
+
+pub fn encode<T: StrictEncode + Debug + Eq>(val: &T) -> Vec<u8> {
+    const MAX: usize = u16::MAX as usize;
+
+    let ast_data = StrictWriter::in_memory(MAX);
+    let data = unsafe { val.strict_encode(ast_data).unwrap() }.unbox();
+    Confined::<Vec<u8>, 0, MAX>::try_from(data).unwrap().into_inner()
+}
+
+pub fn decode<T: StrictDecode + Debug + Eq>(data: impl AsRef<[u8]>) -> T {
+    const MAX: usize = u16::MAX as usize;
+
+    let cursor = io::Cursor::new(data);
+    let mut reader = StrictReader::with(MAX, cursor);
+    let val2 = T::strict_decode(&mut reader).unwrap();
+    let mut cursor = reader.unbox();
+    assert!(!cursor.fill_buf().unwrap().is_empty(), "data not entirely consumed");
+
+    val2
+}
 
 #[allow(dead_code)]
-pub fn encoding_roundtrip(val: &(impl Encode + Decode + Debug + Eq)) {
-    let mut buf = Writer::in_memory();
-    val.encode(&mut buf).unwrap();
-    let val2 = Decode::decode(&mut io::Cursor::new(buf.unbox())).unwrap();
+pub fn encoding_roundtrip<T: StrictEncode + StrictDecode + Debug + Eq>(val: &T) {
+    let data = encode(val);
+    let val2: T = decode(data);
     assert_eq!(val, &val2);
 }
 
-pub fn encoding(val: &(impl Encode + Decode + Debug + Eq), expect: impl AsRef<[u8]>) {
-    let mut buf = Writer::in_memory();
-    val.encode(&mut buf).unwrap();
-    let buf = buf.unbox();
-    assert_eq!(&buf[..], expect.as_ref());
-    let val2 = Decode::decode(&mut io::Cursor::new(buf)).unwrap();
+pub fn encoding<T: StrictEncode + StrictDecode + Debug + Eq>(val: &T, expect: impl AsRef<[u8]>) {
+    let data = encode(val);
+    assert_eq!(&data[..], expect.as_ref());
+    let val2: T = decode(data);
     assert_eq!(val, &val2);
 }
