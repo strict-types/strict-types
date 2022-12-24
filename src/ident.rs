@@ -121,7 +121,7 @@ impl TryFrom<AsciiString> for Ident {
             return Err(InvalidIdent::Empty);
         }
         let first = ascii[0];
-        if !first.is_alphabetic() {
+        if !first.is_alphabetic() && first != '_' {
             return Err(InvalidIdent::NonAlphabetic(first));
         }
         if let Some(ch) =
