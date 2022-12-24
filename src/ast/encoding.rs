@@ -31,12 +31,12 @@ use crate::encoding::{
     DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
 };
 use crate::util::Sizing;
-use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeName, TypeRef};
+use crate::{FieldName, Ident, KeyTy, SemId, Ty, TypeName, TypeRef, STEN_LIB};
 
 impl StrictEncode for SemId {
     fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(tn!("SemId"), self.as_bytes())
+        writer.write_type(libname!(STEN_LIB), tn!("SemId"), self.as_bytes())
     }
 }
 
@@ -45,7 +45,7 @@ impl StrictEncode for Step {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(tn!("Step"))
+            .define_union(libname!(STEN_LIB), tn!("Step"))
             .define_type::<FieldName>(fname!("namedField"))
             .define_type::<u8>(fname!("unnamedField"))
             .define_unit(fname!("index"))
@@ -72,7 +72,7 @@ impl StrictEncode for Sizing {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
-            .write_struct(tn!("Sizing"))
+            .write_struct(libname!(STEN_LIB), tn!("Sizing"))
             .write_field(fname!("min"), &self.min)?
             .write_field(fname!("max"), &self.max)?
             .complete())
@@ -84,7 +84,7 @@ impl StrictEncode for Field {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         Ok(writer
-            .write_struct(tn!("Field"))
+            .write_struct(libname!(STEN_LIB), tn!("Field"))
             .write_field(fname!("name"), &self.name)?
             .write_field(fname!("ord"), &self.ord)?
             .complete())
@@ -111,7 +111,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             }
             unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 Ok(writer
-                    .write_struct(tn!("Field{}", R::TYPE_NAME))
+                    .write_struct(libname!(STEN_LIB), tn!("Field{}", R::TYPE_NAME))
                     .write_field(fname!("name"), &self.name)?
                     .write_field(fname!("ty"), &self.ty)?
                     .complete())
@@ -125,7 +125,7 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
             })
         }))
         .expect("guaranteed by Fields type");
-        writer.write_type(tn!("FieldList{}", Ref::TYPE_NAME), &fields)
+        writer.write_type(libname!(STEN_LIB), tn!("FieldList{}", Ref::TYPE_NAME), &fields)
     }
 }
 
@@ -135,7 +135,7 @@ impl StrictEncode for Variants {
     }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(tn!("Variants"), self.deref())
+        writer.write_type(libname!(STEN_LIB), tn!("Variants"), self.deref())
     }
 }
 
@@ -143,7 +143,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
     fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        let u = writer.define_union(tn!("Ty{}", Ref::TYPE_NAME));
+        let u = writer.define_union(libname!(STEN_LIB), tn!("Ty{}", Ref::TYPE_NAME));
         let u = u
             .define_type::<u8>(fname!("primitive"))
             .define_unit(fname!("unicode"))
@@ -200,7 +200,7 @@ impl StrictEncode for KeyTy {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let u = writer
-            .define_union(fname!("KeyTy"))
+            .define_union(libname!(STEN_LIB), fname!("KeyTy"))
             .define_type::<u8>(fname!("primitive"))
             .define_type::<Variants>(fname!("enum"))
             .define_type::<u16>(fname!("array"))
@@ -226,6 +226,6 @@ impl StrictEncode for Ident {
     fn strict_encode_dumb() -> Self { Ident::from("Dumb") }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_type(tn!("Ident"), Wrapper::as_inner(self))
+        writer.write_type(libname!(STEN_LIB), tn!("Ident"), Wrapper::as_inner(self))
     }
 }

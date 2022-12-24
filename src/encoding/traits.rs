@@ -30,7 +30,7 @@ use super::DecodeError;
 use crate::encoding::{DeserializeError, SerializeError, StrictReader, StrictWriter};
 use crate::primitive::Primitive;
 use crate::util::Sizing;
-use crate::{FieldName, TypeName};
+use crate::{FieldName, LibName, TypeName};
 
 #[allow(unused_variables)]
 pub trait TypedWrite: Sized {
@@ -39,14 +39,19 @@ pub trait TypedWrite: Sized {
     type UnionDefiner: DefineUnion<Parent = Self>;
     type EnumDefiner: DefineEnum<Parent = Self>;
 
-    fn define_union(self, name: Option<TypeName>) -> Self::UnionDefiner;
-    fn define_enum(self, name: Option<TypeName>) -> Self::EnumDefiner;
+    fn define_union(self, lib: LibName, name: Option<TypeName>) -> Self::UnionDefiner;
+    fn define_enum(self, lib: LibName, name: Option<TypeName>) -> Self::EnumDefiner;
 
-    fn write_tuple(self, name: Option<TypeName>) -> Self::TupleWriter;
-    fn write_type(self, name: Option<TypeName>, value: &impl StrictEncode) -> io::Result<Self> {
-        Ok(self.write_tuple(name).write_field(value)?.complete())
+    fn write_tuple(self, lib: LibName, name: Option<TypeName>) -> Self::TupleWriter;
+    fn write_type(
+        self,
+        lib: LibName,
+        name: Option<TypeName>,
+        value: &impl StrictEncode,
+    ) -> io::Result<Self> {
+        Ok(self.write_tuple(lib, name).write_field(value)?.complete())
     }
-    fn write_struct(self, name: Option<TypeName>) -> Self::StructWriter;
+    fn write_struct(self, lib: LibName, name: Option<TypeName>) -> Self::StructWriter;
 
     // TODO: Consider making this functions unsafe
     fn register_primitive(self, prim: Primitive) -> Self { self }

@@ -22,14 +22,14 @@
 
 use crate::encoding::{DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteTuple, WriteUnion};
 use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
-use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName};
+use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName, STEN_LIB};
 
 impl StrictEncode for LibRef {
     fn strict_encode_dumb() -> Self { LibRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(tn!("LibRef"))
+            .define_union(libname!(STEN_LIB), tn!("LibRef"))
             .define_type::<Ty<InlineRef>>(fname!("inline"))
             .define_tuple(fname!("named"))
             .define_field::<TypeName>()
@@ -63,7 +63,7 @@ impl StrictEncode for CompileRef {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(tn!("CompileRef"))
+            .define_union(libname!(STEN_LIB), tn!("CompileRef"))
             .define_type::<Ty<CompileRef>>(fname!("inline"))
             .define_tuple(fname!("named"))
             .define_field::<TypeName>()
@@ -94,7 +94,7 @@ impl StrictEncode for InlineRef {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(tn!("InlineRef"))
+            .define_union(libname!(STEN_LIB), tn!("InlineRef"))
             .define_type::<Ty<InlineRef1>>(fname!("inline"))
             .define_tuple(fname!("named"))
             .define_field::<TypeName>()
@@ -128,7 +128,7 @@ impl StrictEncode for InlineRef1 {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(tn!("InlineRef1"))
+            .define_union(libname!(STEN_LIB), tn!("InlineRef1"))
             .define_type::<Ty<InlineRef2>>(fname!("inline"))
             .define_tuple(fname!("named"))
             .define_field::<TypeName>()
@@ -162,7 +162,7 @@ impl StrictEncode for InlineRef2 {
 
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         let u = writer
-            .define_union(tn!("InlineRef2"))
+            .define_union(libname!(STEN_LIB), tn!("InlineRef2"))
             .define_type::<Ty<KeyTy>>(fname!("inline"))
             .define_tuple(fname!("named"))
             .define_field::<TypeName>()

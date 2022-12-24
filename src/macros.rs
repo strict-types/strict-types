@@ -21,6 +21,16 @@
 // limitations under the License.
 
 #[macro_export]
+macro_rules! libname {
+    ($name:literal) => {
+        $crate::TypeName::from($name).into()
+    };
+    ($name:ident) => {
+        $crate::TypeName::from($name).into()
+    };
+}
+
+#[macro_export]
 macro_rules! tn {
     ($name:expr) => {
         $crate::TypeName::from($name).into()

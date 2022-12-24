@@ -35,7 +35,7 @@ use crate::encoding::{
 };
 use crate::primitive::Primitive;
 use crate::util::Sizing;
-use crate::{FieldName, Ty, TypeName};
+use crate::{FieldName, LibName, Ty, TypeName};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -73,20 +73,20 @@ impl TypedWrite for LibBuilder {
     type UnionDefiner = UnionBuilder;
     type EnumDefiner = UnionBuilder;
 
-    fn define_union(self, name: Option<TypeName>) -> Self::UnionDefiner {
-        UnionBuilder::with(name, self)
+    fn define_union(self, lib: LibName, name: Option<TypeName>) -> Self::UnionDefiner {
+        UnionBuilder::with(lib, name, self)
     }
 
-    fn define_enum(self, name: Option<TypeName>) -> Self::EnumDefiner {
-        UnionBuilder::with(name, self)
+    fn define_enum(self, lib: LibName, name: Option<TypeName>) -> Self::EnumDefiner {
+        UnionBuilder::with(lib, name, self)
     }
 
-    fn write_tuple(self, name: Option<TypeName>) -> Self::TupleWriter {
-        StructBuilder::with(name, self)
+    fn write_tuple(self, lib: LibName, name: Option<TypeName>) -> Self::TupleWriter {
+        StructBuilder::with(lib, name, self)
     }
 
-    fn write_struct(self, name: Option<TypeName>) -> Self::StructWriter {
-        StructBuilder::with(name, self)
+    fn write_struct(self, lib: LibName, name: Option<TypeName>) -> Self::StructWriter {
+        StructBuilder::with(lib, name, self)
     }
 
     fn register_primitive(mut self, prim: Primitive) -> Self {
@@ -195,14 +195,16 @@ impl BuilderParent for LibBuilder {
 }
 
 pub struct StructBuilder<P: BuilderParent> {
+    lib: LibName,
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
     fields: BTreeMap<u8, CompileRef>,
 }
 
 impl<P: BuilderParent> StructBuilder<P> {
-    pub fn with(name: Option<TypeName>, parent: P) -> Self {
+    pub fn with(lib: LibName, name: Option<TypeName>, parent: P) -> Self {
         StructBuilder {
+            lib,
             name: name.clone(),
             writer: StructWriter::with(name, parent),
             fields: empty!(),
@@ -337,6 +339,7 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 }
 
 pub struct UnionBuilder {
+    lib: LibName,
     name: Option<TypeName>,
     variants: BTreeMap<u8, CompileRef>,
     parent: LibBuilder,
@@ -345,8 +348,9 @@ pub struct UnionBuilder {
 }
 
 impl UnionBuilder {
-    pub fn with(name: Option<TypeName>, parent: LibBuilder) -> Self {
+    pub fn with(lib: LibName, name: Option<TypeName>, parent: LibBuilder) -> Self {
         UnionBuilder {
+            lib,
             name: name.clone(),
             variants: empty!(),
             parent,
@@ -479,14 +483,14 @@ impl DefineUnion for UnionBuilder {
         self._define_field(None);
         let sink = DefineUnion::define_tuple(self.writer, name);
         self.writer = sink.into_parent();
-        StructBuilder::with(None, self)
+        StructBuilder::with(self.lib.clone(), None, self)
     }
 
     fn define_struct(mut self, name: TypeName) -> Self::StructDefiner {
         self._define_field(None);
         let sink = DefineUnion::define_struct(self.writer, name);
         self.writer = sink.into_parent();
-        StructBuilder::with(None, self)
+        StructBuilder::with(self.lib.clone(), None, self)
     }
 
     fn complete(self) -> Self::UnionWriter {
@@ -513,7 +517,7 @@ impl WriteUnion for UnionBuilder {
         self._write_field(name.clone());
         let sink = WriteUnion::write_tuple(self.writer, name)?;
         self.writer = sink.into_parent();
-        Ok(StructBuilder::with(None, self))
+        Ok(StructBuilder::with(self.lib.clone(), None, self))
     }
 
     fn write_struct(mut self, name: TypeName) -> io::Result<Self::StructWriter> {
@@ -521,7 +525,7 @@ impl WriteUnion for UnionBuilder {
         self._write_field(name.clone());
         let sink = WriteUnion::write_struct(self.writer, name)?;
         self.writer = sink.into_parent();
-        Ok(StructBuilder::with(None, self))
+        Ok(StructBuilder::with(self.lib.clone(), None, self))
     }
 
     fn complete(self) -> LibBuilder {
