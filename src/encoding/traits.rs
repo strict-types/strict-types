@@ -32,6 +32,8 @@ use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::{FieldName, LibName, TypeName};
 
+pub trait TypedParent: Sized {}
+
 #[allow(unused_variables)]
 pub trait TypedWrite: Sized {
     type TupleWriter: WriteTuple<Parent = Self>;
@@ -136,7 +138,46 @@ pub trait TypedWrite: Sized {
     }
 }
 
-pub trait TypedParent: Sized {}
+pub trait TypedRead: Sized {
+    type TupleReader: ReadTuple<Parent = Self>;
+    type StructReader: ReadStruct<Parent = Self>;
+    type UnionReader: ReadUnion<Parent = Self>;
+
+    fn read_union<T: StrictDecode>(
+        &mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(FieldName, &mut Self::UnionReader) -> Result<T, DecodeError>,
+    ) -> Result<T, DecodeError>;
+    fn read_enum<T: StrictDecode>(
+        &mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(FieldName) -> Result<T, DecodeError>,
+    ) -> Result<T, DecodeError>;
+
+    fn read_tuple<T: StrictDecode>(
+        &mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(FieldName, &mut Self::TupleReader) -> Result<T, DecodeError>,
+    ) -> Result<T, DecodeError>;
+    fn read_struct<T: StrictDecode>(
+        &mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        inner: impl FnOnce(FieldName, &mut Self::StructReader) -> Result<T, DecodeError>,
+    ) -> Result<T, DecodeError>;
+
+    fn read_type<T: StrictDecode>(
+        &mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        value: &impl StrictEncode,
+    ) -> Result<T, DecodeError> {
+        self.read_tuple(lib, name, |writer| Ok(writer.write_field(value)?.complete()))
+    }
+}
 
 pub trait DefineTuple: Sized {
     type Parent: TypedParent;
@@ -215,7 +256,20 @@ pub trait WriteUnion: Sized {
     fn complete(self) -> Self::Parent;
 }
 
-pub trait TypedRead: Sized {}
+pub trait ReadUnion: Sized {
+    type Parent: TypedRead;
+    type TupleReader: ReadTuple<Parent = Self>;
+    type StructReader: ReadStruct<Parent = Self>;
+
+    fn read_unit<T: StrictDecode>(&mut self, name: FieldName) -> Result<T, DecodeError>;
+    fn read_type(self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
+        Ok(self.write_tuple(name)?.write_field(value)?.complete())
+    }
+    fn read_tuple(self, name: FieldName) -> io::Result<Self::TupleWriter>;
+    fn read_struct(self, name: FieldName) -> io::Result<Self::StructWriter>;
+
+    fn complete(self) -> Self::Parent;
+}
 
 pub trait StrictEncode: Sized {
     type Dumb: StrictEncode = Self;
