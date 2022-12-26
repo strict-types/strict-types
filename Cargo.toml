@@ -1,7 +1,7 @@
 [package]
 name = "stens"
 description = "Strict encoding schema library"
-version = "0.8.0"
+version = "0.9.0-rc.1"
 authors = ["Dr. Maxim Orlovsky <orlovsky@lnp-bp.org>"]
 license = "MIT"
 keywords = ["encoding", "internet2", "web4", "aluvm", "lnpbp"]
@@ -12,8 +12,8 @@ readme = "README.md"
 exclude = [".github", "Dockerfile", ".dockerignore", "contrib", "doc", "shell"]
 
 [dependencies]
-amplify = "3.12.1"
-strict_encoding = { version = "0.8.2", default-features = false, features = ["derive"] }
+amplify = "3.13.0"
+strict_encoding = { version = "0.9.0-rc.1", default-features = false, features = ["derive"] }
 serde_crate = { package = "serde", version = "1", optional = true }
 serde_with = { version = "1.14", optional = true }
 serde_yaml = { version = "0.9", optional = true }
