@@ -60,7 +60,7 @@ macro_rules! libname {
     ($name:literal) => {
         $crate::LibName::from($name)
     };
-    ($name:ident) => {
+    ($name:expr) => {
         $crate::LibName::from($name)
     };
 }

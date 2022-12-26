@@ -20,6 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+mod types;
 mod traits;
 mod error;
 mod read;
@@ -31,4 +32,5 @@ pub(crate) mod test;
 pub use error::{DecodeError, DeserializeError, SerializeError};
 pub use read::StrictReader;
 pub use traits::*;
+pub use types::*;
 pub use write::{SplitParent, StrictParent, StrictWriter, StructWriter, UnionWriter};

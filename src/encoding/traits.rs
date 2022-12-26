@@ -27,7 +27,7 @@ use amplify::confinement::{Collection, Confined};
 use amplify::num::u24;
 
 use super::DecodeError;
-use crate::encoding::{DeserializeError, SerializeError, StrictReader, StrictWriter};
+use crate::encoding::{DeserializeError, SerializeError, StrictInfo, StrictReader, StrictWriter};
 use crate::primitive::Primitive;
 use crate::util::Sizing;
 use crate::{FieldName, LibName, TypeName};
@@ -271,9 +271,7 @@ pub trait ReadUnion: Sized {
     fn complete(self) -> Self::Parent;
 }
 
-pub trait StrictEncode: Sized {
-    type Dumb: StrictEncode = Self;
-    fn strict_encode_dumb() -> Self::Dumb;
+pub trait StrictEncode: StrictInfo {
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W>;
 }
 
@@ -281,9 +279,7 @@ pub trait StrictDecode: Sized {
     fn strict_decode(reader: &impl TypedRead) -> Result<Self, DecodeError>;
 }
 
-impl<T: StrictEncode<Dumb = T>> StrictEncode for &T {
-    type Dumb = T;
-    fn strict_encode_dumb() -> T { T::strict_encode_dumb() }
+impl<T: StrictEncode> StrictEncode for &T {
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe { (*self).strict_encode(writer) }
     }

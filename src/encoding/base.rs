@@ -29,16 +29,19 @@ use amplify::confinement::Confined;
 use amplify::num::apfloat::{ieee, Float};
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 
-use crate::encoding::{DefineUnion, StrictEncode, TypedWrite, WriteUnion};
+use crate::encoding::{
+    DefineUnion, StrictDumb, StrictEncode, StrictInfo, StrictSum, StrictType, StrictUnion,
+    TypedWrite, WriteUnion,
+};
 use crate::primitive::constants::*;
 use crate::util::Sizing;
+use crate::FieldName;
 
 const STD_LIB: &'static str = "StdLib";
 
 macro_rules! encode_num {
     ($ty:ty, $id:ident) => {
         impl StrictEncode for $ty {
-            fn strict_encode_dumb() -> Self { <$ty>::MAX }
             unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 unsafe { writer.register_primitive($id).write_raw_array(self.to_le_bytes()) }
             }
@@ -49,7 +52,6 @@ macro_rules! encode_num {
 macro_rules! encode_float {
     ($ty:ty, $len:literal, $id:ident) => {
         impl StrictEncode for $ty {
-            fn strict_encode_dumb() -> Self { <$ty>::SMALLEST }
             unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 let mut be = [0u8; $len];
                 be.copy_from_slice(&self.to_bits().to_le_bytes()[..$len]);
@@ -85,9 +87,30 @@ encode_float!(ieee::X87DoubleExtended, 10, F80);
 encode_float!(ieee::Quad, 16, F128);
 encode_float!(ieee::Oct, 32, F256);
 
-impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
-    fn strict_encode_dumb() -> Self { Some(T::strict_encode_dumb()) }
+impl<T> StrictDumb for Option<T>
+where T: StrictDumb
+{
+    fn strict_dumb() -> Self::Dumb { None }
+}
+impl<T> StrictType for Option<T>
+where T: StrictType
+{
+    const STRICT_LIB_NAME: &'static str = STD_LIB;
+}
+impl<T> StrictSum for Option<T>
+where T: StrictInfo
+{
+    const ALL_VARIANTS: &'static [(u8, &'static str)] = &[(0u8, "none"), (1u8, "some")];
+    fn variant_name(&self) -> &'static str {
+        match self {
+            None => "none",
+            Some(_) => "some",
+        }
+    }
+}
+impl<T> StrictUnion for Option<T> where T: StrictUnion {}
 
+impl<T: StrictEncode> StrictEncode for Option<T> {
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_union(libname!(STD_LIB), None, |u| {
             let u = u.define_unit(fname!("none")).define_type::<T>(fname!("some")).complete();
@@ -102,8 +125,6 @@ impl<T: StrictEncode<Dumb = T>> StrictEncode for Option<T> {
 }
 
 impl<T: StrictEncode<Dumb = T> + Copy, const LEN: usize> StrictEncode for [T; LEN] {
-    fn strict_encode_dumb() -> Self { [T::strict_encode_dumb(); LEN] }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             for item in self {
