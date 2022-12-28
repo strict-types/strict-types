@@ -41,22 +41,13 @@ extern crate core;
 
 #[macro_use]
 mod macros;
-#[macro_use]
-mod ident;
 mod util;
-pub mod primitive;
 pub mod ast;
 pub mod typelib;
 //pub mod typesys;
-pub mod encoding;
 
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
-pub use encoding::*;
 pub use ident::{FieldName, Ident, InvalidIdent, LibName, TypeName};
-// #[cfg(test)]
-// pub(crate) use encoding::test;
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{SemVer, Urn};
-
-const STEN_LIB: &'static str = "StEn";
