@@ -25,8 +25,6 @@ use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
 use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName, STEN_LIB};
 
 impl StrictEncode for LibRef {
-    fn strict_encode_dumb() -> Self { LibRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("LibRef"), |u| {
             let u = u
@@ -62,8 +60,6 @@ impl StrictEncode for LibRef {
 }
 
 impl StrictEncode for CompileRef {
-    fn strict_encode_dumb() -> Self { CompileRef::Named(tn!("Some")) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("CompileRef"), |u| {
             let u = u
@@ -94,8 +90,6 @@ impl StrictEncode for CompileRef {
 }
 
 impl StrictEncode for InlineRef {
-    fn strict_encode_dumb() -> Self { InlineRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("InlineRef"), |u| {
             let u = u
@@ -131,8 +125,6 @@ impl StrictEncode for InlineRef {
 }
 
 impl StrictEncode for InlineRef1 {
-    fn strict_encode_dumb() -> Self { InlineRef1::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("InlineRef1"), |u| {
             let u = u
@@ -168,8 +160,6 @@ impl StrictEncode for InlineRef1 {
 }
 
 impl StrictEncode for InlineRef2 {
-    fn strict_encode_dumb() -> Self { InlineRef2::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("InlineRef2"), |u| {
             let u = u

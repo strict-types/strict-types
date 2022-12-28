@@ -33,15 +33,12 @@ use crate::util::Sizing;
 use crate::{FieldName, KeyTy, SemId, Ty, TypeRef, STEN_LIB};
 
 impl StrictEncode for SemId {
-    fn strict_encode_dumb() -> Self { SemId::from(blake3::Hash::from([5u8; 32])) }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(libname!(STEN_LIB), tn!("SemId"), self.as_bytes())
     }
 }
 
 impl StrictEncode for Step {
-    fn strict_encode_dumb() -> Self { Step::Index }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("Step"), |udef| {
             let uwriter = udef
@@ -67,8 +64,6 @@ impl StrictEncode for Step {
 }
 
 impl StrictEncode for Sizing {
-    fn strict_encode_dumb() -> Self { Sizing::U16_NONEMPTY }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_struct(libname!(STEN_LIB), tn!("Sizing"), |sw| {
             Ok(sw
@@ -80,8 +75,6 @@ impl StrictEncode for Sizing {
 }
 
 impl StrictEncode for Field {
-    fn strict_encode_dumb() -> Self { Field::unnamed(0) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_struct(libname!(STEN_LIB), tn!("Field"), |sw| {
             Ok(sw
@@ -93,23 +86,12 @@ impl StrictEncode for Field {
 }
 
 impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
-    fn strict_encode_dumb() -> Self {
-        fields! {
-            "a" => Ref::strict_encode_dumb()
-        }
-    }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         struct FieldInfo<R: TypeRef> {
             name: Option<FieldName>,
             ty: R,
         }
         impl<R: TypeRef> StrictEncode for FieldInfo<R> {
-            fn strict_encode_dumb() -> Self {
-                FieldInfo {
-                    name: None,
-                    ty: R::strict_encode_dumb(),
-                }
-            }
             unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
                 writer.write_struct(libname!(STEN_LIB), tn!("Field{}", R::TYPE_NAME), |sw| {
                     Ok(sw
@@ -132,18 +114,12 @@ impl<Ref: TypeRef, const OP: bool> StrictEncode for Fields<Ref, OP> {
 }
 
 impl StrictEncode for Variants {
-    fn strict_encode_dumb() -> Self {
-        variants! { 0..=5 }
-    }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(libname!(STEN_LIB), tn!("Variants"), self.deref())
     }
 }
 
 impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
-    fn strict_encode_dumb() -> Self { Ty::UnicodeChar }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("Ty{}", Ref::TYPE_NAME), |u| {
             let u = u
@@ -205,8 +181,6 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
 }
 
 impl StrictEncode for KeyTy {
-    fn strict_encode_dumb() -> Self { KeyTy::Array(767) }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_union(libname!(STEN_LIB), tn!("KeyTy"), |u| {
             let u = u

@@ -51,6 +51,7 @@ pub mod typelib;
 pub mod encoding;
 
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
+pub use encoding::*;
 pub use ident::{FieldName, Ident, InvalidIdent, LibName, TypeName};
 // #[cfg(test)]
 // pub(crate) use encoding::test;

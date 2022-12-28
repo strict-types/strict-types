@@ -24,18 +24,16 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::hash::Hash;
 use std::io;
 
-use amplify::ascii::{AsciiChar, AsciiString};
+use amplify::ascii::AsciiString;
 use amplify::confinement::Confined;
 use amplify::num::apfloat::{ieee, Float};
 use amplify::num::{i1024, i256, i512, u1024, u24, u256, u512};
 
 use crate::encoding::{
-    DefineUnion, StrictDumb, StrictEncode, StrictInfo, StrictSum, StrictType, StrictUnion,
-    TypedWrite, WriteUnion,
+    DefineUnion, StrictEncode, StrictSum, StrictType, StrictUnion, TypedWrite, WriteUnion,
 };
 use crate::primitive::constants::*;
 use crate::util::Sizing;
-use crate::FieldName;
 
 const STD_LIB: &'static str = "StdLib";
 
@@ -87,18 +85,13 @@ encode_float!(ieee::X87DoubleExtended, 10, F80);
 encode_float!(ieee::Quad, 16, F128);
 encode_float!(ieee::Oct, 32, F256);
 
-impl<T> StrictDumb for Option<T>
-where T: StrictDumb
-{
-    fn strict_dumb() -> Self::Dumb { None }
-}
 impl<T> StrictType for Option<T>
 where T: StrictType
 {
     const STRICT_LIB_NAME: &'static str = STD_LIB;
 }
 impl<T> StrictSum for Option<T>
-where T: StrictInfo
+where T: StrictType
 {
     const ALL_VARIANTS: &'static [(u8, &'static str)] = &[(0u8, "none"), (1u8, "some")];
     fn variant_name(&self) -> &'static str {
@@ -124,7 +117,7 @@ impl<T: StrictEncode> StrictEncode for Option<T> {
     }
 }
 
-impl<T: StrictEncode<Dumb = T> + Copy, const LEN: usize> StrictEncode for [T; LEN] {
+impl<T: StrictEncode + Copy, const LEN: usize> StrictEncode for [T; LEN] {
     unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             for item in self {
@@ -138,9 +131,6 @@ impl<T: StrictEncode<Dumb = T> + Copy, const LEN: usize> StrictEncode for [T; LE
 impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     for Confined<String, MIN_LEN, MAX_LEN>
 {
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(['a'; MIN_LEN]).expect("hardcoded literal")
-    }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe {
             writer
@@ -153,9 +143,6 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
 impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     for Confined<AsciiString, MIN_LEN, MAX_LEN>
 {
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter([AsciiChar::a; MIN_LEN]).expect("hardcoded literal")
-    }
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         unsafe {
             writer
@@ -165,12 +152,9 @@ impl<const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     }
 }
 
-impl<T: StrictEncode<Dumb = T>, const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
+impl<T: StrictEncode, const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     for Confined<Vec<T>, MIN_LEN, MAX_LEN>
 {
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(vec![T::strict_encode_dumb()]).expect("hardcoded literal")
-    }
     unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             writer = writer.write_raw_collection::<Vec<T>, MIN_LEN, MAX_LEN>(self)?;
@@ -180,12 +164,9 @@ impl<T: StrictEncode<Dumb = T>, const MIN_LEN: usize, const MAX_LEN: usize> Stri
     }
 }
 
-impl<T: StrictEncode<Dumb = T> + Ord, const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
+impl<T: StrictEncode + Ord, const MIN_LEN: usize, const MAX_LEN: usize> StrictEncode
     for Confined<BTreeSet<T>, MIN_LEN, MAX_LEN>
 {
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(bset![T::strict_encode_dumb()]).expect("hardcoded literal")
-    }
     unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             writer = writer.write_raw_collection::<BTreeSet<T>, MIN_LEN, MAX_LEN>(self)?;
@@ -195,17 +176,9 @@ impl<T: StrictEncode<Dumb = T> + Ord, const MIN_LEN: usize, const MAX_LEN: usize
     }
 }
 
-impl<
-        K: StrictEncode<Dumb = K> + Ord + Hash,
-        const MIN_LEN: usize,
-        V: StrictEncode<Dumb = V>,
-        const MAX_LEN: usize,
-    > StrictEncode for Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
+impl<K: StrictEncode + Ord + Hash, const MIN_LEN: usize, V: StrictEncode, const MAX_LEN: usize>
+    StrictEncode for Confined<BTreeMap<K, V>, MIN_LEN, MAX_LEN>
 {
-    fn strict_encode_dumb() -> Self {
-        Self::try_from_iter(bmap! { K::strict_encode_dumb() => V::strict_encode_dumb() })
-            .expect("hardcoded literal")
-    }
     unsafe fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
         unsafe {
             writer = writer.write_raw_len::<MAX_LEN>(self.len())?;

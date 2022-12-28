@@ -30,12 +30,7 @@ use crate::{FieldName, LibName, TypeName};
 #[display("unexpected variant {1} for enum or union {0}")]
 pub struct VariantError<V: Display>(TypeName, V);
 
-pub trait StrictDumb {
-    type Dumb: StrictInfo = Self;
-    fn strict_dumb() -> Self::Dumb;
-}
-
-pub trait StrictType: StrictDumb {
+pub trait StrictType: Sized {
     const STRICT_LIB_NAME: &'static str;
     fn strict_name() -> Option<String> {
         fn get_ident(path: &str) -> &str { path.rsplit_once("::").map(|(_, n)| n).unwrap_or(path) }
@@ -57,6 +52,7 @@ impl<T: StrictType> StrictType for &T {
 }
 
 pub trait StrictProduct: StrictType {}
+
 pub trait StrictTuple: StrictProduct {
     const ALL_FIELDS: &'static [u8];
     fn strict_check_fields() {
@@ -68,7 +64,18 @@ pub trait StrictTuple: StrictProduct {
             Self::strict_name()
         );
     }
+
+    fn strict_type_info() -> TypeInfo<Self> {
+        Self::strict_check_fields();
+        TypeInfo {
+            lib: libname!(Self::STRICT_LIB_NAME),
+            name: Self::strict_name().map(|name| tn!(name)),
+            cls: TypeClass::Tuple(Self::ALL_FIELDS),
+            dumb: Self::strict_dumb(),
+        }
+    }
 }
+
 pub trait StrictStruct: StrictProduct {
     const ALL_FIELDS: &'static [(u8, &'static str)];
 
@@ -86,6 +93,16 @@ pub trait StrictStruct: StrictProduct {
             "struct type {} contains repeated field names",
             Self::strict_name()
         );
+    }
+
+    fn strict_type_info() -> TypeInfo<Self> {
+        Self::strict_check_fields();
+        TypeInfo {
+            lib: libname!(Self::STRICT_LIB_NAME),
+            name: Self::strict_name().map(|name| tn!(name)),
+            cls: TypeClass::Struct(Self::ALL_FIELDS),
+            dumb: Self::strict_dumb(),
+        }
     }
 }
 
@@ -124,7 +141,17 @@ pub trait StrictSum: StrictType {
     fn variant_name(&self) -> &'static str;
 }
 
-pub trait StrictUnion: StrictSum {}
+pub trait StrictUnion: StrictSum {
+    fn strict_type_info() -> TypeInfo<Self> {
+        Self::strict_check_variants();
+        TypeInfo {
+            lib: libname!(Self::STRICT_LIB_NAME),
+            name: Self::strict_name().map(|name| tn!(name)),
+            cls: TypeClass::Union(Self::ALL_VARIANTS),
+            dumb: Self::strict_dumb(),
+        }
+    }
+}
 
 pub trait StrictEnum
 where
@@ -132,33 +159,15 @@ where
     u8: From<Self>,
 {
     fn from_variant_name(name: &FieldName) -> Result<Self, VariantError<&FieldName>>;
-}
 
-impl<T: StrictDumb> StrictDumb for &T {
-    type Dumb = T;
-    fn strict_dumb() -> Self::Dumb { T::strict_dumb() }
-}
-
-impl<T> StrictDumb for T
-where T: StrictProduct + Default
-{
-    type Dumb = Self;
-    fn strict_dumb() -> Self::Dumb { T::default() }
-}
-
-impl<T> StrictDumb for T
-where T: StrictUnion + Default
-{
-    type Dumb = Self;
-    fn strict_dumb() -> Self::Dumb { T::default() }
-}
-
-impl<T> StrictDumb for T
-where T: StrictEnum
-{
-    type Dumb = Self;
-    fn strict_dumb() -> Self::Dumb {
-        T::all_variants().first().expect("enum must have at least one variant").0.into()
+    fn strict_type_info() -> TypeInfo<Self> {
+        Self::strict_check_variants();
+        TypeInfo {
+            lib: libname!(Self::STRICT_LIB_NAME),
+            name: Self::strict_name().map(|name| tn!(name)),
+            cls: TypeClass::Enum(Self::ALL_VARIANTS),
+            dumb: Self::strict_dumb(),
+        }
     }
 }
 
@@ -170,73 +179,9 @@ pub enum TypeClass {
     Struct(&'static [(u8, &'static str)]),
 }
 
-pub struct TypeInfo<T: StrictInfo> {
+pub struct TypeInfo<T: StrictType> {
     lib: LibName,
     name: Option<TypeName>,
     cls: TypeClass,
     dumb: T,
-}
-
-pub trait StrictInfo: StrictType {
-    fn strict_type_info() -> TypeInfo<Self::Dumb>;
-}
-
-impl<T: StrictInfo> StrictInfo for &T {
-    fn strict_type_info() -> TypeInfo<T> { T::strict_type_info() }
-}
-
-impl<T> StrictInfo for T
-where T: StrictUnion
-{
-    fn strict_type_info() -> TypeInfo<Self::Dumb> {
-        T::strict_check_variants();
-        TypeInfo {
-            lib: libname!(T::STRICT_LIB_NAME),
-            name: T::strict_name().map(|name| tn!(name)),
-            cls: TypeClass::Union(T::ALL_VARIANTS),
-            dumb: T::strict_dumb(),
-        }
-    }
-}
-
-impl<T> StrictInfo for T
-where T: StrictEnum
-{
-    fn strict_type_info() -> TypeInfo<Self::Dumb> {
-        T::strict_check_variants();
-        TypeInfo {
-            lib: libname!(T::STRICT_LIB_NAME),
-            name: T::strict_name().map(|name| tn!(name)),
-            cls: TypeClass::Enum(T::ALL_VARIANTS),
-            dumb: T::strict_dumb(),
-        }
-    }
-}
-
-impl<T> StrictInfo for T
-where T: StrictStruct
-{
-    fn strict_type_info() -> TypeInfo<Self::Dumb> {
-        T::strict_check_fields();
-        TypeInfo {
-            lib: libname!(T::STRICT_LIB_NAME),
-            name: T::strict_name().map(|name| tn!(name)),
-            cls: TypeClass::Struct(T::ALL_FIELDS),
-            dumb: T::strict_dumb(),
-        }
-    }
-}
-
-impl<T> StrictInfo for T
-where T: StrictTuple
-{
-    fn strict_type_info() -> TypeInfo<Self::Dumb> {
-        T::strict_check_fields();
-        TypeInfo {
-            lib: libname!(T::STRICT_LIB_NAME),
-            name: T::strict_name().map(|name| tn!(name)),
-            cls: TypeClass::Tuple(T::ALL_FIELDS),
-            dumb: T::strict_dumb(),
-        }
-    }
 }

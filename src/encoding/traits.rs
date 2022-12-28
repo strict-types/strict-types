@@ -27,10 +27,10 @@ use amplify::confinement::{Collection, Confined};
 use amplify::num::u24;
 
 use super::DecodeError;
-use crate::encoding::{DeserializeError, SerializeError, StrictInfo, StrictReader, StrictWriter};
+use crate::encoding::{DeserializeError, SerializeError, StrictReader, StrictWriter};
 use crate::primitive::Primitive;
 use crate::util::Sizing;
-use crate::{FieldName, LibName, TypeName};
+use crate::{FieldName, LibName, StrictType, TypeName};
 
 pub trait TypedParent: Sized {}
 
@@ -193,6 +193,10 @@ pub trait WriteTuple: Sized {
     fn complete(self) -> Self::Parent;
 }
 
+pub trait ReadTuple {
+    type Parent: TypedRead;
+}
+
 pub trait DefineStruct: Sized {
     type Parent: TypedParent;
     fn define_field<T: StrictEncode>(self, name: FieldName) -> Self;
@@ -210,6 +214,10 @@ pub trait WriteStruct: Sized {
         value: &impl StrictEncode,
     ) -> io::Result<Self>;
     fn complete(self) -> Self::Parent;
+}
+
+pub trait ReadStruct {
+    type Parent: TypedRead;
 }
 
 pub trait DefineEnum: Sized {
@@ -265,13 +273,13 @@ pub trait ReadUnion: Sized {
     fn read_type(self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
         Ok(self.write_tuple(name)?.write_field(value)?.complete())
     }
-    fn read_tuple(self, name: FieldName) -> io::Result<Self::TupleWriter>;
-    fn read_struct(self, name: FieldName) -> io::Result<Self::StructWriter>;
+    fn read_tuple(self, name: FieldName) -> io::Result<Self::TupleReader>;
+    fn read_struct(self, name: FieldName) -> io::Result<Self::StructReader>;
 
     fn complete(self) -> Self::Parent;
 }
 
-pub trait StrictEncode: StrictInfo {
+pub trait StrictEncode: StrictType {
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W>;
 }
 

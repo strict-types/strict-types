@@ -35,7 +35,7 @@ use crate::util::Sizing;
 use crate::{FieldName, SemId};
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + StrictEncode<Dumb = Self> + Eq + Debug + Sized {
+pub trait TypeRef: Clone + StrictEncode + Eq + Debug + Sized {
     const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
     fn is_byte(&self) -> bool { false }

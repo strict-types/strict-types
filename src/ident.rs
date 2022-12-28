@@ -28,7 +28,7 @@ use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 
 use crate::encoding::{StrictEncode, TypedWrite};
-use crate::STEN_LIB;
+use crate::{strict_newtype, STEN_LIB};
 
 #[macro_export]
 macro_rules! tn {
@@ -144,9 +144,8 @@ impl TryFrom<AsciiString> for Ident {
     }
 }
 
+strict_newtype!(Ident, STEN_LIB);
 impl StrictEncode for Ident {
-    fn strict_encode_dumb() -> Self { Ident::from("DumbIdent") }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(libname!(STEN_LIB), tn!("Ident"), Wrapper::as_inner(self))
     }
@@ -173,8 +172,6 @@ impl TryFrom<String> for TypeName {
 }
 
 impl StrictEncode for TypeName {
-    fn strict_encode_dumb() -> Self { TypeName::from("DumbTypeName") }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(libname!(STEN_LIB), tn!("TypeName"), Wrapper::as_inner(self))
     }
@@ -201,8 +198,6 @@ impl TryFrom<String> for FieldName {
 }
 
 impl StrictEncode for FieldName {
-    fn strict_encode_dumb() -> Self { FieldName::from("DumbFieldName") }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(libname!(STEN_LIB), tn!("FieldName"), Wrapper::as_inner(self))
     }
@@ -229,8 +224,6 @@ impl TryFrom<String> for LibName {
 }
 
 impl StrictEncode for LibName {
-    fn strict_encode_dumb() -> Self { LibName::from("DumbLibName") }
-
     unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_type(libname!(STEN_LIB), tn!("LibName"), Wrapper::as_inner(self))
     }
