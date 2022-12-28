@@ -21,6 +21,7 @@
 // limitations under the License.
 
 use std::any;
+use std::collections::BTreeSet;
 use std::fmt::Display;
 
 use crate::{FieldName, LibName, TypeName};
@@ -58,13 +59,54 @@ impl<T: StrictType> StrictType for &T {
 pub trait StrictProduct: StrictType {}
 pub trait StrictTuple: StrictProduct {
     const ALL_FIELDS: &'static [u8];
+    fn strict_check_fields() {
+        let set = BTreeSet::from(Self::ALL_FIELDS);
+        assert_eq!(
+            set.len(),
+            Self::ALL_FIELDS.len(),
+            "tuple type {} contains repeated field ids",
+            Self::strict_name()
+        );
+    }
 }
 pub trait StrictStruct: StrictProduct {
     const ALL_FIELDS: &'static [(u8, &'static str)];
+
+    fn strict_check_fields() {
+        let (ords, names): (BTreeSet<_>, BTreeSet<_>) = Self::ALL_FIELDS.iter().unzip();
+        assert_eq!(
+            ords.len(),
+            Self::ALL_FIELDS.len(),
+            "struct type {} contains repeated field ids",
+            Self::strict_name()
+        );
+        assert_eq!(
+            names.len(),
+            Self::ALL_FIELDS.len(),
+            "struct type {} contains repeated field names",
+            Self::strict_name()
+        );
+    }
 }
 
 pub trait StrictSum: StrictType {
     const ALL_VARIANTS: &'static [(u8, &'static str)];
+
+    fn strict_check_variants() {
+        let (ords, names): (BTreeSet<_>, BTreeSet<_>) = Self::ALL_VARIANTS.iter().unzip();
+        assert_eq!(
+            ords.len(),
+            Self::ALL_FIELDS.len(),
+            "type {} contains repeated variant ids",
+            Self::strict_name()
+        );
+        assert_eq!(
+            names.len(),
+            Self::ALL_FIELDS.len(),
+            "type {} contains repeated variant names",
+            Self::strict_name()
+        );
+    }
 
     fn variant_ord(&self) -> u8 {
         let variant = self.variant_name();
@@ -147,6 +189,7 @@ impl<T> StrictInfo for T
 where T: StrictUnion
 {
     fn strict_type_info() -> TypeInfo<Self::Dumb> {
+        T::strict_check_variants();
         TypeInfo {
             lib: libname!(T::STRICT_LIB_NAME),
             name: T::strict_name().map(|name| tn!(name)),
@@ -160,8 +203,7 @@ impl<T> StrictInfo for T
 where T: StrictEnum
 {
     fn strict_type_info() -> TypeInfo<Self::Dumb> {
-        // TODO: ensure that all variants are valid
-
+        T::strict_check_variants();
         TypeInfo {
             lib: libname!(T::STRICT_LIB_NAME),
             name: T::strict_name().map(|name| tn!(name)),
@@ -175,6 +217,7 @@ impl<T> StrictInfo for T
 where T: StrictStruct
 {
     fn strict_type_info() -> TypeInfo<Self::Dumb> {
+        T::strict_check_fields();
         TypeInfo {
             lib: libname!(T::STRICT_LIB_NAME),
             name: T::strict_name().map(|name| tn!(name)),
@@ -188,6 +231,7 @@ impl<T> StrictInfo for T
 where T: StrictTuple
 {
     fn strict_type_info() -> TypeInfo<Self::Dumb> {
+        T::strict_check_fields();
         TypeInfo {
             lib: libname!(T::STRICT_LIB_NAME),
             name: T::strict_name().map(|name| tn!(name)),
