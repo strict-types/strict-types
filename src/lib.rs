@@ -20,7 +20,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(associated_type_defaults)]
 #![deny(
     non_upper_case_globals,
     non_camel_case_types,
@@ -37,6 +36,8 @@ extern crate amplify;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
+#[macro_use]
+extern crate strict_encoding;
 extern crate core;
 
 #[macro_use]
@@ -47,7 +48,6 @@ pub mod typelib;
 //pub mod typesys;
 
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
-pub use ident::{FieldName, Ident, InvalidIdent, LibName, TypeName};
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{SemVer, Urn};

@@ -25,17 +25,15 @@ use std::io;
 use std::io::Sink;
 
 use amplify::confinement::SmallOrdMap;
+use strict_encoding::{
+    DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Sizing, SplitParent,
+    StrictEncode, StrictParent, StrictWriter, StructWriter, TypeName, TypedParent, TypedWrite,
+    UnionWriter, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+};
 
 use super::compile::{CompileRef, CompileType};
-use crate::ast::{Fields, Variants};
-use crate::encoding::{
-    DefineEnum, DefineStruct, DefineTuple, DefineUnion, SplitParent, StrictEncode, StrictParent,
-    StrictWriter, StructWriter, TypedParent, TypedWrite, UnionWriter, WriteEnum, WriteStruct,
-    WriteTuple, WriteUnion,
-};
-use crate::primitive::Primitive;
-use crate::util::Sizing;
-use crate::{FieldName, LibName, Ty, TypeName};
+use crate::ast::{NamedFields, Variants};
+use crate::Ty;
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -71,7 +69,6 @@ impl TypedWrite for LibBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
     type UnionDefiner = UnionBuilder;
-    type EnumDefiner = UnionBuilder;
 
     fn write_union(
         self,
@@ -268,7 +265,7 @@ impl<P: BuilderParent> StructBuilder<P> {
                 (field.clone(), lib_ref.clone())
             })
             .collect::<BTreeMap<_, _>>();
-        let fields = Fields::try_from(fields)
+        let fields = NamedFields::try_from(fields)
             .expect(&format!("structure {} has invalid number of fields", self.name()));
         Ty::Struct(fields)
     }
@@ -406,7 +403,7 @@ impl UnionBuilder {
                 (field.clone(), lib_ref.clone())
             })
             .collect::<BTreeMap<_, _>>();
-        let fields = Fields::try_from(fields)
+        let fields = NamedFields::try_from(fields)
             .expect(&format!("union {} has invalid number of variants", self.name()));
         Ty::Union(fields)
     }

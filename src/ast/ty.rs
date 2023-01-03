@@ -20,22 +20,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::cmp::Ordering;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::Deref;
 
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
+use strict_encoding::constants::*;
+use strict_encoding::{
+    Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, VariantError,
+};
 
 use crate::ast::NestedRef;
-use crate::encoding::StrictEncode;
-use crate::primitive::constants::*;
-use crate::util::Sizing;
-use crate::{FieldName, SemId};
+use crate::SemId;
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + StrictEncode + Eq + Debug + Sized {
+pub trait TypeRef: Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized {
     const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
     fn is_byte(&self) -> bool { false }
@@ -58,25 +58,27 @@ impl TypeRef for KeyTy {
 #[repr(u8)]
 pub enum Cls {
     Primitive = 0,
-    UnicodeChar = 1,
+    Unicode = 1,
     AsciiStr = 2,
     Enum = 3,
     Union = 4,
     Struct = 5,
-    Array = 6,
-    List = 7,
-    Set = 8,
-    Map = 9,
+    Tuple = 6,
+    Array = 7,
+    List = 8,
+    Set = 9,
+    Map = 10,
 }
 
 impl Cls {
-    pub const ALL: [Cls; 10] = [
+    pub const ALL: [Cls; 11] = [
         Cls::Primitive,
-        Cls::UnicodeChar,
+        Cls::Unicode,
         Cls::AsciiStr,
         Cls::Enum,
         Cls::Union,
         Cls::Struct,
+        Cls::Tuple,
         Cls::Array,
         Cls::List,
         Cls::Set,
@@ -84,8 +86,12 @@ impl Cls {
     ];
 }
 
+impl From<Cls> for u8 {
+    fn from(value: Cls) -> Self { value as u8 }
+}
+
 impl TryFrom<u8> for Cls {
-    type Error = u8;
+    type Error = VariantError<u8>;
 
     fn try_from(value: u8) -> Result<Self, Self::Error> {
         for cls in Cls::ALL {
@@ -93,7 +99,7 @@ impl TryFrom<u8> for Cls {
                 return Ok(cls);
             }
         }
-        return Err(value);
+        return Err(VariantError(tn!("Cls"), value));
     }
 }
 
@@ -104,8 +110,9 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::Enum(_) => Cls::Enum,
             Ty::Union(_) => Cls::Union,
             Ty::Struct(_) => Cls::Struct,
+            Ty::Tuple(_) => Cls::Tuple,
             Ty::Array(_, _) => Cls::Array,
-            Ty::UnicodeChar => Cls::UnicodeChar,
+            Ty::UnicodeChar => Cls::Unicode,
             Ty::List(_, _) => Cls::List,
             Ty::Set(_, _) => Cls::Set,
             Ty::Map(_, _, _) => Cls::Map,
@@ -119,7 +126,7 @@ impl KeyTy {
             KeyTy::Primitive(_) => Cls::Primitive,
             KeyTy::Enum(_) => Cls::Enum,
             KeyTy::Array(_) => Cls::Array,
-            KeyTy::UnicodeStr(_) => Cls::UnicodeChar,
+            KeyTy::UnicodeStr(_) => Cls::Unicode,
             KeyTy::AsciiStr(_) => Cls::AsciiStr,
             KeyTy::Bytes(_) => Cls::List,
         }
@@ -129,15 +136,20 @@ impl KeyTy {
 #[derive(Clone, PartialEq, Eq, Debug, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum Ty<Ref: TypeRef> {
+    #[from]
     Primitive(Primitive),
     /// We use separate type since unlike primitive it has variable length.
     /// While unicode character can be expressed as a composite type, it will be very verbose
     /// expression (union with 256 variants), so instead we built it in.
     UnicodeChar,
-    // TODO: Do not assign to an enum a separate `Cls` and instead encode it as a Union
+    #[from]
     Enum(Variants),
-    Union(Fields<Ref, false>),
-    Struct(Fields<Ref, true>),
+    #[from]
+    Union(NamedFields<Ref, false>),
+    #[from]
+    Tuple(UnnamedFields<Ref>),
+    #[from]
+    Struct(NamedFields<Ref, true>),
     Array(Ref, u16),
     List(Ref, Sizing),
     Set(Ref, Sizing),
@@ -179,8 +191,9 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub const UNICODE: Ty<Ref> = Ty::UnicodeChar;
 
     pub fn enumerate(variants: Variants) -> Self { Ty::Enum(variants) }
-    pub fn union(fields: Fields<Ref, false>) -> Self { Ty::Union(fields) }
-    pub fn composition(fields: Fields<Ref, true>) -> Self { Ty::Struct(fields) }
+    pub fn union(variants: NamedFields<Ref, false>) -> Self { Ty::Union(variants) }
+    pub fn composition(fields: NamedFields<Ref, true>) -> Self { Ty::Struct(fields) }
+    pub fn tuple(fields: UnnamedFields<Ref>) -> Self { Ty::Tuple(fields) }
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self { Ty::List(ty, sizing) }
     pub fn set(ty: Ref, sizing: Sizing) -> Self { Ty::Set(ty, sizing) }
@@ -194,58 +207,15 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
     pub fn is_compound(&self) -> bool {
         matches!(self, Ty::Struct(fields)
-            if fields.len() > 1
-            || fields.keys().next().expect("always at least one field").name.is_some())
+            if fields.len() > 1)
             || (matches!(self, Ty::Enum(_) | Ty::Union(_)) && !self.is_option())
     }
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(fields) if fields.len() == 2
-            && fields.contains_key(&Field::none())
-            && fields.contains_key(&Field::some())
+            && fields.contains_key(&Variant::none())
+            && fields.contains_key(&Variant::some())
         )
-    }
-
-    pub fn into_union_fields(self) -> Option<Fields<Ref, false>> {
-        match self {
-            Ty::Union(fields) => Some(fields),
-            _ => None,
-        }
-    }
-
-    pub fn into_struct_fields(self) -> Option<Fields<Ref, true>> {
-        match self {
-            Ty::Struct(fields) => Some(fields),
-            _ => None,
-        }
-    }
-
-    pub fn into_enum_variants(self) -> Option<Variants> {
-        match self {
-            Ty::Enum(variants) => Some(variants),
-            _ => None,
-        }
-    }
-
-    pub fn as_union_fields(&self) -> Option<&Fields<Ref, false>> {
-        match self {
-            Ty::Union(ref fields) => Some(fields),
-            _ => None,
-        }
-    }
-
-    pub fn as_struct_fields(&self) -> Option<&Fields<Ref, true>> {
-        match self {
-            Ty::Struct(ref fields) => Some(fields),
-            _ => None,
-        }
-    }
-
-    pub fn as_enum_variants(&self) -> Option<&Variants> {
-        match self {
-            Ty::Enum(ref variants) => Some(variants),
-            _ => None,
-        }
     }
 }
 
@@ -257,10 +227,11 @@ where Ref: Display
             Ty::Primitive(prim) => Display::fmt(prim, f),
             Ty::Enum(vars) => Display::fmt(vars, f),
             Ty::Union(fields) if self.is_option() => {
-                write!(f, "{}?", fields.get(&Field::some()).expect("optional"))
+                write!(f, "{}?", fields.get(&Variant::some()).expect("optional"))
             }
             Ty::Union(fields) => Display::fmt(fields, f),
             Ty::Struct(fields) => Display::fmt(fields, f),
+            Ty::Tuple(fields) => Display::fmt(fields, f),
             Ty::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
             Ty::UnicodeChar => write!(f, "Unicode"),
             Ty::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
@@ -275,6 +246,7 @@ impl<Ref: NestedRef> Ty<Ref> {
         match self {
             Ty::Union(fields) => fields.ty_at(pos),
             Ty::Struct(fields) => fields.ty_at(pos),
+            Ty::Tuple(fields) => fields.ty_at(pos),
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
                 Some(ty)
             }
@@ -300,6 +272,7 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
             Ty::Union(_)
             | Ty::Struct(_)
+            | Ty::Tuple(_)
             | Ty::Array(_, _)
             | Ty::List(_, _)
             | Ty::Set(_, _)
@@ -312,20 +285,28 @@ impl<Ref: TypeRef> Ty<Ref> {
 ///
 /// The type is always guaranteed to fit strict encoding AST serialization
 /// bounds since it doesn't has a dynamically-sized types.
-#[derive(Clone, PartialEq, Eq, Debug, Display)]
+#[derive(Clone, PartialEq, Eq, Debug, Display, From)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display(inner)]
 pub enum KeyTy {
+    #[from]
     Primitive(Primitive),
+
     #[display("({0})")]
+    #[from]
     Enum(Variants),
+
     /// Fixed-size byte array
     #[display("[Byte ^ {0}]")]
+    #[from]
     Array(u16),
+
     #[display("[Unicode{0}]")]
     UnicodeStr(Sizing),
+
     #[display("[Ascii{0}]")]
     AsciiStr(Sizing),
+
     #[display("[Byte{0}]")]
     Bytes(Sizing),
 }
@@ -353,71 +334,143 @@ pub enum Composition {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Fields<Ref: TypeRef, const OP: bool = true>(
-    Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>,
+pub struct NamedFields<Ref: TypeRef, const OP: bool = true>(
+    Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>,
 );
 
-impl<Ref: TypeRef, const OP: bool> Deref for Fields<Ref, OP> {
-    type Target = Confined<BTreeMap<Field, Ref>, 1, { u8::MAX as usize }>;
+impl<Ref: TypeRef, const OP: bool> Deref for NamedFields<Ref, OP> {
+    type Target = Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
-impl<Ref: TypeRef, const OP: bool> TryFrom<BTreeMap<Field, Ref>> for Fields<Ref, OP> {
+impl<Ref: TypeRef, const OP: bool> TryFrom<BTreeMap<Variant, Ref>> for NamedFields<Ref, OP> {
     type Error = confinement::Error;
 
-    fn try_from(inner: BTreeMap<Field, Ref>) -> Result<Self, Self::Error> {
-        Confined::try_from(inner).map(Fields::from)
+    fn try_from(inner: BTreeMap<Variant, Ref>) -> Result<Self, Self::Error> {
+        Confined::try_from(inner).map(NamedFields::from)
     }
 }
 
-impl<Ref: TypeRef, const OP: bool> IntoIterator for Fields<Ref, OP> {
-    type Item = (Field, Ref);
-    type IntoIter = std::collections::btree_map::IntoIter<Field, Ref>;
+impl<Ref: TypeRef, const OP: bool> IntoIterator for NamedFields<Ref, OP> {
+    type Item = (Variant, Ref);
+    type IntoIter = std::collections::btree_map::IntoIter<Variant, Ref>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
-impl<'a, Ref: TypeRef, const OP: bool> IntoIterator for &'a Fields<Ref, OP> {
-    type Item = (&'a Field, &'a Ref);
-    type IntoIter = std::collections::btree_map::Iter<'a, Field, Ref>;
+impl<'a, Ref: TypeRef, const OP: bool> IntoIterator for &'a NamedFields<Ref, OP> {
+    type Item = (&'a Variant, &'a Ref);
+    type IntoIter = std::collections::btree_map::Iter<'a, Variant, Ref>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
-impl<Ref: TypeRef, const OP: bool> Fields<Ref, OP> {
-    pub fn into_inner(self) -> BTreeMap<Field, Ref> { self.0.into_inner() }
+impl<Ref: TypeRef, const OP: bool> NamedFields<Ref, OP> {
+    pub fn into_inner(self) -> BTreeMap<Variant, Ref> { self.0.into_inner() }
 
-    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Field, Ref> {
+    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Variant, Ref> {
         self.0.into_inner().into_keys()
     }
 
-    pub fn into_values(self) -> std::collections::btree_map::IntoValues<Field, Ref> {
+    pub fn into_values(self) -> std::collections::btree_map::IntoValues<Variant, Ref> {
         self.0.into_inner().into_values()
     }
 
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> { self.values().skip(pos as usize).next() }
 }
 
-impl<Ref: TypeRef, const OP: bool> Display for Fields<Ref, OP>
+impl<Ref: TypeRef, const OP: bool> Display for NamedFields<Ref, OP>
 where Ref: Display
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let sep = if OP { ", " } else { " | " };
         let mut iter = self.iter();
         let last = iter.next_back();
-        for (field, ty) in iter {
-            if field.name.is_some() {
-                write!(f, "{} ", field)?;
-            }
-            write!(f, "{}{}", ty, sep)?;
+        for (variant, ty) in iter {
+            write!(f, "{} {}{}", variant, ty, sep)?;
         }
-        if let Some((field, ty)) = last {
-            if field.name.is_some() {
-                write!(f, "{} ", field)?;
-            }
+        if let Some((variant, ty)) = last {
+            write!(f, "{} {}", variant, ty)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct UnnamedFields<Ref: TypeRef>(Confined<BTreeMap<u8, Ref>, 1, { u8::MAX as usize }>);
+
+impl<Ref: TypeRef> Wrapper for UnnamedFields<Ref> {
+    type Inner = Confined<BTreeMap<u8, Ref>, 1, { u8::MAX as usize }>;
+
+    fn from_inner(inner: Self::Inner) -> Self { Self(inner) }
+
+    fn as_inner(&self) -> &Self::Inner { &self.0 }
+
+    fn into_inner(self) -> Self::Inner { self.0 }
+}
+
+impl<Ref: TypeRef> Deref for UnnamedFields<Ref> {
+    type Target = Confined<BTreeMap<u8, Ref>, 1, { u8::MAX as usize }>;
+
+    fn deref(&self) -> &Self::Target { &self.0 }
+}
+
+impl<Ref: TypeRef> TryFrom<BTreeMap<u8, Ref>> for UnnamedFields<Ref> {
+    type Error = confinement::Error;
+
+    fn try_from(inner: BTreeMap<u8, Ref>) -> Result<Self, Self::Error> {
+        Confined::try_from(inner).map(UnnamedFields::from)
+    }
+}
+
+impl<Ref: TypeRef> IntoIterator for UnnamedFields<Ref> {
+    type Item = (u8, Ref);
+    type IntoIter = std::collections::btree_map::IntoIter<u8, Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
+}
+
+impl<'a, Ref: TypeRef> IntoIterator for &'a UnnamedFields<Ref> {
+    type Item = (&'a u8, &'a Ref);
+    type IntoIter = std::collections::btree_map::Iter<'a, u8, Ref>;
+
+    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
+}
+
+impl<Ref: TypeRef> UnnamedFields<Ref> {
+    pub fn into_inner(self) -> BTreeMap<u8, Ref> { self.0.into_inner() }
+
+    pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<u8, Ref> {
+        self.0.into_inner().into_keys()
+    }
+
+    pub fn into_values(self) -> std::collections::btree_map::IntoValues<u8, Ref> {
+        self.0.into_inner().into_values()
+    }
+
+    pub fn ty_at(&self, pos: u8) -> Option<&Ref> { self.get(&pos) }
+}
+
+impl<Ref: TypeRef> Display for UnnamedFields<Ref>
+where Ref: Display
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let mut iter = self.iter();
+        let last = iter.next_back();
+        f.write_str("(")?;
+        for (_, ty) in iter {
+            write!(f, "{}, ", ty)?;
+        }
+        if let Some((_, ty)) = last {
             write!(f, "{}", ty)?;
         }
+        f.write_str(")")?;
         Ok(())
     }
 }
@@ -430,32 +483,32 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct Variants(Confined<BTreeSet<Field>, 1, { u8::MAX as usize }>);
+pub struct Variants(Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>);
 
-impl TryFrom<BTreeSet<Field>> for Variants {
+impl TryFrom<BTreeSet<Variant>> for Variants {
     type Error = confinement::Error;
 
-    fn try_from(inner: BTreeSet<Field>) -> Result<Self, Self::Error> {
+    fn try_from(inner: BTreeSet<Variant>) -> Result<Self, Self::Error> {
         Confined::try_from(inner).map(Variants::from)
     }
 }
 
 impl IntoIterator for Variants {
-    type Item = Field;
-    type IntoIter = std::collections::btree_set::IntoIter<Field>;
+    type Item = Variant;
+    type IntoIter = std::collections::btree_set::IntoIter<Variant>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
 
 impl<'a> IntoIterator for &'a Variants {
-    type Item = &'a Field;
-    type IntoIter = std::collections::btree_set::Iter<'a, Field>;
+    type Item = &'a Variant;
+    type IntoIter = std::collections::btree_set::Iter<'a, Variant>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.iter() }
 }
 
 impl Variants {
-    pub fn into_inner(self) -> BTreeSet<Field> { self.0.into_inner() }
+    pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
 }
 
 impl Display for Variants {

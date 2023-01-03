@@ -23,9 +23,10 @@
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::TinyVec;
+use strict_encoding::Ident;
 
 use crate::typelib::TypeLibId;
-use crate::{Ident, SemId};
+use crate::SemId;
 
 /* TODO: Move into layout mod
 /// Measure of a type size in bytes

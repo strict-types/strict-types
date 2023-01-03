@@ -1,7 +1,7 @@
 [package]
 name = "stens"
 description = "Strict encoding schema"
-version = "0.9.0-beta.1"
+version = "1.0.0-beta.1"
 authors = ["Dr. Maxim Orlovsky <orlovsky@ubideco.org>"]
 homepage = "https://strict-encoding.org"
 license = "Apache-2.0"
@@ -14,6 +14,7 @@ exclude = [".github", "contrib"]
 
 [dependencies]
 amplify = { version = "4.0.0-beta.6", features = ["apfloat"] }
+strict_encoding = { version = "2.0.0-beta.1", git = "https://github.com/strict-types/strict-encoding", features = ["derive", "float"] }
 half = "2.1.0"
 blake3 = "1.3.3"
 mnemonic = "1.0.1"
@@ -27,7 +28,7 @@ base64 = "0.20.0"
 [features]
 default = []
 all = ["serde"]
-serde = ["serde_crate", "serde_with", "serde_yaml", "amplify/serde"]
+serde = ["serde_crate", "serde_with", "serde_yaml", "amplify/serde", "strict_encoding/serde"]
 
 [package.metadata.docs.rs]
 all-features = true

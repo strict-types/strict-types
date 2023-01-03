@@ -24,16 +24,19 @@ use std::fmt::{Display, Formatter};
 
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
+use strict_encoding::FieldName;
 
 use crate::ast::NestedRef;
-use crate::{FieldName, Ty};
+use crate::Ty;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 pub enum Step {
     #[display(".{0}")]
+    #[from]
     NamedField(FieldName),
 
     #[display(".{0}")]
+    #[from]
     UnnamedField(u8),
 
     #[display("#")]
@@ -97,10 +100,10 @@ impl<Ref: NestedRef> Ty<Ref> {
         while let Some(step) = path.pop() {
             let res = match (self, &step) {
                 (Ty::Struct(fields), Step::NamedField(name)) => {
-                    fields.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
+                    fields.iter().find(|(f, _)| &f.name == name).map(|(_, ty)| ty)
                 }
                 (Ty::Union(variants), Step::NamedField(name)) => {
-                    variants.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
+                    variants.iter().find(|(f, _)| &f.name == name).map(|(_, ty)| ty)
                 }
                 (Ty::Struct(fields), Step::UnnamedField(ord)) => {
                     fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
@@ -128,6 +131,7 @@ impl<Ref: NestedRef> Ty<Ref> {
             Ty::Enum(_) => 0,
             Ty::Union(fields) => fields.len_u8(),
             Ty::Struct(fields) => fields.len_u8(),
+            Ty::Tuple(fields) => fields.len_u8(),
             Ty::Array(_, _) => 1,
             Ty::UnicodeChar => 0,
             Ty::List(_, _) | Ty::Set(_, _) | Ty::Map(_, _, _) => 1,

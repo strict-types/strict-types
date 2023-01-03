@@ -24,10 +24,11 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
+use strict_encoding::{LibName, TypeName};
 
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
-use crate::{KeyTy, LibName, SemId, SemVer, Ty, TypeName, TypeRef};
+use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
 
 /// Top-level data type contained within a library.
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -42,8 +43,9 @@ impl LibType {
     pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef {
+    #[from]
     Inline(Ty<InlineRef1>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
@@ -69,8 +71,9 @@ impl Display for InlineRef {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef1 {
+    #[from]
     Inline(Ty<InlineRef2>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
@@ -96,9 +99,10 @@ impl Display for InlineRef1 {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum InlineRef2 {
-    Builtin(Ty<KeyTy>),
+    #[from]
+    Inline(Ty<KeyTy>),
     Named(TypeName, SemId),
     Extern(TypeName, LibAlias, SemId),
 }
@@ -108,7 +112,7 @@ impl TypeRef for InlineRef2 {
     fn id(&self) -> SemId {
         match self {
             InlineRef2::Named(_, id) | InlineRef2::Extern(_, _, id) => *id,
-            InlineRef2::Builtin(ty) => ty.id(None),
+            InlineRef2::Inline(ty) => ty.id(None),
         }
     }
 }
@@ -118,7 +122,7 @@ impl Display for InlineRef2 {
         match self {
             InlineRef2::Named(name, _) => write!(f, "{}", name),
             InlineRef2::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
-            InlineRef2::Builtin(ty) => Display::fmt(ty, f),
+            InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }

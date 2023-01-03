@@ -27,7 +27,7 @@ macro_rules! fields {
             let mut c = 0u8;
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::unnamed(c), $value.into()).is_none(), "repeated field");
+                assert!(m.insert(::strict_encoding::Variant::unnamed(c), $value.into()).is_none(), "repeated field");
                 #[allow(unused_assignments)] {
                     c += 1;
                 }
@@ -39,7 +39,7 @@ macro_rules! fields {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::unnamed($ord), $value.into()).is_none(), "repeated field");
+                assert!(m.insert($ord, $value.into()).is_none(), "repeated field");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
@@ -48,7 +48,7 @@ macro_rules! fields {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(fname!($key), $ord), $value.into()).is_none(), "repeated field");
+                assert!(m.insert(::strict_encoding::Variant::named(fname!($key), $ord), $value.into()).is_none(), "repeated field");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
@@ -58,7 +58,7 @@ macro_rules! fields {
             let mut c = 0u8;
             let mut m = ::std::collections::BTreeMap::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(fname!($key), c), $value.into()).is_none(), "repeated field");
+                assert!(m.insert(::strict_encoding::Variant::named(fname!($key), c), $value.into()).is_none(), "repeated field");
                 #[allow(unused_assignments)] {
                     c += 1;
                 }
@@ -74,7 +74,7 @@ macro_rules! variants {
         {
             let mut m = ::std::collections::BTreeSet::new();
             for i in $from..=$to {
-                assert!(m.insert($crate::ast::Field::unnamed(i)), "repeated enum variant");
+                assert!(m.insert(::strict_encoding::Variant::named(format!("_{}", i).try_into().unwrap(), i)), "repeated enum variant");
             }
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
@@ -83,7 +83,7 @@ macro_rules! variants {
         {
             let mut m = ::std::collections::BTreeSet::new();
             $(
-                assert!(m.insert($crate::ast::Field::named(tn!($key), $value)), "repeated enum variant");
+                assert!(m.insert(::strict_encoding::Variant::named(fname!($key), $value)), "repeated enum variant");
             )+
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }

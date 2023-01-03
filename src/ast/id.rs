@@ -24,16 +24,21 @@ use std::cmp::Ordering;
 use std::hash::Hash;
 
 use amplify::Wrapper;
+use strict_encoding::{Sizing, StrictDumb, TypeName, Variant};
 
-use crate::ast::{Field, Fields, Variants};
-use crate::util::Sizing;
-use crate::{Cls, KeyTy, Ty, TypeName, TypeRef};
+use crate::ast::ty::UnnamedFields;
+use crate::ast::{NamedFields, Variants};
+use crate::{Cls, KeyTy, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref)]
 #[display(inner)]
-pub struct SemId(blake3::Hash);
+pub struct SemId(
+    #[from]
+    #[from([u8; 32])]
+    blake3::Hash,
+);
 
 impl Ord for SemId {
     fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
@@ -43,7 +48,15 @@ impl PartialOrd for SemId {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
 }
 
+impl StrictDumb for SemId {
+    fn strict_dumb() -> Self { SemId(blake3::Hash::from([0u8; 32])) }
+}
+
 pub const SEM_ID_TAG: [u8; 32] = [0u8; 32];
+
+trait HashId {
+    fn hash_id(&self, hasher: &mut blake3::Hasher);
+}
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self, name: Option<&TypeName>) -> SemId {
@@ -51,19 +64,22 @@ impl<Ref: TypeRef> Ty<Ref> {
         if let Some(ref name) = name {
             hasher.update(name.as_bytes());
         }
-        self.hash(&mut hasher);
+        self.hash_id(&mut hasher);
         SemId(hasher.finalize())
     }
+}
 
-    fn hash(&self, hasher: &mut blake3::Hasher) {
-        self.cls().hash(hasher);
+impl<Ref: TypeRef> HashId for Ty<Ref> {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        self.cls().hash_id(hasher);
         match self {
             Ty::Primitive(prim) => {
                 hasher.update(&[prim.into_code()]);
             }
-            Ty::Enum(vars) => vars.hash(hasher),
-            Ty::Union(fields) => fields.hash(hasher),
-            Ty::Struct(fields) => fields.hash(hasher),
+            Ty::Enum(vars) => vars.hash_id(hasher),
+            Ty::Union(fields) => fields.hash_id(hasher),
+            Ty::Tuple(fields) => fields.hash_id(hasher),
+            Ty::Struct(fields) => fields.hash_id(hasher),
             Ty::Array(ty, len) => {
                 hasher.update(ty.id().as_bytes());
                 hasher.update(&len.to_le_bytes());
@@ -71,16 +87,16 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::UnicodeChar => {}
             Ty::List(ty, sizing) => {
                 hasher.update(ty.id().as_bytes());
-                sizing.hash(hasher);
+                sizing.hash_id(hasher);
             }
             Ty::Set(ty, sizing) => {
                 hasher.update(ty.id().as_bytes());
-                sizing.hash(hasher);
+                sizing.hash_id(hasher);
             }
             Ty::Map(key, ty, sizing) => {
-                key.hash(hasher);
+                key.hash_id(hasher);
                 hasher.update(ty.id().as_bytes());
-                sizing.hash(hasher);
+                sizing.hash_id(hasher);
             }
         };
     }
@@ -89,63 +105,68 @@ impl<Ref: TypeRef> Ty<Ref> {
 impl KeyTy {
     pub fn id(&self) -> SemId {
         let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
-        self.hash(&mut hasher);
+        self.hash_id(&mut hasher);
         SemId(hasher.finalize())
     }
+}
 
-    fn hash(&self, hasher: &mut blake3::Hasher) {
-        self.cls().hash(hasher);
+impl HashId for KeyTy {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        self.cls().hash_id(hasher);
         match self {
             KeyTy::Primitive(prim) => {
                 hasher.update(&[prim.into_code()]);
             }
-            KeyTy::Enum(vars) => vars.hash(hasher),
+            KeyTy::Enum(vars) => vars.hash_id(hasher),
             KeyTy::Array(len) => {
                 hasher.update(&len.to_le_bytes());
             }
             KeyTy::AsciiStr(sizing) | KeyTy::UnicodeStr(sizing) | KeyTy::Bytes(sizing) => {
-                sizing.hash(hasher)
+                sizing.hash_id(hasher)
             }
         };
     }
 }
 
-impl Cls {
-    fn hash(&self, hasher: &mut blake3::Hasher) { hasher.update(&[*self as u8]); }
+impl HashId for Cls {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) { hasher.update(&[*self as u8]); }
 }
 
-impl Variants {
-    fn hash(&self, hasher: &mut blake3::Hasher) {
+impl HashId for Variants {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for field in self {
-            field.hash(hasher);
+            field.hash_id(hasher);
         }
     }
 }
 
-impl<Ref: TypeRef, const OP: bool> Fields<Ref, OP> {
-    fn hash(&self, hasher: &mut blake3::Hasher) {
+impl<Ref: TypeRef, const OP: bool> HashId for NamedFields<Ref, OP> {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for (field, ty) in self {
-            field.hash(hasher);
+            field.hash_id(hasher);
             hasher.update(ty.id().as_bytes());
         }
     }
 }
 
-impl Field {
-    fn hash(&self, hasher: &mut blake3::Hasher) {
-        match &self.name {
-            None => hasher.update(&[0u8]),
-            Some(name) => {
-                hasher.update(&[1u8]);
-                hasher.update(name.as_bytes())
-            }
-        };
+impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        for (field, ty) in self {
+            hasher.update(&[*field]);
+            hasher.update(ty.id().as_bytes());
+        }
+    }
+}
+
+impl HashId for Variant {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        hasher.update(self.name.as_bytes());
         hasher.update(&[self.ord]);
     }
 }
 
-impl Sizing {
-    fn hash(&self, hasher: &mut blake3::Hasher) {
+impl HashId for Sizing {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
         let mut data = self.min.to_le_bytes().to_vec();
         data.extend(self.max.to_le_bytes());
         hasher.update(&data);

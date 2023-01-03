@@ -20,16 +20,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, BTreeSet};
+//use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
+use strict_encoding::TypeName;
 
 use crate::ast::NestedRef;
-use crate::typelib::build::LibBuilder;
-use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
-use crate::typelib::type_lib::{LibType, TypeMap};
-use crate::{Dependency, LibAlias, LibName, SemId, Ty, TypeLib, TypeName, TypeRef};
+//use crate::typelib::build::LibBuilder;
+//use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
+//use crate::typelib::type_lib::{LibType, TypeMap};
+use crate::{Dependency, LibAlias, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -45,7 +46,8 @@ impl CompileType {
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum CompileRef {
     #[from(Ty<CompileRef>)]
-    Inline(Box<Ty<CompileRef>>),
+    Embedded(Box<Ty<CompileRef>>),
+    #[from]
     Named(TypeName),
     Extern(TypeName, LibAlias),
 }
@@ -64,7 +66,7 @@ impl NestedRef for CompileRef {
 
     fn as_ty(&self) -> Option<&Ty<Self>> {
         match self {
-            CompileRef::Inline(ty) => Some(ty),
+            CompileRef::Embedded(ty) => Some(ty),
             CompileRef::Named(_) | CompileRef::Extern(_, _) => None,
         }
     }
@@ -73,8 +75,8 @@ impl NestedRef for CompileRef {
 impl Display for CompileRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            CompileRef::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
-            CompileRef::Inline(ty) => Display::fmt(ty, f),
+            CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({})", ty),
+            CompileRef::Embedded(ty) => Display::fmt(ty, f),
             CompileRef::Named(name) => write!(f, "{}", name),
             CompileRef::Extern(name, lib) => write!(f, "{}.{}", lib, name),
         }
@@ -115,6 +117,7 @@ pub enum Error {
     },
 }
 
+/* TODO: Uncomment
 impl LibBuilder {
     pub fn compile(self, name: LibName) -> Result<TypeLib, TranslateError> {
         // TODO: Build dependency list
@@ -167,3 +170,4 @@ impl LibBuilder {
         })
     }
 }
+*/
