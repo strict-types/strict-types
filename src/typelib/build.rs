@@ -33,7 +33,7 @@ use strict_encoding::{
 };
 
 use super::compile::{CompileRef, CompileType};
-use crate::ast::{EnumVariants, NamedFields};
+use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::Ty;
 
 pub trait BuilderParent: StrictParent<Sink> {
@@ -60,9 +60,7 @@ impl LibBuilder {
         }
     }
 
-    pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> {
-        unsafe { ty.strict_encode(self) }
-    }
+    pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> { ty.strict_encode(self) }
 
     pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
 }
@@ -97,7 +95,7 @@ impl TypedWrite for LibBuilder {
     ) -> io::Result<Self> {
         let lib = self.name.clone();
         let writer = StructWriter::tuple::<T>(self);
-        let builder = StructBuilder::with(lib, T::strict_name(), writer);
+        let builder = StructBuilder::with(lib, T::strict_name(), writer, false);
         inner(builder)
     }
 
@@ -107,7 +105,7 @@ impl TypedWrite for LibBuilder {
     ) -> io::Result<Self> {
         let lib = self.name.clone();
         let writer = StructWriter::structure::<T>(self);
-        let builder = StructBuilder::with(lib, T::strict_name(), writer);
+        let builder = StructBuilder::with(lib, T::strict_name(), writer, false);
         inner(builder)
     }
 
@@ -184,7 +182,7 @@ impl StrictParent<Sink> for LibBuilder {
 }
 impl BuilderParent for LibBuilder {
     fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
-        self = unsafe { value.strict_encode(self).expect("too many types in the library") };
+        self = value.strict_encode(self).expect("too many types in the library");
         let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
         (self, r)
     }
@@ -216,15 +214,22 @@ pub struct StructBuilder<P: BuilderParent> {
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
     fields: Vec<CompileRef>,
+    cursor: Option<u8>,
 }
 
 impl<P: BuilderParent> StructBuilder<P> {
-    pub fn with(lib: LibName, name: Option<TypeName>, writer: StructWriter<Sink, P>) -> Self {
+    pub fn with(
+        lib: LibName,
+        name: Option<TypeName>,
+        writer: StructWriter<Sink, P>,
+        definer: bool,
+    ) -> Self {
         StructBuilder {
             lib,
             name,
             writer,
             fields: empty!(),
+            cursor: if definer { Some(0) } else { None },
         }
     }
 
@@ -242,33 +247,43 @@ impl<P: BuilderParent> StructBuilder<P> {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(value);
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        if let Some(expect_ty) = self.fields.push(ty.clone()) {
-            assert_eq!(
-                expect_ty,
-                ty,
-                "field #{} in {} has a wrong type {} (expected {})",
-                ord,
-                self.writer.name(),
-                ty,
-                expect_ty
-            );
+        if let Some(pos) = &mut self.cursor {
+            let expect_ty = &self.fields[*pos as usize];
+            let msg =
+                format!("{}.{} has type {} instead of {}", pos, self.writer.name(), ty, expect_ty);
+            assert_eq!(expect_ty, &ty, "{}", msg);
+            *pos += 1;
         }
+        self.fields.push(ty);
         Ok(self)
     }
 
     fn _build_struct(&self) -> Ty<CompileRef> {
-        let fields = self
-            .writer
-            .named_fields()
-            .iter()
-            .map(|field| {
-                let lib_ref = self.fields.get(&field.ord).expect("type guarantees");
-                (field.clone(), lib_ref.clone())
-            })
-            .collect::<BTreeMap<_, _>>();
-        let fields = NamedFields::try_from(fields)
-            .expect(&format!("structure {} has invalid number of fields", self.name()));
-        Ty::Struct(fields)
+        match self.writer.is_tuple() {
+            true => {
+                let fields = UnnamedFields::try_from(self.fields.clone())
+                    .expect(&format!("tuple {} has invalid number of fields", self.name()));
+                Ty::Tuple(fields)
+            }
+            false => {
+                let fields = self
+                    .writer
+                    .named_fields()
+                    .iter()
+                    .enumerate()
+                    .map(|(no, name)| {
+                        let lib_ref = self.fields.get(no).expect("type guarantees");
+                        Field {
+                            name: name.clone(),
+                            ty: lib_ref.clone(),
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                let fields = NamedFields::try_from(fields)
+                    .expect(&format!("structure {} has invalid number of fields", self.name()));
+                Ty::Struct(fields)
+            }
+        }
     }
 
     fn _complete_definition(self) -> P {
@@ -278,6 +293,14 @@ impl<P: BuilderParent> StructBuilder<P> {
 
     fn _complete_write(self) -> P {
         let ty = self._build_struct();
+        if let Some(pos) = self.cursor {
+            assert_eq!(
+                pos as usize,
+                self.fields.len(),
+                "not all fields were written for {}",
+                self.writer.name()
+            );
+        }
         WriteStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
     }
 }
@@ -286,9 +309,8 @@ impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
     type Parent = P;
 
     fn define_field<T: StrictEncode + StrictDumb>(mut self, name: FieldName) -> Self {
-        let ord = self.writer.field_ord(&name).expect("StructWriter is broken");
         self.writer = DefineStruct::define_field::<T>(self.writer, name);
-        self._define_field::<T>(ord)
+        self._define_field::<T>()
     }
 
     fn complete(self) -> P { self._complete_definition() }
@@ -298,9 +320,8 @@ impl<P: BuilderParent> WriteStruct for StructBuilder<P> {
     type Parent = P;
 
     fn write_field(mut self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
-        let ord = self.writer.next_ord();
         self.writer = WriteStruct::write_field(self.writer, name, value)?;
-        self._write_field(ord, value)
+        self._write_field(value)
     }
 
     fn complete(self) -> P { self._complete_write() }
@@ -310,9 +331,8 @@ impl<P: BuilderParent> DefineTuple for StructBuilder<P> {
     type Parent = P;
 
     fn define_field<T: StrictEncode + StrictDumb>(mut self) -> Self {
-        let ord = self.writer.next_ord();
         self.writer = DefineTuple::define_field::<T>(self.writer);
-        self._define_field::<T>(ord)
+        self._define_field::<T>()
     }
 
     fn complete(self) -> P { self._complete_definition() }
@@ -322,9 +342,8 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
     type Parent = P;
 
     fn write_field(mut self, value: &impl StrictEncode) -> io::Result<Self> {
-        let ord = self.writer.next_ord();
         self.writer = WriteTuple::write_field(self.writer, value)?;
-        self._write_field(ord, value)
+        self._write_field(value)
     }
 
     fn complete(self) -> P { self._complete_write() }
@@ -370,16 +389,16 @@ impl UnionBuilder {
     }
 
     fn _build_union(&self) -> Ty<CompileRef> {
-        let fields = self
+        let variants = self
             .writer
             .variants()
             .keys()
-            .map(|field| {
-                let lib_ref = self.variants.get(&field.ord).expect("type guarantees");
-                (field.clone(), lib_ref.clone())
+            .map(|variant| {
+                let lib_ref = self.variants.get(&variant.ord).expect("type guarantees");
+                (variant.clone(), lib_ref.clone())
             })
             .collect::<BTreeMap<_, _>>();
-        let fields = NamedFields::try_from(fields)
+        let fields = UnionVariants::try_from(variants)
             .expect(&format!("union {} has invalid number of variants", self.name()));
         Ty::Union(fields)
     }
@@ -481,7 +500,7 @@ impl DefineUnion for UnionBuilder {
             self.writer = DefineTuple::complete(d);
             let lib = self.lib.clone();
             let writer = StructWriter::unnamed(self, true);
-            let builder = StructBuilder::with(lib, None, writer);
+            let builder = StructBuilder::with(lib, None, writer, true);
             self = inner(builder);
             self.writer
         });
@@ -498,7 +517,7 @@ impl DefineUnion for UnionBuilder {
             self.writer = DefineStruct::complete(d);
             let lib = self.lib.clone();
             let writer = StructWriter::unnamed(self, false);
-            let builder = StructBuilder::with(lib, None, writer);
+            let builder = StructBuilder::with(lib, None, writer, true);
             self = inner(builder);
             self.writer
         });
@@ -535,7 +554,7 @@ impl WriteUnion for UnionBuilder {
             self.writer = WriteTuple::complete(w);
             let lib = self.lib.clone();
             let writer = StructWriter::unnamed(self, true);
-            let builder = StructBuilder::with(lib, None, writer);
+            let builder = StructBuilder::with(lib, None, writer, false);
             self = inner(builder)?;
             Ok(self.writer)
         })?;
@@ -553,7 +572,7 @@ impl WriteUnion for UnionBuilder {
             self.writer = WriteStruct::complete(w);
             let lib = self.lib.clone();
             let writer = StructWriter::unnamed(self, false);
-            let builder = StructBuilder::with(lib, None, writer);
+            let builder = StructBuilder::with(lib, None, writer, false);
             self = inner(builder)?;
             Ok(self.writer)
         })?;
