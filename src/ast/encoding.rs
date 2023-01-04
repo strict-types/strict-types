@@ -354,7 +354,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_union::<Self>(|u| {
             let u = u
-                .define_newtype::<u8>(fname!("primitive"))
+                .define_newtype::<Primitive>(fname!("primitive"))
                 .define_unit(fname!("unicode"))
                 .define_newtype::<EnumVariants>(fname!("enum"))
                 .define_newtype::<UnionVariants<Ref>>(fname!("union"))
@@ -378,7 +378,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
                 .complete();
 
             let u = match self {
-                Ty::Primitive(prim) => u.write_newtype(fname!("primitive"), &prim.into_code())?,
+                Ty::Primitive(prim) => u.write_newtype(fname!("primitive"), prim)?,
                 Ty::UnicodeChar => u.write_unit(fname!("unicode"))?,
                 Ty::Enum(vars) => u.write_newtype(fname!("enum"), vars)?,
                 Ty::Union(fields) => u.write_newtype(fname!("union"), fields)?,
@@ -467,7 +467,7 @@ impl StrictEncode for KeyTy {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_union::<Self>(|u| {
             let u = u
-                .define_newtype::<u8>(fname!("primitive"))
+                .define_newtype::<Primitive>(fname!("primitive"))
                 .define_newtype::<EnumVariants>(fname!("enum"))
                 .define_newtype::<u16>(fname!("array"))
                 .define_newtype::<Sizing>(fname!("unicode"))
@@ -476,9 +476,7 @@ impl StrictEncode for KeyTy {
                 .complete();
 
             let u = match self {
-                KeyTy::Primitive(prim) => {
-                    u.write_newtype(fname!("primitive"), &prim.into_code())?
-                }
+                KeyTy::Primitive(prim) => u.write_newtype(fname!("primitive"), prim)?,
                 KeyTy::Enum(vars) => u.write_newtype(fname!("enum"), vars)?,
                 KeyTy::Array(len) => u.write_newtype(fname!("array"), len)?,
                 KeyTy::UnicodeStr(sizing) => u.write_newtype(fname!("unicode"), sizing)?,
