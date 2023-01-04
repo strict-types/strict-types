@@ -24,7 +24,7 @@ mod id;
 mod type_lib;
 mod translate;
 mod encoding;
-//pub mod build;
+pub mod build;
 pub mod compile;
 
 pub use compile::{CompileRef, CompileType};
