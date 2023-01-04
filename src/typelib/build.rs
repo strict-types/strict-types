@@ -33,7 +33,7 @@ use strict_encoding::{
 };
 
 use super::compile::{CompileRef, CompileType};
-use crate::ast::{NamedFields, Variants};
+use crate::ast::{EnumVariants, NamedFields};
 use crate::Ty;
 
 pub trait BuilderParent: StrictParent<Sink> {
@@ -215,7 +215,7 @@ pub struct StructBuilder<P: BuilderParent> {
     lib: LibName,
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
-    fields: BTreeMap<u8, CompileRef>,
+    fields: Vec<CompileRef>,
 }
 
 impl<P: BuilderParent> StructBuilder<P> {
@@ -230,19 +230,19 @@ impl<P: BuilderParent> StructBuilder<P> {
 
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
-    fn _define_field<T: StrictEncode + StrictDumb>(mut self, ord: u8) -> Self {
+    fn _define_field<T: StrictEncode + StrictDumb>(mut self) -> Self {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(&T::strict_dumb());
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        let _ = self.fields.insert(ord, ty); // type repetition is checked by self.parent
+        let _ = self.fields.push(ty); // type repetition is checked by self.parent
         self
     }
 
-    fn _write_field(mut self, ord: u8, value: &impl StrictEncode) -> io::Result<Self> {
+    fn _write_field(mut self, value: &impl StrictEncode) -> io::Result<Self> {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(value);
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        if let Some(expect_ty) = self.fields.insert(ord, ty.clone()) {
+        if let Some(expect_ty) = self.fields.push(ty.clone()) {
             assert_eq!(
                 expect_ty,
                 ty,
@@ -386,7 +386,7 @@ impl UnionBuilder {
 
     fn _build_enum(&self) -> Ty<CompileRef> {
         let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
-        let fields = Variants::try_from(fields)
+        let fields = EnumVariants::try_from(fields)
             .expect(&format!("enum {} has invalid number of variants", self.name()));
         Ty::Enum(fields)
     }

@@ -26,8 +26,8 @@ use std::hash::Hash;
 use amplify::Wrapper;
 use strict_encoding::{Sizing, StrictDumb, TypeName, Variant};
 
-use crate::ast::ty::UnnamedFields;
-use crate::ast::{NamedFields, Variants};
+use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
+use crate::ast::{EnumVariants, NamedFields};
 use crate::{Cls, KeyTy, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
@@ -132,7 +132,31 @@ impl HashId for Cls {
     fn hash_id(&self, hasher: &mut blake3::Hasher) { hasher.update(&[*self as u8]); }
 }
 
-impl HashId for Variants {
+impl<Ref: TypeRef> HashId for Field<Ref> {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        hasher.update(self.name.as_bytes());
+        hasher.update(self.ty.id().as_bytes());
+    }
+}
+
+impl HashId for EnumVariants {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        for variant in self {
+            variant.hash_id(hasher);
+        }
+    }
+}
+
+impl<Ref: TypeRef> HashId for UnionVariants<Ref> {
+    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+        for (variant, ty) in self {
+            variant.hash_id(hasher);
+            hasher.update(self.ty.id().as_bytes());
+        }
+    }
+}
+
+impl<Ref: TypeRef> HashId for NamedFields<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for field in self {
             field.hash_id(hasher);
@@ -140,19 +164,9 @@ impl HashId for Variants {
     }
 }
 
-impl<Ref: TypeRef, const OP: bool> HashId for NamedFields<Ref, OP> {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
-        for (field, ty) in self {
-            field.hash_id(hasher);
-            hasher.update(ty.id().as_bytes());
-        }
-    }
-}
-
 impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
-        for (field, ty) in self {
-            hasher.update(&[*field]);
+        for ty in self {
             hasher.update(ty.id().as_bytes());
         }
     }

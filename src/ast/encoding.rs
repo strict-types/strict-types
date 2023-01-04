@@ -33,7 +33,7 @@ use strict_encoding::{
 };
 
 use crate::ast::ty::UnnamedFields;
-use crate::ast::{NamedFields, Step, Variants};
+use crate::ast::{EnumVariants, NamedFields, Step};
 use crate::{Cls, KeyTy, SemId, Ty, TypeRef};
 
 strict_newtype!(SemId, STEN_LIB);
@@ -213,22 +213,22 @@ impl<Ref: TypeRef> StrictDecode for UnnamedFields<Ref> {
     }
 }
 
-impl StrictDumb for Variants {
+impl StrictDumb for EnumVariants {
     fn strict_dumb() -> Self { variants!("dumb" => 0) }
 }
-impl StrictType for Variants {
+impl StrictType for EnumVariants {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
 }
-impl StrictProduct for Variants {}
-impl StrictTuple for Variants {
+impl StrictProduct for EnumVariants {}
+impl StrictTuple for EnumVariants {
     const FIELD_COUNT: u8 = 1;
 }
-impl StrictEncode for Variants {
+impl StrictEncode for EnumVariants {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_newtype::<Self>(self.deref())
     }
 }
-impl StrictDecode for Variants {
+impl StrictDecode for EnumVariants {
     fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
         reader.read_newtype()
     }
@@ -295,7 +295,7 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
             let u = u
                 .define_newtype::<u8>(fname!("primitive"))
                 .define_unit(fname!("unicode"))
-                .define_newtype::<Variants>(fname!("enum"))
+                .define_newtype::<EnumVariants>(fname!("enum"))
                 .define_newtype::<NamedFields<Ref, false>>(fname!("union"))
                 .define_newtype::<NamedFields<Ref, true>>(fname!("struct"))
                 .define_newtype::<UnnamedFields<Ref>>(fname!("tuple"))
@@ -350,7 +350,7 @@ impl<Ref: TypeRef> StrictDecode for Ty<Ref> {
                 Cls::Primitive => r.read_newtype::<Ty<Ref>, Primitive>(),
                 Cls::Unicode => Ok(Ty::UnicodeChar),
                 Cls::AsciiStr => unreachable!("ASCII string is only used by KeyTy"),
-                Cls::Enum => r.read_newtype::<Ty<Ref>, Variants>(),
+                Cls::Enum => r.read_newtype::<Ty<Ref>, EnumVariants>(),
                 Cls::Union => r.read_newtype::<Ty<Ref>, NamedFields<Ref, false>>(),
                 Cls::Struct => r.read_newtype::<Ty<Ref>, NamedFields<Ref, true>>(),
                 Cls::Tuple => r.read_newtype::<Ty<Ref>, UnnamedFields<Ref>>(),
@@ -407,7 +407,7 @@ impl StrictEncode for KeyTy {
         writer.write_union::<Self>(|u| {
             let u = u
                 .define_newtype::<u8>(fname!("primitive"))
-                .define_newtype::<Variants>(fname!("enum"))
+                .define_newtype::<EnumVariants>(fname!("enum"))
                 .define_newtype::<u16>(fname!("array"))
                 .define_newtype::<Sizing>(fname!("unicode"))
                 .define_newtype::<Sizing>(fname!("ascii"))
@@ -439,7 +439,7 @@ impl StrictDecode for KeyTy {
                 .expect("inconsistency between Cls and KeyTy variants");
             match cls {
                 Cls::Primitive => r.read_newtype::<KeyTy, Primitive>(),
-                Cls::Enum => r.read_newtype::<KeyTy, Variants>(),
+                Cls::Enum => r.read_newtype::<KeyTy, EnumVariants>(),
                 Cls::Array => r.read_newtype::<KeyTy, u16>(),
                 Cls::List => r.read_tuple(|r| Ok(KeyTy::Bytes(r.read_field()?))),
                 Cls::Unicode => r.read_tuple(|r| Ok(KeyTy::UnicodeStr(r.read_field()?))),
