@@ -290,7 +290,11 @@ impl<P: BuilderParent> StructBuilder<P> {
 
     fn _complete_definition(self) -> P {
         let ty = self._build_struct();
-        DefineStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+        if self.writer.is_tuple() {
+            DefineTuple::complete(self.writer).report_compiled(self.name.clone(), ty)
+        } else {
+            DefineStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+        }
     }
 
     fn _complete_write(self) -> P {
@@ -303,7 +307,11 @@ impl<P: BuilderParent> StructBuilder<P> {
                 self.writer.name()
             );
         }
-        WriteStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+        if self.writer.is_tuple() {
+            WriteTuple::complete(self.writer).report_compiled(self.name.clone(), ty)
+        } else {
+            WriteStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+        }
     }
 }
 
@@ -531,14 +539,13 @@ impl DefineUnion for UnionBuilder {
         let (writer, remnant) = self.into_split();
         let clone = remnant._fork();
         let writer = writer.define_tuple(name, |d| {
-            let writer = DefineTuple::complete(d);
-            let r = Self::from_split(writer, remnant);
-            let writer = StructWriter::unnamed(r, true);
-            let builder = StructBuilder::with(lib, None, writer, true);
-            inner(builder).writer
+            let (writer, _) = d.into_parent_split();
+            let reconstructed_self = Self::from_split(writer, remnant);
+            let struct_writer = StructWriter::unnamed(reconstructed_self, true);
+            let struct_builder = StructBuilder::with(lib, None, struct_writer, true);
+            inner(struct_builder).writer
         });
-        self = Self::from_split(writer, clone);
-        self
+        Self::from_split(writer, clone)
     }
 
     fn define_struct(
@@ -551,14 +558,13 @@ impl DefineUnion for UnionBuilder {
         let (writer, remnant) = self.into_split();
         let clone = remnant._fork();
         let writer = writer.define_struct(name, |d| {
-            let writer = DefineStruct::complete(d);
-            let r = Self::from_split(writer, remnant);
-            let writer = StructWriter::unnamed(r, false);
-            let builder = StructBuilder::with(lib, None, writer, true);
-            inner(builder).writer
+            let (writer, _) = d.into_parent_split();
+            let reconstructed_self = Self::from_split(writer, remnant);
+            let struct_writer = StructWriter::unnamed(reconstructed_self, false);
+            let struct_builder = StructBuilder::with(lib, None, struct_writer, true);
+            inner(struct_builder).writer
         });
-        self = Self::from_split(writer, clone);
-        self
+        Self::from_split(writer, clone)
     }
 
     fn complete(self) -> Self::UnionWriter {
