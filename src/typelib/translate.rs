@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use amplify::confinement;
 use strict_encoding::{InvalidIdent, TypeName};
 
-use crate::ast::{NamedFields, UnnamedFields};
+use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::{
     CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
 };
@@ -98,17 +98,34 @@ where Ref: Translate<ToRef>
     }
 }
 
-impl<Ref: TypeRef, ToRef: TypeRef, const OP: bool> Translate<NamedFields<ToRef, OP>>
-    for NamedFields<Ref, OP>
+impl<Ref: TypeRef, ToRef: TypeRef> Translate<UnionVariants<ToRef>> for UnionVariants<Ref>
 where Ref: Translate<ToRef>
 {
     type Context = <Ref as Translate<ToRef>>::Context;
     type Error = <Ref as Translate<ToRef>>::Error;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<NamedFields<ToRef, OP>, Self::Error> {
-        let mut fields = BTreeMap::new();
-        for (name, rf) in self {
-            fields.insert(name, rf.translate(ctx)?);
+    fn translate(self, ctx: &mut Self::Context) -> Result<UnionVariants<ToRef>, Self::Error> {
+        let mut variants = BTreeMap::new();
+        for (variant, ty) in self {
+            variants.insert(variant, ty.translate(ctx)?);
+        }
+        Ok(UnionVariants::try_from(variants).expect("re-packing existing fields structure"))
+    }
+}
+
+impl<Ref: TypeRef, ToRef: TypeRef> Translate<NamedFields<ToRef>> for NamedFields<Ref>
+where Ref: Translate<ToRef>
+{
+    type Context = <Ref as Translate<ToRef>>::Context;
+    type Error = <Ref as Translate<ToRef>>::Error;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<NamedFields<ToRef>, Self::Error> {
+        let mut fields = Vec::with_capacity(self.len());
+        for field in self {
+            fields.push(Field {
+                name: field.name,
+                ty: field.ty.translate(ctx)?,
+            });
         }
         Ok(NamedFields::try_from(fields).expect("re-packing existing fields structure"))
     }
@@ -121,9 +138,9 @@ where Ref: Translate<ToRef>
     type Error = <Ref as Translate<ToRef>>::Error;
 
     fn translate(self, ctx: &mut Self::Context) -> Result<UnnamedFields<ToRef>, Self::Error> {
-        let mut fields = BTreeMap::new();
-        for (name, rf) in self {
-            fields.insert(name, rf.translate(ctx)?);
+        let mut fields = Vec::with_capacity(self.len());
+        for ty in self {
+            fields.push(ty.translate(ctx)?);
         }
         Ok(UnnamedFields::try_from(fields).expect("re-packing existing fields structure"))
     }

@@ -212,9 +212,9 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
     pub fn is_option(&self) -> bool {
         matches!(self,
-            Ty::Union(fields) if fields.len() == 2
-            && fields[0] == &fname!("none")
-            && fields[1] == &fname!("some")
+            Ty::Union(variants) if variants.len() == 2
+            && variants[0] == &fname!("none")
+            && variants[1] == &fname!("some")
         )
     }
 }
@@ -337,7 +337,7 @@ impl<Ref: TypeRef> Deref for NamedFields<Ref> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
-impl<Ref: TypeRef> TryFrom<BTreeMap<FieldName, Ref>> for NamedFields<Ref> {
+impl<Ref: TypeRef> TryFrom<Vec<Field<Ref>>> for NamedFields<Ref> {
     type Error = confinement::Error;
 
     fn try_from(inner: Vec<Field<Ref>>) -> Result<Self, Self::Error> {
@@ -405,7 +405,7 @@ impl<Ref: TypeRef> Deref for UnnamedFields<Ref> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
-impl<Ref: TypeRef> TryFrom<BTreeMap<u8, Ref>> for UnnamedFields<Ref> {
+impl<Ref: TypeRef> TryFrom<Vec<Ref>> for UnnamedFields<Ref> {
     type Error = confinement::Error;
 
     fn try_from(inner: Vec<Ref>) -> Result<Self, Self::Error> {
