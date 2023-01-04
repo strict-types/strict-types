@@ -213,8 +213,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
-            && variants[0] == &fname!("none")
-            && variants[1] == &fname!("some")
+            && variants.contains_key(&Variant { name: fname!("none"), ord: 0 })
+            && variants.contains_key(&Variant { name: fname!("some"), ord: 1 })
         )
     }
 }
@@ -244,9 +244,9 @@ where Ref: Display
 impl<Ref: NestedRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
-            Ty::Union(fields) => fields.ty_at(pos),
-            Ty::Struct(fields) => fields.ty_at(pos),
-            Ty::Tuple(fields) => fields.ty_at(pos),
+            Ty::Union(fields) => fields.ty_by_ord(pos),
+            Ty::Struct(fields) => fields.ty_by_pos(pos),
+            Ty::Tuple(fields) => fields.ty_by_pos(pos),
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
                 Some(ty)
             }
@@ -323,6 +323,12 @@ pub struct Field<Ref: TypeRef> {
     pub ty: Ref,
 }
 
+impl<Ref: TypeRef> Display for Field<Ref>
+where Ref: Display
+{
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{} {}", self.name, self.ty) }
+}
+
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[cfg_attr(
     feature = "serde",
@@ -330,6 +336,16 @@ pub struct Field<Ref: TypeRef> {
     serde(crate = "serde_crate", transparent)
 )]
 pub struct NamedFields<Ref: TypeRef>(Confined<Vec<Field<Ref>>, 1, { u8::MAX as usize }>);
+
+impl<Ref: TypeRef> Wrapper for NamedFields<Ref> {
+    type Inner = Confined<Vec<Field<Ref>>, 1, { u8::MAX as usize }>;
+
+    fn from_inner(inner: Self::Inner) -> Self { Self(inner) }
+
+    fn as_inner(&self) -> &Self::Inner { &self.0 }
+
+    fn into_inner(self) -> Self::Inner { self.0 }
+}
 
 impl<Ref: TypeRef> Deref for NamedFields<Ref> {
     type Target = Confined<Vec<Field<Ref>>, 1, { u8::MAX as usize }>;
@@ -362,7 +378,10 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a NamedFields<Ref> {
 impl<Ref: TypeRef> NamedFields<Ref> {
     pub fn into_inner(self) -> Vec<Field<Ref>> { self.0.into_inner() }
 
-    pub fn ty_at(&self, pos: u8) -> Option<&Ref> { self.0.get(pos) }
+    pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.get(pos as usize).map(|f| &f.ty) }
+    pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
+        self.0.iter().find(|f| &f.name == name).map(|f| &f.ty)
+    }
 }
 
 impl<Ref: TypeRef> Display for NamedFields<Ref>
@@ -371,11 +390,11 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
-        for (name, ty) in iter {
-            write!(f, "{} {}, ", name, ty)?;
+        for field in iter {
+            Display::fmt(field, f)?;
         }
-        if let Some((name, ty)) = last {
-            write!(f, "{} {}", name, ty)?;
+        if let Some(field) = last {
+            Display::fmt(field, f)?;
         }
         Ok(())
     }
@@ -430,7 +449,7 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a UnnamedFields<Ref> {
 impl<Ref: TypeRef> UnnamedFields<Ref> {
     pub fn into_inner(self) -> Vec<Ref> { self.0.into_inner() }
 
-    pub fn ty_at(&self, pos: u8) -> Option<&Ref> { self.0.get(pos) }
+    pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.get(pos as usize) }
 }
 
 impl<Ref: TypeRef> Display for UnnamedFields<Ref>
@@ -458,6 +477,16 @@ where Ref: Display
     serde(crate = "serde_crate", transparent)
 )]
 pub struct UnionVariants<Ref: TypeRef>(Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>);
+
+impl<Ref: TypeRef> Wrapper for UnionVariants<Ref> {
+    type Inner = Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>;
+
+    fn from_inner(inner: Self::Inner) -> Self { Self(inner) }
+
+    fn as_inner(&self) -> &Self::Inner { &self.0 }
+
+    fn into_inner(self) -> Self::Inner { self.0 }
+}
 
 impl<Ref: TypeRef> Deref for UnionVariants<Ref> {
     type Target = Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>;
@@ -498,7 +527,18 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
         self.0.into_inner().into_values()
     }
 
-    pub fn ty_at(&self, pos: u8) -> Option<&Ref> { self.values().skip(pos as usize).next() }
+    pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
+        self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
+    }
+    pub fn ty_by_ord(&self, ord: u8) -> Option<&Ref> {
+        self.0.iter().find(|(v, _)| v.ord == ord).map(|(_, ty)| ty)
+    }
+    pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
+        self.0.keys().find(|v| &v.name == name).map(|v| v.ord)
+    }
+    pub fn name_by_ord(&self, ord: u8) -> Option<&FieldName> {
+        self.0.keys().find(|v| v.ord == ord).map(|v| &v.name)
+    }
 }
 
 impl<Ref: TypeRef> Display for UnionVariants<Ref>
@@ -517,9 +557,8 @@ where Ref: Display
     }
 }
 
-#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(Wrapper, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
-#[wrapper_mut(DerefMut)]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -551,6 +590,13 @@ impl<'a> IntoIterator for &'a EnumVariants {
 
 impl EnumVariants {
     pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
+
+    pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
+        self.0.iter().find(|v| &v.name == name).map(|v| v.ord)
+    }
+    pub fn name_by_ord(&self, ord: u8) -> Option<&FieldName> {
+        self.0.iter().find(|v| v.ord == ord).map(|v| &v.name)
+    }
 }
 
 impl Display for EnumVariants {

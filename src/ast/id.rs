@@ -151,7 +151,7 @@ impl<Ref: TypeRef> HashId for UnionVariants<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for (variant, ty) in self {
             variant.hash_id(hasher);
-            hasher.update(self.ty.id().as_bytes());
+            hasher.update(ty.id().as_bytes());
         }
     }
 }

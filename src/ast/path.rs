@@ -99,18 +99,10 @@ impl<Ref: NestedRef> Ty<Ref> {
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
             let res = match (self, &step) {
-                (Ty::Struct(fields), Step::NamedField(name)) => {
-                    fields.iter().find(|(f, _)| &f.name == name).map(|(_, ty)| ty)
-                }
-                (Ty::Union(variants), Step::NamedField(name)) => {
-                    variants.iter().find(|(f, _)| &f.name == name).map(|(_, ty)| ty)
-                }
-                (Ty::Struct(fields), Step::UnnamedField(ord)) => {
-                    fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
-                }
-                (Ty::Union(variants), Step::UnnamedField(ord)) => {
-                    variants.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
-                }
+                (Ty::Struct(fields), Step::NamedField(name)) => fields.ty_by_name(name),
+                (Ty::Union(variants), Step::NamedField(name)) => variants.ty_by_name(name),
+                (Ty::Struct(fields), Step::UnnamedField(ord)) => fields.ty_by_pos(*ord),
+                (Ty::Union(variants), Step::UnnamedField(ord)) => variants.ty_by_ord(*ord),
                 (Ty::Array(ty, _), Step::Index) => Some(ty),
                 (Ty::List(ty, _), Step::List) => Some(ty),
                 (Ty::Set(ty, _), Step::Set) => Some(ty),

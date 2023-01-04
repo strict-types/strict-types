@@ -24,33 +24,39 @@
 macro_rules! fields {
     { $($value:expr),+ $(,)? } => {
         {
-            let mut c = 0u8;
-            let mut m = ::std::collections::BTreeMap::new();
-            $(
-                assert!(m.insert(::strict_encoding::Variant::unnamed(c), $value.into()).is_none(), "repeated field");
-                #[allow(unused_assignments)] {
-                    c += 1;
-                }
-            )+
-            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
+            let vec = vec![
+                $($value),+
+            ];
+            amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
         }
     };
-    { unnamed $($ord:literal => $value:expr),+ $(,)? } => {
+    { $($key:literal => $value:expr),+ $(,)? } => {
         {
-            let mut m = ::std::collections::BTreeMap::new();
-            $(
-                assert!(m.insert($ord, $value.into()).is_none(), "repeated field");
-            )+
-            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
+            let vec = vec![
+                $( Field { name: fname!($key), ty: $value } ),+
+            ];
+            amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
         }
     };
+    { $($key:expr => $value:expr),+ $(,)? } => {
+        {
+            let vec = vec![
+                $( Field { name: $key, ty: $value } ),+
+            ];
+            amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! variants {
     { $($key:expr => $ord:literal => $value:expr),+ $(,)? } => {
         {
             let mut m = ::std::collections::BTreeMap::new();
             $(
                 assert!(m.insert(::strict_encoding::Variant::named(fname!($key), $ord), $value.into()).is_none(), "repeated field");
             )+
-            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
+            amplify::confinement::Confined::try_from(m).expect("too many variants").into()
         }
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
@@ -65,11 +71,7 @@ macro_rules! fields {
             )+
             amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
-    }
-}
-
-#[macro_export]
-macro_rules! variants {
+    };
     { $from:literal..=$to:literal } => {
         {
             let mut m = ::std::collections::BTreeSet::new();
@@ -79,11 +81,15 @@ macro_rules! variants {
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
     };
-    { $($key:expr => $value:expr),+ $(,)? } => {
+    { $($key:expr),+ $(,)? } => {
         {
+            let mut c = 0u8;
             let mut m = ::std::collections::BTreeSet::new();
             $(
-                assert!(m.insert(::strict_encoding::Variant::named(fname!($key), $value)), "repeated enum variant");
+                assert!(m.insert(::strict_encoding::Variant::named(fname!($key), c)), "repeated enum variant");
+                #[allow(unused_assignments)] {
+                    c += 1;
+                }
             )+
             amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }

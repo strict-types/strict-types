@@ -33,7 +33,7 @@ use strict_encoding::{
 };
 
 use crate::ast::ty::{UnionVariants, UnnamedFields};
-use crate::ast::{EnumVariants, NamedFields, Step};
+use crate::ast::{EnumVariants, Field, NamedFields, Step};
 use crate::{Cls, KeyTy, SemId, Ty, TypeRef};
 
 strict_newtype!(SemId, STEN_LIB);
@@ -114,26 +114,26 @@ impl StrictDecode for Step {
     }
 }
 
-struct VariantInfo<R: TypeRef> {
+struct VariantInfo<Ref: TypeRef> {
     name: FieldName,
-    ty: R,
+    ty: Ref,
 }
-impl<R: TypeRef> StrictDumb for VariantInfo<R> {
+impl<Ref: TypeRef> StrictDumb for VariantInfo<Ref> {
     fn strict_dumb() -> Self {
         Self {
             name: fname!("dumb"),
-            ty: R::strict_dumb(),
+            ty: Ref::strict_dumb(),
         }
     }
 }
-impl<R: TypeRef> StrictType for VariantInfo<R> {
+impl<Ref: TypeRef> StrictType for VariantInfo<Ref> {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
 }
-impl<R: TypeRef> StrictProduct for VariantInfo<R> {}
-impl<R: TypeRef> StrictStruct for VariantInfo<R> {
+impl<Ref: TypeRef> StrictProduct for VariantInfo<Ref> {}
+impl<Ref: TypeRef> StrictStruct for VariantInfo<Ref> {
     const ALL_FIELDS: &'static [&'static str] = &["name", "ty"];
 }
-impl<R: TypeRef> StrictEncode for VariantInfo<R> {
+impl<Ref: TypeRef> StrictEncode for VariantInfo<Ref> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_struct::<Self>(|sw| {
             Ok(sw
@@ -143,7 +143,41 @@ impl<R: TypeRef> StrictEncode for VariantInfo<R> {
         })
     }
 }
-impl<R: TypeRef> StrictDecode for VariantInfo<R> {
+impl<Ref: TypeRef> StrictDecode for VariantInfo<Ref> {
+    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+        reader.read_struct(|r| {
+            let name = r.read_field(fname!("name"))?;
+            let ty = r.read_field(fname!("ty"))?;
+            Ok(Self { name, ty })
+        })
+    }
+}
+
+impl<Ref: TypeRef> StrictDumb for Field<Ref> {
+    fn strict_dumb() -> Self {
+        Field {
+            name: fname!("dumb"),
+            ty: Ref::strict_dumb(),
+        }
+    }
+}
+impl<Ref: TypeRef> StrictType for Field<Ref> {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl<Ref: TypeRef> StrictProduct for Field<Ref> {}
+impl<Ref: TypeRef> StrictStruct for Field<Ref> {
+    const ALL_FIELDS: &'static [&'static str] = &["name", "ty"];
+}
+impl<Ref: TypeRef> StrictEncode for Field<Ref> {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_struct::<Self>(|w| {
+            Ok(w.write_field(fname!("name"), &self.name)?
+                .write_field(fname!("ty"), &self.ty)?
+                .complete())
+        })
+    }
+}
+impl<Ref: TypeRef> StrictDecode for Field<Ref> {
     fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
         reader.read_struct(|r| {
             let name = r.read_field(fname!("name"))?;
@@ -175,7 +209,7 @@ impl<Ref: TypeRef> StrictDecode for NamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> StrictDumb for UnnamedFields<Ref> {
-    fn strict_dumb() -> Self { fields!(unnamed 0 => Ref::strict_dumb()) }
+    fn strict_dumb() -> Self { fields!(Ref::strict_dumb()) }
 }
 impl<Ref: TypeRef> StrictType for UnnamedFields<Ref> {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
@@ -196,7 +230,7 @@ impl<Ref: TypeRef> StrictDecode for UnnamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> StrictDumb for UnionVariants<Ref> {
-    fn strict_dumb() -> Self { fields!("dumb" => Ref::strict_dumb()) }
+    fn strict_dumb() -> Self { variants!("dumb" => Ref::strict_dumb()) }
 }
 impl<Ref: TypeRef> StrictType for UnionVariants<Ref> {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
@@ -235,7 +269,7 @@ impl<Ref: TypeRef> StrictDecode for UnionVariants<Ref> {
 }
 
 impl StrictDumb for EnumVariants {
-    fn strict_dumb() -> Self { variants!("dumb" => 0) }
+    fn strict_dumb() -> Self { variants!("dumb") }
 }
 impl StrictType for EnumVariants {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
@@ -317,8 +351,8 @@ impl<Ref: TypeRef> StrictEncode for Ty<Ref> {
                 .define_newtype::<u8>(fname!("primitive"))
                 .define_unit(fname!("unicode"))
                 .define_newtype::<EnumVariants>(fname!("enum"))
-                .define_newtype::<NamedFields<Ref, false>>(fname!("union"))
-                .define_newtype::<NamedFields<Ref, true>>(fname!("struct"))
+                .define_newtype::<UnionVariants<Ref>>(fname!("union"))
+                .define_newtype::<NamedFields<Ref>>(fname!("struct"))
                 .define_newtype::<UnnamedFields<Ref>>(fname!("tuple"))
                 .define_tuple(fname!("array"), |d| {
                     d.define_field::<Ref>().define_field::<u16>().complete()
@@ -372,8 +406,8 @@ impl<Ref: TypeRef> StrictDecode for Ty<Ref> {
                 Cls::Unicode => Ok(Ty::UnicodeChar),
                 Cls::AsciiStr => unreachable!("ASCII string is only used by KeyTy"),
                 Cls::Enum => r.read_newtype::<Ty<Ref>, EnumVariants>(),
-                Cls::Union => r.read_newtype::<Ty<Ref>, NamedFields<Ref, false>>(),
-                Cls::Struct => r.read_newtype::<Ty<Ref>, NamedFields<Ref, true>>(),
+                Cls::Union => r.read_newtype::<Ty<Ref>, UnionVariants<Ref>>(),
+                Cls::Struct => r.read_newtype::<Ty<Ref>, NamedFields<Ref>>(),
                 Cls::Tuple => r.read_newtype::<Ty<Ref>, UnnamedFields<Ref>>(),
                 Cls::Array => r.read_tuple(|tr| {
                     let ty = tr.read_field()?;
