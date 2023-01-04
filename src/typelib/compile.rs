@@ -20,17 +20,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
 use strict_encoding::TypeName;
 
 use crate::ast::NestedRef;
-//use crate::typelib::build::LibBuilder;
-//use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
-//use crate::typelib::type_lib::{LibType, TypeMap};
-use crate::{Dependency, LibAlias, SemId, Ty, TypeRef};
+use crate::typelib::build::LibBuilder;
+use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
+use crate::typelib::type_lib::{LibType, TypeMap};
+use crate::{Dependency, LibAlias, SemId, Ty, TypeLib, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -117,10 +117,11 @@ pub enum Error {
     },
 }
 
-/* TODO: Uncomment
 impl LibBuilder {
-    pub fn compile(self, name: LibName) -> Result<TypeLib, TranslateError> {
+    pub fn compile(self) -> Result<TypeLib, TranslateError> {
         // TODO: Build dependency list
+
+        let name = self.name();
 
         let types = self.into_types();
         for el in types.values() {
@@ -170,4 +171,3 @@ impl LibBuilder {
         })
     }
 }
-*/

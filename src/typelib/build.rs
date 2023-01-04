@@ -60,6 +60,8 @@ impl LibBuilder {
         }
     }
 
+    pub fn name(&self) -> LibName { self.name.clone() }
+
     pub fn process(self, ty: &impl StrictEncode) -> io::Result<Self> { ty.strict_encode(self) }
 
     pub fn into_types(self) -> SmallOrdMap<TypeName, CompileType> { self.types }
