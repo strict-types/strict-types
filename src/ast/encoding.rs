@@ -32,7 +32,7 @@ use strict_encoding::{
     WriteTuple, WriteUnion, STEN_LIB,
 };
 
-use crate::ast::ty::UnnamedFields;
+use crate::ast::ty::{UnionVariants, UnnamedFields};
 use crate::ast::{EnumVariants, NamedFields, Step};
 use crate::{Cls, KeyTy, SemId, Ty, TypeRef};
 
@@ -114,11 +114,11 @@ impl StrictDecode for Step {
     }
 }
 
-struct FieldInfo<R: TypeRef> {
+struct VariantInfo<R: TypeRef> {
     name: FieldName,
     ty: R,
 }
-impl<R: TypeRef> StrictDumb for FieldInfo<R> {
+impl<R: TypeRef> StrictDumb for VariantInfo<R> {
     fn strict_dumb() -> Self {
         Self {
             name: fname!("dumb"),
@@ -126,14 +126,14 @@ impl<R: TypeRef> StrictDumb for FieldInfo<R> {
         }
     }
 }
-impl<R: TypeRef> StrictType for FieldInfo<R> {
+impl<R: TypeRef> StrictType for VariantInfo<R> {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
 }
-impl<R: TypeRef> StrictProduct for FieldInfo<R> {}
-impl<R: TypeRef> StrictStruct for FieldInfo<R> {
+impl<R: TypeRef> StrictProduct for VariantInfo<R> {}
+impl<R: TypeRef> StrictStruct for VariantInfo<R> {
     const ALL_FIELDS: &'static [&'static str] = &["name", "ty"];
 }
-impl<R: TypeRef> StrictEncode for FieldInfo<R> {
+impl<R: TypeRef> StrictEncode for VariantInfo<R> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_struct::<Self>(|sw| {
             Ok(sw
@@ -143,7 +143,7 @@ impl<R: TypeRef> StrictEncode for FieldInfo<R> {
         })
     }
 }
-impl<R: TypeRef> StrictDecode for FieldInfo<R> {
+impl<R: TypeRef> StrictDecode for VariantInfo<R> {
     fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
         reader.read_struct(|r| {
             let name = r.read_field(fname!("name"))?;
@@ -153,42 +153,24 @@ impl<R: TypeRef> StrictDecode for FieldInfo<R> {
     }
 }
 
-impl<Ref: TypeRef, const OP: bool> StrictDumb for NamedFields<Ref, OP> {
+impl<Ref: TypeRef> StrictDumb for NamedFields<Ref> {
     fn strict_dumb() -> Self { fields!("dumb" => Ref::strict_dumb()) }
 }
-impl<Ref: TypeRef, const OP: bool> StrictType for NamedFields<Ref, OP> {
+impl<Ref: TypeRef> StrictType for NamedFields<Ref> {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
 }
-impl<Ref: TypeRef, const OP: bool> StrictProduct for NamedFields<Ref, OP> {}
-impl<Ref: TypeRef, const OP: bool> StrictTuple for NamedFields<Ref, OP> {
+impl<Ref: TypeRef> StrictProduct for NamedFields<Ref> {}
+impl<Ref: TypeRef> StrictTuple for NamedFields<Ref> {
     const FIELD_COUNT: u8 = 1;
 }
-impl<Ref: TypeRef, const OP: bool> StrictEncode for NamedFields<Ref, OP> {
+impl<Ref: TypeRef> StrictEncode for NamedFields<Ref> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        let fields = TinyOrdMap::try_from_iter(self.iter().map(|(field, ty)| {
-            (field.ord, FieldInfo {
-                name: field.name.clone(),
-                ty: ty.clone(),
-            })
-        }))
-        .expect("guaranteed by Fields type");
-        writer.write_newtype::<Self>(&fields)
+        writer.write_newtype::<Self>(self.deref())
     }
 }
-impl<Ref: TypeRef, const OP: bool> StrictDecode for NamedFields<Ref, OP> {
+impl<Ref: TypeRef> StrictDecode for NamedFields<Ref> {
     fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
-        let read = TinyOrdMap::<u8, FieldInfo<Ref>>::strict_decode(reader)?;
-        let mut inner = BTreeMap::new();
-        for (ord, info) in read {
-            inner.insert(
-                Variant {
-                    name: info.name,
-                    ord,
-                },
-                info.ty,
-            );
-        }
-        NamedFields::try_from(inner).map_err(DecodeError::from)
+        reader.read_newtype()
     }
 }
 
@@ -210,6 +192,45 @@ impl<Ref: TypeRef> StrictEncode for UnnamedFields<Ref> {
 impl<Ref: TypeRef> StrictDecode for UnnamedFields<Ref> {
     fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
         reader.read_newtype()
+    }
+}
+
+impl<Ref: TypeRef> StrictDumb for UnionVariants<Ref> {
+    fn strict_dumb() -> Self { fields!("dumb" => Ref::strict_dumb()) }
+}
+impl<Ref: TypeRef> StrictType for UnionVariants<Ref> {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl<Ref: TypeRef> StrictProduct for UnionVariants<Ref> {}
+impl<Ref: TypeRef> StrictTuple for UnionVariants<Ref> {
+    const FIELD_COUNT: u8 = 1;
+}
+impl<Ref: TypeRef> StrictEncode for UnionVariants<Ref> {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        let fields = TinyOrdMap::try_from_iter(self.iter().map(|(variant, ty)| {
+            (variant.ord, VariantInfo {
+                name: variant.name.clone(),
+                ty: ty.clone(),
+            })
+        }))
+        .expect("guaranteed by Variant type");
+        writer.write_newtype::<Self>(&fields)
+    }
+}
+impl<Ref: TypeRef> StrictDecode for UnionVariants<Ref> {
+    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+        let read = TinyOrdMap::<u8, VariantInfo<Ref>>::strict_decode(reader)?;
+        let mut inner = BTreeMap::new();
+        for (ord, info) in read {
+            inner.insert(
+                Variant {
+                    name: info.name,
+                    ord,
+                },
+                info.ty,
+            );
+        }
+        UnionVariants::try_from(inner).map_err(DecodeError::from)
     }
 }
 
