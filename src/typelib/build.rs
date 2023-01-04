@@ -370,6 +370,17 @@ impl UnionBuilder {
         }
     }
 
+    fn _fork(&self) -> Self {
+        Self {
+            lib: self.lib.clone(),
+            name: self.name.clone(),
+            variants: self.variants.clone(),
+            parent: LibBuilder::new(self.lib.clone()),
+            writer: UnionWriter::sink(),
+            current_ord: self.current_ord,
+        }
+    }
+
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
     fn _define_field(&mut self, ord: Option<u8>) {
@@ -419,6 +430,24 @@ impl UnionBuilder {
     fn _complete_write(self, ty: Ty<CompileRef>) -> LibBuilder {
         let _ = WriteUnion::complete(self.writer);
         self.parent.report_compiled(self.name, ty)
+    }
+
+    fn from_split(writer: UnionWriter<Sink>, mut remnant: Self) -> Self {
+        remnant.writer = writer;
+        remnant
+    }
+
+    fn into_split(self) -> (UnionWriter<Sink>, UnionBuilder) {
+        let (_, writer) = self.writer.into_write_split();
+        let remnant = Self {
+            lib: self.lib,
+            name: self.name,
+            variants: self.variants,
+            parent: self.parent,
+            writer: UnionWriter::sink(),
+            current_ord: self.current_ord,
+        };
+        (writer, remnant)
     }
 }
 
@@ -496,14 +525,17 @@ impl DefineUnion for UnionBuilder {
         inner: impl FnOnce(Self::TupleDefiner) -> Self,
     ) -> Self {
         self._define_field(None);
-        self.writer = self.writer.define_tuple(name, |d| {
-            self.writer = DefineTuple::complete(d);
-            let lib = self.lib.clone();
-            let writer = StructWriter::unnamed(self, true);
+        let lib = self.lib.clone();
+        let (writer, remnant) = self.into_split();
+        let clone = remnant._fork();
+        let writer = writer.define_tuple(name, |d| {
+            let writer = DefineTuple::complete(d);
+            let r = Self::from_split(writer, remnant);
+            let writer = StructWriter::unnamed(r, true);
             let builder = StructBuilder::with(lib, None, writer, true);
-            self = inner(builder);
-            self.writer
+            inner(builder).writer
         });
+        self = Self::from_split(writer, clone);
         self
     }
 
@@ -513,14 +545,17 @@ impl DefineUnion for UnionBuilder {
         inner: impl FnOnce(Self::StructDefiner) -> Self,
     ) -> Self {
         self._define_field(None);
-        self.writer = self.writer.define_struct(name, |d| {
-            self.writer = DefineStruct::complete(d);
-            let lib = self.lib.clone();
-            let writer = StructWriter::unnamed(self, false);
+        let lib = self.lib.clone();
+        let (writer, remnant) = self.into_split();
+        let clone = remnant._fork();
+        let writer = writer.define_struct(name, |d| {
+            let writer = DefineStruct::complete(d);
+            let r = Self::from_split(writer, remnant);
+            let writer = StructWriter::unnamed(r, false);
             let builder = StructBuilder::with(lib, None, writer, true);
-            self = inner(builder);
-            self.writer
+            inner(builder).writer
         });
+        self = Self::from_split(writer, clone);
         self
     }
 
@@ -548,16 +583,18 @@ impl WriteUnion for UnionBuilder {
         name: FieldName,
         inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
     ) -> io::Result<Self> {
-        let name = name;
+        let lib = self.lib.clone();
         self._write_field(name.clone());
-        self.writer = self.writer.write_tuple(name, |w| {
-            self.writer = WriteTuple::complete(w);
-            let lib = self.lib.clone();
-            let writer = StructWriter::unnamed(self, true);
+        let (writer, remnant) = self.into_split();
+        let clone = remnant._fork();
+        let writer = writer.write_tuple(name, |d| {
+            let writer = WriteTuple::complete(d);
+            let r = Self::from_split(writer, remnant);
+            let writer = StructWriter::unnamed(r, true);
             let builder = StructBuilder::with(lib, None, writer, false);
-            self = inner(builder)?;
-            Ok(self.writer)
+            Ok(inner(builder)?.writer)
         })?;
+        self = Self::from_split(writer, clone);
         Ok(self)
     }
 
@@ -566,16 +603,18 @@ impl WriteUnion for UnionBuilder {
         name: FieldName,
         inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
     ) -> io::Result<Self> {
-        let name = name;
+        let lib = self.lib.clone();
         self._write_field(name.clone());
-        self.writer = self.writer.write_tuple(name, |w| {
-            self.writer = WriteStruct::complete(w);
-            let lib = self.lib.clone();
-            let writer = StructWriter::unnamed(self, false);
+        let (writer, remnant) = self.into_split();
+        let clone = remnant._fork();
+        let writer = writer.write_struct(name, |d| {
+            let writer = WriteStruct::complete(d);
+            let r = Self::from_split(writer, remnant);
+            let writer = StructWriter::unnamed(r, false);
             let builder = StructBuilder::with(lib, None, writer, false);
-            self = inner(builder)?;
-            Ok(self.writer)
+            Ok(inner(builder)?.writer)
         })?;
+        self = Self::from_split(writer, clone);
         Ok(self)
     }
 
