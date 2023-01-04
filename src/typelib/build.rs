@@ -29,7 +29,7 @@ use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
     SplitParent, StrictDumb, StrictEncode, StrictEnum, StrictParent, StrictStruct, StrictSum,
     StrictTuple, StrictUnion, StrictWriter, StructWriter, TypeName, TypedParent, TypedWrite,
-    UnionWriter, WriteEnum, WriteStruct, WriteTuple, WriteUnion,
+    UnionWriter, WriteEnum, WriteStruct, WriteTuple, WriteUnion, STD_LIB,
 };
 
 use super::compile::{CompileRef, CompileType};
@@ -205,15 +205,21 @@ impl StrictParent<Sink> for LibBuilder {
     }
 }
 impl BuilderParent for LibBuilder {
-    fn compile_type<T: StrictEncode>(mut self, value: &T) -> (Self, CompileRef) {
-        if let Some(name) = T::strict_name() {
-            if self.types.contains_key(&name) {
-                return (self, CompileRef::Named(name));
+    fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, CompileRef) {
+        let _compile = |mut me: Self| -> (Self, CompileRef) {
+            me = value.strict_encode(me).expect("too many types in the library");
+            let r =
+                me.last_compiled.clone().expect("no type found after strict encoding procedure");
+            (me, r)
+        };
+        match (T::STRICT_LIB_NAME, T::strict_name()) {
+            (STD_LIB, _) | (_, None) => _compile(self),
+            (lib, Some(name)) if lib != self.name.as_str() => {
+                (self, CompileRef::Extern(name, libname!(lib)))
             }
+            (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
+            (_, Some(_)) => _compile(self),
         }
-        self = value.strict_encode(self).expect("too many types in the library");
-        let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
-        (self, r)
     }
 
     fn report_compiled(mut self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
