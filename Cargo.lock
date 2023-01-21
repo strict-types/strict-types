@@ -599,7 +599,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding"
 version = "2.0.0-beta.1"
-source = "git+https://github.com/strict-types/strict-encoding#02d83722e43afea02a8df8d9e30de20067d22cf0"
+source = "git+https://github.com/strict-types/strict-encoding#3773f616a6ade01ba615092683cda96dec971f8f"
 dependencies = [
  "amplify",
  "half",

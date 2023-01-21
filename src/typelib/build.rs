@@ -45,6 +45,7 @@ pub trait BuilderParent: StrictParent<Sink> {
     fn report_compiled(self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self;
 }
 
+#[derive(Debug)]
 pub struct LibBuilder {
     name: LibName,
     types: SmallOrdMap<TypeName, CompileType>,
@@ -211,6 +212,7 @@ impl BuilderParent for LibBuilder {
     }
 }
 
+#[derive(Debug)]
 pub struct StructBuilder<P: BuilderParent> {
     lib: LibName,
     name: Option<TypeName>,
@@ -364,6 +366,7 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
     fn complete(self) -> P { self._complete_write() }
 }
 
+#[derive(Debug)]
 pub struct UnionBuilder {
     lib: LibName,
     name: Option<TypeName>,
