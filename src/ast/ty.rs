@@ -392,6 +392,7 @@ where Ref: Display
         let last = iter.next_back();
         for field in iter {
             Display::fmt(field, f)?;
+            f.write_str(", ")?;
         }
         if let Some(field) = last {
             Display::fmt(field, f)?;
