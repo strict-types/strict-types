@@ -158,10 +158,10 @@ impl TypedWrite for LibBuilder {
         self = key.strict_encode(self).expect("in-memory encoding");
         let key_ty = match self.last_compiled.clone().expect("can't compile key type") {
             CompileRef::Embedded(ty) => {
-                ty.try_to_key().expect(&format!("not supported map key type {}", ty))
+                ty.try_to_key().expect(&format!("not supported map key type '{}'", ty))
             }
             me @ CompileRef::Named(_) | me @ CompileRef::Extern(_, _) => {
-                panic!("not supported map key type {}", me)
+                panic!("not supported map key type '{}'", me)
             }
         };
         self.last_compiled = Some(Ty::Map(key_ty, ty, sizing).into());
@@ -198,7 +198,7 @@ impl BuilderParent for LibBuilder {
                     let new_ty = self.types.get(&name).expect("just inserted");
                     assert_eq!(
                         &old_ty, new_ty,
-                        "repeated type name {} for two different types {} and {}",
+                        "repeated type name '{}' for two different types '{}' and '{}'",
                         name, old_ty, new_ty
                     );
                 }
@@ -251,8 +251,13 @@ impl<P: BuilderParent> StructBuilder<P> {
         self.writer = StructWriter::from_parent_split(parent, remnant);
         if let Some(pos) = &mut self.cursor {
             let expect_ty = &self.fields[*pos as usize];
-            let msg =
-                format!("{}.{} has type {} instead of {}", pos, self.writer.name(), ty, expect_ty);
+            let msg = format!(
+                "'{}.{}' has type '{}' instead of '{}'",
+                pos,
+                self.writer.name(),
+                ty,
+                expect_ty
+            );
             assert_eq!(expect_ty, &ty, "{}", msg);
             *pos += 1;
         }
@@ -264,7 +269,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         match self.writer.is_tuple() {
             true => {
                 let fields = UnnamedFields::try_from(self.fields.clone())
-                    .expect(&format!("tuple {} has invalid number of fields", self.name()));
+                    .expect(&format!("tuple '{}' has invalid number of fields", self.name()));
                 Ty::Tuple(fields)
             }
             false => {
@@ -282,7 +287,7 @@ impl<P: BuilderParent> StructBuilder<P> {
                     })
                     .collect::<Vec<_>>();
                 let fields = NamedFields::try_from(fields)
-                    .expect(&format!("structure {} has invalid number of fields", self.name()));
+                    .expect(&format!("structure '{}' has invalid number of fields", self.name()));
                 Ty::Struct(fields)
             }
         }
@@ -303,7 +308,7 @@ impl<P: BuilderParent> StructBuilder<P> {
             assert_eq!(
                 pos as usize,
                 self.fields.len(),
-                "not all fields were written for {}",
+                "not all fields were written for '{}'",
                 self.writer.name()
             );
         }
@@ -401,7 +406,7 @@ impl UnionBuilder {
 
     fn _write_field(&mut self, name: FieldName) {
         self.current_ord = self.writer.ord_by_name(&name).expect(&format!(
-            "writing field {} of {} without declaration",
+            "writing field '{}' of '{}' without declaration",
             name,
             self.name()
         ));
@@ -420,14 +425,14 @@ impl UnionBuilder {
             })
             .collect::<BTreeMap<_, _>>();
         let fields = UnionVariants::try_from(variants)
-            .expect(&format!("union {} has invalid number of variants", self.name()));
+            .expect(&format!("union '{}' has invalid number of variants", self.name()));
         Ty::Union(fields)
     }
 
     fn _build_enum(&self) -> Ty<CompileRef> {
         let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
         let fields = EnumVariants::try_from(fields)
-            .expect(&format!("enum {} has invalid number of variants", self.name()));
+            .expect(&format!("enum '{}' has invalid number of variants", self.name()));
         Ty::Enum(fields)
     }
 
