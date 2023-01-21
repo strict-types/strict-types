@@ -194,15 +194,14 @@ impl BuilderParent for LibBuilder {
         let r = match name {
             Some(name) => {
                 let new_ty = CompileType::new(name.clone(), ty);
-                let old_ty = self.types.insert(name.clone(), new_ty).expect("too many types");
-                if let Some(old_ty) = old_ty {
-                    let new_ty = self.types.get(&name).expect("just inserted");
+                if let Some(old_ty) = self.types.get(&name) {
                     assert_eq!(
-                        &old_ty, new_ty,
+                        old_ty, &new_ty,
                         "repeated type name '{}' for two different types '{}' and '{}'",
                         name, old_ty, new_ty
                     );
                 }
+                self.types.insert(name.clone(), new_ty).expect("too many types");
                 CompileRef::Named(name)
             }
             None => CompileRef::Embedded(Box::new(ty)),
