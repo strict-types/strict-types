@@ -141,7 +141,9 @@ impl LibBuilder {
         let mut index = TypeIndex::new();
         let mut new_types = BTreeMap::<TypeName, LibType>::new();
         let names = old_types.keys().cloned().collect::<BTreeSet<_>>();
+
         while !old_types.is_empty() {
+            let mut found = false;
             for name in &names {
                 let Some(ty) = old_types.get(name).map(|c| &c.ty) else {
                     continue
@@ -151,16 +153,22 @@ impl LibBuilder {
                     index,
                     stack: empty!(),
                 };
-                let Ok(ty) = ty.clone().translate(&mut ctx) else {
-                    index = ctx.index;
-                    continue
+                let ty = match ty.clone().translate(&mut ctx) {
+                    Ok(ty) => ty,
+                    Err(TranslateError::Continue) => {
+                        index = ctx.index;
+                        continue;
+                    }
+                    Err(err) => return Err(err),
                 };
                 index = ctx.index;
+                found = true;
                 let id = ty.id(Some(name));
                 index.insert(name.clone(), id);
                 new_types.insert(name.clone(), LibType::with(name.clone(), ty));
                 old_types.remove(name);
             }
+            debug_assert!(found, "incomplete type definition found in the library");
         }
 
         let types = TypeMap::try_from(new_types)?;
