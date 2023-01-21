@@ -413,8 +413,6 @@ impl UnionBuilder {
             name,
             self.name()
         ));
-        let ty = self.parent.last_compiled.clone().expect("no compiled type found");
-        self.variants.insert(self.current_ord, ty);
     }
 
     fn _build_union(&self) -> Ty<CompileRef> {
