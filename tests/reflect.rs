@@ -42,7 +42,8 @@ fn pp(data: impl AsRef<[u8]>) {
 fn reflect() {
     let root = Ty::<LibRef>::strict_dumb();
 
-    let lib = LibBuilder::new(libname!(STEN_LIB)).process(&root).unwrap().compile().unwrap();
+    let builder = LibBuilder::new(libname!(STEN_LIB)).process(&root).unwrap();
+    let lib = builder.compile().unwrap();
     println!("typedefs {} = {:#}\n", lib.name, lib.id());
     for ty in lib.types.values() {
         println!("{}", ty);
