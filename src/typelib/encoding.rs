@@ -27,10 +27,10 @@ use strict_encoding::{
 };
 
 use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
-use crate::{LibRef, SemId, Ty};
+use crate::{KeyTy, LibRef, SemId, Ty};
 
 macro_rules! impl_strict {
-    ($ty:ty) => {
+    ($ty:ty, $inner:ty) => {
         impl StrictDumb for $ty {
             fn strict_dumb() -> Self { Self::Inline(Ty::UnicodeChar.into()) }
         }
@@ -53,7 +53,7 @@ macro_rules! impl_strict {
             fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
                 writer.write_union::<Self>(|d| {
                     let w = d
-                        .define_newtype::<Ty<InlineRef>>(fname!("inline"))
+                        .define_newtype::<Ty<$inner>>(fname!("inline"))
                         .define_tuple(fname!("named"), |w| {
                             w.define_field::<TypeName>().define_field::<SemId>().complete()
                         })
@@ -105,10 +105,10 @@ macro_rules! impl_strict {
     };
 }
 
-impl_strict!(LibRef);
-impl_strict!(InlineRef);
-impl_strict!(InlineRef1);
-impl_strict!(InlineRef2);
+impl_strict!(LibRef, InlineRef);
+impl_strict!(InlineRef, InlineRef1);
+impl_strict!(InlineRef1, InlineRef2);
+impl_strict!(InlineRef2, KeyTy);
 
 impl StrictDumb for CompileRef {
     fn strict_dumb() -> Self { Self::Embedded(Ty::UnicodeChar.into()) }
