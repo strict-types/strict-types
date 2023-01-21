@@ -82,10 +82,12 @@ impl Sum for Size {
 }
  */
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum PreFragment {
+    #[from]
     Ident(Ident),
+    #[from]
     Digits(u128),
 }
 

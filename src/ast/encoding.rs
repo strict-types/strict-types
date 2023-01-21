@@ -36,7 +36,13 @@ use crate::ast::ty::{UnionVariants, UnnamedFields};
 use crate::ast::{EnumVariants, Field, NamedFields, Step};
 use crate::{Cls, KeyTy, SemId, Ty, TypeRef};
 
-strict_newtype!(SemId, STEN_LIB);
+impl StrictType for SemId {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl StrictProduct for SemId {}
+impl StrictTuple for SemId {
+    const FIELD_COUNT: u8 = 1;
+}
 impl StrictEncode for SemId {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_newtype::<Self>(self.as_bytes())

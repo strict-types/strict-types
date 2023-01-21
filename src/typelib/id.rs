@@ -23,6 +23,8 @@
 use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 
+use strict_encoding::StrictDumb;
+
 use crate::typelib::TypeLib;
 
 // TODO: Use real tag
@@ -30,7 +32,11 @@ pub const LIB_ID_TAG: [u8; 32] = [0u8; 32];
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]
-pub struct TypeLibId(blake3::Hash);
+pub struct TypeLibId(
+    #[from]
+    #[from([u8; 32])]
+    blake3::Hash,
+);
 
 impl Ord for TypeLibId {
     fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
@@ -38,6 +44,10 @@ impl Ord for TypeLibId {
 
 impl PartialOrd for TypeLibId {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+impl StrictDumb for TypeLibId {
+    fn strict_dumb() -> Self { TypeLibId(blake3::Hash::from([0u8; 32])) }
 }
 
 impl Display for TypeLibId {

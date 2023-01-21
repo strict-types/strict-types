@@ -20,16 +20,135 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::io;
+
+use amplify::confinement::Confined;
 use strict_encoding::{
-    DecodeError, DefineTuple, DefineUnion, LibName, ReadTuple, ReadUnion, StrictDecode, StrictDumb,
-    StrictEncode, StrictSum, StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteTuple,
-    WriteUnion, STEN_LIB,
+    DecodeError, DefineTuple, DefineUnion, Ident, LibName, ReadStruct, ReadTuple, ReadUnion,
+    StrictDecode, StrictDumb, StrictEncode, StrictProduct, StrictSum, StrictTuple, StrictType,
+    StrictUnion, TypeName, TypedRead, TypedWrite, WriteStruct, WriteTuple, WriteUnion, STEN_LIB,
 };
 
+use crate::typelib::type_lib::LibType;
 use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
-use crate::{KeyTy, LibRef, SemId, Ty};
+use crate::util::{BuildFragment, PreFragment};
+use crate::{Dependency, KeyTy, LibRef, SemId, SemVer, Ty, TypeLib, TypeLibId};
 
-macro_rules! impl_strict {
+impl StrictType for TypeLibId {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl StrictProduct for TypeLibId {}
+impl StrictTuple for TypeLibId {
+    const FIELD_COUNT: u8 = 1;
+}
+impl StrictEncode for TypeLibId {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_newtype::<Self>(self.as_bytes())
+    }
+}
+impl StrictDecode for TypeLibId {
+    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+        reader.read_tuple(|r| r.read_field::<[u8; 32]>().map(TypeLibId::from))
+    }
+}
+
+impl_strict_struct!(TypeLib, STEN_LIB; 
+    name => strict_dumb!(), 
+    dependencies => strict_dumb!(), 
+    types => confined_bmap!(tn!("DumbType") => LibType::strict_dumb()));
+impl_strict_struct!(LibType, STEN_LIB; name, ty);
+impl_strict_struct!(Dependency, STEN_LIB; id, name, ver);
+impl_strict_struct!(SemVer, STEN_LIB; minor, major, patch, pre, build);
+
+impl StrictDumb for PreFragment {
+    fn strict_dumb() -> Self { PreFragment::Digits(0) }
+}
+impl StrictType for PreFragment {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl StrictSum for PreFragment {
+    const ALL_VARIANTS: &'static [(u8, &'static str)] = &[(0, "ident"), (1, "digits")];
+
+    fn variant_name(&self) -> &'static str {
+        match self {
+            PreFragment::Ident(_) => Self::ALL_VARIANTS[0].1,
+            PreFragment::Digits(_) => Self::ALL_VARIANTS[1].1,
+        }
+    }
+}
+impl StrictUnion for PreFragment {}
+impl StrictEncode for PreFragment {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_union::<Self>(|d| {
+            let w = d
+                .define_newtype::<Ident>(fname!("ident"))
+                .define_newtype::<u128>(fname!("digits"))
+                .complete();
+            Ok(match self {
+                PreFragment::Ident(ident) => w.write_newtype(fname!("ident"), ident)?,
+                PreFragment::Digits(ident) => w.write_newtype(fname!("digits"), ident)?,
+            }
+            .complete())
+        })
+    }
+}
+impl StrictDecode for PreFragment {
+    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+        reader.read_union(|fname, r| {
+            Ok(match fname.as_str() {
+                "ident" => r.read_newtype::<_, Ident>()?,
+                "digits" => r.read_newtype::<_, u128>()?,
+                _ => unreachable!(),
+            })
+        })
+    }
+}
+
+impl StrictDumb for BuildFragment {
+    fn strict_dumb() -> Self { BuildFragment::Digits(Ident::strict_dumb()) }
+}
+impl StrictType for BuildFragment {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl StrictSum for BuildFragment {
+    const ALL_VARIANTS: &'static [(u8, &'static str)] = &[(0, "ident"), (1, "digits")];
+
+    fn variant_name(&self) -> &'static str {
+        match self {
+            BuildFragment::Ident(_) => Self::ALL_VARIANTS[0].1,
+            BuildFragment::Digits(_) => Self::ALL_VARIANTS[1].1,
+        }
+    }
+}
+impl StrictUnion for BuildFragment {}
+impl StrictEncode for BuildFragment {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        writer.write_union::<Self>(|d| {
+            let w = d
+                .define_newtype::<Ident>(fname!("ident"))
+                .define_newtype::<u128>(fname!("digits"))
+                .complete();
+            Ok(match self {
+                BuildFragment::Ident(ident) => w.write_newtype(fname!("ident"), ident)?,
+                BuildFragment::Digits(ident) => w.write_newtype(fname!("digits"), ident)?,
+            }
+            .complete())
+        })
+    }
+}
+impl StrictDecode for BuildFragment {
+    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+        reader.read_union(|fname, r| {
+            Ok(match fname.as_str() {
+                "ident" => r.read_tuple(|t| t.read_field().map(Self::Ident))?,
+                "digits" => r.read_tuple(|t| t.read_field().map(Self::Digits))?,
+                _ => unreachable!(),
+            })
+        })
+    }
+}
+
+macro_rules! impl_strict_ref {
     ($ty:ty, $inner:ty) => {
         impl StrictDumb for $ty {
             fn strict_dumb() -> Self { Self::Inline(Ty::UnicodeChar.into()) }
@@ -105,10 +224,10 @@ macro_rules! impl_strict {
     };
 }
 
-impl_strict!(LibRef, InlineRef);
-impl_strict!(InlineRef, InlineRef1);
-impl_strict!(InlineRef1, InlineRef2);
-impl_strict!(InlineRef2, KeyTy);
+impl_strict_ref!(LibRef, InlineRef);
+impl_strict_ref!(InlineRef, InlineRef1);
+impl_strict_ref!(InlineRef1, InlineRef2);
+impl_strict_ref!(InlineRef2, KeyTy);
 
 impl StrictDumb for CompileRef {
     fn strict_dumb() -> Self { Self::Embedded(Ty::UnicodeChar.into()) }

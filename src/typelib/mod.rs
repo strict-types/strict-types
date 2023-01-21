@@ -29,4 +29,6 @@ pub mod compile;
 
 pub use compile::{CompileRef, CompileType};
 pub use id::TypeLibId;
-pub use type_lib::{Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibRef, TypeLib};
+pub use type_lib::{
+    Dependency, InlineRef, InlineRef1, InlineRef2, LibAlias, LibRef, LibType, TypeLib,
+};

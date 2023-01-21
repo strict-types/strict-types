@@ -24,7 +24,7 @@
 extern crate strict_encoding;
 
 use stens::typelib::build::LibBuilder;
-use stens::{LibRef, Ty};
+use stens::typelib::LibType;
 use strict_encoding::{StrictDumb, STEN_LIB};
 
 fn pp(data: impl AsRef<[u8]>) {
@@ -40,7 +40,7 @@ fn pp(data: impl AsRef<[u8]>) {
 
 #[test]
 fn reflect() {
-    let root = Ty::<LibRef>::strict_dumb();
+    let root = LibType::strict_dumb();
 
     let builder = LibBuilder::new(libname!(STEN_LIB)).process(&root).unwrap();
     let lib = builder.compile().unwrap();
