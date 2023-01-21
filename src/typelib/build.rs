@@ -601,11 +601,11 @@ impl WriteUnion for UnionBuilder {
         let (writer, remnant) = self.into_split();
         let clone = remnant._fork();
         let writer = writer.write_tuple(name, |d| {
-            let writer = WriteTuple::complete(d);
-            let r = Self::from_split(writer, remnant);
-            let writer = StructWriter::unnamed(r, true);
-            let builder = StructBuilder::with(lib, None, writer, false);
-            Ok(inner(builder)?.writer)
+            let (writer, _) = d.into_parent_split();
+            let reconstructed_self = Self::from_split(writer, remnant);
+            let struct_writer = StructWriter::unnamed(reconstructed_self, true);
+            let struct_builder = StructBuilder::with(lib, None, struct_writer, false);
+            Ok(inner(struct_builder)?.writer)
         })?;
         self = Self::from_split(writer, clone);
         Ok(self)
@@ -621,11 +621,11 @@ impl WriteUnion for UnionBuilder {
         let (writer, remnant) = self.into_split();
         let clone = remnant._fork();
         let writer = writer.write_struct(name, |d| {
-            let writer = WriteStruct::complete(d);
-            let r = Self::from_split(writer, remnant);
-            let writer = StructWriter::unnamed(r, false);
-            let builder = StructBuilder::with(lib, None, writer, false);
-            Ok(inner(builder)?.writer)
+            let (writer, _) = d.into_parent_split();
+            let reconstructed_self = Self::from_split(writer, remnant);
+            let struct_writer = StructWriter::unnamed(reconstructed_self, false);
+            let struct_builder = StructBuilder::with(lib, None, struct_writer, false);
+            Ok(inner(struct_builder)?.writer)
         })?;
         self = Self::from_split(writer, clone);
         Ok(self)
