@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,15 +23,15 @@
 use std::collections::BTreeMap;
 
 use amplify::confinement;
+use strict_encoding::{InvalidIdent, TypeName};
 
-use crate::ast::Fields;
-use crate::ident::InvalidIdent;
+use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::{
     CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
 };
-use crate::{KeyTy, SemId, Ty, TypeName, TypeRef};
+use crate::{KeyTy, SemId, Ty, TypeRef};
 
-pub type TypeIndex = std::collections::BTreeMap<TypeName, SemId>;
+pub type TypeIndex = BTreeMap<TypeName, SemId>;
 
 pub trait Translate<To: Sized> {
     type Context;
@@ -87,6 +87,7 @@ where Ref: Translate<ToRef>
             Ty::Enum(vars) => Ty::Enum(vars),
             Ty::Union(fields) => Ty::Union(fields.translate(ctx)?),
             Ty::Struct(fields) => Ty::Struct(fields.translate(ctx)?),
+            Ty::Tuple(fields) => Ty::Tuple(fields.translate(ctx)?),
             Ty::Array(ty, len) => Ty::Array(ty.translate(ctx)?, len),
             Ty::UnicodeChar => Ty::UnicodeChar,
             Ty::List(ty, sizing) => Ty::List(ty.translate(ctx)?, sizing),
@@ -97,18 +98,51 @@ where Ref: Translate<ToRef>
     }
 }
 
-impl<Ref: TypeRef, ToRef: TypeRef, const OP: bool> Translate<Fields<ToRef, OP>> for Fields<Ref, OP>
+impl<Ref: TypeRef, ToRef: TypeRef> Translate<UnionVariants<ToRef>> for UnionVariants<Ref>
 where Ref: Translate<ToRef>
 {
     type Context = <Ref as Translate<ToRef>>::Context;
     type Error = <Ref as Translate<ToRef>>::Error;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<Fields<ToRef, OP>, Self::Error> {
-        let mut fields = BTreeMap::new();
-        for (name, rf) in self {
-            fields.insert(name, rf.translate(ctx)?);
+    fn translate(self, ctx: &mut Self::Context) -> Result<UnionVariants<ToRef>, Self::Error> {
+        let mut variants = BTreeMap::new();
+        for (variant, ty) in self {
+            variants.insert(variant, ty.translate(ctx)?);
         }
-        Ok(Fields::try_from(fields).expect("re-packing existing fields structure"))
+        Ok(UnionVariants::try_from(variants).expect("re-packing existing fields structure"))
+    }
+}
+
+impl<Ref: TypeRef, ToRef: TypeRef> Translate<NamedFields<ToRef>> for NamedFields<Ref>
+where Ref: Translate<ToRef>
+{
+    type Context = <Ref as Translate<ToRef>>::Context;
+    type Error = <Ref as Translate<ToRef>>::Error;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<NamedFields<ToRef>, Self::Error> {
+        let mut fields = Vec::with_capacity(self.len());
+        for field in self {
+            fields.push(Field {
+                name: field.name,
+                ty: field.ty.translate(ctx)?,
+            });
+        }
+        Ok(NamedFields::try_from(fields).expect("re-packing existing fields structure"))
+    }
+}
+
+impl<Ref: TypeRef, ToRef: TypeRef> Translate<UnnamedFields<ToRef>> for UnnamedFields<Ref>
+where Ref: Translate<ToRef>
+{
+    type Context = <Ref as Translate<ToRef>>::Context;
+    type Error = <Ref as Translate<ToRef>>::Error;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<UnnamedFields<ToRef>, Self::Error> {
+        let mut fields = Vec::with_capacity(self.len());
+        for ty in self {
+            fields.push(ty.translate(ctx)?);
+        }
+        Ok(UnnamedFields::try_from(fields).expect("re-packing existing fields structure"))
     }
 }
 
@@ -124,7 +158,7 @@ impl Translate<LibRef> for CompileRef {
 
     fn translate(self, ctx: &mut Self::Context) -> Result<LibRef, Self::Error> {
         match self {
-            CompileRef::Inline(ty) => {
+            CompileRef::Embedded(ty) => {
                 ctx.stack.push(ty.cls().to_string());
                 let res = ty.translate(ctx).map(LibRef::Inline);
                 ctx.stack.pop();
@@ -145,7 +179,7 @@ impl Translate<InlineRef> for CompileRef {
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef, Self::Error> {
         match self {
-            CompileRef::Inline(ty) => {
+            CompileRef::Embedded(ty) => {
                 ctx.stack.push(ty.cls().to_string());
                 let res = ty.translate(ctx).map(InlineRef::Inline);
                 ctx.stack.pop();
@@ -166,7 +200,7 @@ impl Translate<InlineRef1> for CompileRef {
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef1, Self::Error> {
         match self {
-            CompileRef::Inline(ty) => {
+            CompileRef::Embedded(ty) => {
                 ctx.stack.push(ty.cls().to_string());
                 let res = ty.translate(ctx).map(InlineRef1::Inline);
                 ctx.stack.pop();
@@ -187,9 +221,9 @@ impl Translate<InlineRef2> for CompileRef {
 
     fn translate(self, ctx: &mut Self::Context) -> Result<InlineRef2, Self::Error> {
         match self {
-            CompileRef::Inline(ty) => {
+            CompileRef::Embedded(ty) => {
                 ctx.stack.push(ty.cls().to_string());
-                let res = ty.translate(ctx).map(InlineRef2::Builtin);
+                let res = ty.translate(ctx).map(InlineRef2::Inline);
                 ctx.stack.pop();
                 res
             }
@@ -209,7 +243,7 @@ impl Translate<KeyTy> for CompileRef {
     fn translate(self, ctx: &mut Self::Context) -> Result<KeyTy, Self::Error> {
         let me = self.to_string();
         match self {
-            CompileRef::Inline(ty) => ty.try_to_key().ok(),
+            CompileRef::Embedded(ty) => ty.try_to_key().ok(),
             CompileRef::Named(_) | CompileRef::Extern(_, _) => None,
         }
         .ok_or(TranslateError::NestedInline(ctx.top_name.clone(), ctx.stack.join("/"), me))

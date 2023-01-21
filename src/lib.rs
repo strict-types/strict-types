@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,7 +20,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![feature(associated_type_defaults)]
 #![deny(
     non_upper_case_globals,
     non_camel_case_types,
@@ -37,25 +36,18 @@ extern crate amplify;
 #[cfg(feature = "serde")]
 #[macro_use]
 extern crate serde_crate as serde;
+#[macro_use]
+extern crate strict_encoding;
 extern crate core;
 
 #[macro_use]
 mod macros;
-#[macro_use]
-mod ident;
 mod util;
-pub mod primitive;
 pub mod ast;
 pub mod typelib;
 //pub mod typesys;
-pub mod encoding;
 
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
-pub use ident::{FieldName, Ident, InvalidIdent, LibName, TypeName};
-// #[cfg(test)]
-// pub(crate) use encoding::test;
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
 pub use util::{SemVer, Urn};
-
-const STEN_LIB: &'static str = "StEn";

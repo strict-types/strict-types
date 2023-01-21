@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@
 // limitations under the License.
 
 #[macro_use]
-extern crate stens;
+extern crate strict_encoding;
 
-use stens::encoding::StrictEncode;
 use stens::typelib::build::LibBuilder;
 use stens::{LibRef, Ty};
+use strict_encoding::{StrictDumb, STEN_LIB};
 
 fn pp(data: impl AsRef<[u8]>) {
     let data = base64::encode(data);
@@ -40,9 +40,10 @@ fn pp(data: impl AsRef<[u8]>) {
 
 #[test]
 fn reflect() {
-    let root = Ty::<LibRef>::strict_encode_dumb();
+    let root = Ty::<LibRef>::strict_dumb();
 
-    let lib = LibBuilder::new().process(&root).unwrap().compile(libname!("StEn")).unwrap();
+    let builder = LibBuilder::new(libname!(STEN_LIB)).process(&root).unwrap();
+    let lib = builder.compile().unwrap();
     println!("typedefs {} = {:#}\n", lib.name, lib.id());
     for ty in lib.types.values() {
         println!("{}", ty);

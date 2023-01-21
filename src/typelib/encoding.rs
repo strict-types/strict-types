@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,186 +20,152 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::encoding::{DefineTuple, DefineUnion, StrictEncode, TypedWrite, WriteTuple, WriteUnion};
+use strict_encoding::{
+    DecodeError, DefineTuple, DefineUnion, LibName, ReadTuple, ReadUnion, StrictDecode, StrictDumb,
+    StrictEncode, StrictSum, StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteTuple,
+    WriteUnion, STEN_LIB,
+};
+
 use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
-use crate::{KeyTy, LibName, LibRef, SemId, Ty, TypeName, STEN_LIB};
+use crate::{KeyTy, LibRef, SemId, Ty};
 
-impl StrictEncode for LibRef {
-    fn strict_encode_dumb() -> Self { LibRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
-    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
-        writer.write_union(libname!(STEN_LIB), tn!("LibRef"), |u| {
-            let u = u
-                .define_type::<Ty<InlineRef>>(fname!("inline"))
-                .define_tuple(fname!("named"))
-                .define_field::<TypeName>()
-                .define_field::<SemId>()
-                .complete()
-                .define_tuple(fname!("extern"))
-                .define_field::<TypeName>()
-                .define_field::<LibName>()
-                .define_field::<SemId>()
-                .complete()
-                .complete();
-
-            Ok(match self {
-                LibRef::Inline(ty) => u.write_type(fname!("inline"), ty)?,
-                LibRef::Named(ty_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(id)?
-                    .complete(),
-                LibRef::Extern(ty_name, lib_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(lib_name)?
-                    .write_field(id)?
-                    .complete(),
-            }
-            .complete())
-        })
-    }
-}
-
-impl StrictEncode for CompileRef {
-    fn strict_encode_dumb() -> Self { CompileRef::Named(tn!("Some")) }
-
-    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
-        writer.write_union(libname!(STEN_LIB), tn!("CompileRef"), |u| {
-            let u = u
-                .define_type::<Ty<CompileRef>>(fname!("inline"))
-                .define_tuple(fname!("named"))
-                .define_field::<TypeName>()
-                .complete()
-                .define_tuple(fname!("extern"))
-                .define_field::<TypeName>()
-                .define_field::<LibName>()
-                .complete()
-                .complete();
-
-            Ok(match self {
-                CompileRef::Inline(ty) => u.write_type(fname!("inline"), ty.as_ref())?,
-                CompileRef::Named(ty_name) => {
-                    u.write_tuple(fname!("named"))?.write_field(ty_name)?.complete()
+macro_rules! impl_strict {
+    ($ty:ty, $inner:ty) => {
+        impl StrictDumb for $ty {
+            fn strict_dumb() -> Self { Self::Inline(Ty::UnicodeChar.into()) }
+        }
+        impl StrictType for $ty {
+            const STRICT_LIB_NAME: &'static str = STEN_LIB;
+        }
+        impl StrictSum for $ty {
+            const ALL_VARIANTS: &'static [(u8, &'static str)] =
+                &[(0, "inline"), (1, "named"), (2, "extern")];
+            fn variant_name(&self) -> &'static str {
+                match self {
+                    Self::Inline(_) => Self::ALL_VARIANTS[0].1,
+                    Self::Named(_, _) => Self::ALL_VARIANTS[1].1,
+                    Self::Extern(_, _, _) => Self::ALL_VARIANTS[2].1,
                 }
-                CompileRef::Extern(ty_name, lib_name) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(lib_name)?
-                    .complete(),
+            }
+        }
+        impl StrictUnion for $ty {}
+        impl StrictEncode for $ty {
+            fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+                writer.write_union::<Self>(|d| {
+                    let w = d
+                        .define_newtype::<Ty<$inner>>(fname!("inline"))
+                        .define_tuple(fname!("named"), |w| {
+                            w.define_field::<TypeName>().define_field::<SemId>().complete()
+                        })
+                        .define_tuple(fname!("extern"), |w| {
+                            w.define_field::<TypeName>()
+                                .define_field::<LibName>()
+                                .define_field::<SemId>()
+                                .complete()
+                        })
+                        .complete();
+
+                    Ok(match self {
+                        Self::Inline(ty) => w.write_newtype(fname!("inline"), ty)?,
+                        Self::Named(ty_name, id) => w.write_tuple(fname!("named"), |w| {
+                            Ok(w.write_field(ty_name)?.write_field(id)?.complete())
+                        })?,
+                        Self::Extern(ty_name, lib_name, id) => {
+                            w.write_tuple(fname!("named"), |w| {
+                                Ok(w.write_field(ty_name)?
+                                    .write_field(lib_name)?
+                                    .write_field(id)?
+                                    .complete())
+                            })?
+                        }
+                    }
+                    .complete())
+                })
+            }
+        }
+        impl StrictDecode for $ty {
+            fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+                reader.read_union(|field_name, r| match field_name.as_str() {
+                    "inline" => r.read_newtype::<Self, Ty<_>>(),
+                    "named" => r.read_tuple(|r| {
+                        let name = r.read_field()?;
+                        let id = r.read_field()?;
+                        Ok(Self::Named(name, id))
+                    }),
+                    "extern" => r.read_tuple(|r| {
+                        let name = r.read_field()?;
+                        let lib = r.read_field()?;
+                        let id = r.read_field()?;
+                        Ok(Self::Extern(name, lib, id))
+                    }),
+                    _ => unreachable!("invalid field name"),
+                })
+            }
+        }
+    };
+}
+
+impl_strict!(LibRef, InlineRef);
+impl_strict!(InlineRef, InlineRef1);
+impl_strict!(InlineRef1, InlineRef2);
+impl_strict!(InlineRef2, KeyTy);
+
+impl StrictDumb for CompileRef {
+    fn strict_dumb() -> Self { Self::Embedded(Ty::UnicodeChar.into()) }
+}
+impl StrictType for CompileRef {
+    const STRICT_LIB_NAME: &'static str = STEN_LIB;
+}
+impl StrictSum for CompileRef {
+    const ALL_VARIANTS: &'static [(u8, &'static str)] =
+        &[(0, "embedded"), (1, "named"), (2, "extern")];
+    fn variant_name(&self) -> &'static str {
+        match self {
+            Self::Embedded(_) => Self::ALL_VARIANTS[0].1,
+            Self::Named(_) => Self::ALL_VARIANTS[1].1,
+            Self::Extern(_, _) => Self::ALL_VARIANTS[2].1,
+        }
+    }
+}
+impl StrictUnion for CompileRef {}
+impl StrictEncode for CompileRef {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
+        writer.write_union::<Self>(|d| {
+            let w = d
+                .define_newtype::<Ty<InlineRef>>(fname!("embedded"))
+                .define_tuple(fname!("named"), |w| {
+                    w.define_field::<TypeName>().define_field::<SemId>().complete()
+                })
+                .define_tuple(fname!("extern"), |w| {
+                    w.define_field::<TypeName>()
+                        .define_field::<LibName>()
+                        .define_field::<SemId>()
+                        .complete()
+                })
+                .complete();
+
+            Ok(match self {
+                Self::Embedded(ty) => w.write_newtype(fname!("embedded"), ty.as_ref())?,
+                Self::Named(ty_name) => w.write_newtype(fname!("named"), ty_name)?,
+                Self::Extern(ty_name, lib_name) => w.write_tuple(fname!("named"), |w| {
+                    Ok(w.write_field(ty_name)?.write_field(lib_name)?.complete())
+                })?,
             }
             .complete())
         })
     }
 }
-
-impl StrictEncode for InlineRef {
-    fn strict_encode_dumb() -> Self { InlineRef::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
-    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
-        writer.write_union(libname!(STEN_LIB), tn!("InlineRef"), |u| {
-            let u = u
-                .define_type::<Ty<InlineRef1>>(fname!("inline"))
-                .define_tuple(fname!("named"))
-                .define_field::<TypeName>()
-                .define_field::<SemId>()
-                .complete()
-                .define_tuple(fname!("extern"))
-                .define_field::<TypeName>()
-                .define_field::<LibName>()
-                .define_field::<SemId>()
-                .complete()
-                .complete();
-
-            Ok(match self {
-                InlineRef::Inline(ty) => u.write_type(fname!("inline"), ty)?,
-                InlineRef::Named(ty_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(id)?
-                    .complete(),
-                InlineRef::Extern(ty_name, lib_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(lib_name)?
-                    .write_field(id)?
-                    .complete(),
-            }
-            .complete())
-        })
-    }
-}
-
-impl StrictEncode for InlineRef1 {
-    fn strict_encode_dumb() -> Self { InlineRef1::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
-    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
-        writer.write_union(libname!(STEN_LIB), tn!("InlineRef1"), |u| {
-            let u = u
-                .define_type::<Ty<InlineRef2>>(fname!("inline"))
-                .define_tuple(fname!("named"))
-                .define_field::<TypeName>()
-                .define_field::<SemId>()
-                .complete()
-                .define_tuple(fname!("extern"))
-                .define_field::<TypeName>()
-                .define_field::<LibName>()
-                .define_field::<SemId>()
-                .complete()
-                .complete();
-
-            Ok(match self {
-                InlineRef1::Inline(ty) => u.write_type(fname!("inline"), ty)?,
-                InlineRef1::Named(ty_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(id)?
-                    .complete(),
-                InlineRef1::Extern(ty_name, lib_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(lib_name)?
-                    .write_field(id)?
-                    .complete(),
-            }
-            .complete())
-        })
-    }
-}
-
-impl StrictEncode for InlineRef2 {
-    fn strict_encode_dumb() -> Self { InlineRef2::Named(tn!("Some"), SemId::strict_encode_dumb()) }
-
-    unsafe fn strict_encode<W: TypedWrite>(&self, writer: W) -> std::io::Result<W> {
-        writer.write_union(libname!(STEN_LIB), tn!("InlineRef2"), |u| {
-            let u = u
-                .define_type::<Ty<KeyTy>>(fname!("inline"))
-                .define_tuple(fname!("named"))
-                .define_field::<TypeName>()
-                .define_field::<SemId>()
-                .complete()
-                .define_tuple(fname!("extern"))
-                .define_field::<TypeName>()
-                .define_field::<LibName>()
-                .define_field::<SemId>()
-                .complete()
-                .complete();
-
-            Ok(match self {
-                InlineRef2::Builtin(ty) => u.write_type(fname!("inline"), ty)?,
-                InlineRef2::Named(ty_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(id)?
-                    .complete(),
-                InlineRef2::Extern(ty_name, lib_name, id) => u
-                    .write_tuple(fname!("named"))?
-                    .write_field(ty_name)?
-                    .write_field(lib_name)?
-                    .write_field(id)?
-                    .complete(),
-            }
-            .complete())
+impl StrictDecode for CompileRef {
+    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
+        reader.read_union(|field_name, r| match field_name.as_str() {
+            "embedded" => r.read_newtype::<Self, Ty<_>>(),
+            "named" => r.read_newtype::<Self, TypeName>(),
+            "extern" => r.read_tuple(|r| {
+                let name = r.read_field()?;
+                let lib = r.read_field()?;
+                Ok(Self::Extern(name, lib))
+            }),
+            _ => unreachable!("invalid field name"),
         })
     }
 }

@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,12 +24,13 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
+use strict_encoding::TypeName;
 
 use crate::ast::NestedRef;
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
 use crate::typelib::type_lib::{LibType, TypeMap};
-use crate::{Dependency, LibAlias, LibName, SemId, Ty, TypeLib, TypeName, TypeRef};
+use crate::{Dependency, LibAlias, SemId, Ty, TypeLib, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -45,7 +46,8 @@ impl CompileType {
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum CompileRef {
     #[from(Ty<CompileRef>)]
-    Inline(Box<Ty<CompileRef>>),
+    Embedded(Box<Ty<CompileRef>>),
+    #[from]
     Named(TypeName),
     Extern(TypeName, LibAlias),
 }
@@ -64,7 +66,7 @@ impl NestedRef for CompileRef {
 
     fn as_ty(&self) -> Option<&Ty<Self>> {
         match self {
-            CompileRef::Inline(ty) => Some(ty),
+            CompileRef::Embedded(ty) => Some(ty),
             CompileRef::Named(_) | CompileRef::Extern(_, _) => None,
         }
     }
@@ -73,8 +75,8 @@ impl NestedRef for CompileRef {
 impl Display for CompileRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            CompileRef::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
-            CompileRef::Inline(ty) => Display::fmt(ty, f),
+            CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({})", ty),
+            CompileRef::Embedded(ty) => Display::fmt(ty, f),
             CompileRef::Named(name) => write!(f, "{}", name),
             CompileRef::Extern(name, lib) => write!(f, "{}.{}", lib, name),
         }
@@ -116,8 +118,10 @@ pub enum Error {
 }
 
 impl LibBuilder {
-    pub fn compile(self, name: LibName) -> Result<TypeLib, TranslateError> {
+    pub fn compile(self) -> Result<TypeLib, TranslateError> {
         // TODO: Build dependency list
+
+        let name = self.name();
 
         let types = self.into_types();
         for el in types.values() {
@@ -137,7 +141,9 @@ impl LibBuilder {
         let mut index = TypeIndex::new();
         let mut new_types = BTreeMap::<TypeName, LibType>::new();
         let names = old_types.keys().cloned().collect::<BTreeSet<_>>();
+
         while !old_types.is_empty() {
+            let mut found = false;
             for name in &names {
                 let Some(ty) = old_types.get(name).map(|c| &c.ty) else {
                     continue
@@ -147,16 +153,22 @@ impl LibBuilder {
                     index,
                     stack: empty!(),
                 };
-                let Ok(ty) = ty.clone().translate(&mut ctx) else {
-                    index = ctx.index;
-                    continue
+                let ty = match ty.clone().translate(&mut ctx) {
+                    Ok(ty) => ty,
+                    Err(TranslateError::Continue) => {
+                        index = ctx.index;
+                        continue;
+                    }
+                    Err(err) => return Err(err),
                 };
                 index = ctx.index;
+                found = true;
                 let id = ty.id(Some(name));
                 index.insert(name.clone(), id);
                 new_types.insert(name.clone(), LibType::with(name.clone(), ty));
                 old_types.remove(name);
             }
+            debug_assert!(found, "incomplete type definition found in the library");
         }
 
         let types = TypeMap::try_from(new_types)?;

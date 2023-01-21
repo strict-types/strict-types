@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -29,4 +29,6 @@ mod encoding;
 pub use id::SemId;
 pub use iter::{CheckError, IntoIter, Iter, NestedRef};
 pub use path::{Path, PathError, Step};
-pub use ty::{Cls, Field, Fields, KeyTy, Ty, TypeRef, Variants};
+pub use ty::{
+    Cls, EnumVariants, Field, KeyTy, NamedFields, Ty, TypeRef, UnionVariants, UnnamedFields,
+};

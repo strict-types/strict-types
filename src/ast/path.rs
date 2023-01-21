@@ -6,7 +6,7 @@
 // Written in 2022-2023 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 Ubideco Project
+// Copyright 2022-2023 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,16 +24,19 @@ use std::fmt::{Display, Formatter};
 
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
+use strict_encoding::FieldName;
 
 use crate::ast::NestedRef;
-use crate::{FieldName, Ty};
+use crate::Ty;
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 pub enum Step {
     #[display(".{0}")]
+    #[from]
     NamedField(FieldName),
 
     #[display(".{0}")]
+    #[from]
     UnnamedField(u8),
 
     #[display("#")]
@@ -96,18 +99,10 @@ impl<Ref: NestedRef> Ty<Ref> {
         let mut path_so_far = Path::new();
         while let Some(step) = path.pop() {
             let res = match (self, &step) {
-                (Ty::Struct(fields), Step::NamedField(name)) => {
-                    fields.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
-                }
-                (Ty::Union(variants), Step::NamedField(name)) => {
-                    variants.iter().find(|(f, _)| f.name.as_ref() == Some(name)).map(|(_, ty)| ty)
-                }
-                (Ty::Struct(fields), Step::UnnamedField(ord)) => {
-                    fields.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
-                }
-                (Ty::Union(variants), Step::UnnamedField(ord)) => {
-                    variants.iter().find(|(f, _)| f.ord == *ord).map(|(_, ty)| ty)
-                }
+                (Ty::Struct(fields), Step::NamedField(name)) => fields.ty_by_name(name),
+                (Ty::Union(variants), Step::NamedField(name)) => variants.ty_by_name(name),
+                (Ty::Struct(fields), Step::UnnamedField(ord)) => fields.ty_by_pos(*ord),
+                (Ty::Union(variants), Step::UnnamedField(ord)) => variants.ty_by_ord(*ord),
                 (Ty::Array(ty, _), Step::Index) => Some(ty),
                 (Ty::List(ty, _), Step::List) => Some(ty),
                 (Ty::Set(ty, _), Step::Set) => Some(ty),
@@ -128,6 +123,7 @@ impl<Ref: NestedRef> Ty<Ref> {
             Ty::Enum(_) => 0,
             Ty::Union(fields) => fields.len_u8(),
             Ty::Struct(fields) => fields.len_u8(),
+            Ty::Tuple(fields) => fields.len_u8(),
             Ty::Array(_, _) => 1,
             Ty::UnicodeChar => 0,
             Ty::List(_, _) | Ty::Set(_, _) | Ty::Map(_, _, _) => 1,
