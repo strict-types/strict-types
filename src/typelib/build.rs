@@ -39,7 +39,7 @@ use crate::Ty;
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
     /// lib builder which does the TypedWrite implementation to call strict encode on the type
-    fn compile_type(self, value: &impl StrictEncode) -> (Self, CompileRef);
+    fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, CompileRef);
     /// Notifies lib builder about complete type built, even for unnamed inline types, such that it
     /// can register last compiled type for the `compile_type` procedure.
     fn report_compiled(self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self;
@@ -184,7 +184,12 @@ impl StrictParent<Sink> for LibBuilder {
     }
 }
 impl BuilderParent for LibBuilder {
-    fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
+    fn compile_type<T: StrictEncode>(mut self, value: &T) -> (Self, CompileRef) {
+        if let Some(name) = T::strict_name() {
+            if self.types.contains_key(&name) {
+                return (self, CompileRef::Named(name));
+            }
+        }
         self = value.strict_encode(self).expect("too many types in the library");
         let r = self.last_compiled.clone().expect("no type found after strict encoding procedure");
         (self, r)
@@ -475,7 +480,7 @@ impl StrictParent<Sink> for UnionBuilder {
     }
 }
 impl BuilderParent for UnionBuilder {
-    fn compile_type(mut self, value: &impl StrictEncode) -> (Self, CompileRef) {
+    fn compile_type<T: StrictEncode>(mut self, value: &T) -> (Self, CompileRef) {
         let (parent, r) = self.parent.compile_type(value);
         self.parent = parent;
         (self, r)
