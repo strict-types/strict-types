@@ -23,8 +23,9 @@
 #[macro_use]
 extern crate strict_encoding;
 
+use baid58::ToBaid58;
 use stens::typelib::build::LibBuilder;
-use stens::{ToBaid58, TypeLib};
+use stens::TypeLib;
 use strict_encoding::{StrictDumb, StrictSerialize, STEN_LIB};
 
 fn pp(data: impl AsRef<[u8]>) {
@@ -46,7 +47,8 @@ fn reflect() {
     let lib = builder.compile().unwrap();
     let id = lib.id();
 
-    println!("{}", lib);
+    println!("{id:_<+}");
+    println!("{lib}");
 
     println!("----- BEGIN STRICT TYPE LIB -----");
     println!("Id: {}", id);

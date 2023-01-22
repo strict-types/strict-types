@@ -23,10 +23,10 @@
 use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 
+use baid58::ToBaid58;
 use strict_encoding::StrictDumb;
 
 use crate::typelib::TypeLib;
-use crate::ToBaid58;
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 

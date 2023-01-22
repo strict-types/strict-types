@@ -15,10 +15,9 @@ exclude = [".github", "contrib"]
 [dependencies]
 amplify = { version = "4.0.0-beta.6", features = ["apfloat"] }
 strict_encoding = { version = "2.0.0-beta.1", git = "https://github.com/strict-types/strict-encoding", features = ["derive", "float"] }
-base58 = "0.2.0"
+baid58 = "0.1.0"
 half = "2.1.0"
 blake3 = "1.3.3"
-mnemonic = "1.0.1"
 serde_crate = { package = "serde", version = "1", optional = true }
 serde_with = { version = "2", optional = true }
 serde_yaml = { version = "0.9", optional = true }
