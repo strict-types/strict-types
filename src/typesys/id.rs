@@ -23,8 +23,7 @@ use std::fmt::{self, Display, Formatter};
 
 use crate::TypeSystem;
 
-// TODO: Use real tag
-pub const TYPESYS_ID_TAG: [u8; 32] = [0u8; 32];
+pub const TYPESYS_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:sys:v01";
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]

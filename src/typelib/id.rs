@@ -27,8 +27,7 @@ use strict_encoding::StrictDumb;
 
 use crate::typelib::TypeLib;
 
-// TODO: Use real tag
-pub const LIB_ID_TAG: [u8; 32] = [0u8; 32];
+pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref)]
