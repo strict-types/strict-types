@@ -26,6 +26,7 @@ use std::fmt::{self, Display, Formatter};
 use strict_encoding::StrictDumb;
 
 use crate::typelib::TypeLib;
+use crate::ToBaid58;
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
@@ -49,14 +50,16 @@ impl StrictDumb for TypeLibId {
     fn strict_dumb() -> Self { TypeLibId(blake3::Hash::from([0u8; 32])) }
 }
 
+impl ToBaid58<32> for TypeLibId {
+    const HRP: &'static str = "stl";
+
+    fn to_baid58_payload(&self) -> [u8; 32] { *self.0.as_bytes() }
+}
+
 impl Display for TypeLibId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            let m = mnemonic::to_string(&self.as_bytes()[14..18]);
-            write!(f, "{}#{}", self.0, m)
-        } else {
-            write!(f, "{}", self.0)
-        }
+        let baid58 = self.to_baid58();
+        Display::fmt(&baid58, f)
     }
 }
 
