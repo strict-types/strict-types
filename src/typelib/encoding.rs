@@ -23,12 +23,7 @@
 use std::io;
 
 use amplify::confinement::Confined;
-use strict_encoding::{
-    DecodeError, DefineTuple, DefineUnion, Ident, LibName, ReadStruct, ReadTuple, ReadUnion,
-    StrictDecode, StrictDumb, StrictEncode, StrictProduct, StrictSum, StrictTuple,
-    StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
-    STEN_LIB,
-};
+use strict_encoding::{DecodeError, DefineTuple, DefineUnion, Ident, LibName, ReadStruct, ReadTuple, ReadUnion, StrictDecode, StrictDumb, StrictEncode, StrictProduct, StrictSum, StrictTuple, StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteStruct, WriteTuple, WriteUnion, STEN_LIB, StrictSerialize, StrictDeserialize};
 
 use crate::typelib::type_lib::LibType;
 use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
@@ -57,6 +52,10 @@ impl_strict_struct!(TypeLib, STEN_LIB;
     name => strict_dumb!(), 
     dependencies => strict_dumb!(), 
     types => confined_bmap!(tn!("DumbType") => LibType::strict_dumb()));
+
+impl StrictSerialize for TypeLib {}
+impl StrictDeserialize for TypeLib {}
+
 impl_strict_struct!(LibType, STEN_LIB; name, ty);
 impl_strict_struct!(Dependency, STEN_LIB; id, name, ver);
 impl_strict_struct!(SemVer, STEN_LIB; minor, major, patch, pre, build);

@@ -211,7 +211,7 @@ impl TypeLib {
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "namespace {}", self.name)?;
+        writeln!(f, "namespace {} -- {:#}", self.name, self.id())?;
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
             if alias != &dep.name {

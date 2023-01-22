@@ -20,15 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate stens;
-#[macro_use]
-extern crate amplify;
-
 use amplify::confinement::SmallVec;
-use stens::ast::Ty;
-use stens::typelib::TypeLib;
-use stens::Urn;
 
 #[repr(u8)]
 pub enum Prim {
@@ -60,42 +52,16 @@ pub struct Complex {
 #[test]
 fn serialize() {
     /*
-    let root = Complex::sten_type();
-    let lib = TypeLib::with(s!("Test"), root).unwrap();
+    let root = Complex::strict_dumb();
 
-    println!("{:#}", Urn::from(lib.id()));
+    let builder = LibBuilder::new(libname!("")).process(&root).unwrap();
+    let lib = builder.compile().unwrap();
 
-    println!();
     println!("{}", lib);
-    */
 
-    /*
-    let mut builder = SystemBuilder::new();
-    builder.import(lib);
-    match builder.finalize() {
-        Ok((sys, warnings)) => {
-            for warning in warnings {
-                eprintln!("Warning: {}", warning);
-            }
-            let data = sys.to_serialized();
-            let data = base64::encode(data.as_inner());
-            let mut data = data.as_str();
-            println!("----- BEGIN STEN TYPE SYSTEM -----");
-            println!("Id: {}\n", sys.id());
-            while data.len() > 80 {
-                let (line, rest) = data.split_at(80);
-                println!("{}", line);
-                data = rest;
-            }
-            println!("{}", data);
-            println!("\n----- END STEN TYPE SYSTEM -----\n");
-        }
-        Err(errors) => {
-            for error in errors {
-                eprintln!("Error: {}", error);
-            }
-            panic!()
-        }
-    }
+    println!("----- BEGIN STRICT TYPE LIB -----");
+    println!("Id: {:#}\n", lib.id());
+    pp(lib.to_strict_serialized::<{ u16::MAX as usize }>().expect("in-memory"));
+    println!("\n----- END STRICT TYPE LIB -----\n");
      */
 }

@@ -24,9 +24,8 @@
 extern crate strict_encoding;
 
 use stens::typelib::build::LibBuilder;
-use stens::typelib::LibType;
 use stens::TypeLib;
-use strict_encoding::{StrictDumb, STEN_LIB};
+use strict_encoding::{StrictDumb, StrictSerialize, STEN_LIB};
 
 fn pp(data: impl AsRef<[u8]>) {
     let data = base64::encode(data);
@@ -45,19 +44,13 @@ fn reflect() {
 
     let builder = LibBuilder::new(libname!(STEN_LIB)).process(&root).unwrap();
     let lib = builder.compile().unwrap();
-    println!("typedefs {} = {:#}\n", lib.name, lib.id());
-    for ty in lib.types.values() {
-        println!("{}", ty);
-    }
 
-    /*
-    println!();
     println!("{}", lib);
-    println!("----- BEGIN STEN TYPE LIB -----");
-    println!("Id: {}\n", lib.id());
-    pp(lib.to_serialized());
-    println!("\n----- END STEN TYPE LIB -----\n");
-     */
+
+    println!("----- BEGIN STRICT TYPE LIB -----");
+    println!("Id: {:#}\n", lib.id());
+    pp(lib.to_strict_serialized::<{ u16::MAX as usize }>().expect("in-memory"));
+    println!("\n----- END STRICT TYPE LIB -----\n");
 
     /*
     let mut builder = SystemBuilder::new();
