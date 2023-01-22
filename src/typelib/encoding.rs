@@ -25,8 +25,9 @@ use std::io;
 use amplify::confinement::Confined;
 use strict_encoding::{
     DecodeError, DefineTuple, DefineUnion, Ident, LibName, ReadStruct, ReadTuple, ReadUnion,
-    StrictDecode, StrictDumb, StrictEncode, StrictProduct, StrictSum, StrictTuple, StrictType,
-    StrictUnion, TypeName, TypedRead, TypedWrite, WriteStruct, WriteTuple, WriteUnion, STEN_LIB,
+    StrictDecode, StrictDumb, StrictEncode, StrictProduct, StrictSum, StrictTuple,
+    StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteStruct, WriteTuple, WriteUnion,
+    STEN_LIB,
 };
 
 use crate::typelib::type_lib::LibType;
