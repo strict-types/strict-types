@@ -50,4 +50,4 @@ pub mod typelib;
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
-pub use util::{SemVer, Urn};
+pub use util::{Baid58, Baid58Case, SemVer, ToBaid58, Urn};
