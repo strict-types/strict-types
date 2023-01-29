@@ -33,3 +33,6 @@ serde = ["serde_crate", "serde_with", "serde_yaml", "amplify/serde", "strict_enc
 [package.metadata.docs.rs]
 all-features = true
 rustc-args = ["--cfg", "docsrs"]
+
+[patch.crates-io]
+strict_encoding = { git = "https://github.com/strict-types/strict-encoding" }

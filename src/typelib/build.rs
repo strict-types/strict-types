@@ -29,7 +29,7 @@ use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
     SplitParent, StrictDumb, StrictEncode, StrictEnum, StrictParent, StrictStruct, StrictSum,
     StrictTuple, StrictUnion, StrictWriter, StructWriter, TypeName, TypedParent, TypedWrite,
-    UnionWriter, WriteEnum, WriteStruct, WriteTuple, WriteUnion, STD_LIB,
+    UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, STD_LIB,
 };
 
 use super::compile::{CompileRef, CompileType};
@@ -84,11 +84,11 @@ impl TypedWrite for LibBuilder {
     fn write_enum<T: StrictEnum>(self, value: T) -> io::Result<Self>
     where u8: From<T> {
         let mut writer = UnionBuilder::with::<T>(self);
-        for (ord, name) in T::ALL_VARIANTS {
-            writer = writer.define_variant(fname!(*name), *ord);
+        for (_ord, name) in T::ALL_VARIANTS {
+            writer = writer.define_variant(vname!(*name));
         }
         writer = DefineEnum::complete(writer);
-        writer = writer.write_variant(fname!(value.variant_name()))?;
+        writer = writer.write_variant(vname!(value.variant_name()))?;
         Ok(WriteEnum::complete(writer))
     }
 
@@ -404,7 +404,6 @@ pub struct UnionBuilder {
     variants: BTreeMap<u8, CompileRef>,
     parent: LibBuilder,
     writer: UnionWriter<Sink>,
-    current_ord: u8,
 }
 
 impl UnionBuilder {
@@ -415,7 +414,6 @@ impl UnionBuilder {
             variants: empty!(),
             parent,
             writer: UnionWriter::with::<T>(StrictWriter::sink()),
-            current_ord: 0,
         }
     }
 
@@ -426,24 +424,15 @@ impl UnionBuilder {
             variants: self.variants.clone(),
             parent: LibBuilder::new(self.lib.clone()),
             writer: UnionWriter::sink(),
-            current_ord: self.current_ord,
         }
     }
 
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
-    fn _define_field(&mut self, ord: Option<u8>) {
-        self.current_ord = ord.unwrap_or_else(|| self.writer.next_ord()) - 1;
+    fn _define_field(&mut self, name: &VariantName) {
         let ty = self.parent.last_compiled.clone().expect("no compiled type found");
-        self.variants.insert(self.current_ord, ty);
-    }
-
-    fn _write_field(&mut self, name: FieldName) {
-        self.current_ord = self.writer.ord_by_name(&name).expect(&format!(
-            "writing field '{}' of '{}' without declaration",
-            name,
-            self.name()
-        ));
+        let tag = self.writer.tag_by_name(name);
+        self.variants.insert(tag, ty);
     }
 
     fn _build_union(&self) -> Ty<CompileRef> {
@@ -492,7 +481,6 @@ impl UnionBuilder {
             variants: self.variants,
             parent: self.parent,
             writer: UnionWriter::sink(),
-            current_ord: self.current_ord,
         };
         (writer, remnant)
     }
@@ -513,7 +501,6 @@ impl BuilderParent for UnionBuilder {
         (self, r)
     }
     fn report_compiled(mut self, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
-        self.variants.insert(self.current_ord, CompileRef::Embedded(Box::new(ty.clone())));
         self.parent = self.parent.report_compiled(name, ty);
         self
     }
@@ -523,10 +510,10 @@ impl DefineEnum for UnionBuilder {
     type Parent = LibBuilder;
     type EnumWriter = Self;
 
-    fn define_variant(mut self, name: FieldName, value: u8) -> Self {
+    fn define_variant(mut self, name: VariantName) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::U8);
-        self._define_field(Some(value));
-        self.writer = DefineEnum::define_variant(self.writer, name, value);
+        self.writer = DefineEnum::define_variant(self.writer, name.clone());
+        self._define_field(&name);
         self
     }
 
@@ -539,10 +526,9 @@ impl DefineEnum for UnionBuilder {
 impl WriteEnum for UnionBuilder {
     type Parent = LibBuilder;
 
-    fn write_variant(mut self, name: FieldName) -> io::Result<Self> {
+    fn write_variant(mut self, name: VariantName) -> io::Result<Self> {
         let name = name;
         self.parent = self.parent.report_compiled(None, Ty::U8);
-        self._write_field(name.clone());
         self.writer = WriteEnum::write_variant(self.writer, name)?;
         Ok(self)
     }
@@ -559,23 +545,23 @@ impl DefineUnion for UnionBuilder {
     type StructDefiner = StructBuilder<Self>;
     type UnionWriter = Self;
 
-    fn define_unit(mut self, name: FieldName) -> Self {
+    fn define_unit(mut self, name: VariantName) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
-        self.writer = DefineUnion::define_unit(self.writer, name);
-        self._define_field(None);
+        self.writer = DefineUnion::define_unit(self.writer, name.clone());
+        self._define_field(&name);
         self
     }
 
     fn define_tuple(
         mut self,
-        name: FieldName,
+        name: VariantName,
         inner: impl FnOnce(Self::TupleDefiner) -> Self,
     ) -> Self {
         let lib = self.lib.clone();
         let (writer, remnant) = self.into_split();
         let mut clone = remnant._fork();
         let mut lib_builder = clone.parent;
-        let writer = writer.define_tuple(name, |d| {
+        let writer = writer.define_tuple(name.clone(), |d| {
             let (writer, _) = d.into_parent_split();
             let mut reconstructed_self = Self::from_split(writer, remnant);
             let struct_writer = StructWriter::unnamed(reconstructed_self, true);
@@ -586,20 +572,20 @@ impl DefineUnion for UnionBuilder {
         });
         clone.parent = lib_builder;
         self = Self::from_split(writer, clone);
-        self._define_field(None);
+        self._define_field(&name);
         self
     }
 
     fn define_struct(
         mut self,
-        name: FieldName,
+        name: VariantName,
         inner: impl FnOnce(Self::StructDefiner) -> Self,
     ) -> Self {
         let lib = self.lib.clone();
         let (writer, remnant) = self.into_split();
         let mut clone = remnant._fork();
         let mut lib_builder = clone.parent;
-        let writer = writer.define_struct(name, |d| {
+        let writer = writer.define_struct(name.clone(), |d| {
             let (writer, _) = d.into_parent_split();
             let mut reconstructed_self = Self::from_split(writer, remnant);
             let struct_writer = StructWriter::unnamed(reconstructed_self, false);
@@ -610,7 +596,7 @@ impl DefineUnion for UnionBuilder {
         });
         clone.parent = lib_builder;
         self = Self::from_split(writer, clone);
-        self._define_field(None);
+        self._define_field(&name);
         self
     }
 
@@ -625,16 +611,15 @@ impl WriteUnion for UnionBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
 
-    fn write_unit(mut self, name: FieldName) -> io::Result<Self> {
+    fn write_unit(mut self, name: VariantName) -> io::Result<Self> {
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self.writer = WriteUnion::write_unit(self.writer, name.clone())?;
-        self._write_field(name);
         Ok(self)
     }
 
     fn write_tuple(
         mut self,
-        name: FieldName,
+        name: VariantName,
         inner: impl FnOnce(Self::TupleWriter) -> io::Result<Self>,
     ) -> io::Result<Self> {
         let lib = self.lib.clone();
@@ -652,13 +637,12 @@ impl WriteUnion for UnionBuilder {
         })?;
         clone.parent = lib_builder;
         self = Self::from_split(writer, clone);
-        self._write_field(name);
         Ok(self)
     }
 
     fn write_struct(
         mut self,
-        name: FieldName,
+        name: VariantName,
         inner: impl FnOnce(Self::StructWriter) -> io::Result<Self>,
     ) -> io::Result<Self> {
         let lib = self.lib.clone();
@@ -676,7 +660,6 @@ impl WriteUnion for UnionBuilder {
         })?;
         clone.parent = lib_builder;
         self = Self::from_split(writer, clone);
-        self._write_field(name);
         Ok(self)
     }
 
