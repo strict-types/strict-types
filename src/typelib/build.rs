@@ -429,7 +429,7 @@ impl UnionBuilder {
 
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
-    fn _define_field(&mut self, name: &VariantName) {
+    fn _define_variant(&mut self, name: &VariantName) {
         let ty = self.parent.last_compiled.clone().expect("no compiled type found");
         let tag = self.writer.tag_by_name(name);
         self.variants.insert(tag, ty);
@@ -445,16 +445,16 @@ impl UnionBuilder {
                 (variant.clone(), lib_ref.clone())
             })
             .collect::<BTreeMap<_, _>>();
-        let fields = UnionVariants::try_from(variants)
+        let variants = UnionVariants::try_from(variants)
             .expect(&format!("union '{}' has invalid number of variants", self.name()));
-        Ty::Union(fields)
+        Ty::Union(variants)
     }
 
     fn _build_enum(&self) -> Ty<CompileRef> {
-        let fields = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
-        let fields = EnumVariants::try_from(fields)
+        let variants = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
+        let variants = EnumVariants::try_from(variants)
             .expect(&format!("enum '{}' has invalid number of variants", self.name()));
-        Ty::Enum(fields)
+        Ty::Enum(variants)
     }
 
     fn _complete_definition(mut self, ty: Ty<CompileRef>) -> UnionBuilder {
@@ -513,7 +513,7 @@ impl DefineEnum for UnionBuilder {
     fn define_variant(mut self, name: VariantName) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::U8);
         self.writer = DefineEnum::define_variant(self.writer, name.clone());
-        self._define_field(&name);
+        self._define_variant(&name);
         self
     }
 
@@ -548,7 +548,7 @@ impl DefineUnion for UnionBuilder {
     fn define_unit(mut self, name: VariantName) -> Self {
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
         self.writer = DefineUnion::define_unit(self.writer, name.clone());
-        self._define_field(&name);
+        self._define_variant(&name);
         self
     }
 
@@ -572,7 +572,7 @@ impl DefineUnion for UnionBuilder {
         });
         clone.parent = lib_builder;
         self = Self::from_split(writer, clone);
-        self._define_field(&name);
+        self._define_variant(&name);
         self
     }
 
@@ -596,7 +596,7 @@ impl DefineUnion for UnionBuilder {
         });
         clone.parent = lib_builder;
         self = Self::from_split(writer, clone);
-        self._define_field(&name);
+        self._define_variant(&name);
         self
     }
 
