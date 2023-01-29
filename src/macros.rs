@@ -27,23 +27,23 @@ macro_rules! fields {
             let vec = vec![
                 $($value),+
             ];
-            amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
+            ::amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
         }
     };
     { $($key:literal => $value:expr),+ $(,)? } => {
         {
             let vec = vec![
-                $( Field { name: fname!($key), ty: $value } ),+
+                $( $crate::ast::Field { name: fname!($key), ty: $value } ),+
             ];
-            amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
+            ::amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
         }
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
         {
             let vec = vec![
-                $( Field { name: $key, ty: $value } ),+
+                $( $crate::ast::Field { name: $key, ty: $value } ),+
             ];
-            amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
+            ::amplify::confinement::Confined::try_from(vec).expect("too many fields").into()
         }
     }
 }
@@ -56,7 +56,7 @@ macro_rules! variants {
             $(
                 assert!(m.insert(::strict_encoding::Variant::named($tag, vname!($key)), $value.into()).is_none(), "repeated field");
             )+
-            amplify::confinement::Confined::try_from(m).expect("too many variants").into()
+            ::amplify::confinement::Confined::try_from(m).expect("too many variants").into()
         }
     };
     { $($key:expr => $value:expr),+ $(,)? } => {
@@ -69,7 +69,7 @@ macro_rules! variants {
                     tag += 1;
                 }
             )+
-            amplify::confinement::Confined::try_from(m).expect("too many fields").into()
+            ::amplify::confinement::Confined::try_from(m).expect("too many fields").into()
         }
     };
     { $from:literal..=$to:literal } => {
@@ -78,7 +78,7 @@ macro_rules! variants {
             for tag in $from..=$to {
                 assert!(m.insert(::strict_encoding::Variant::named(tag, format!("_{}", tag).try_into().unwrap())), "repeated enum variant");
             }
-            amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
+            ::amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
     };
     { $($key:expr),+ $(,)? } => {
@@ -91,7 +91,7 @@ macro_rules! variants {
                     tag += 1;
                 }
             )+
-            amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
+            ::amplify::confinement::Confined::try_from(m).expect("too many enum variants").into()
         }
     };
 }
