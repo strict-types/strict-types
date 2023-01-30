@@ -26,14 +26,18 @@ deserialization with `StrictDecode` follows the same memory and semantic layout.
 ## Current version
 
 Sty library id:
-`stl:A3bA2b3orwYexYywJGdUJ1qhZX1owzyfbqh2VgNmwkaQ#texas-grand-camel`
+`stl:Cig1ibSP9KX3nEwzdfBKJPB1Nwesnk3BYbNBGFFTmQMg#source-data-shelf`
 
 ```Haskell
-namespace StEn -- source-data-shelf-Cig1ibSP9KX3nEwzdfBKJPB1Nwesnk3BYbNBGFFTmQMg.stl
+{-
+-- Import this lib by putting in the file header
+-- import source_data_shelf_Cig1ibSP9KX3nEwzdfBKJPB1Nwesnk3BYbNBGFFTmQMg
+-}
+namespace StEn -- source_data_shelf_Cig1ibSP9KX3nEwzdfBKJPB1Nwesnk3BYbNBGFFTmQMg.stl
 
 -- no dependencies
 
-data BuildFragment    :: (U128)?
+data BuildFragment    :: ident (Ident) | digits (U128)
 data Dependency       :: id TypeLibId, name LibName, ver SemVer
 data EnumVariants     :: ({Variant ^ 1..0xff})
 data FieldName        :: (Ident)
@@ -55,7 +59,7 @@ data NamedFields_InlineRef1 :: ([Field_InlineRef1 ^ 1..0xff])
 data NamedFields_InlineRef2 :: ([Field_InlineRef2 ^ 1..0xff])
 data NamedFields_KeyTy :: ([Field_KeyTy ^ 1..0xff])
 data NamedFields_LibRef :: ([Field_LibRef ^ 1..0xff])
-data PreFragment      :: (U128)?
+data PreFragment      :: ident (Ident) | digits (U128)
 data Primitive        :: (U8)
 data SemId            :: ([U8 ^ 32])
 data SemVer           :: minor U16, major U16, patch U16, pre [PreFragment ^ ..255], build [BuildFragment ^ ..255]

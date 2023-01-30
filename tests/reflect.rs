@@ -47,7 +47,7 @@ fn reflect() {
     let lib = builder.compile().unwrap();
     let id = lib.id();
 
-    println!("{id:_<+}");
+    println!("{{-\n-- Import this lib by putting in the file header\n-- import {id:+}\n-}}");
     println!("{lib}");
 
     println!("----- BEGIN STRICT TYPE LIB -----");
