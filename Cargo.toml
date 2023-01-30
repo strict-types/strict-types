@@ -10,11 +10,11 @@ categories = ["compilers", "parser-implementations", "mathematics", "science", "
 edition = "2021"
 rust-version = "1.66.0"
 readme = "README.md"
-exclude = [".github", "contrib"]
+exclude = [".github"]
 
 [dependencies]
 amplify = { version = "4.0.0-beta.6", features = ["apfloat"] }
-strict_encoding = { version = "2.0.0-beta.1", features = ["derive", "float"] }
+strict_encoding = { version = "2.0.0-beta.2", features = ["derive", "float"] }
 baid58 = "0.1.0"
 half = "2.1.0"
 blake3 = "1.3.3"
