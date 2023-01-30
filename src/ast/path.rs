@@ -104,8 +104,8 @@ impl<Ref: NestedRef> Ty<Ref> {
             let res = match (self, &step) {
                 (Ty::Struct(fields), Step::NamedField(name)) => fields.ty_by_name(name),
                 (Ty::Union(variants), Step::NamedField(name)) => variants.ty_by_name(name),
-                (Ty::Struct(fields), Step::UnnamedField(ord)) => fields.ty_by_pos(*ord),
-                (Ty::Union(variants), Step::UnnamedField(ord)) => variants.ty_by_ord(*ord),
+                (Ty::Struct(fields), Step::UnnamedField(tag)) => fields.ty_by_pos(*tag),
+                (Ty::Union(variants), Step::UnnamedField(tag)) => variants.ty_by_ord(*tag),
                 (Ty::Array(ty, _), Step::Index) => Some(ty),
                 (Ty::List(ty, _), Step::List) => Some(ty),
                 (Ty::Set(ty, _), Step::Set) => Some(ty),

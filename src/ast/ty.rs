@@ -220,8 +220,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
-            && variants.contains_key(&Variant { name: fname!("none"), ord: 0 })
-            && variants.contains_key(&Variant { name: fname!("some"), ord: 1 })
+            && variants.contains_key(&Variant { name: fname!("none"), tag: 0 })
+            && variants.contains_key(&Variant { name: fname!("some"), tag: 1 })
         )
     }
 }
@@ -552,14 +552,14 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
     }
-    pub fn ty_by_ord(&self, ord: u8) -> Option<&Ref> {
-        self.0.iter().find(|(v, _)| v.ord == ord).map(|(_, ty)| ty)
+    pub fn ty_by_ord(&self, tag: u8) -> Option<&Ref> {
+        self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
     pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
-        self.0.keys().find(|v| &v.name == name).map(|v| v.ord)
+        self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_ord(&self, ord: u8) -> Option<&FieldName> {
-        self.0.keys().find(|v| v.ord == ord).map(|v| &v.name)
+    pub fn name_by_ord(&self, tag: u8) -> Option<&FieldName> {
+        self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
     }
 }
 
@@ -615,11 +615,11 @@ impl<'a> IntoIterator for &'a EnumVariants {
 impl EnumVariants {
     pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
 
-    pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
-        self.0.iter().find(|v| &v.name == name).map(|v| v.ord)
+    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
+        self.0.iter().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_ord(&self, ord: u8) -> Option<&FieldName> {
-        self.0.iter().find(|v| v.ord == ord).map(|v| &v.name)
+    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
+        self.0.iter().find(|v| v.tag == tag).map(|v| &v.name)
     }
 }
 

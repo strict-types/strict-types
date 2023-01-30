@@ -110,7 +110,7 @@ impl<Ref: TypeRef> StrictTuple for UnionVariants<Ref> {
 impl<Ref: TypeRef> StrictEncode for UnionVariants<Ref> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let fields = TinyOrdMap::try_from_iter(self.iter().map(|(variant, ty)| {
-            (variant.ord, VariantInfo {
+            (variant.tag, VariantInfo {
                 name: variant.name.clone(),
                 ty: ty.clone(),
             })
@@ -123,11 +123,11 @@ impl<Ref: TypeRef> StrictDecode for UnionVariants<Ref> {
     fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
         let read = TinyOrdMap::<u8, VariantInfo<Ref>>::strict_decode(reader)?;
         let mut inner = BTreeMap::new();
-        for (ord, info) in read {
+        for (tag, info) in read {
             inner.insert(
                 Variant {
                     name: info.name,
-                    ord,
+                    tag,
                 },
                 info.ty,
             );

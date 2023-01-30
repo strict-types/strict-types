@@ -441,7 +441,7 @@ impl UnionBuilder {
             .variants()
             .keys()
             .map(|variant| {
-                let lib_ref = self.variants.get(&variant.ord).expect("type guarantees");
+                let lib_ref = self.variants.get(&variant.tag).expect("type guarantees");
                 (variant.clone(), lib_ref.clone())
             })
             .collect::<BTreeMap<_, _>>();

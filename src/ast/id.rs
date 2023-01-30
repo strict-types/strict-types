@@ -175,7 +175,7 @@ impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
 impl HashId for Variant {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         hasher.update(self.name.as_bytes());
-        hasher.update(&[self.ord]);
+        hasher.update(&[self.tag]);
     }
 }
 
