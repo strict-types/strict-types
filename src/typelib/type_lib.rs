@@ -46,6 +46,8 @@ impl LibType {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
@@ -74,6 +76,8 @@ impl Display for InlineRef {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef1::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef1 {
     #[from]
     Inline(Ty<InlineRef2>),
@@ -102,6 +106,8 @@ impl Display for InlineRef1 {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef2::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef2 {
     #[from]
     Inline(Ty<KeyTy>),
@@ -130,6 +136,8 @@ impl Display for InlineRef2 {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { LibRef::Inline(Ty::strict_dumb()) })]
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
