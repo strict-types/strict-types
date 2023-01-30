@@ -616,21 +616,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "stens"
-version = "1.0.0-beta.1"
-dependencies = [
- "amplify",
- "baid58",
- "base64 0.21.0",
- "blake3",
- "half",
- "serde",
- "serde_with",
- "serde_yaml",
- "strict_encoding",
-]
-
-[[package]]
 name = "strict_encoding"
 version = "2.0.0-beta.1"
 source = "git+https://github.com/strict-types/strict-encoding#db58f4705785d0ee4aa0836acc6f53390438bedb"
@@ -651,6 +636,21 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "strict_types"
+version = "1.0.0-beta.1"
+dependencies = [
+ "amplify",
+ "baid58",
+ "base64 0.21.0",
+ "blake3",
+ "half",
+ "serde",
+ "serde_with",
+ "serde_yaml",
+ "strict_encoding",
 ]
 
 [[package]]
