@@ -25,22 +25,13 @@ use std::io;
 
 use amplify::confinement::TinyOrdMap;
 use strict_encoding::{
-    DecodeError, FieldName, ReadStruct, ReadTuple, StrictDecode, StrictDumb, StrictEncode,
-    StrictProduct, StrictStruct, StrictTuple, StrictType, TypedRead, TypedWrite, Variant,
-    WriteStruct, STEN_LIB,
+    DecodeError, FieldName, ReadTuple, StrictDecode, StrictDumb, StrictEncode, StrictType,
+    TypedRead, TypedWrite, Variant, STEN_LIB,
 };
 
-use crate::ast::ty::{UnionVariants, UnnamedFields};
-use crate::ast::{EnumVariants, NamedFields};
+use crate::ast::ty::UnionVariants;
 use crate::{SemId, TypeRef};
 
-impl StrictType for SemId {
-    const STRICT_LIB_NAME: &'static str = STEN_LIB;
-}
-impl StrictProduct for SemId {}
-impl StrictTuple for SemId {
-    const FIELD_COUNT: u8 = 1;
-}
 impl StrictEncode for SemId {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_newtype::<Self>(self.as_bytes())
@@ -52,61 +43,13 @@ impl StrictDecode for SemId {
     }
 }
 
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 struct VariantInfo<Ref: TypeRef> {
     name: FieldName,
     ty: Ref,
 }
-impl<Ref: TypeRef> StrictDumb for VariantInfo<Ref> {
-    fn strict_dumb() -> Self {
-        Self {
-            name: fname!("dumb"),
-            ty: Ref::strict_dumb(),
-        }
-    }
-}
-impl<Ref: TypeRef> StrictType for VariantInfo<Ref> {
-    const STRICT_LIB_NAME: &'static str = STEN_LIB;
-}
-impl<Ref: TypeRef> StrictProduct for VariantInfo<Ref> {}
-impl<Ref: TypeRef> StrictStruct for VariantInfo<Ref> {
-    const ALL_FIELDS: &'static [&'static str] = &["name", "ty"];
-}
-impl<Ref: TypeRef> StrictEncode for VariantInfo<Ref> {
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_struct::<Self>(|sw| {
-            Ok(sw
-                .write_field(fname!("name"), &self.name)?
-                .write_field(fname!("ty"), &self.ty)?
-                .complete())
-        })
-    }
-}
-impl<Ref: TypeRef> StrictDecode for VariantInfo<Ref> {
-    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
-        reader.read_struct(|r| {
-            let name = r.read_field(fname!("name"))?;
-            let ty = r.read_field(fname!("ty"))?;
-            Ok(Self { name, ty })
-        })
-    }
-}
 
-impl<Ref: TypeRef> StrictDumb for NamedFields<Ref> {
-    fn strict_dumb() -> Self { fields!("dumb" => Ref::strict_dumb()) }
-}
-impl<Ref: TypeRef> StrictDumb for UnnamedFields<Ref> {
-    fn strict_dumb() -> Self { fields!(Ref::strict_dumb()) }
-}
-impl<Ref: TypeRef> StrictDumb for UnionVariants<Ref> {
-    fn strict_dumb() -> Self { variants!("dumb" => Ref::strict_dumb()) }
-}
-impl<Ref: TypeRef> StrictType for UnionVariants<Ref> {
-    const STRICT_LIB_NAME: &'static str = STEN_LIB;
-}
-impl<Ref: TypeRef> StrictProduct for UnionVariants<Ref> {}
-impl<Ref: TypeRef> StrictTuple for UnionVariants<Ref> {
-    const FIELD_COUNT: u8 = 1;
-}
 impl<Ref: TypeRef> StrictEncode for UnionVariants<Ref> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         let fields = TinyOrdMap::try_from_iter(self.iter().map(|(variant, ty)| {
@@ -134,8 +77,4 @@ impl<Ref: TypeRef> StrictDecode for UnionVariants<Ref> {
         }
         UnionVariants::try_from(inner).map_err(DecodeError::from)
     }
-}
-
-impl StrictDumb for EnumVariants {
-    fn strict_dumb() -> Self { variants!("dumb") }
 }

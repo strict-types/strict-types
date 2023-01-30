@@ -347,7 +347,7 @@ where Ref: Display
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STEN_LIB, dumb = fields!("dumb" => Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
@@ -421,7 +421,7 @@ where Ref: Display
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STEN_LIB, dumb = fields!(Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
@@ -493,6 +493,8 @@ where Ref: Display
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(StrictDumb, StrictType)]
+#[strict_type(lib = STEN_LIB, dumb = variants!("dumb" => Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -597,7 +599,7 @@ where Ref: Display
 
 #[derive(Wrapper, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STEN_LIB, dumb = variants!("dumb"))]
 #[cfg_attr(
     feature = "serde",

@@ -24,7 +24,7 @@ use std::cmp::Ordering;
 use std::hash::Hash;
 
 use amplify::Wrapper;
-use strict_encoding::{Sizing, StrictDumb, TypeName, Variant};
+use strict_encoding::{Sizing, StrictDumb, TypeName, Variant, STEN_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
 use crate::ast::{EnumVariants, NamedFields};
@@ -32,6 +32,8 @@ use crate::{Cls, KeyTy, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
+#[derive(StrictType)]
+#[strict_type(lib = STEN_LIB)]
 #[wrapper(Deref)]
 #[display(inner)]
 pub struct SemId(

@@ -23,19 +23,12 @@
 use std::io;
 
 use strict_encoding::{
-    DecodeError, ReadTuple, StrictDecode, StrictDeserialize, StrictEncode, StrictProduct,
-    StrictSerialize, StrictTuple, StrictType, TypedRead, TypedWrite, STEN_LIB,
+    DecodeError, ReadTuple, StrictDecode, StrictDeserialize, StrictEncode, StrictSerialize,
+    TypedRead, TypedWrite,
 };
 
 use crate::{TypeLib, TypeLibId};
 
-impl StrictType for TypeLibId {
-    const STRICT_LIB_NAME: &'static str = STEN_LIB;
-}
-impl StrictProduct for TypeLibId {}
-impl StrictTuple for TypeLibId {
-    const FIELD_COUNT: u8 = 1;
-}
 impl StrictEncode for TypeLibId {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
         writer.write_newtype::<Self>(self.as_bytes())
