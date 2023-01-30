@@ -220,8 +220,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
-            && variants.contains_key(&Variant { name: fname!("none"), tag: 0 })
-            && variants.contains_key(&Variant { name: fname!("some"), tag: 1 })
+            && variants.first_key_value().unwrap().0 == &Variant { name: fname!("none"), tag: 0 }
+            && variants.last_key_value().unwrap().0 == &Variant { name: fname!("some"), tag: 1 }
         )
     }
 }
