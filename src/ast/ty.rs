@@ -28,7 +28,7 @@ use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 use strict_encoding::constants::*;
 use strict_encoding::{
-    FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STEN_LIB,
+    FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
 };
 
 use crate::ast::NestedRef;
@@ -55,7 +55,7 @@ impl TypeRef for KeyTy {
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = repr, into_u8, try_from_u8)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = repr, into_u8, try_from_u8)]
 #[display(lowercase)]
 #[repr(u8)]
 pub enum Cls {
@@ -121,7 +121,7 @@ impl KeyTy {
 
 #[derive(Clone, PartialEq, Eq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = custom)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = custom)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum Ty<Ref: TypeRef> {
     #[strict_type(tag = 0)]
@@ -294,7 +294,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 /// bounds since it doesn't has a dynamically-sized types.
 #[derive(Clone, PartialEq, Eq, Debug, Display, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = custom, dumb = { KeyTy::Array(1) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = custom, dumb = { KeyTy::Array(1) })]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display(inner)]
 pub enum KeyTy {
@@ -333,7 +333,7 @@ impl KeyTy {
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Field<Ref: TypeRef> {
     pub name: FieldName,
@@ -348,7 +348,7 @@ where Ref: Display
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, dumb = fields!("dumb" => Ref::strict_dumb()))]
+#[strict_type(lib = STRICT_TYPES_LIB, dumb = fields!("dumb" => Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -422,7 +422,7 @@ where Ref: Display
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, dumb = fields!(Ref::strict_dumb()))]
+#[strict_type(lib = STRICT_TYPES_LIB, dumb = fields!(Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -494,7 +494,7 @@ where Ref: Display
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType)]
-#[strict_type(lib = STEN_LIB, dumb = variants!("dumb" => Ref::strict_dumb()))]
+#[strict_type(lib = STRICT_TYPES_LIB, dumb = variants!("dumb" => Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -600,7 +600,7 @@ where Ref: Display
 #[derive(Wrapper, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, dumb = variants!("dumb"))]
+#[strict_type(lib = STRICT_TYPES_LIB, dumb = variants!("dumb"))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),

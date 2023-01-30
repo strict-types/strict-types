@@ -24,14 +24,14 @@ use std::fmt::{Display, Formatter};
 
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
-use strict_encoding::{FieldName, STEN_LIB};
+use strict_encoding::{FieldName, STRICT_TYPES_LIB};
 
 use crate::ast::NestedRef;
 use crate::Ty;
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order)]
 pub enum Step {
     #[display(".{0}")]
     #[from]

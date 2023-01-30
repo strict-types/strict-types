@@ -26,7 +26,7 @@ use std::io;
 use amplify::confinement::TinyOrdMap;
 use strict_encoding::{
     DecodeError, FieldName, ReadTuple, StrictDecode, StrictDumb, StrictEncode, StrictType,
-    TypedRead, TypedWrite, Variant, STEN_LIB,
+    TypedRead, TypedWrite, Variant, STRICT_TYPES_LIB,
 };
 
 use crate::ast::ty::UnionVariants;
@@ -44,7 +44,7 @@ impl StrictDecode for SemId {
 }
 
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 struct VariantInfo<Ref: TypeRef> {
     name: FieldName,
     ty: Ref,

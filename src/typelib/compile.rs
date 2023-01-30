@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
-use strict_encoding::{StrictDumb, TypeName, STEN_LIB};
+use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::NestedRef;
 use crate::typelib::build::LibBuilder;
@@ -51,7 +51,7 @@ impl Default for Box<Ty<CompileRef>> {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { CompileRef::Named(TypeName::strict_dumb()) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { CompileRef::Named(TypeName::strict_dumb()) })]
 pub enum CompileRef {
     #[from(Ty<CompileRef>)]
     Embedded(Box<Ty<CompileRef>>),

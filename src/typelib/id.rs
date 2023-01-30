@@ -24,7 +24,7 @@ use std::cmp::Ordering;
 use std::fmt::{self, Display, Formatter};
 
 use baid58::ToBaid58;
-use strict_encoding::{StrictDumb, STEN_LIB};
+use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
 use crate::typelib::TypeLib;
 
@@ -32,7 +32,7 @@ pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
 #[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
 #[derive(StrictType)]
-#[strict_type(lib = STEN_LIB)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 #[wrapper(Deref)]
 pub struct TypeLibId(
     #[from]

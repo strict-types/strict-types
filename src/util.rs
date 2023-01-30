@@ -23,7 +23,7 @@
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::TinyVec;
-use strict_encoding::{Ident, STEN_LIB};
+use strict_encoding::{Ident, STRICT_TYPES_LIB};
 
 use crate::typelib::TypeLibId;
 use crate::SemId;
@@ -84,7 +84,7 @@ impl Sum for Size {
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { PreFragment::Digits(1) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { PreFragment::Digits(1) })]
 #[display(inner)]
 pub enum PreFragment {
     #[from]
@@ -95,7 +95,7 @@ pub enum PreFragment {
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { BuildFragment::Ident(Ident::from("alpha")) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { BuildFragment::Ident(Ident::from("alpha")) })]
 #[display(inner)]
 pub enum BuildFragment {
     Ident(Ident),
@@ -105,7 +105,7 @@ pub enum BuildFragment {
 // TODO: Manually implement Ord, PartialOrd
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 pub struct SemVer {
     pub major: u16,
     pub minor: u16,

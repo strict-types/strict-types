@@ -24,9 +24,9 @@
 extern crate strict_encoding;
 
 use baid58::ToBaid58;
-use stens::typelib::build::LibBuilder;
-use stens::TypeLib;
-use strict_encoding::{StrictDumb, StrictSerialize, STEN_LIB};
+use strict_encoding::{StrictDumb, StrictSerialize, STRICT_TYPES_LIB};
+use strict_types::typelib::build::LibBuilder;
+use strict_types::TypeLib;
 
 fn pp(data: impl AsRef<[u8]>) {
     let data = base64::encode(data);
@@ -43,7 +43,7 @@ fn pp(data: impl AsRef<[u8]>) {
 fn reflect() {
     let root = TypeLib::strict_dumb();
 
-    let builder = LibBuilder::new(libname!(STEN_LIB)).process(&root).unwrap();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process(&root).unwrap();
     let lib = builder.compile().unwrap();
     let id = lib.id();
 

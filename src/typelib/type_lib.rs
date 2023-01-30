@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
-use strict_encoding::{LibName, TypeName, STEN_LIB};
+use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
@@ -33,7 +33,7 @@ use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
 /// Top-level data type contained within a library.
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("data {name:16} :: {ty}")]
 pub struct LibType {
     pub name: TypeName,
@@ -47,7 +47,7 @@ impl LibType {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef::Inline(Ty::strict_dumb()) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
@@ -77,7 +77,7 @@ impl Display for InlineRef {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef1::Inline(Ty::strict_dumb()) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef1::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef1 {
     #[from]
     Inline(Ty<InlineRef2>),
@@ -107,7 +107,7 @@ impl Display for InlineRef1 {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef2::Inline(Ty::strict_dumb()) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef2::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef2 {
     #[from]
     Inline(Ty<KeyTy>),
@@ -137,7 +137,7 @@ impl Display for InlineRef2 {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB, tags = order, dumb = { LibRef::Inline(Ty::strict_dumb()) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { LibRef::Inline(Ty::strict_dumb()) })]
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
@@ -170,7 +170,7 @@ pub type LibAlias = LibName;
 
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STEN_LIB)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("typelib {name}@{ver} {id:#}")]
 pub struct Dependency {
     pub id: TypeLibId,
@@ -183,7 +183,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize 
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(
-    lib = STEN_LIB,
+    lib = STRICT_TYPES_LIB,
     dumb = { TypeLib {
         name: LibName::strict_dumb(),
         dependencies: default!(),
