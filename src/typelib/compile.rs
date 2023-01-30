@@ -83,10 +83,10 @@ impl NestedRef for CompileRef {
 impl Display for CompileRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({})", ty),
+            CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({ty})"),
             CompileRef::Embedded(ty) => Display::fmt(ty, f),
-            CompileRef::Named(name) => write!(f, "{}", name),
-            CompileRef::Extern(name, lib) => write!(f, "{}.{}", lib, name),
+            CompileRef::Named(name) => write!(f, "{name}"),
+            CompileRef::Extern(name, lib) => write!(f, "{lib}.{name}"),
         }
     }
 }

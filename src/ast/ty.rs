@@ -239,11 +239,11 @@ where Ref: Display
             Ty::Union(fields) => Display::fmt(fields, f),
             Ty::Struct(fields) => Display::fmt(fields, f),
             Ty::Tuple(fields) => Display::fmt(fields, f),
-            Ty::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
+            Ty::Array(ty, len) => write!(f, "[{ty} ^ {len}]"),
             Ty::UnicodeChar => write!(f, "Unicode"),
-            Ty::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
-            Ty::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
-            Ty::Map(key, ty, sizing) => write!(f, "{{{} ->{} {}}}", key, sizing, ty),
+            Ty::List(ty, sizing) => write!(f, "[{ty}{sizing}]"),
+            Ty::Set(ty, sizing) => write!(f, "{{{ty}{sizing}}}"),
+            Ty::Map(key, ty, sizing) => write!(f, "{{{key} ->{sizing} {ty}}}"),
         }
     }
 }
@@ -257,7 +257,7 @@ impl<Ref: NestedRef> Ty<Ref> {
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
                 Some(ty)
             }
-            _ => return None,
+            _ => None,
         }
     }
 }
@@ -482,10 +482,10 @@ where Ref: Display
         let last = iter.next_back();
         f.write_str("(")?;
         for ty in iter {
-            write!(f, "{}, ", ty)?;
+            write!(f, "{ty}, ")?;
         }
         if let Some(ty) = last {
-            write!(f, "{}", ty)?;
+            write!(f, "{ty}")?;
         }
         f.write_str(")")?;
         Ok(())
@@ -646,10 +646,10 @@ impl Display for EnumVariants {
         let mut iter = self.iter();
         let last = iter.next_back();
         for field in iter {
-            write!(f, "{:#} | ", field)?;
+            write!(f, "{field:#} | ")?;
         }
         if let Some(field) = last {
-            write!(f, "{:#}", field)?;
+            write!(f, "{field:#}")?;
         }
         Ok(())
     }

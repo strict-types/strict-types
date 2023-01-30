@@ -93,8 +93,7 @@ where Ref: Translate<ToRef>
             Ty::List(ty, sizing) => Ty::List(ty.translate(ctx)?, sizing),
             Ty::Set(ty, sizing) => Ty::Set(ty.translate(ctx)?, sizing),
             Ty::Map(key, ty, sizing) => Ty::Map(key, ty.translate(ctx)?, sizing),
-        }
-        .into())
+        })
     }
 }
 

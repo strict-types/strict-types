@@ -63,7 +63,7 @@ trait HashId {
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self, name: Option<&TypeName>) -> SemId {
         let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
-        if let Some(ref name) = name {
+        if let Some(name) = name {
             hasher.update(name.as_bytes());
         }
         self.hash_id(&mut hasher);

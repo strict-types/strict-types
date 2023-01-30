@@ -29,6 +29,7 @@
     //dead_code,
     //missing_docs
 )]
+#![allow(unused_braces)] // Due to rust compiler bug not understanding proc macro expressions
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[macro_use]

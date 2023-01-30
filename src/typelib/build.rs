@@ -170,7 +170,7 @@ impl TypedWrite for LibBuilder {
                         .ty
                 }
                 me @ CompileRef::Extern(_, _) => {
-                    panic!("not supported map key type '{}'", me)
+                    panic!("not supported map key type '{me}'")
                 }
             };
             if let Ty::Tuple(fields) = ty {
@@ -229,8 +229,8 @@ impl BuilderParent for LibBuilder {
                 if let Some(old_ty) = self.types.get(&name) {
                     assert_eq!(
                         old_ty, &new_ty,
-                        "repeated type name '{}' for two different types '{}' and '{}'",
-                        name, old_ty, new_ty
+                        "repeated type name '{name}' for two different types '{old_ty}' and \
+                         '{new_ty}'",
                     );
                 }
                 self.types.insert(name.clone(), new_ty).expect("too many types");
@@ -274,7 +274,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(&T::strict_dumb());
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        let _ = self.fields.push(ty); // type repetition is checked by self.parent
+        self.fields.push(ty); // type repetition is checked by self.parent
         self
     }
 
@@ -291,7 +291,7 @@ impl<P: BuilderParent> StructBuilder<P> {
                 ty,
                 expect_ty
             );
-            assert_eq!(expect_ty, &ty, "{}", msg);
+            assert_eq!(expect_ty, &ty, "{msg}");
             *pos += 1;
         }
         self.fields.push(ty);
@@ -301,8 +301,9 @@ impl<P: BuilderParent> StructBuilder<P> {
     fn _build_struct(&self) -> Ty<CompileRef> {
         match self.writer.is_tuple() {
             true => {
-                let fields = UnnamedFields::try_from(self.fields.clone())
-                    .expect(&format!("tuple '{}' has invalid number of fields", self.name()));
+                let fields = UnnamedFields::try_from(self.fields.clone()).unwrap_or_else(|_| {
+                    panic!("tuple '{}' has invalid number of fields", self.name())
+                });
                 Ty::Tuple(fields)
             }
             false => {
@@ -319,8 +320,9 @@ impl<P: BuilderParent> StructBuilder<P> {
                         }
                     })
                     .collect::<Vec<_>>();
-                let fields = NamedFields::try_from(fields)
-                    .expect(&format!("structure '{}' has invalid number of fields", self.name()));
+                let fields = NamedFields::try_from(fields).unwrap_or_else(|_| {
+                    panic!("structure '{}' has invalid number of fields", self.name())
+                });
                 Ty::Struct(fields)
             }
         }
@@ -329,9 +331,9 @@ impl<P: BuilderParent> StructBuilder<P> {
     fn _complete_definition(self) -> P {
         let ty = self._build_struct();
         if self.writer.is_tuple() {
-            DefineTuple::complete(self.writer).report_compiled(self.name.clone(), ty)
+            DefineTuple::complete(self.writer).report_compiled(self.name, ty)
         } else {
-            DefineStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+            DefineStruct::complete(self.writer).report_compiled(self.name, ty)
         }
     }
 
@@ -346,9 +348,9 @@ impl<P: BuilderParent> StructBuilder<P> {
             );
         }
         if self.writer.is_tuple() {
-            WriteTuple::complete(self.writer).report_compiled(self.name.clone(), ty)
+            WriteTuple::complete(self.writer).report_compiled(self.name, ty)
         } else {
-            WriteStruct::complete(self.writer).report_compiled(self.name.clone(), ty)
+            WriteStruct::complete(self.writer).report_compiled(self.name, ty)
         }
     }
 }
@@ -446,14 +448,14 @@ impl UnionBuilder {
             })
             .collect::<BTreeMap<_, _>>();
         let variants = UnionVariants::try_from(variants)
-            .expect(&format!("union '{}' has invalid number of variants", self.name()));
+            .unwrap_or_else(|_| panic!("union '{}' has invalid number of variants", self.name()));
         Ty::Union(variants)
     }
 
     fn _build_enum(&self) -> Ty<CompileRef> {
         let variants = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
         let variants = EnumVariants::try_from(variants)
-            .expect(&format!("enum '{}' has invalid number of variants", self.name()));
+            .unwrap_or_else(|_| panic!("enum '{}' has invalid number of variants", self.name()));
         Ty::Enum(variants)
     }
 
@@ -613,7 +615,7 @@ impl WriteUnion for UnionBuilder {
 
     fn write_unit(mut self, name: VariantName) -> io::Result<Self> {
         self.parent = self.parent.report_compiled(None, Ty::UNIT);
-        self.writer = WriteUnion::write_unit(self.writer, name.clone())?;
+        self.writer = WriteUnion::write_unit(self.writer, name)?;
         Ok(self)
     }
 
@@ -626,7 +628,7 @@ impl WriteUnion for UnionBuilder {
         let (writer, remnant) = self.into_split();
         let mut clone = remnant._fork();
         let mut lib_builder = clone.parent;
-        let writer = writer.write_tuple(name.clone(), |d| {
+        let writer = writer.write_tuple(name, |d| {
             let (writer, _) = d.into_parent_split();
             let mut reconstructed_self = Self::from_split(writer, remnant);
             let struct_writer = StructWriter::unnamed(reconstructed_self, true);
@@ -649,7 +651,7 @@ impl WriteUnion for UnionBuilder {
         let (writer, remnant) = self.into_split();
         let mut clone = remnant._fork();
         let mut lib_builder = clone.parent;
-        let writer = writer.write_struct(name.clone(), |d| {
+        let writer = writer.write_struct(name, |d| {
             let (writer, _) = d.into_parent_split();
             let mut reconstructed_self = Self::from_split(writer, remnant);
             let struct_writer = StructWriter::unnamed(reconstructed_self, false);

@@ -68,8 +68,8 @@ impl TypeRef for InlineRef {
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef::Named(name, _) => write!(f, "{}", name),
-            InlineRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef::Named(name, _) => write!(f, "{name}"),
+            InlineRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
     }
@@ -98,8 +98,8 @@ impl TypeRef for InlineRef1 {
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef1::Named(name, _) => write!(f, "{}", name),
-            InlineRef1::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef1::Named(name, _) => write!(f, "{name}"),
+            InlineRef1::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
     }
@@ -128,8 +128,8 @@ impl TypeRef for InlineRef2 {
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef2::Named(name, _) => write!(f, "{}", name),
-            InlineRef2::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef2::Named(name, _) => write!(f, "{name}"),
+            InlineRef2::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
             InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
     }
@@ -158,10 +158,10 @@ impl TypeRef for LibRef {
 impl Display for LibRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibRef::Named(name, _) => write!(f, "{}", name),
-            LibRef::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
-            LibRef::Inline(ty) => write!(f, "{}", ty),
-            LibRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            LibRef::Named(name, _) => write!(f, "{name}"),
+            LibRef::Inline(ty) if ty.is_compound() => write!(f, "({ty})"),
+            LibRef::Inline(ty) => write!(f, "{ty}"),
+            LibRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
         }
     }
 }
@@ -221,7 +221,7 @@ impl TypeLib {
 
     pub fn populate(&mut self, ty: LibType) -> Result<(), TranslateError> {
         if self.types.contains_key(&ty.name) {
-            return Err(TranslateError::DuplicateName(ty.name.clone()));
+            return Err(TranslateError::DuplicateName(ty.name));
         }
         self.types.insert(ty.name.clone(), ty)?;
         Ok(())
@@ -236,7 +236,7 @@ impl Display for TypeLib {
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
             if alias != &dep.name {
-                writeln!(f, "{} as {}", dep, alias)?;
+                writeln!(f, "{dep} as {alias}")?;
             } else {
                 Display::fmt(dep, f)?;
             }
@@ -246,7 +246,7 @@ impl Display for TypeLib {
         }
         writeln!(f)?;
         for ty in self.types.values() {
-            writeln!(f, "{}", ty)?;
+            writeln!(f, "{ty}")?;
         }
         Ok(())
     }
