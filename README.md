@@ -26,14 +26,14 @@ deserialization with `StrictDecode` follows the same memory and semantic layout.
 ## Current version
 
 Sty library id:
-`stl:Cig1ibSP9KX3nEwzdfBKJPB1Nwesnk3BYbNBGFFTmQMg#source-data-shelf`
+`stl:9xg6UrhKe5yWf4oqPpYgXVkZPGRmaA8Q6ZAmu84rDFNm#popcorn-yellow-moses`
 
 ```Haskell
 {-
 -- Import this lib by putting in the file header
--- import observe_pedro_fragile_3ASBDzSaWxQAq74LDd6EWHQxRUMnYu8pjWsZwAWSmkeD
+-- import popcorn_yellow_moses_9xg6UrhKe5yWf4oqPpYgXVkZPGRmaA8Q6ZAmu84rDFNm
 -}
-namespace StEn -- observe_pedro_fragile_3ASBDzSaWxQAq74LDd6EWHQxRUMnYu8pjWsZwAWSmkeD.stl
+namespace StEn -- popcorn_yellow_moses_9xg6UrhKe5yWf4oqPpYgXVkZPGRmaA8Q6ZAmu84rDFNm.stl
 
 -- no dependencies
 
@@ -62,7 +62,7 @@ data NamedFields_LibRef :: ([Field_LibRef ^ 1..0xff])
 data PreFragment      :: ident (Ident) | digits (U128)
 data Primitive        :: (U8)
 data SemId            :: ([U8 ^ 32])
-data SemVer           :: minor U16, major U16, patch U16, pre [PreFragment ^ ..255], build [BuildFragment ^ ..255]
+data SemVer           :: major U16, minor U16, patch U16, pre [PreFragment ^ ..255], build [BuildFragment ^ ..255]
 data Sizing           :: min U16, max U16
 data Ty_InlineRef     :: primitive (Primitive) | unicode () | enum:3 (EnumVariants) | union (UnionVariants_InlineRef) | struct (NamedFields_InlineRef) | tuple (UnnamedFields_InlineRef) | array (InlineRef, U16) | list (InlineRef, Sizing) | set (InlineRef, Sizing) | map (KeyTy, InlineRef, Sizing)
 data Ty_InlineRef1    :: primitive (Primitive) | unicode () | enum:3 (EnumVariants) | union (UnionVariants_InlineRef1) | struct (NamedFields_InlineRef1) | tuple (UnnamedFields_InlineRef1) | array (InlineRef1, U16) | list (InlineRef1, Sizing) | set (InlineRef1, Sizing) | map (KeyTy, InlineRef1, Sizing)
@@ -93,14 +93,14 @@ data VariantInfo_LibRef :: name FieldName, ty LibRef
 Encoded library:
 ```
 ----- BEGIN STRICT TYPE LIB -----
-Id: 3ASBDzSaWxQAq74LDd6EWHQxRUMnYu8pjWsZwAWSmkeD
-Checksum: observe-pedro-fragile
+Id: 9xg6UrhKe5yWf4oqPpYgXVkZPGRmaA8Q6ZAmu84rDFNm
+Checksum: popcorn-yellow-moses
 
 BFN0RW4AMwAADUJ1aWxkRnJhZ21lbnQNQnVpbGRGcmFnbWVudAQCAAVpZGVudAAGAQEFSWRlbnQJ0jba
 5bRz0h/g092c7l8PJ/wk2gUH6EbB5xsCjUlVhAEGZGlnaXRzAAYBAQVJZGVudAnSNtrltHPSH+DT3Zzu
 Xw8n/CTaBQfoRsHnGwKNSVWECkRlcGVuZGVuY3kKRGVwZW5kZW5jeQUDAmlkAQlUeXBlTGliSWSf5Iia
 TKQbDE8EEhzGNFzFbT7ypr0miyB7qE49WKRIawRuYW1lAQdMaWJOYW1l4yS5cnw20BhcDsI7K5gKKFbV
-/tAfnHrfy8jgivoXqsEDdmVyAQZTZW1WZXLCdfhmSoee9cBdq0EEJCrR9al2bCgVmFP8ET/C405PtwxF
+/tAfnHrfy8jgivoXqsEDdmVyAQZTZW1WZXI+xX3xEYjU0xHlzLMBnnd4YWHZtewxvNjyTPpwkhrY7QxF
 bnVtVmFyaWFudHMMRW51bVZhcmlhbnRzBgEACQEHVmFyaWFudB2HMLMQbs+ubq50yNiNELz7bf3rsn9N
 7fF6cQjF1eRXAQD/AAlGaWVsZE5hbWUJRmllbGROYW1lBgEBBUlkZW50CdI22uW0c9If4NPdnO5fDyf8
 JNoFB+hGwecbAo1JVYQPRmllbGRfSW5saW5lUmVmD0ZpZWxkX0lubGluZVJlZgUCBG5hbWUBCUZpZWxk
@@ -152,7 +152,7 @@ GD4Tyzk/QUuSzv96ADiQMwkBAP8AEk5hbWVkRmllbGRzX0xpYlJlZhJOYW1lZEZpZWxkc19MaWJSZWYG
 AQAIAQxGaWVsZF9MaWJSZWa7GB/7kaLHHI6awkGEyJY4E+Ju6XJCt2w9vwl0FaPLzgEA/wALUHJlRnJh
 Z21lbnQLUHJlRnJhZ21lbnQEAgAFaWRlbnQABgEBBUlkZW50CdI22uW0c9If4NPdnO5fDyf8JNoFB+hG
 wecbAo1JVYQBBmRpZ2l0cwAGAQAAEAlQcmltaXRpdmUJUHJpbWl0aXZlBgEAAAEFU2VtSWQFU2VtSWQG
-AQAHAAABIAAGU2VtVmVyBlNlbVZlcgUFBW1pbm9yAAACBW1ham9yAAACBXBhdGNoAAACA3ByZQAIAQtQ
+AQAHAAABIAAGU2VtVmVyBlNlbVZlcgUFBW1ham9yAAACBW1pbm9yAAACBXBhdGNoAAACA3ByZQAIAQtQ
 cmVGcmFnbWVudEGvontcfrlK1YpARXW2vPABNknLg2NbOJguSeYou7qgAAD/AAVidWlsZAAIAQ1CdWls
 ZEZyYWdtZW504+hBoz9umO/vq5TnpFWW9RxHuZ1TwZ0oZI3YmOdE06oAAP8ABlNpemluZwZTaXppbmcF
 AgNtaW4AAAIDbWF4AAACDFR5X0lubGluZVJlZgxUeV9JbmxpbmVSZWYECgAJcHJpbWl0aXZlAAYBAQlQ
@@ -216,7 +216,7 @@ CQNzZXQABgIBBkxpYlJlZhLTacozGnMcJ0m1Rk7JPIPftsNKPzkZ/iXNqXWZdhF9AQZTaXppbmfCyKDT
 l5pRp1cW1tpLIouB7h2TAQZMaWJSZWYS02nKMxpzHCdJtUZOyTyD37bDSj85Gf4lzal1mXYRfQEGU2l6
 aW5nwsig0+L3RSduRFdqPpkNXgTgTDvT0T3X/PMpkWKBVHsHVHlwZUxpYgdUeXBlTGliBQMEbmFtZQEH
 TGliTmFtZeMkuXJ8NtAYXA7COyuYCihW1f7QH5x638vI4Ir6F6rBDGRlcGVuZGVuY2llcwAKAAEBCkRl
-cGVuZGVuY3naxnk0MxN9hwgDGzKF9ExinxAf1kv4u2X1y4HSWzijxwAA/wAFdHlwZXMACgABAQdMaWJU
+cGVuZGVuY3kSM5pjIwXnKRb00fY/mP9TYwfywMnf6OA6pPAsIDh54gAA/wAFdHlwZXMACgABAQdMaWJU
 eXBl2ZBtknU1A33kfp9pn5zuGLIDFV0F+3nv6vHu3urQPm0BAP//CVR5cGVMaWJJZAlUeXBlTGliSWQG
 AQAHAAABIAAIVHlwZU5hbWUIVHlwZU5hbWUGAQEFSWRlbnQJ0jba5bRz0h/g092c7l8PJ/wk2gUH6EbB
 5xsCjUlVhBdVbmlvblZhcmlhbnRzX0lubGluZVJlZhdVbmlvblZhcmlhbnRzX0lubGluZVJlZgYBAAoA

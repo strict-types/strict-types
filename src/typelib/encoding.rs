@@ -22,12 +22,15 @@
 
 use std::io;
 
-use amplify::confinement::Confined;
-use strict_encoding::{DecodeError, DefineTuple, DefineUnion, LibName, ReadStruct, ReadTuple, ReadUnion, StrictDecode, StrictDumb, StrictEncode, StrictProduct, StrictSum, StrictTuple, StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteStruct, WriteTuple, WriteUnion, STEN_LIB, StrictSerialize, StrictDeserialize};
+use strict_encoding::{
+    DecodeError, DefineTuple, DefineUnion, LibName, ReadTuple, ReadUnion, StrictDecode,
+    StrictDeserialize, StrictDumb, StrictEncode, StrictProduct, StrictSerialize, StrictSum,
+    StrictTuple, StrictType, StrictUnion, TypeName, TypedRead, TypedWrite, WriteTuple, WriteUnion,
+    STEN_LIB,
+};
 
-use crate::typelib::type_lib::LibType;
 use crate::typelib::{CompileRef, InlineRef, InlineRef1, InlineRef2};
-use crate::{Dependency, KeyTy, LibRef, SemId, SemVer, Ty, TypeLib, TypeLibId};
+use crate::{KeyTy, LibRef, SemId, Ty, TypeLib, TypeLibId};
 
 impl StrictType for TypeLibId {
     const STRICT_LIB_NAME: &'static str = STEN_LIB;
@@ -47,17 +50,8 @@ impl StrictDecode for TypeLibId {
     }
 }
 
-impl_strict_struct!(TypeLib, STEN_LIB; 
-    name => strict_dumb!(), 
-    dependencies => strict_dumb!(), 
-    types => confined_bmap!(tn!("DumbType") => LibType::strict_dumb()));
-
 impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
-
-impl_strict_struct!(LibType, STEN_LIB; name, ty);
-impl_strict_struct!(Dependency, STEN_LIB; id, name, ver);
-impl_strict_struct!(SemVer, STEN_LIB; minor, major, patch, pre, build);
 
 macro_rules! impl_strict_ref {
     ($ty:ty, $inner:ty) => {

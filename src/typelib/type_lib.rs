@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
-use strict_encoding::{LibName, TypeName};
+use strict_encoding::{LibName, TypeName, STEN_LIB};
 
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
@@ -32,6 +32,8 @@ use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
 
 /// Top-level data type contained within a library.
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 #[display("data {name:16} :: {ty}")]
 pub struct LibType {
     pub name: TypeName,
@@ -159,6 +161,8 @@ impl Display for LibRef {
 pub type LibAlias = LibName;
 
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 #[display("typelib {name}@{ver} {id:#}")]
 pub struct Dependency {
     pub id: TypeLibId,
@@ -169,6 +173,15 @@ pub struct Dependency {
 pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(
+    lib = STEN_LIB,
+    dumb = { TypeLib {
+        name: LibName::strict_dumb(),
+        dependencies: default!(),
+        types: confined_bmap!(tn!("DumbType") => LibType::strict_dumb())
+    } }
+)]
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdMap<LibAlias, Dependency>,

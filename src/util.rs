@@ -104,6 +104,8 @@ pub enum BuildFragment {
 
 // TODO: Manually implement Ord, PartialOrd
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 pub struct SemVer {
     pub major: u16,
     pub minor: u16,
