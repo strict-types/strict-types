@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
-use strict_encoding::TypeName;
+use strict_encoding::{StrictDumb, TypeName, STEN_LIB};
 
 use crate::ast::NestedRef;
 use crate::typelib::build::LibBuilder;
@@ -43,7 +43,15 @@ impl CompileType {
     pub fn new(name: TypeName, ty: Ty<CompileRef>) -> Self { CompileType { name, ty } }
 }
 
+impl Default for Box<Ty<CompileRef>> {
+    /// Provided as a workaround required due to derivation of strict types for [`CompileRef`].
+    /// Always panics.
+    fn default() -> Self { panic!("default method shouldn't be called on this type") }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { CompileRef::Named(TypeName::strict_dumb()) })]
 pub enum CompileRef {
     #[from(Ty<CompileRef>)]
     Embedded(Box<Ty<CompileRef>>),
@@ -75,10 +83,10 @@ impl NestedRef for CompileRef {
 impl Display for CompileRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({})", ty),
+            CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({ty})"),
             CompileRef::Embedded(ty) => Display::fmt(ty, f),
-            CompileRef::Named(name) => write!(f, "{}", name),
-            CompileRef::Extern(name, lib) => write!(f, "{}.{}", lib, name),
+            CompileRef::Named(name) => write!(f, "{name}"),
+            CompileRef::Extern(name, lib) => write!(f, "{lib}.{name}"),
         }
     }
 }

@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
-use strict_encoding::{LibName, TypeName};
+use strict_encoding::{LibName, TypeName, STEN_LIB};
 
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
@@ -32,6 +32,8 @@ use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
 
 /// Top-level data type contained within a library.
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 #[display("data {name:16} :: {ty}")]
 pub struct LibType {
     pub name: TypeName,
@@ -44,6 +46,8 @@ impl LibType {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
@@ -64,14 +68,16 @@ impl TypeRef for InlineRef {
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef::Named(name, _) => write!(f, "{}", name),
-            InlineRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef::Named(name, _) => write!(f, "{name}"),
+            InlineRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef1::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef1 {
     #[from]
     Inline(Ty<InlineRef2>),
@@ -92,14 +98,16 @@ impl TypeRef for InlineRef1 {
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef1::Named(name, _) => write!(f, "{}", name),
-            InlineRef1::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef1::Named(name, _) => write!(f, "{name}"),
+            InlineRef1::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { InlineRef2::Inline(Ty::strict_dumb()) })]
 pub enum InlineRef2 {
     #[from]
     Inline(Ty<KeyTy>),
@@ -120,14 +128,16 @@ impl TypeRef for InlineRef2 {
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef2::Named(name, _) => write!(f, "{}", name),
-            InlineRef2::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            InlineRef2::Named(name, _) => write!(f, "{name}"),
+            InlineRef2::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
             InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = order, dumb = { LibRef::Inline(Ty::strict_dumb()) })]
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
@@ -148,10 +158,10 @@ impl TypeRef for LibRef {
 impl Display for LibRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibRef::Named(name, _) => write!(f, "{}", name),
-            LibRef::Inline(ty) if ty.is_compound() => write!(f, "({})", ty),
-            LibRef::Inline(ty) => write!(f, "{}", ty),
-            LibRef::Extern(name, lib, _) => write!(f, "{}.{}", lib, name),
+            LibRef::Named(name, _) => write!(f, "{name}"),
+            LibRef::Inline(ty) if ty.is_compound() => write!(f, "({ty})"),
+            LibRef::Inline(ty) => write!(f, "{ty}"),
+            LibRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
         }
     }
 }
@@ -159,6 +169,8 @@ impl Display for LibRef {
 pub type LibAlias = LibName;
 
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 #[display("typelib {name}@{ver} {id:#}")]
 pub struct Dependency {
     pub id: TypeLibId,
@@ -169,6 +181,15 @@ pub struct Dependency {
 pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(
+    lib = STEN_LIB,
+    dumb = { TypeLib {
+        name: LibName::strict_dumb(),
+        dependencies: default!(),
+        types: confined_bmap!(tn!("DumbType") => LibType::strict_dumb())
+    } }
+)]
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdMap<LibAlias, Dependency>,
@@ -200,7 +221,7 @@ impl TypeLib {
 
     pub fn populate(&mut self, ty: LibType) -> Result<(), TranslateError> {
         if self.types.contains_key(&ty.name) {
-            return Err(TranslateError::DuplicateName(ty.name.clone()));
+            return Err(TranslateError::DuplicateName(ty.name));
         }
         self.types.insert(ty.name.clone(), ty)?;
         Ok(())
@@ -211,11 +232,11 @@ impl TypeLib {
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "namespace {} -- {:-.1}", self.name, self.id())?;
+        writeln!(f, "namespace {} -- {:+.1}", self.name, self.id())?;
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
             if alias != &dep.name {
-                writeln!(f, "{} as {}", dep, alias)?;
+                writeln!(f, "{dep} as {alias}")?;
             } else {
                 Display::fmt(dep, f)?;
             }
@@ -225,7 +246,7 @@ impl Display for TypeLib {
         }
         writeln!(f)?;
         for ty in self.types.values() {
-            writeln!(f, "{}", ty)?;
+            writeln!(f, "{ty}")?;
         }
         Ok(())
     }

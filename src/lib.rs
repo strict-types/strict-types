@@ -29,6 +29,7 @@
     //dead_code,
     //missing_docs
 )]
+#![allow(unused_braces)] // Due to rust compiler bug not understanding proc macro expressions
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[macro_use]
@@ -50,4 +51,4 @@ pub mod typelib;
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 //pub use typesys::{EmbeddedRef, TypeSystem};
-pub use util::{SemVer, Urn};
+pub use util::{BuildFragment, PreFragment, SemVer, Urn};

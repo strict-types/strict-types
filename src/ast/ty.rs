@@ -28,7 +28,7 @@ use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 use strict_encoding::constants::*;
 use strict_encoding::{
-    FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, VariantError,
+    FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STEN_LIB,
 };
 
 use crate::ast::NestedRef;
@@ -54,9 +54,12 @@ impl TypeRef for KeyTy {
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = repr, into_u8, try_from_u8)]
 #[display(lowercase)]
 #[repr(u8)]
 pub enum Cls {
+    #[strict_type(dumb)]
     Primitive = 0,
     Unicode = 1,
     AsciiStr = 2,
@@ -84,23 +87,6 @@ impl Cls {
         Cls::Set,
         Cls::Map,
     ];
-}
-
-impl From<Cls> for u8 {
-    fn from(value: Cls) -> Self { value as u8 }
-}
-
-impl TryFrom<u8> for Cls {
-    type Error = VariantError<u8>;
-
-    fn try_from(value: u8) -> Result<Self, Self::Error> {
-        for cls in Cls::ALL {
-            if cls as u8 == value {
-                return Ok(cls);
-            }
-        }
-        return Err(VariantError(tn!("Cls"), value));
-    }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -134,25 +120,46 @@ impl KeyTy {
 }
 
 #[derive(Clone, PartialEq, Eq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = custom)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum Ty<Ref: TypeRef> {
+    #[strict_type(tag = 0)]
     #[from]
     Primitive(Primitive),
+
     /// We use separate type since unlike primitive it has variable length.
     /// While unicode character can be expressed as a composite type, it will be very verbose
     /// expression (union with 256 variants), so instead we built it in.
+    #[strict_type(tag = 1, rename = "unicode", dumb)]
     UnicodeChar,
+
+    #[strict_type(tag = 3)]
     #[from]
     Enum(EnumVariants),
+
+    #[strict_type(tag = 4)]
     #[from]
     Union(UnionVariants<Ref>),
+
+    #[strict_type(tag = 6)]
     #[from]
     Tuple(UnnamedFields<Ref>),
+
+    #[strict_type(tag = 5)]
     #[from]
     Struct(NamedFields<Ref>),
+
+    #[strict_type(tag = 7)]
     Array(Ref, u16),
+
+    #[strict_type(tag = 8)]
     List(Ref, Sizing),
+
+    #[strict_type(tag = 9)]
     Set(Ref, Sizing),
+
+    #[strict_type(tag = 10)]
     Map(KeyTy, Ref, Sizing),
 }
 
@@ -213,8 +220,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
-            && variants.contains_key(&Variant { name: fname!("none"), ord: 0 })
-            && variants.contains_key(&Variant { name: fname!("some"), ord: 1 })
+            && variants.first_key_value().unwrap().0 == &Variant { name: fname!("none"), tag: 0 }
+            && variants.last_key_value().unwrap().0 == &Variant { name: fname!("some"), tag: 1 }
         )
     }
 }
@@ -232,11 +239,11 @@ where Ref: Display
             Ty::Union(fields) => Display::fmt(fields, f),
             Ty::Struct(fields) => Display::fmt(fields, f),
             Ty::Tuple(fields) => Display::fmt(fields, f),
-            Ty::Array(ty, len) => write!(f, "[{} ^ {}]", ty, len),
+            Ty::Array(ty, len) => write!(f, "[{ty} ^ {len}]"),
             Ty::UnicodeChar => write!(f, "Unicode"),
-            Ty::List(ty, sizing) => write!(f, "[{}{}]", ty, sizing),
-            Ty::Set(ty, sizing) => write!(f, "{{{}{}}}", ty, sizing),
-            Ty::Map(key, ty, sizing) => write!(f, "{{{} ->{} {}}}", key, sizing, ty),
+            Ty::List(ty, sizing) => write!(f, "[{ty}{sizing}]"),
+            Ty::Set(ty, sizing) => write!(f, "{{{ty}{sizing}}}"),
+            Ty::Map(key, ty, sizing) => write!(f, "{{{key} ->{sizing} {ty}}}"),
         }
     }
 }
@@ -250,7 +257,7 @@ impl<Ref: NestedRef> Ty<Ref> {
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
                 Some(ty)
             }
-            _ => return None,
+            _ => None,
         }
     }
 }
@@ -286,27 +293,35 @@ impl<Ref: TypeRef> Ty<Ref> {
 /// The type is always guaranteed to fit strict encoding AST serialization
 /// bounds since it doesn't has a dynamically-sized types.
 #[derive(Clone, PartialEq, Eq, Debug, Display, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, tags = custom, dumb = { KeyTy::Array(1) })]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 #[display(inner)]
 pub enum KeyTy {
+    #[strict_type(tag = 0)]
     #[from]
     Primitive(Primitive),
 
+    #[strict_type(tag = 3)]
     #[display("({0})")]
     #[from]
     Enum(EnumVariants),
 
     /// Fixed-size byte array
+    #[strict_type(tag = 7)]
     #[display("[Byte ^ {0}]")]
     #[from]
     Array(u16),
 
+    #[strict_type(tag = 1, rename = "unicode")]
     #[display("[Unicode{0}]")]
     UnicodeStr(Sizing),
 
+    #[strict_type(tag = 2, rename = "ascii")]
     #[display("[Ascii{0}]")]
     AsciiStr(Sizing),
 
+    #[strict_type(tag = 8)]
     #[display("[Byte{0}]")]
     Bytes(Sizing),
 }
@@ -317,6 +332,8 @@ impl KeyTy {
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Field<Ref: TypeRef> {
     pub name: FieldName,
@@ -330,6 +347,8 @@ where Ref: Display
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, dumb = fields!("dumb" => Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -402,6 +421,8 @@ where Ref: Display
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, dumb = fields!(Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -461,10 +482,10 @@ where Ref: Display
         let last = iter.next_back();
         f.write_str("(")?;
         for ty in iter {
-            write!(f, "{}, ", ty)?;
+            write!(f, "{ty}, ")?;
         }
         if let Some(ty) = last {
-            write!(f, "{}", ty)?;
+            write!(f, "{ty}")?;
         }
         f.write_str(")")?;
         Ok(())
@@ -472,6 +493,8 @@ where Ref: Display
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(StrictDumb, StrictType)]
+#[strict_type(lib = STEN_LIB, dumb = variants!("dumb" => Ref::strict_dumb()))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -531,14 +554,14 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
     }
-    pub fn ty_by_ord(&self, ord: u8) -> Option<&Ref> {
-        self.0.iter().find(|(v, _)| v.ord == ord).map(|(_, ty)| ty)
+    pub fn ty_by_ord(&self, tag: u8) -> Option<&Ref> {
+        self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
     pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
-        self.0.keys().find(|v| &v.name == name).map(|v| v.ord)
+        self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_ord(&self, ord: u8) -> Option<&FieldName> {
-        self.0.keys().find(|v| v.ord == ord).map(|v| &v.name)
+    pub fn name_by_ord(&self, tag: u8) -> Option<&FieldName> {
+        self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
     }
 }
 
@@ -548,11 +571,27 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
+        let mut last_tag = 0u8;
         for (variant, ty) in iter {
-            write!(f, "{} {} | ", variant, ty)?;
+            write!(f, "{variant}")?;
+            if last_tag != variant.tag {
+                last_tag = variant.tag;
+                write!(f, ":{last_tag} ")?;
+            } else {
+                f.write_str(" ")?;
+            }
+            last_tag += 1;
+            write!(f, "{ty} | ")?;
         }
         if let Some((variant, ty)) = last {
-            write!(f, "{} {}", variant, ty)?;
+            write!(f, "{variant}")?;
+            if last_tag != variant.tag {
+                last_tag = variant.tag;
+                write!(f, ":{last_tag} ")?;
+            } else {
+                f.write_str(" ")?;
+            }
+            write!(f, "{ty}")?;
         }
         Ok(())
     }
@@ -560,6 +599,8 @@ where Ref: Display
 
 #[derive(Wrapper, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STEN_LIB, dumb = variants!("dumb"))]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -592,11 +633,11 @@ impl<'a> IntoIterator for &'a EnumVariants {
 impl EnumVariants {
     pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
 
-    pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
-        self.0.iter().find(|v| &v.name == name).map(|v| v.ord)
+    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
+        self.0.iter().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_ord(&self, ord: u8) -> Option<&FieldName> {
-        self.0.iter().find(|v| v.ord == ord).map(|v| &v.name)
+    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
+        self.0.iter().find(|v| v.tag == tag).map(|v| &v.name)
     }
 }
 
@@ -605,10 +646,10 @@ impl Display for EnumVariants {
         let mut iter = self.iter();
         let last = iter.next_back();
         for field in iter {
-            write!(f, "{:#} | ", field)?;
+            write!(f, "{field:#} | ")?;
         }
         if let Some(field) = last {
-            write!(f, "{:#}", field)?;
+            write!(f, "{field:#}")?;
         }
         Ok(())
     }
