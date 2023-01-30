@@ -1,16 +1,30 @@
-# Rust implementation of strict encoding schema (STENS)
+# Strict types AST and typelib implementation
 
-Strict encoding is a deterministic schema-base binary serialization format 
-for algebraic types (ADT) which provides automatic strong type checking. It is
-used in consensus protocols, networking, AluVM and long-term data storage. 
+#### Protobufs for functional programming
 
-This library provides primitives for describing strict encoding schemata, 
-validating and parsing structured data using the schema and for on-the-fly
-checking of algebraic data type serialziation/deserialization.
+This is a set of libraries for working with abstract syntax trees and libraries
+of [strict types] &ndash; type system made with category theory which ensures
+provable properties and bounds for the in-memory and serialized type
+representation.
 
-To learn more about strict encoding [read the spec](https://www.strict-encoding.org).
+Strict types is a formal notation for defining and serializing
+[generalized algebraic data types (GADT)][gadt] in a deterministic
+and confined way. It is developed with [type theory] in mind.
 
-Strict encoding schema works with type definitions. It allows:
+Strict Types are:
+* __schema-based__ (with the schema being strict encoding notation),
+* __semantic__, i.e. defines types not just as they are layed out in memory,
+  but also depending on their meaning,
+* __deterministic__, i.e. produces the same result for a given type,
+* __portabile__, i.e. can run on ahy hardware architecture and OS, including
+  low-performant embedded systems,
+* __confined__, i.e. provides guarantees and static analysis on a maximum size
+  of the typed data,
+* __formally verifiabile__.
+
+To learn more about strict encoding [read the spec](https://strict-types.org).
+
+Strict types works with type definitions. It allows:
 - static analysis of data types, like
   * defining semantic type ids;
   * specifying exact memory layout;
@@ -19,11 +33,15 @@ Strict encoding schema works with type definitions. It allows:
 - composing types into type libraries;
 - versioning type libraries basing on the semantic types;
 
-Current rust implementation additionally allows to build type libraries out of
-rust data types which implement `StrictEncoding` trait -- and ensures that the
+The library allows to generate & compile strict type libraries (STL) from rust 
+types implementing `StrictEncoding` trait -- and ensures that the 
 deserialization with `StrictDecode` follows the same memory and semantic layout.
 
-## Current version
+
+## Strict Types Library
+
+The library is able to reflect on itself, producing replica of its rust data
+types in strict types system.
 
 Strict types library id:
 `stl:G5sL7FHaUo1oBPZ8CXFzqDA7vE3cUzruPMvUbpnBMh3A#biology-laser-popcorn`
@@ -272,3 +290,15 @@ z9I=
 
 ----- END STRICT TYPE LIB -----
 ```
+
+## Contributing
+
+[CONTRIBUTING.md](../CONTRIBUTING.md)
+
+## License
+
+The libraries are distributed on the terms of [Apache 2.0 license](LICENSE).
+
+[strict types]: https://strict-types.org
+[gadt]: https://en.wikipedia.org/wiki/Algebraic_data_type
+[type theory]: https://en.wikipedia.org/wiki/Type_theory
