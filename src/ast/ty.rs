@@ -569,11 +569,27 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
+        let mut last_tag = 0u8;
         for (variant, ty) in iter {
-            write!(f, "{} {} | ", variant, ty)?;
+            write!(f, "{variant}")?;
+            if last_tag != variant.tag {
+                last_tag = variant.tag;
+                write!(f, ":{last_tag} ")?;
+            } else {
+                f.write_str(" ")?;
+            }
+            last_tag += 1;
+            write!(f, "{ty} | ")?;
         }
         if let Some((variant, ty)) = last {
-            write!(f, "{} {}", variant, ty)?;
+            write!(f, "{variant}")?;
+            if last_tag != variant.tag {
+                last_tag = variant.tag;
+                write!(f, ":{last_tag} ")?;
+            } else {
+                f.write_str(" ")?;
+            }
+            write!(f, "{ty}")?;
         }
         Ok(())
     }
