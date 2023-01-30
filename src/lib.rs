@@ -38,8 +38,10 @@ extern crate amplify;
 #[macro_use]
 extern crate serde_crate as serde;
 #[macro_use]
-extern crate strict_encoding;
+pub extern crate strict_encoding as encoding;
 extern crate core;
+
+pub use encoding::derive;
 
 #[macro_use]
 mod macros;
