@@ -142,11 +142,11 @@ pub enum Ty<Ref: TypeRef> {
     #[from]
     Union(UnionVariants<Ref>),
 
-    #[strict_type(tag = 6)]
+    #[strict_type(tag = 5)]
     #[from]
     Tuple(UnnamedFields<Ref>),
 
-    #[strict_type(tag = 5)]
+    #[strict_type(tag = 6)]
     #[from]
     Struct(NamedFields<Ref>),
 
@@ -313,15 +313,15 @@ pub enum KeyTy {
     #[from]
     Array(u16),
 
-    #[strict_type(tag = 1, rename = "unicode")]
+    #[strict_type(tag = 0x10, rename = "unicode")]
     #[display("[Unicode{0}]")]
     UnicodeStr(Sizing),
 
-    #[strict_type(tag = 2, rename = "ascii")]
+    #[strict_type(tag = 0x11, rename = "ascii")]
     #[display("[Ascii{0}]")]
     AsciiStr(Sizing),
 
-    #[strict_type(tag = 8)]
+    #[strict_type(tag = 0x12)]
     #[display("[Byte{0}]")]
     Bytes(Sizing),
 }
