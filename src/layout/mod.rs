@@ -20,38 +20,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#![deny(
-    non_upper_case_globals,
-    non_camel_case_types,
-    non_snake_case,
-    unused_mut,
-    unused_imports,
-    //dead_code,
-    //missing_docs
-)]
-#![allow(unused_braces)] // Due to rust compiler bug not understanding proc macro expressions
-#![cfg_attr(docsrs, feature(doc_auto_cfg))]
+mod size;
 
-#[macro_use]
-extern crate amplify;
-#[cfg(feature = "serde")]
-#[macro_use]
-extern crate serde_crate as serde;
-#[macro_use]
-pub extern crate strict_encoding as encoding;
-extern crate core;
-
-pub use encoding::derive;
-
-#[macro_use]
-mod macros;
-mod util;
-pub mod ast;
-pub mod typelib;
-pub mod layout;
-//pub mod typesys;
-
-pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
-pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
-//pub use typesys::{EmbeddedRef, TypeSystem};
-pub use util::{BuildFragment, PreFragment, SemVer, Urn};
+pub use size::TypeSize;

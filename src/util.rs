@@ -28,60 +28,6 @@ use strict_encoding::{Ident, STRICT_TYPES_LIB};
 use crate::typelib::TypeLibId;
 use crate::SemId;
 
-/* TODO: Move into layout mod
-/// Measure of a type size in bytes
-#[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]
-pub enum Size {
-    /// Type has a fixed size known at compile time
-    #[display(inner)]
-    Fixed(u16),
-
-    /// Type has variable size
-    #[display("variable")]
-    Variable,
-}
-
-impl PartialOrd for Size {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
-}
-
-impl Ord for Size {
-    fn cmp(&self, other: &Self) -> Ordering {
-        match (self, other) {
-            (Size::Variable, Size::Variable) => Ordering::Equal,
-            (Size::Variable, _) => Ordering::Greater,
-            (_, Size::Variable) => Ordering::Less,
-            (Size::Fixed(a), Size::Fixed(b)) => a.cmp(b),
-        }
-    }
-}
-
-impl Add for Size {
-    type Output = Size;
-
-    fn add(self, rhs: Self) -> Self::Output {
-        match (self, rhs) {
-            (Size::Fixed(a), Size::Fixed(b)) => Size::Fixed(a + b),
-            _ => Size::Variable,
-        }
-    }
-}
-
-impl AddAssign for Size {
-    fn add_assign(&mut self, rhs: Self) { *self = *self + rhs; }
-}
-
-impl Sum for Size {
-    fn sum<I: Iterator<Item = Self>>(iter: I) -> Self {
-        let mut acc = Size::Fixed(0);
-        for item in iter {
-            acc += item;
-        }
-        acc
-    }
-}
- */
-
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { PreFragment::Digits(1) })]
