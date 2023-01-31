@@ -54,7 +54,7 @@ impl StrictDumb for SemId {
     fn strict_dumb() -> Self { SemId(blake3::Hash::from([0u8; 32])) }
 }
 
-pub const SEM_ID_TAG: [u8; 32] = [0u8; 32];
+pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
 trait HashId {
     fn hash_id(&self, hasher: &mut blake3::Hasher);
