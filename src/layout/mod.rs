@@ -21,5 +21,7 @@
 // limitations under the License.
 
 mod size;
+mod build;
 
+pub use build::LayoutBuilder;
 pub use size::TypeSize;
