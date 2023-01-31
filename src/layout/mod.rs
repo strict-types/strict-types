@@ -22,6 +22,7 @@
 
 mod size;
 mod build;
+mod ty;
 
 pub use build::LayoutBuilder;
 pub use size::TypeSize;

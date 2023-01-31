@@ -26,7 +26,9 @@ use encoding::{
     WriteEnum, WriteStruct, WriteTuple, WriteUnion,
 };
 
-pub struct LayoutBuilder {}
+pub struct LayoutBuilder {
+    pieces: Vec<LayoutPiece>,
+}
 
 impl TypedWrite for LayoutBuilder {
     type TupleWriter = Self;
