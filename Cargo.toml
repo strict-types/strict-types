@@ -1,7 +1,7 @@
 [package]
 name = "strict_types"
 description = "Strict types: confined generalized algebraic data types (GADT)"
-version = "1.0.0-beta.1"
+version = "1.0.0-beta.2"
 authors = ["Dr. Maxim Orlovsky <orlovsky@ubideco.org>"]
 homepage = "https://strict-types.org"
 license = "Apache-2.0"
@@ -13,8 +13,8 @@ readme = "README.md"
 exclude = [".github"]
 
 [dependencies]
-amplify = { version = "4.0.0-beta.6", features = ["apfloat"] }
-strict_encoding = { version = "2.0.0-beta.2", features = ["derive", "float"] }
+amplify = { version = "4.0.0-beta.9", features = ["apfloat"] }
+strict_encoding = { version = "2.0.0-beta.3", features = ["derive", "float"] }
 baid58 = "0.1.0"
 half = "2.1.0"
 blake3 = "1.3.3"
