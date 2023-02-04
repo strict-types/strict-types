@@ -13,7 +13,7 @@ readme = "README.md"
 exclude = [".github"]
 
 [dependencies]
-amplify = { version = "4.0.0-beta.9", features = ["apfloat"] }
+amplify = { version = "4.0.0-beta.13", features = ["apfloat"] }
 strict_encoding = { version = "2.0.0-beta.3", features = ["derive", "float"] }
 baid58 = "0.1.0"
 half = "2.1.0"

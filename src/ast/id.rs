@@ -22,7 +22,7 @@
 
 use std::hash::Hash;
 
-use amplify::{Bytes32, Wrapper};
+use amplify::{Bytes32, RawArray, Wrapper};
 use baid58::ToBaid58;
 use strict_encoding::{Sizing, StrictDumb, TypeName, Variant, STRICT_TYPES_LIB};
 
@@ -99,14 +99,6 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
                 sizing.hash_id(hasher);
             }
         };
-    }
-}
-
-impl KeyTy {
-    pub fn id(&self) -> SemId {
-        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
-        self.hash_id(&mut hasher);
-        SemId::from_raw_array(hasher.finalize())
     }
 }
 

@@ -50,7 +50,7 @@ impl TypeRef for SemId {
 
 impl TypeRef for KeyTy {
     const TYPE_NAME: &'static str = "KeyTy";
-    fn id(&self) -> SemId { KeyTy::id(self) }
+    fn id(&self) -> SemId { panic!("KeyTy can't have semantic id") }
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
