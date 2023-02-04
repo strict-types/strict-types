@@ -20,49 +20,38 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::cmp::Ordering;
-use std::fmt::{self, Display, Formatter};
-
+use amplify::{Bytes32, RawArray};
 use baid58::ToBaid58;
+use encoding::{StrictDeserialize, StrictSerialize};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
 use crate::typelib::TypeLib;
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
-#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, From)]
-#[derive(StrictType)]
+/// Semantic type id, which commits to the type memory layout, name and field/variant names.
+#[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[wrapper(Deref, BorrowSlice, FromStr, Hex, Index, RangeOps)]
+#[display(Self::to_baid58)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[wrapper(Deref)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
 pub struct TypeLibId(
     #[from]
     #[from([u8; 32])]
-    blake3::Hash,
+    Bytes32,
 );
 
-impl Ord for TypeLibId {
-    fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
-}
-
-impl PartialOrd for TypeLibId {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
-}
-
-impl StrictDumb for TypeLibId {
-    fn strict_dumb() -> Self { TypeLibId(blake3::Hash::from([0u8; 32])) }
-}
+impl StrictSerialize for TypeLib {}
+impl StrictDeserialize for TypeLib {}
 
 impl ToBaid58<32> for TypeLibId {
     const HRP: &'static str = "stl";
-
-    fn to_baid58_payload(&self) -> [u8; 32] { *self.0.as_bytes() }
-}
-
-impl Display for TypeLibId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let baid58 = self.to_baid58();
-        Display::fmt(&baid58, f)
-    }
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
 }
 
 impl TypeLib {
@@ -71,6 +60,6 @@ impl TypeLib {
         for ty in self.types.values() {
             hasher.update(ty.id().as_slice());
         }
-        TypeLibId(hasher.finalize())
+        TypeLibId::from_raw_array(hasher.finalize())
     }
 }
