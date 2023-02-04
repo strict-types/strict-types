@@ -20,10 +20,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::cmp::Ordering;
 use std::hash::Hash;
 
-use amplify::Wrapper;
+use amplify::{Bytes32, Wrapper};
+use baid58::ToBaid58;
 use strict_encoding::{Sizing, StrictDumb, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
@@ -31,27 +31,25 @@ use crate::ast::{EnumVariants, NamedFields};
 use crate::{Cls, KeyTy, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
-#[derive(Wrapper, Copy, Clone, Eq, PartialEq, Hash, Debug, Display, From)]
-#[derive(StrictType)]
+#[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[wrapper(Deref, BorrowSlice, FromStr, Hex, Index, RangeOps)]
+#[display(Self::to_baid58)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[wrapper(Deref)]
-#[display(inner)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
 pub struct SemId(
     #[from]
     #[from([u8; 32])]
-    blake3::Hash,
+    Bytes32,
 );
 
-impl Ord for SemId {
-    fn cmp(&self, other: &Self) -> Ordering { self.0.as_bytes().cmp(other.0.as_bytes()) }
-}
-
-impl PartialOrd for SemId {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
-}
-
-impl StrictDumb for SemId {
-    fn strict_dumb() -> Self { SemId(blake3::Hash::from([0u8; 32])) }
+impl ToBaid58<32> for SemId {
+    const HRP: &'static str = "sty";
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
 }
 
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
@@ -67,7 +65,7 @@ impl<Ref: TypeRef> Ty<Ref> {
             hasher.update(name.as_bytes());
         }
         self.hash_id(&mut hasher);
-        SemId(hasher.finalize())
+        SemId::from_raw_array(hasher.finalize())
     }
 }
 
@@ -83,21 +81,21 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
             Ty::Tuple(fields) => fields.hash_id(hasher),
             Ty::Struct(fields) => fields.hash_id(hasher),
             Ty::Array(ty, len) => {
-                hasher.update(ty.id().as_bytes());
+                hasher.update(ty.id().as_slice());
                 hasher.update(&len.to_le_bytes());
             }
             Ty::UnicodeChar => {}
             Ty::List(ty, sizing) => {
-                hasher.update(ty.id().as_bytes());
+                hasher.update(ty.id().as_slice());
                 sizing.hash_id(hasher);
             }
             Ty::Set(ty, sizing) => {
-                hasher.update(ty.id().as_bytes());
+                hasher.update(ty.id().as_slice());
                 sizing.hash_id(hasher);
             }
             Ty::Map(key, ty, sizing) => {
                 key.hash_id(hasher);
-                hasher.update(ty.id().as_bytes());
+                hasher.update(ty.id().as_slice());
                 sizing.hash_id(hasher);
             }
         };
@@ -108,7 +106,7 @@ impl KeyTy {
     pub fn id(&self) -> SemId {
         let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
         self.hash_id(&mut hasher);
-        SemId(hasher.finalize())
+        SemId::from_raw_array(hasher.finalize())
     }
 }
 
@@ -137,7 +135,7 @@ impl HashId for Cls {
 impl<Ref: TypeRef> HashId for Field<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         hasher.update(self.name.as_bytes());
-        hasher.update(self.ty.id().as_bytes());
+        hasher.update(self.ty.id().as_slice());
     }
 }
 
@@ -153,7 +151,7 @@ impl<Ref: TypeRef> HashId for UnionVariants<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for (variant, ty) in self {
             variant.hash_id(hasher);
-            hasher.update(ty.id().as_bytes());
+            hasher.update(ty.id().as_slice());
         }
     }
 }
@@ -169,7 +167,7 @@ impl<Ref: TypeRef> HashId for NamedFields<Ref> {
 impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for ty in self {
-            hasher.update(ty.id().as_bytes());
+            hasher.update(ty.id().as_slice());
         }
     }
 }

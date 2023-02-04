@@ -25,23 +25,12 @@ use std::io;
 
 use amplify::confinement::TinyOrdMap;
 use strict_encoding::{
-    DecodeError, FieldName, ReadTuple, StrictDecode, StrictDumb, StrictEncode, StrictType,
-    TypedRead, TypedWrite, Variant, STRICT_TYPES_LIB,
+    DecodeError, FieldName, StrictDecode, StrictDumb, StrictEncode, StrictType, TypedRead,
+    TypedWrite, Variant, STRICT_TYPES_LIB,
 };
 
 use crate::ast::ty::UnionVariants;
-use crate::{SemId, TypeRef};
-
-impl StrictEncode for SemId {
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        writer.write_newtype::<Self>(self.as_bytes())
-    }
-}
-impl StrictDecode for SemId {
-    fn strict_decode(reader: &mut impl TypedRead) -> Result<Self, DecodeError> {
-        reader.read_tuple(|r| r.read_field::<[u8; 32]>().map(SemId::from))
-    }
-}
+use crate::TypeRef;
 
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
