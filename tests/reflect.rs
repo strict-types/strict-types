@@ -26,7 +26,7 @@ extern crate amplify;
 extern crate strict_encoding;
 
 use baid58::ToBaid58;
-use strict_encoding::{StrictDumb, StrictSerialize, STRICT_TYPES_LIB};
+use strict_encoding::{StrictSerialize, STRICT_TYPES_LIB};
 use strict_types::typelib::build::LibBuilder;
 use strict_types::TypeLib;
 
@@ -43,8 +43,7 @@ fn pp(data: impl AsRef<[u8]>) {
 
 #[test]
 fn reflect() {
-    let root = TypeLib::strict_dumb();
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process(&root).unwrap();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>().unwrap();
     let lib = builder.compile(none!()).unwrap();
     let id = lib.id();
 
