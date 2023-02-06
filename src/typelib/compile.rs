@@ -24,6 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
+use encoding::LibName;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::NestedRef;
@@ -57,7 +58,7 @@ pub enum CompileRef {
     Embedded(Box<Ty<CompileRef>>),
     #[from]
     Named(TypeName),
-    Extern(TypeName, LibAlias),
+    Extern(TypeName, LibName),
 }
 
 impl CompileRef {
@@ -131,7 +132,7 @@ impl LibBuilder {
 
         let name = self.name();
 
-        let types = self.into_types();
+        let (mut extern_types, types) = self.into_types();
         for el in types.values() {
             for subty in el.ty.type_refs() {
                 if let CompileRef::Named(name) = subty {
@@ -159,17 +160,20 @@ impl LibBuilder {
                 let mut ctx = NestedContext {
                     top_name: name.clone(),
                     index,
+                    extern_types,
                     stack: empty!(),
                 };
                 let ty = match ty.clone().translate(&mut ctx) {
                     Ok(ty) => ty,
                     Err(TranslateError::Continue) => {
                         index = ctx.index;
+                        extern_types = ctx.extern_types;
                         continue;
                     }
                     Err(err) => return Err(err),
                 };
                 index = ctx.index;
+                extern_types = ctx.extern_types;
                 found = true;
                 let id = ty.id(Some(name));
                 index.insert(name.clone(), id);
