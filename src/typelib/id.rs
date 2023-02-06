@@ -20,8 +20,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::str::FromStr;
+
 use amplify::{Bytes32, RawArray};
-use baid58::ToBaid58;
+use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use encoding::{StrictDeserialize, StrictSerialize};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
@@ -31,7 +33,7 @@ pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
-#[wrapper(Deref, BorrowSlice, FromStr, Hex, Index, RangeOps)]
+#[wrapper(Deref, BorrowSlice, commHex, Index, RangeOps)]
 #[display(Self::to_baid58)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
@@ -52,6 +54,11 @@ impl StrictDeserialize for TypeLib {}
 impl ToBaid58<32> for TypeLibId {
     const HRI: &'static str = "stl";
     fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
+}
+impl FromBaid58<32> for TypeLibId {}
+impl FromStr for TypeLibId {
+    type Err = Baid58ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid58_str(s) }
 }
 
 impl TypeLib {
