@@ -114,6 +114,18 @@ pub struct SemVer {
     pub build: TinyVec<BuildFragment>,
 }
 
+impl SemVer {
+    pub fn new(major: u16, minor: u16, patch: u16) -> Self {
+        SemVer {
+            major,
+            minor,
+            patch,
+            pre: none!(),
+            build: none!(),
+        }
+    }
+}
+
 impl Display for SemVer {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "{}.{}.{}", self.major, self.minor, self.patch)?;

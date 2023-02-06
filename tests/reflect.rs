@@ -21,6 +21,8 @@
 // limitations under the License.
 
 #[macro_use]
+extern crate amplify;
+#[macro_use]
 extern crate strict_encoding;
 
 use baid58::ToBaid58;
@@ -42,12 +44,12 @@ fn pp(data: impl AsRef<[u8]>) {
 #[test]
 fn reflect() {
     let root = TypeLib::strict_dumb();
-
     let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process(&root).unwrap();
-    let lib = builder.compile().unwrap();
+    let lib = builder.compile(none!()).unwrap();
     let id = lib.id();
 
-    println!("{{-\n-- Import this lib by putting in the file header\n-- import {id:+}\n-}}");
+    println!("{{-\n-- Import this lib by putting in the file header\n-- import {id:#}\n-}}");
+    println!();
     println!("{lib}");
 
     println!("----- BEGIN STRICT TYPE LIB -----");

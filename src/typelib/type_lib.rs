@@ -171,11 +171,18 @@ pub type LibAlias = LibName;
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("typelib {name}@{ver} {id:#}")]
+#[display("import {name}@{ver} {id:#}")]
 pub struct Dependency {
     pub id: TypeLibId,
     pub name: LibName,
     pub ver: SemVer,
+}
+
+impl Dependency {
+    pub fn with(id: TypeLibId, name: LibName, ver: (u16, u16, u16)) -> Self {
+        let ver = SemVer::new(ver.0, ver.1, ver.2);
+        Dependency { id, name, ver }
+    }
 }
 
 pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize }>;
@@ -232,7 +239,7 @@ impl TypeLib {
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "namespace {} -- {:+.1}", self.name, self.id())?;
+        writeln!(f, "typelib {} -- {:#}", self.name, self.id())?;
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
             if alias != &dep.name {
@@ -242,8 +249,9 @@ impl Display for TypeLib {
             }
         }
         if self.dependencies.is_empty() {
-            f.write_str("-- no dependencies\n")?;
+            f.write_str("-- no dependencies")?;
         }
+        writeln!(f)?;
         writeln!(f)?;
         for ty in self.types.values() {
             writeln!(f, "{ty}")?;

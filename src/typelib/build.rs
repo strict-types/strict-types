@@ -34,7 +34,7 @@ use strict_encoding::{
 
 use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::{SemId, Ty};
+use crate::{SemId, Ty, TypeRef};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -177,7 +177,7 @@ impl TypedWrite for LibBuilder {
                         .unwrap_or_else(|| panic!("unknown map key type '{name}'"))
                         .ty
                 }
-                me @ CompileRef::Extern(_, _) => {
+                me @ CompileRef::Extern(_, _, _) => {
                     panic!("not supported map key type '{me}'")
                 }
             };
@@ -223,7 +223,8 @@ impl BuilderParent for LibBuilder {
         match (T::STRICT_LIB_NAME, T::strict_name()) {
             (STD_LIB, _) | (_, None) => _compile(self),
             (lib, Some(name)) if lib != self.lib.as_str() => {
-                (self, CompileRef::Extern(name, libname!(lib)))
+                let (me, ty) = _compile(self);
+                (me, CompileRef::Extern(name, libname!(lib), ty.id()))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
             (_, Some(_)) => _compile(self),
@@ -245,12 +246,13 @@ impl BuilderParent for LibBuilder {
                 CompileRef::Named(name)
             }
             (lib, Some(name)) => {
+                let id = ty.id(Some(&name));
                 self.extern_types
                     .entry(lib.clone())
                     .or_default()
-                    .insert(name.clone(), ty.id(Some(&name)))
+                    .insert(name.clone(), id)
                     .expect("too many types");
-                CompileRef::Extern(name, lib)
+                CompileRef::Extern(name, lib, id)
             }
             (_, None) => CompileRef::Embedded(Box::new(ty)),
         };

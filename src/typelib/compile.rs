@@ -23,8 +23,8 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement;
-use encoding::LibName;
+use amplify::confinement::{self, Confined};
+use encoding::{LibName, STD_LIB};
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::NestedRef;
@@ -58,7 +58,7 @@ pub enum CompileRef {
     Embedded(Box<Ty<CompileRef>>),
     #[from]
     Named(TypeName),
-    Extern(TypeName, LibName),
+    Extern(TypeName, LibName, SemId),
 }
 
 impl CompileRef {
@@ -67,7 +67,15 @@ impl CompileRef {
 
 impl TypeRef for CompileRef {
     const TYPE_NAME: &'static str = "CompileRef";
-    fn id(&self) -> SemId { unreachable!("CompileRef must never be called for the id") }
+    fn id(&self) -> SemId {
+        match self {
+            CompileRef::Embedded(ty) => ty.id(None),
+            CompileRef::Extern(_, _, id) => *id,
+            CompileRef::Named(name) => panic!(
+                "non-embedded CompileRef must never be called for named refs (called for '{name}')"
+            ),
+        }
+    }
 }
 
 impl NestedRef for CompileRef {
@@ -76,7 +84,7 @@ impl NestedRef for CompileRef {
     fn as_ty(&self) -> Option<&Ty<Self>> {
         match self {
             CompileRef::Embedded(ty) => Some(ty),
-            CompileRef::Named(_) | CompileRef::Extern(_, _) => None,
+            CompileRef::Named(_) | CompileRef::Extern(_, _, _) => None,
         }
     }
 }
@@ -87,7 +95,7 @@ impl Display for CompileRef {
             CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({ty})"),
             CompileRef::Embedded(ty) => Display::fmt(ty, f),
             CompileRef::Named(name) => write!(f, "{name}"),
-            CompileRef::Extern(name, lib) => write!(f, "{lib}.{name}"),
+            CompileRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
         }
     }
 }
@@ -127,9 +135,10 @@ pub enum Error {
 }
 
 impl LibBuilder {
-    pub fn compile(self) -> Result<TypeLib, TranslateError> {
-        // TODO: Build dependency list
-
+    pub fn compile(
+        self,
+        mut known_libs: BTreeMap<LibName, (LibAlias, Dependency)>,
+    ) -> Result<TypeLib, TranslateError> {
         let name = self.name();
 
         let (mut extern_types, types) = self.into_types();
@@ -183,10 +192,21 @@ impl LibBuilder {
             debug_assert!(found, "incomplete type definition found in the library");
         }
 
+        let mut dependencies = bmap! {};
+        for lib in extern_types.keys() {
+            if lib == &libname!(STD_LIB) {
+                continue;
+            }
+            let (alias, dep) =
+                known_libs.remove(lib).ok_or(TranslateError::UnknownLib(lib.clone()))?;
+            dependencies.insert(alias, dep);
+        }
+
         let types = TypeMap::try_from(new_types)?;
         Ok(TypeLib {
             name,
-            dependencies: none!(),
+            dependencies: Confined::try_from_iter(dependencies)
+                .expect("same size as previous confinmenet"),
             types,
         })
     }
