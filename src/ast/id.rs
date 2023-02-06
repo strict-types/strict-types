@@ -48,7 +48,7 @@ pub struct SemId(
 );
 
 impl ToBaid58<32> for SemId {
-    const HRP: &'static str = "sty";
+    const HRI: &'static str = "sty";
     fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
 }
 

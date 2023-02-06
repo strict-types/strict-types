@@ -50,7 +50,7 @@ impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
 
 impl ToBaid58<32> for TypeLibId {
-    const HRP: &'static str = "stl";
+    const HRI: &'static str = "stl";
     fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
 }
 
