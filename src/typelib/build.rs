@@ -320,37 +320,36 @@ impl<P: BuilderParent> StructBuilder<P> {
     }
 
     fn _build_struct(&self) -> Ty<CompileRef> {
-        match self.writer.is_tuple() {
-            true => {
-                let fields = UnnamedFields::try_from(self.fields.clone()).unwrap_or_else(|_| {
-                    panic!(
-                        "tuple '{}' has invalid number of fields ({})",
-                        self.name(),
-                        self.fields.len()
-                    )
-                });
-                Ty::Tuple(fields)
-            }
-            false => {
-                let fields = self
-                    .writer
-                    .named_fields()
-                    .iter()
-                    .enumerate()
-                    .map(|(no, name)| {
-                        let lib_ref = self.fields.get(no).expect("type guarantees");
-                        Field {
-                            name: name.clone(),
-                            ty: lib_ref.clone(),
-                        }
-                    })
-                    .collect::<Vec<_>>();
-                let len = fields.len();
-                let fields = NamedFields::try_from(fields).unwrap_or_else(|_| {
-                    panic!("structure '{}' has invalid number of fields ({len})", self.name(),)
-                });
-                Ty::Struct(fields)
-            }
+        if self.fields.is_empty() {
+            Ty::UNIT
+        } else if self.writer.is_tuple() {
+            let fields = UnnamedFields::try_from(self.fields.clone()).unwrap_or_else(|_| {
+                panic!(
+                    "tuple '{}' has invalid number of fields ({})",
+                    self.name(),
+                    self.fields.len()
+                )
+            });
+            Ty::Tuple(fields)
+        } else {
+            let fields = self
+                .writer
+                .named_fields()
+                .iter()
+                .enumerate()
+                .map(|(no, name)| {
+                    let lib_ref = self.fields.get(no).expect("type guarantees");
+                    Field {
+                        name: name.clone(),
+                        ty: lib_ref.clone(),
+                    }
+                })
+                .collect::<Vec<_>>();
+            let len = fields.len();
+            let fields = NamedFields::try_from(fields).unwrap_or_else(|_| {
+                panic!("structure '{}' has invalid number of fields ({len})", self.name(),)
+            });
+            Ty::Struct(fields)
         }
     }
 
