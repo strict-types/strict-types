@@ -25,6 +25,7 @@ use std::io;
 use std::io::Sink;
 
 use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap};
+use amplify::Wrapper;
 use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
     SplitParent, StrictDumb, StrictEncode, StrictEnum, StrictParent, StrictStruct, StrictSum,
@@ -269,7 +270,7 @@ pub struct StructBuilder<P: BuilderParent> {
     lib: LibName,
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
-    fields: Vec<CompileRef>,
+    fields: Vec<(Option<FieldName>, CompileRef)>,
     cursor: Option<u8>,
 }
 
@@ -291,31 +292,30 @@ impl<P: BuilderParent> StructBuilder<P> {
 
     pub fn name(&self) -> &str { self.name.as_ref().map(|n| n.as_str()).unwrap_or("<unnamed>") }
 
-    fn _define_field<T: StrictEncode + StrictDumb>(mut self) -> Self {
+    fn _define_field<T: StrictEncode + StrictDumb>(mut self, fname: Option<FieldName>) -> Self {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(&T::strict_dumb());
         self.writer = StructWriter::from_parent_split(parent, remnant);
-        self.fields.push(ty); // type repetition is checked by self.parent
+        self.fields.push((fname, ty)); // type repetition is checked by self.parent
         self
     }
 
-    fn _write_field(mut self, value: &impl StrictEncode) -> io::Result<Self> {
+    fn _write_field(
+        mut self,
+        fname: Option<FieldName>,
+        value: &impl StrictEncode,
+    ) -> io::Result<Self> {
         let (parent, remnant) = self.writer.into_parent_split();
         let (parent, ty) = parent.compile_type(value);
         self.writer = StructWriter::from_parent_split(parent, remnant);
         if let Some(pos) = &mut self.cursor {
-            let expect_ty = &self.fields[*pos as usize];
-            let msg = format!(
-                "'{}.{}' has type '{}' instead of '{}'",
-                pos,
-                self.writer.name(),
-                ty,
-                expect_ty
-            );
+            let expect_ty = &self.fields[*pos as usize].1;
+            let msg =
+                format!("'{}.{pos}' has type '{ty}' instead of '{expect_ty}'", self.writer.name(),);
             assert_eq!(expect_ty, &ty, "{msg}");
             *pos += 1;
         }
-        self.fields.push(ty);
+        self.fields.push((fname, ty));
         Ok(self)
     }
 
@@ -323,33 +323,29 @@ impl<P: BuilderParent> StructBuilder<P> {
         if self.fields.is_empty() {
             Ty::UNIT
         } else if self.writer.is_tuple() {
-            let fields = UnnamedFields::try_from(self.fields.clone()).unwrap_or_else(|_| {
+            let fields =
+                Confined::try_from_iter(self.fields.iter().map(|(_, field)| field.clone()))
+                    .unwrap_or_else(|_| {
+                        panic!(
+                            "tuple '{}' has invalid number of fields ({})",
+                            self.name(),
+                            self.fields.len()
+                        )
+                    });
+            Ty::Tuple(UnnamedFields::from_inner(fields))
+        } else {
+            let fields = Confined::try_from_iter(self.fields.iter().cloned().map(|(name, ty)| {
+                let name = name.expect("unnamed field");
+                Field { name, ty }
+            }))
+            .unwrap_or_else(|_| {
                 panic!(
                     "tuple '{}' has invalid number of fields ({})",
                     self.name(),
                     self.fields.len()
                 )
             });
-            Ty::Tuple(fields)
-        } else {
-            let fields = self
-                .writer
-                .named_fields()
-                .iter()
-                .enumerate()
-                .map(|(no, name)| {
-                    let lib_ref = self.fields.get(no).expect("type guarantees");
-                    Field {
-                        name: name.clone(),
-                        ty: lib_ref.clone(),
-                    }
-                })
-                .collect::<Vec<_>>();
-            let len = fields.len();
-            let fields = NamedFields::try_from(fields).unwrap_or_else(|_| {
-                panic!("structure '{}' has invalid number of fields ({len})", self.name(),)
-            });
-            Ty::Struct(fields)
+            Ty::Struct(NamedFields::from_inner(fields))
         }
     }
 
@@ -384,8 +380,8 @@ impl<P: BuilderParent> DefineStruct for StructBuilder<P> {
     type Parent = P;
 
     fn define_field<T: StrictEncode + StrictDumb>(mut self, name: FieldName) -> Self {
-        self.writer = DefineStruct::define_field::<T>(self.writer, name);
-        self._define_field::<T>()
+        self.writer = DefineStruct::define_field::<T>(self.writer, name.clone());
+        self._define_field::<T>(Some(name))
     }
 
     fn complete(self) -> P { self._complete_definition() }
@@ -395,8 +391,8 @@ impl<P: BuilderParent> WriteStruct for StructBuilder<P> {
     type Parent = P;
 
     fn write_field(mut self, name: FieldName, value: &impl StrictEncode) -> io::Result<Self> {
-        self.writer = WriteStruct::write_field(self.writer, name, value)?;
-        self._write_field(value)
+        self.writer = WriteStruct::write_field(self.writer, name.clone(), value)?;
+        self._write_field(Some(name), value)
     }
 
     fn complete(self) -> P { self._complete_write() }
@@ -407,7 +403,7 @@ impl<P: BuilderParent> DefineTuple for StructBuilder<P> {
 
     fn define_field<T: StrictEncode + StrictDumb>(mut self) -> Self {
         self.writer = DefineTuple::define_field::<T>(self.writer);
-        self._define_field::<T>()
+        self._define_field::<T>(None)
     }
 
     fn complete(self) -> P { self._complete_definition() }
@@ -418,7 +414,7 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 
     fn write_field(mut self, value: &impl StrictEncode) -> io::Result<Self> {
         self.writer = WriteTuple::write_field(self.writer, value)?;
-        self._write_field(value)
+        self._write_field(None, value)
     }
 
     fn complete(self) -> P { self._complete_write() }

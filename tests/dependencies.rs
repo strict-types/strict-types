@@ -58,21 +58,24 @@ pub enum Prim {
     B = 2,
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Default)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = LIB, tags = order)]
 pub enum Message {
     Init(u8),
-    #[default]
     Ping,
-    Pong {
-        nonce: Void,
-    },
-    Connect {
-        host: Option<u8>,
-        port: u16,
-    },
+    Pong { len: u8, nonce: Void },
+    Connect { host: Option<u8>, port: u16 },
     Dependency(KeyTy),
+}
+
+impl Default for Message {
+    fn default() -> Self {
+        Message::Pong {
+            len: 0,
+            nonce: Void,
+        }
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
