@@ -26,6 +26,7 @@ mod translate;
 pub mod build;
 pub mod compile;
 
+pub use build::LibBuilder;
 pub use compile::{CompileRef, CompileType};
 pub use id::TypeLibId;
 pub use type_lib::{
