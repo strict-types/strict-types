@@ -42,6 +42,9 @@ pub extern crate strict_encoding as encoding;
 extern crate core;
 
 pub use encoding::derive;
+pub use strict_encoding::{
+    fname, libname, strict_dumb, tn, vname, StrictDecode, StrictDumb, StrictEncode, StrictType,
+};
 
 #[macro_use]
 mod macros;
