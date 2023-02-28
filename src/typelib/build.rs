@@ -323,7 +323,11 @@ impl<P: BuilderParent> StructBuilder<P> {
         match self.writer.is_tuple() {
             true => {
                 let fields = UnnamedFields::try_from(self.fields.clone()).unwrap_or_else(|_| {
-                    panic!("tuple '{}' has invalid number of fields", self.name())
+                    panic!(
+                        "tuple '{}' has invalid number of fields ({})",
+                        self.name(),
+                        self.fields.len()
+                    )
                 });
                 Ty::Tuple(fields)
             }
@@ -341,8 +345,9 @@ impl<P: BuilderParent> StructBuilder<P> {
                         }
                     })
                     .collect::<Vec<_>>();
+                let len = fields.len();
                 let fields = NamedFields::try_from(fields).unwrap_or_else(|_| {
-                    panic!("structure '{}' has invalid number of fields", self.name())
+                    panic!("structure '{}' has invalid number of fields ({len})", self.name(),)
                 });
                 Ty::Struct(fields)
             }
