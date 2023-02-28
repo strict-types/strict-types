@@ -23,10 +23,9 @@
 #[macro_use]
 extern crate amplify;
 #[macro_use]
-extern crate strict_encoding;
 extern crate strict_types;
 
-use strict_encoding::{libname, STRICT_TYPES_LIB};
+use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::typelib::build::LibBuilder;
 use strict_types::{Dependency, KeyTy, TypeLib};
 
@@ -86,7 +85,7 @@ fn serialize() {
     let id = lib.id();
 
     let imports = bmap! {
-        libname!(STRICT_TYPES_LIB) => (libname!(STRICT_TYPES_LIB), Dependency::with(id, libname!(STRICT_TYPES_LIB), (0,1,0)))
+        libname!(STRICT_TYPES_LIB) => (lib_alias!(STRICT_TYPES_LIB), Dependency::with(id, libname!(STRICT_TYPES_LIB), (0,1,0)))
     };
     let builder = LibBuilder::new(libname!(LIB)).process::<Complex>().unwrap();
     let lib = builder.compile(imports).unwrap();

@@ -24,6 +24,8 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
+use amplify::Wrapper;
+use encoding::{Ident, InvalidIdent, StrictDumb};
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::typelib::id::TypeLibId;
@@ -166,7 +168,27 @@ impl Display for LibRef {
     }
 }
 
-pub type LibAlias = LibName;
+#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
+#[wrapper(Deref, Display, FromStr)]
+#[wrapper_mut(DerefMut)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", transparent)
+)]
+pub struct LibAlias(Ident);
+
+impl From<&'static str> for LibAlias {
+    fn from(ident: &'static str) -> Self { LibAlias(Ident::from(ident)) }
+}
+
+impl TryFrom<String> for LibAlias {
+    type Error = InvalidIdent;
+
+    fn try_from(s: String) -> Result<Self, Self::Error> { Ident::try_from(s).map(Self) }
+}
 
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]

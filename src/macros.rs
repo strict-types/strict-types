@@ -95,3 +95,13 @@ macro_rules! variants {
         }
     };
 }
+
+#[macro_export]
+macro_rules! lib_alias {
+    ($name:literal) => {
+        $crate::LibAlias::from($name)
+    };
+    ($name:expr) => {
+        $crate::LibAlias::from($name)
+    };
+}
