@@ -78,6 +78,24 @@ impl TypeRef for CompileRef {
             }
         }
     }
+    fn is_byte(&self) -> bool {
+        match self {
+            CompileRef::Embedded(ty) => ty.is_byte(),
+            _ => false,
+        }
+    }
+    fn is_unicode_char(&self) -> bool {
+        match self {
+            CompileRef::Embedded(ty) => ty.is_unicode_char(),
+            _ => false,
+        }
+    }
+    fn is_ascii_char(&self) -> bool {
+        match self {
+            CompileRef::Embedded(ty) => ty.is_ascii_char(),
+            _ => false,
+        }
+    }
 }
 
 impl NestedRef for CompileRef {

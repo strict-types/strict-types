@@ -53,6 +53,24 @@ impl TypeRef for EmbeddedRef {
             EmbeddedRef::Inline(ty) => ty.id(None),
         }
     }
+    fn is_byte(&self) -> bool {
+        match self {
+            EmbeddedRef::SemId(_) => false,
+            EmbeddedRef::Inline(ty) => ty.is_byte(),
+        }
+    }
+    fn is_unicode_char(&self) -> bool {
+        match self {
+            EmbeddedRef::SemId(_) => false,
+            EmbeddedRef::Inline(ty) => ty.is_unicode_char(),
+        }
+    }
+    fn is_ascii_char(&self) -> bool {
+        match self {
+            EmbeddedRef::SemId(_) => false,
+            EmbeddedRef::Inline(ty) => ty.is_ascii_char(),
+        }
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
