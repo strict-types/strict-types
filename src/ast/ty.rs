@@ -266,7 +266,7 @@ impl<Ref: NestedRef> Ty<Ref> {
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub fn is_byte(&self) -> bool { matches!(self, x if x == &Ty::BYTE) }
+    pub fn is_byte(&self) -> bool { matches!(self, x if x == &Ty::BYTE || x == &Ty::U8) }
     pub fn is_unicode_char(&self) -> bool { matches!(self, x if x == &Ty::UNICODE) }
     pub fn is_ascii_char(&self) -> bool { matches!(self, x if x == &Ty::ascii_char()) }
 
