@@ -71,9 +71,9 @@ impl TypeRef for CompileRef {
         match self {
             CompileRef::Embedded(ty) => ty.id(None),
             CompileRef::Extern(_, _, id) => *id,
-            CompileRef::Named(name) => panic!(
-                "non-embedded CompileRef must never be called for named refs (called for '{name}')"
-            ),
+            CompileRef::Named(name) => {
+                panic!("CompileRef::id must never be called for named refs (called for '{name}')")
+            }
         }
     }
 }
