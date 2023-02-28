@@ -26,7 +26,7 @@ mod path;
 mod iter;
 mod encoding;
 
-pub use id::SemId;
+pub use id::{HashId, SemId};
 pub use iter::{CheckError, IntoIter, Iter, NestedRef};
 pub use path::{Path, PathError, Step};
 pub use ty::{

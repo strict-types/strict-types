@@ -24,10 +24,11 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{self, Confined};
+use blake3::Hasher;
 use encoding::{LibName, STD_LIB};
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::NestedRef;
+use crate::ast::{HashId, NestedRef};
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
 use crate::typelib::type_lib::{LibType, TypeMap};
@@ -90,6 +91,14 @@ impl NestedRef for CompileRef {
     }
 }
 
+impl HashId for CompileRef {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        match self {
+            CompileRef::Embedded(ty) => ty.hash_id(hasher),
+            CompileRef::Named(name) => {
+                hasher.update(name.as_bytes());
+            }
+            CompileRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
 }

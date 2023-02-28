@@ -25,9 +25,11 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::Wrapper;
+use blake3::Hasher;
 use encoding::{Ident, InvalidIdent, StrictDumb};
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
+use crate::ast::HashId;
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
 use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
@@ -103,6 +105,19 @@ impl TypeRef for InlineRef {
     }
 }
 
+impl HashId for InlineRef {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        match self {
+            InlineRef::Inline(ty) => ty.hash_id(hasher),
+            InlineRef::Named(name, id) => {
+                hasher.update(name.as_bytes());
+                id.hash_id(hasher);
+            }
+            InlineRef::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -130,6 +145,19 @@ impl TypeRef for InlineRef1 {
             InlineRef1::Named(_, id) => *id,
             InlineRef1::Extern(ext) => ext.id,
             InlineRef1::Inline(ty) => ty.id(None),
+        }
+    }
+}
+
+impl HashId for InlineRef1 {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        match self {
+            InlineRef1::Inline(ty) => ty.hash_id(hasher),
+            InlineRef1::Named(name, id) => {
+                hasher.update(name.as_bytes());
+                id.hash_id(hasher);
+            }
+            InlineRef1::Extern(ext) => ext.hash_id(hasher),
         }
     }
 }
@@ -165,6 +193,19 @@ impl TypeRef for InlineRef2 {
     }
 }
 
+impl HashId for InlineRef2 {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        match self {
+            InlineRef2::Inline(ty) => ty.hash_id(hasher),
+            InlineRef2::Named(name, id) => {
+                hasher.update(name.as_bytes());
+                id.hash_id(hasher);
+            }
+            InlineRef2::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -192,6 +233,19 @@ impl TypeRef for LibRef {
             LibRef::Named(_, id) => *id,
             LibRef::Extern(ext) => ext.id,
             LibRef::Inline(ty) => ty.id(None),
+        }
+    }
+}
+
+impl HashId for LibRef {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        match self {
+            LibRef::Inline(ty) => ty.hash_id(hasher),
+            LibRef::Named(name, id) => {
+                hasher.update(name.as_bytes());
+                id.hash_id(hasher);
+            }
+            LibRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
 }

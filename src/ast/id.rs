@@ -25,6 +25,7 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use blake3::Hasher;
 use strict_encoding::{Sizing, StrictDumb, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
@@ -60,7 +61,7 @@ impl FromStr for SemId {
 
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
-trait HashId {
+pub trait HashId {
     fn hash_id(&self, hasher: &mut blake3::Hasher);
 }
 
@@ -75,6 +76,10 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 }
 
+impl HashId for SemId {
+    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.as_slice()); }
+}
+
 impl<Ref: TypeRef> HashId for Ty<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         self.cls().hash_id(hasher);
@@ -87,21 +92,21 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
             Ty::Tuple(fields) => fields.hash_id(hasher),
             Ty::Struct(fields) => fields.hash_id(hasher),
             Ty::Array(ty, len) => {
-                hasher.update(ty.id().as_slice());
+                ty.hash_id(hasher);
                 hasher.update(&len.to_le_bytes());
             }
             Ty::UnicodeChar => {}
             Ty::List(ty, sizing) => {
-                hasher.update(ty.id().as_slice());
+                ty.hash_id(hasher);
                 sizing.hash_id(hasher);
             }
             Ty::Set(ty, sizing) => {
-                hasher.update(ty.id().as_slice());
+                ty.hash_id(hasher);
                 sizing.hash_id(hasher);
             }
             Ty::Map(key, ty, sizing) => {
                 key.hash_id(hasher);
-                hasher.update(ty.id().as_slice());
+                ty.hash_id(hasher);
                 sizing.hash_id(hasher);
             }
         };
@@ -133,7 +138,7 @@ impl HashId for Cls {
 impl<Ref: TypeRef> HashId for Field<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         hasher.update(self.name.as_bytes());
-        hasher.update(self.ty.id().as_slice());
+        self.ty.hash_id(hasher);
     }
 }
 
@@ -149,7 +154,7 @@ impl<Ref: TypeRef> HashId for UnionVariants<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for (variant, ty) in self {
             variant.hash_id(hasher);
-            hasher.update(ty.id().as_slice());
+            ty.hash_id(hasher);
         }
     }
 }
@@ -165,7 +170,7 @@ impl<Ref: TypeRef> HashId for NamedFields<Ref> {
 impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
     fn hash_id(&self, hasher: &mut blake3::Hasher) {
         for ty in self {
-            hasher.update(ty.id().as_slice());
+            ty.hash_id(hasher);
         }
     }
 }

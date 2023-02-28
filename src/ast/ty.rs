@@ -31,11 +31,14 @@ use strict_encoding::{
     FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
 };
 
+use super::id::HashId;
 use crate::ast::NestedRef;
 use crate::SemId;
 
 /// Glue for constructing ASTs.
-pub trait TypeRef: Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized {
+pub trait TypeRef:
+    HashId + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
+{
     const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
     fn is_byte(&self) -> bool { false }
