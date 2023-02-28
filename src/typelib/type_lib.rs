@@ -47,6 +47,41 @@ impl LibType {
     pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+#[display("{lib}.{name}")]
+pub struct ExternRef {
+    pub name: TypeName,
+    pub lib: LibName,
+    pub id: SemId,
+}
+
+impl StrictDumb for ExternRef {
+    fn strict_dumb() -> Self {
+        ExternRef {
+            name: TypeName::strict_dumb(),
+            lib: LibName::strict_dumb(),
+            id: SemId::strict_dumb(),
+        }
+    }
+}
+
+impl HashId for ExternRef {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        hasher.update(self.lib.as_bytes());
+        hasher.update(&[b'.']);
+        hasher.update(self.name.as_bytes());
+        hasher.update(self.id.as_slice());
+    }
+}
+
+impl ExternRef {
+    pub fn with(name: TypeName, lib: LibName, id: SemId) -> ExternRef {
+        ExternRef { name, lib, id }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef::Inline(Ty::strict_dumb()) })]
@@ -54,14 +89,15 @@ pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
     Named(TypeName, SemId),
-    Extern(TypeName, LibAlias, SemId),
+    Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef {
     const TYPE_NAME: &'static str = "InlineRef";
     fn id(&self) -> SemId {
         match self {
-            InlineRef::Named(_, id) | InlineRef::Extern(_, _, id) => *id,
+            InlineRef::Named(_, id) => *id,
+            InlineRef::Extern(ext) => ext.id,
             InlineRef::Inline(ty) => ty.id(None),
         }
     }
@@ -71,7 +107,7 @@ impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             InlineRef::Named(name, _) => write!(f, "{name}"),
-            InlineRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
+            InlineRef::Extern(ext) => Display::fmt(ext, f),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
     }
@@ -84,14 +120,15 @@ pub enum InlineRef1 {
     #[from]
     Inline(Ty<InlineRef2>),
     Named(TypeName, SemId),
-    Extern(TypeName, LibAlias, SemId),
+    Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef1 {
     const TYPE_NAME: &'static str = "InlineRef1";
     fn id(&self) -> SemId {
         match self {
-            InlineRef1::Named(_, id) | InlineRef1::Extern(_, _, id) => *id,
+            InlineRef1::Named(_, id) => *id,
+            InlineRef1::Extern(ext) => ext.id,
             InlineRef1::Inline(ty) => ty.id(None),
         }
     }
@@ -101,7 +138,7 @@ impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             InlineRef1::Named(name, _) => write!(f, "{name}"),
-            InlineRef1::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
+            InlineRef1::Extern(ext) => Display::fmt(ext, f),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
     }
@@ -114,14 +151,15 @@ pub enum InlineRef2 {
     #[from]
     Inline(Ty<KeyTy>),
     Named(TypeName, SemId),
-    Extern(TypeName, LibAlias, SemId),
+    Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef2 {
     const TYPE_NAME: &'static str = "InlineRef2";
     fn id(&self) -> SemId {
         match self {
-            InlineRef2::Named(_, id) | InlineRef2::Extern(_, _, id) => *id,
+            InlineRef2::Named(_, id) => *id,
+            InlineRef2::Extern(ext) => ext.id,
             InlineRef2::Inline(ty) => ty.id(None),
         }
     }
@@ -131,7 +169,7 @@ impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             InlineRef2::Named(name, _) => write!(f, "{name}"),
-            InlineRef2::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
+            InlineRef2::Extern(ext) => Display::fmt(ext, f),
             InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
     }
@@ -144,14 +182,15 @@ pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
     Named(TypeName, SemId),
-    Extern(TypeName, LibAlias, SemId),
+    Extern(ExternRef),
 }
 
 impl TypeRef for LibRef {
     const TYPE_NAME: &'static str = "LibRef";
     fn id(&self) -> SemId {
         match self {
-            LibRef::Named(_, id) | LibRef::Extern(_, _, id) => *id,
+            LibRef::Named(_, id) => *id,
+            LibRef::Extern(ext) => ext.id,
             LibRef::Inline(ty) => ty.id(None),
         }
     }
@@ -163,7 +202,7 @@ impl Display for LibRef {
             LibRef::Named(name, _) => write!(f, "{name}"),
             LibRef::Inline(ty) if ty.is_compound() => write!(f, "({ty})"),
             LibRef::Inline(ty) => write!(f, "{ty}"),
-            LibRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
+            LibRef::Extern(ext) => Display::fmt(ext, f),
         }
     }
 }
@@ -240,7 +279,10 @@ impl TypeLib {
         dependency: Dependency,
         alias: Option<LibAlias>,
     ) -> Result<(), TranslateError> {
-        let alias = alias.unwrap_or_else(|| dependency.name.clone());
+        let alias = alias.unwrap_or_else(|| {
+            let ident = dependency.name.to_inner();
+            LibAlias::from_inner(ident)
+        });
         if self.dependencies.contains_key(&alias) {
             return Err(TranslateError::DuplicatedDependency(dependency));
         }
@@ -264,7 +306,7 @@ impl Display for TypeLib {
         writeln!(f, "typelib {} -- {:#}", self.name, self.id())?;
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
-            if alias != &dep.name {
+            if alias.as_inner() != dep.name.as_inner() {
                 writeln!(f, "{dep} as {alias}")?;
             } else {
                 Display::fmt(dep, f)?;

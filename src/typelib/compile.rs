@@ -31,6 +31,7 @@ use crate::ast::NestedRef;
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
 use crate::typelib::type_lib::{LibType, TypeMap};
+use crate::typelib::ExternRef;
 use crate::{Dependency, LibAlias, SemId, Ty, TypeLib, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -58,7 +59,7 @@ pub enum CompileRef {
     Embedded(Box<Ty<CompileRef>>),
     #[from]
     Named(TypeName),
-    Extern(TypeName, LibName, SemId),
+    Extern(ExternRef),
 }
 
 impl CompileRef {
@@ -70,7 +71,7 @@ impl TypeRef for CompileRef {
     fn id(&self) -> SemId {
         match self {
             CompileRef::Embedded(ty) => ty.id(None),
-            CompileRef::Extern(_, _, id) => *id,
+            CompileRef::Extern(ext) => ext.id,
             CompileRef::Named(name) => {
                 panic!("CompileRef::id must never be called for named refs (called for '{name}')")
             }
@@ -84,7 +85,11 @@ impl NestedRef for CompileRef {
     fn as_ty(&self) -> Option<&Ty<Self>> {
         match self {
             CompileRef::Embedded(ty) => Some(ty),
-            CompileRef::Named(_) | CompileRef::Extern(_, _, _) => None,
+            CompileRef::Named(_) | CompileRef::Extern(_) => None,
+        }
+    }
+}
+
         }
     }
 }
@@ -95,7 +100,7 @@ impl Display for CompileRef {
             CompileRef::Embedded(ty) if ty.is_compound() => write!(f, "({ty})"),
             CompileRef::Embedded(ty) => Display::fmt(ty, f),
             CompileRef::Named(name) => write!(f, "{name}"),
-            CompileRef::Extern(name, lib, _) => write!(f, "{lib}.{name}"),
+            CompileRef::Extern(ext) => Display::fmt(ext, f),
         }
     }
 }

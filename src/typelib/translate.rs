@@ -176,7 +176,7 @@ impl Translate<LibRef> for CompileRef {
                 let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(LibRef::Named(name, *id))
             }
-            CompileRef::Extern(name, lib, id) => Ok(LibRef::Extern(name, lib, id)),
+            CompileRef::Extern(ext) => Ok(LibRef::Extern(ext)),
         }
     }
 }
@@ -197,7 +197,7 @@ impl Translate<InlineRef> for CompileRef {
                 let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(InlineRef::Named(name, *id))
             }
-            CompileRef::Extern(name, lib, id) => Ok(InlineRef::Extern(name, lib, id)),
+            CompileRef::Extern(ext) => Ok(InlineRef::Extern(ext)),
         }
     }
 }
@@ -218,7 +218,7 @@ impl Translate<InlineRef1> for CompileRef {
                 let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(InlineRef1::Named(name, *id))
             }
-            CompileRef::Extern(name, lib, id) => Ok(InlineRef1::Extern(name, lib, id)),
+            CompileRef::Extern(ext) => Ok(InlineRef1::Extern(ext)),
         }
     }
 }
@@ -239,7 +239,7 @@ impl Translate<InlineRef2> for CompileRef {
                 let id = ctx.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(InlineRef2::Named(name, *id))
             }
-            CompileRef::Extern(name, lib, id) => Ok(InlineRef2::Extern(name, lib, id)),
+            CompileRef::Extern(ext) => Ok(InlineRef2::Extern(ext)),
         }
     }
 }
@@ -252,7 +252,7 @@ impl Translate<KeyTy> for CompileRef {
         let me = self.to_string();
         match self {
             CompileRef::Embedded(ty) => ty.try_to_key().ok(),
-            CompileRef::Named(_) | CompileRef::Extern(_, _, _) => None,
+            CompileRef::Named(_) | CompileRef::Extern(_) => None,
         }
         .ok_or(TranslateError::NestedInline(ctx.top_name.clone(), ctx.stack.join("/"), me))
     }
