@@ -25,11 +25,28 @@ extern crate amplify;
 #[macro_use]
 extern crate strict_types;
 
-use strict_encoding::STRICT_TYPES_LIB;
+use std::io;
+
+use strict_encoding::{
+    DecodeError, StrictDecode, StrictEncode, StrictType, TypedRead, TypedWrite, STRICT_TYPES_LIB,
+};
 use strict_types::typelib::build::LibBuilder;
 use strict_types::{Dependency, KeyTy, TypeLib};
 
 const LIB: &str = "Test";
+
+#[derive(Copy, Clone, Debug, PartialOrd, Ord, PartialEq, Eq, Hash, Default)]
+pub struct Void;
+
+impl StrictType for Void {
+    const STRICT_LIB_NAME: &'static str = LIB;
+}
+impl StrictEncode for Void {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> { Ok(writer) }
+}
+impl StrictDecode for Void {
+    fn strict_decode(_reader: &mut impl TypedRead) -> Result<Self, DecodeError> { Ok(Void) }
+}
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
@@ -48,9 +65,12 @@ pub enum Message {
     Init(u8),
     #[default]
     Ping,
-    Pong,
+    Pong {
+        nonce: Void,
+    },
     Connect {
         host: Option<u8>,
+        port: u16,
     },
     Dependency(KeyTy),
 }
