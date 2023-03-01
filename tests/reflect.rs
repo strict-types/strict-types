@@ -26,12 +26,14 @@ extern crate amplify;
 extern crate strict_encoding;
 
 use baid58::ToBaid58;
+use base64::Engine;
 use strict_encoding::{StrictSerialize, STRICT_TYPES_LIB};
 use strict_types::typelib::build::LibBuilder;
 use strict_types::TypeLib;
 
 fn pp(data: impl AsRef<[u8]>) {
-    let data = base64::encode(data);
+    let engine = base64::engine::general_purpose::STANDARD_NO_PAD;
+    let data = engine.encode(data);
     let mut data = data.as_str();
     while data.len() > 80 {
         let (line, rest) = data.split_at(80);
