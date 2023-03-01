@@ -49,7 +49,12 @@ fn reflect() {
     let lib = builder.compile(none!()).unwrap();
     let id = lib.id();
 
-    println!("{{-\n-- Import this lib by putting in the file header\n-- import {id:#}\n-}}");
+    println!(
+        "{{-
+-- Import this lib by putting in the file header
+-- `import {id:+} as {STRICT_TYPES_LIB}`
+-}}"
+    );
     println!();
     println!("{lib}");
 
