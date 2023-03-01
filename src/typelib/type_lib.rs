@@ -488,11 +488,11 @@ impl fmt::UpperHex for TypeLib {
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD_NO_PAD;
+        let engine = base64::engine::general_purpose::STANDARD;
         let data = engine.encode(data);
         let mut data = data.as_str();
-        while data.len() > 80 {
-            let (line, rest) = data.split_at(80);
+        while data.len() >= 76 {
+            let (line, rest) = data.split_at(76);
             writeln!(f, "{}", line)?;
             data = rest;
         }
