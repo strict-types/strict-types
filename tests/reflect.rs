@@ -26,16 +26,13 @@ extern crate amplify;
 extern crate strict_encoding;
 
 use strict_encoding::STRICT_TYPES_LIB;
-use strict_types::typelib::build::LibBuilder;
+use strict_types::typelib::LibBuilder;
 use strict_types::TypeLib;
 
 #[test]
 fn reflect() {
     let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>().unwrap();
-    let lib = builder.compile(none!()).unwrap();
-
-    println!("{lib}");
-    println!("{lib:X}");
+    builder.compile(none!()).unwrap();
 
     /*
     let mut builder = SystemBuilder::new();
