@@ -22,6 +22,7 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use encoding::{StrictEncode, StrictWriter};
 use strict_encoding::STRICT_TYPES_LIB;
 
 use crate::TypeSystem;
@@ -62,10 +63,9 @@ impl FromStr for TypeSysId {
 
 impl TypeSystem {
     pub fn id(&self) -> TypeSysId {
-        let mut hasher = blake3::Hasher::new_keyed(&TYPESYS_ID_TAG);
-        for ty in self.values() {
-            hasher.update(ty.id(None).as_slice());
-        }
-        TypeSysId::from_raw_array(hasher.finalize())
+        let hasher = blake3::Hasher::new_keyed(&TYPESYS_ID_TAG);
+        let engine = StrictWriter::with(usize::MAX, hasher);
+        let engine = self.strict_encode(engine).expect("hasher do not error");
+        TypeSysId::from_raw_array(engine.unbox().finalize())
     }
 }

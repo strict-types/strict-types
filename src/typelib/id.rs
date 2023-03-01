@@ -22,7 +22,6 @@
 
 use std::str::FromStr;
 
-use amplify::num::u24;
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use encoding::{StrictEncode, StrictWriter};
@@ -68,7 +67,7 @@ impl FromStr for TypeLibId {
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
         let hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
-        let engine = StrictWriter::with(u24::MAX.into_usize(), hasher);
+        let engine = StrictWriter::with(usize::MAX, hasher);
         let engine = self.strict_encode(engine).expect("hasher do not error");
         TypeLibId::from_raw_array(engine.unbox().finalize())
     }
