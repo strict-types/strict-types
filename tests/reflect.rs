@@ -49,13 +49,6 @@ fn reflect() {
     let lib = builder.compile(none!()).unwrap();
     let id = lib.id();
 
-    println!(
-        "{{-
--- Import this lib by putting in the file header
--- `import {id:+} as {STRICT_TYPES_LIB}`
--}}"
-    );
-    println!();
     println!("{lib}");
 
     println!("----- BEGIN STRICT TYPE LIB -----");

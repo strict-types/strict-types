@@ -58,7 +58,13 @@ impl ToBaid58<32> for TypeLibId {
 impl FromBaid58<32> for TypeLibId {}
 impl FromStr for TypeLibId {
     type Err = Baid58ParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid58_str(s) }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.starts_with("stl") {
+            Self::from_baid58_str(s)
+        } else {
+            Self::from_baid58_str(&format!("stl:{s}"))
+        }
+    }
 }
 
 impl TypeLib {
