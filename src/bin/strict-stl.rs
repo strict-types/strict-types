@@ -31,12 +31,17 @@ use std::{env, fs, io};
 use amplify::num::u24;
 use strict_encoding::{StrictEncode, StrictWriter, STRICT_TYPES_LIB};
 use strict_types::typelib::LibBuilder;
-use strict_types::TypeLib;
+use strict_types::typesys::TypeSysId;
+use strict_types::{TypeLib, TypeSystem};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let lib = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>()?.compile(none!())?;
+    let lib = LibBuilder::new(libname!(STRICT_TYPES_LIB))
+        .process::<TypeLib>()?
+        .process::<TypeSystem>()?
+        .process::<TypeSysId>()?
+        .compile(none!())?;
     let id = lib.id();
 
     let ext = match args.get(2).map(String::as_str) {
