@@ -325,9 +325,8 @@ impl HashId for LibRef {
 impl Display for LibRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibRef::Named(name, _) => write!(f, "{name}"),
-            LibRef::Inline(ty) if ty.is_compound() => write!(f, "({ty})"),
-            LibRef::Inline(ty) => write!(f, "{ty}"),
+            LibRef::Named(name, _) => Display::fmt(name, f),
+            LibRef::Inline(ty) => Display::fmt(ty, f),
             LibRef::Extern(ext) => Display::fmt(ext, f),
         }
     }

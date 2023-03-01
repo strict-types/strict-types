@@ -215,13 +215,6 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_collection(&self) -> bool {
         matches!(self, Ty::Array(..) | Ty::List(..) | Ty::Set(..) | Ty::Map(..))
     }
-    pub fn is_compound(&self) -> bool {
-        matches!(self, Ty::Struct(fields)
-            if fields.len() > 1)
-            || matches!(self, Ty::Tuple(fields)
-            if fields.len() > 1)
-            || (matches!(self, Ty::Enum(_) | Ty::Union(_)) && !self.is_option())
-    }
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
@@ -487,14 +480,18 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
-        f.write_str("(")?;
+        if self.len() > 1 {
+            f.write_str("(")?;
+        }
         for ty in iter {
             write!(f, "{ty}, ")?;
         }
         if let Some(ty) = last {
             write!(f, "{ty}")?;
         }
-        f.write_str(")")?;
+        if self.len() > 1 {
+            f.write_str(")")?;
+        }
         Ok(())
     }
 }
