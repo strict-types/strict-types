@@ -218,6 +218,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_compound(&self) -> bool {
         matches!(self, Ty::Struct(fields)
             if fields.len() > 1)
+            || matches!(self, Ty::Tuple(fields)
+            if fields.len() > 1)
             || (matches!(self, Ty::Enum(_) | Ty::Union(_)) && !self.is_option())
     }
     pub fn is_option(&self) -> bool {
