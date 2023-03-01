@@ -1,5 +1,5 @@
 {-
-  Id: alcohol_news_watch_Cz9uBtWz6aFSkn5e5usULSgt7UqtiEg4UDho5r4potWi
+  Id: dolby_garbo_pancake_2e2g6HmDjvjW5ZNJPRYAkpMw9HGmJEzPVmj72U7hvwUz
   Name: StrictTypes
   Description: Confined generalized algebraic data types (GADT)
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
@@ -7,15 +7,11 @@
   License: Apache-2.0
 -}
 
-typelib StrictTypes -- alcohol_news_watch_Cz9uBtWz6aFSkn5e5usULSgt7UqtiEg4UDho5r4potWi
+typelib StrictTypes -- dolby_garbo_pancake_2e2g6HmDjvjW5ZNJPRYAkpMw9HGmJEzPVmj72U7hvwUz
 
 -- no dependencies
 
-data BuildFragment    :: ident Ident
-                       | digits Ident
-data Dependency       :: id TypeLibId
-                       , name LibName
-                       , ver SemVer
+data Dependency       :: id TypeLibId, name LibName
 data EmbeddedRef      :: semId SemId
                        | inline TySemId
 data EnumVariants     :: {Variant ^ 1..0xff}
@@ -46,7 +42,6 @@ data KeyTy            :: primitive Primitive
                        | unicode:16 Sizing
                        | ascii Sizing
                        | bytes Sizing
-data LibAlias         :: Ident
 data LibName          :: Ident
 data LibRef           :: inline TyInlineRef
                        | named (TypeName, SemId)
@@ -58,15 +53,8 @@ data NamedFieldsInlineRef2 :: [FieldInlineRef2 ^ 1..0xff]
 data NamedFieldsKeyTy :: [FieldKeyTy ^ 1..0xff]
 data NamedFieldsLibRef :: [FieldLibRef ^ 1..0xff]
 data NamedFieldsSemId :: [FieldSemId ^ 1..0xff]
-data PreFragment      :: ident Ident
-                       | digits U128
 data Primitive        :: U8
 data SemId            :: [U8 ^ 32]
-data SemVer           :: major U16
-                       , minor U16
-                       , patch U16
-                       , pre [PreFragment ^ ..0xff]
-                       , build [BuildFragment ^ ..0xff]
 data Sizing           :: min U64, max U64
 data TyEmbeddedRef    :: primitive Primitive
                        | unicode ()
@@ -139,10 +127,11 @@ data TySemId          :: primitive Primitive
                        | set (SemId, Sizing)
                        | map (KeyTy, SemId, Sizing)
 data TypeLib          :: name LibName
-                       , dependencies {U8 -> ^ ..0xff Dependency}
+                       , dependencies {Dependency ^ ..0xff}
                        , types {U8 -> ^ 1.. TyLibRef}
 data TypeLibId        :: [U8 ^ 32]
 data TypeName         :: Ident
+data TypeSysId        :: [U8 ^ 32]
 data TypeSystem       :: {[Byte ^ 32] -> ^ ..0xffffff TyEmbeddedRef}
 data UnionVariantsEmbeddedRef :: {U8 -> ^ ..0xff VariantInfoEmbeddedRef}
 data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}

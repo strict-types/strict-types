@@ -20,10 +20,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement::{Confined, TinyOrdMap};
+use amplify::confinement::{Confined, TinyOrdSet};
 use amplify::Wrapper;
 use blake3::Hasher;
 use encoding::{Ident, InvalidIdent, StrictDeserialize, StrictDumb, StrictSerialize};
@@ -32,7 +33,7 @@ use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 use crate::ast::HashId;
 use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
-use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
+use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
@@ -57,8 +58,6 @@ impl StrictDumb for ExternRef {
 impl HashId for ExternRef {
     fn hash_id(&self, hasher: &mut Hasher) {
         hasher.update(self.lib.as_bytes());
-        hasher.update(&[b'.']);
-        hasher.update(self.name.as_bytes());
         hasher.update(self.id.as_slice());
     }
 }
@@ -370,14 +369,18 @@ impl TryFrom<String> for LibAlias {
 pub struct Dependency {
     pub id: TypeLibId,
     pub name: LibName,
-    pub ver: SemVer,
+}
+
+impl PartialOrd for Dependency {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> { Some(self.cmp(other)) }
+}
+
+impl Ord for Dependency {
+    fn cmp(&self, other: &Self) -> Ordering { self.id.cmp(&other.id) }
 }
 
 impl Dependency {
-    pub fn with(id: TypeLibId, name: LibName, ver: (u16, u16, u16)) -> Self {
-        let ver = SemVer::new(ver.0, ver.1, ver.2);
-        Dependency { id, name, ver }
-    }
+    pub fn with(id: TypeLibId, name: LibName) -> Self { Dependency { id, name } }
 }
 
 pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
@@ -394,7 +397,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
 )]
 pub struct TypeLib {
     pub name: LibName,
-    pub dependencies: TinyOrdMap<LibAlias, Dependency>,
+    pub dependencies: TinyOrdSet<Dependency>,
     pub types: TypeMap,
 }
 
@@ -402,19 +405,11 @@ impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
 
 impl TypeLib {
-    pub fn import(
-        &mut self,
-        dependency: Dependency,
-        alias: Option<LibAlias>,
-    ) -> Result<(), TranslateError> {
-        let alias = alias.unwrap_or_else(|| {
-            let ident = dependency.name.to_inner();
-            LibAlias::from_inner(ident)
-        });
-        if self.dependencies.contains_key(&alias) {
+    pub fn import(&mut self, dependency: Dependency) -> Result<(), TranslateError> {
+        if self.dependencies.contains(&dependency) {
             return Err(TranslateError::DuplicatedDependency(dependency));
         }
-        self.dependencies.insert(alias, dependency)?;
+        self.dependencies.push(dependency)?;
         Ok(())
     }
 
@@ -433,12 +428,8 @@ impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
         writeln!(f)?;
-        for (alias, dep) in &self.dependencies {
-            if alias.as_inner() != dep.name.as_inner() {
-                writeln!(f, "{dep} as {alias}")?;
-            } else {
-                writeln!(f, "{dep} as {}", dep.name)?;
-            }
+        for dep in &self.dependencies {
+            writeln!(f, "{dep} as {}", dep.name)?;
         }
         if self.dependencies.is_empty() {
             f.write_str("-- no dependencies")?;

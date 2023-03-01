@@ -22,8 +22,10 @@
 
 use std::str::FromStr;
 
+use amplify::num::u24;
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use encoding::{StrictEncode, StrictWriter};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
 use crate::typelib::TypeLib;
@@ -65,10 +67,9 @@ impl FromStr for TypeLibId {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
-        for (name, ty) in &self.types {
-            hasher.update(ty.id(Some(name)).as_slice());
-        }
-        TypeLibId::from_raw_array(hasher.finalize())
+        let hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        let engine = StrictWriter::with(u24::MAX.into_usize(), hasher);
+        let engine = self.strict_encode(engine).expect("hasher do not error");
+        TypeLibId::from_raw_array(engine.unbox().finalize())
     }
 }

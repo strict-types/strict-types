@@ -175,7 +175,7 @@ pub enum Error {
 impl LibBuilder {
     pub fn compile(
         self,
-        mut known_libs: BTreeMap<LibName, (LibAlias, Dependency)>,
+        mut known_libs: BTreeMap<LibName, Dependency>,
     ) -> Result<TypeLib, TranslateError> {
         let name = self.name();
 
@@ -230,14 +230,13 @@ impl LibBuilder {
             debug_assert!(found, "incomplete type definition found in the library");
         }
 
-        let mut dependencies = bmap! {};
+        let mut dependencies = bset! {};
         for lib in extern_types.keys() {
             if lib == &libname!(STD_LIB) {
                 continue;
             }
-            let (alias, dep) =
-                known_libs.remove(lib).ok_or(TranslateError::UnknownLib(lib.clone()))?;
-            dependencies.insert(alias, dep);
+            let dep = known_libs.remove(lib).ok_or(TranslateError::UnknownLib(lib.clone()))?;
+            dependencies.insert(dep);
         }
 
         let types = TypeMap::try_from(new_types)?;
