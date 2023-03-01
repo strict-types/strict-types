@@ -25,38 +25,17 @@ extern crate amplify;
 #[macro_use]
 extern crate strict_encoding;
 
-use baid58::ToBaid58;
-use base64::Engine;
-use strict_encoding::{StrictSerialize, STRICT_TYPES_LIB};
+use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::typelib::build::LibBuilder;
 use strict_types::TypeLib;
-
-fn pp(data: impl AsRef<[u8]>) {
-    let engine = base64::engine::general_purpose::STANDARD_NO_PAD;
-    let data = engine.encode(data);
-    let mut data = data.as_str();
-    while data.len() > 80 {
-        let (line, rest) = data.split_at(80);
-        println!("{}", line);
-        data = rest;
-    }
-    println!("{}", data);
-}
 
 #[test]
 fn reflect() {
     let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>().unwrap();
     let lib = builder.compile(none!()).unwrap();
-    let id = lib.id();
 
     println!("{lib}");
-
-    println!("----- BEGIN STRICT TYPE LIB -----");
-    println!("Id: {}", id);
-    println!("Checksum: {}", id.to_baid58().mnemonic());
-    println!();
-    pp(lib.to_strict_serialized::<{ u16::MAX as usize }>().expect("in-memory"));
-    println!("\n----- END STRICT TYPE LIB -----\n");
+    println!("{lib:X}");
 
     /*
     let mut builder = SystemBuilder::new();

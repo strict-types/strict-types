@@ -607,7 +607,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding"
 version = "2.0.0-rc.1"
-source = "git+https://github.com/strict-types/strict-encoding#c88294b089e2b6c02a8fb56528a8b1a317cc9ab0"
+source = "git+https://github.com/strict-types/strict-encoding#7a1f9bf078c8ecd5004f581c7f544416dd5234cc"
 dependencies = [
  "amplify",
  "half",
@@ -618,7 +618,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding_derive"
 version = "2.0.0-beta.2"
-source = "git+https://github.com/strict-types/strict-encoding#c88294b089e2b6c02a8fb56528a8b1a317cc9ab0"
+source = "git+https://github.com/strict-types/strict-encoding#7a1f9bf078c8ecd5004f581c7f544416dd5234cc"
 dependencies = [
  "amplify_syn",
  "heck",

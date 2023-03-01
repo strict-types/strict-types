@@ -472,3 +472,33 @@ impl Display for TypeLib {
         Ok(())
     }
 }
+
+#[cfg(feature = "base64")]
+impl fmt::UpperHex for TypeLib {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use baid58::ToBaid58;
+        use base64::Engine;
+        use strict_encoding::StrictSerialize;
+
+        let id = self.id();
+
+        writeln!(f, "----- BEGIN STRICT TYPE LIB -----")?;
+        writeln!(f, "Id: {}", id)?;
+        writeln!(f, "Checksum: {}", id.to_baid58().mnemonic())?;
+        writeln!(f)?;
+
+        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
+        let engine = base64::engine::general_purpose::STANDARD_NO_PAD;
+        let data = engine.encode(data);
+        let mut data = data.as_str();
+        while data.len() > 80 {
+            let (line, rest) = data.split_at(80);
+            writeln!(f, "{}", line)?;
+            data = rest;
+        }
+        writeln!(f, "{}", data)?;
+
+        writeln!(f, "\n----- END STRICT TYPE LIB -----")?;
+        Ok(())
+    }
+}
