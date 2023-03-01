@@ -1,5 +1,5 @@
 {-
-  Id: final_olivia_segment_DYTdc4m4C6HLfM9hQCoavFHbdnwVuFQkWStTHDeHfDZ1
+  Id: subject_leonid_rudolf_3VG9Cjoyx9MMAY2y4EZBgX9YQoyMngFfNrGLAUFbzQFU
   Name: StrictTypes
   Description: Confined generalized algebraic data types (GADT)
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
@@ -7,61 +7,131 @@
   License: Apache-2.0
 -}
 
-typelib StrictTypes -- final_olivia_segment_DYTdc4m4C6HLfM9hQCoavFHbdnwVuFQkWStTHDeHfDZ1
+typelib StrictTypes -- subject_leonid_rudolf_3VG9Cjoyx9MMAY2y4EZBgX9YQoyMngFfNrGLAUFbzQFU
 
 -- no dependencies
 
-data BuildFragment    :: ident Ident | digits Ident
-data Dependency       :: id TypeLibId, name LibName, ver SemVer
+data BuildFragment    :: ident Ident
+                       | digits Ident
+data Dependency       :: id TypeLibId
+                       , name LibName
+                       , ver SemVer
 data EnumVariants     :: {Variant ^ 1..0xff}
-data ExternRef        :: name TypeName, lib LibName, id SemId
+data ExternRef        :: name TypeName
+                       , lib LibName
+                       , id SemId
+data FieldInlineRef   :: name FieldName, ty InlineRef
+data FieldInlineRef1  :: name FieldName, ty InlineRef1
+data FieldInlineRef2  :: name FieldName, ty InlineRef2
+data FieldKeyTy       :: name FieldName, ty KeyTy
+data FieldLibRef      :: name FieldName, ty LibRef
 data FieldName        :: Ident
-data Field_InlineRef  :: name FieldName, ty InlineRef
-data Field_InlineRef1 :: name FieldName, ty InlineRef1
-data Field_InlineRef2 :: name FieldName, ty InlineRef2
-data Field_KeyTy      :: name FieldName, ty KeyTy
-data Field_LibRef     :: name FieldName, ty LibRef
 data Ident            :: U8
-data InlineRef        :: inline Ty_InlineRef1 | named (TypeName, SemId) | extern ExternRef
-data InlineRef1       :: inline Ty_InlineRef2 | named (TypeName, SemId) | extern ExternRef
-data InlineRef2       :: inline Ty_KeyTy | named (TypeName, SemId) | extern ExternRef
-data KeyTy            :: primitive Primitive | enum:3 EnumVariants | array:7 U16 | unicode:16 Sizing | ascii Sizing | bytes Sizing
+data InlineRef        :: inline TyInlineRef1
+                       | named (TypeName, SemId)
+                       | extern ExternRef
+data InlineRef1       :: inline TyInlineRef2
+                       | named (TypeName, SemId)
+                       | extern ExternRef
+data InlineRef2       :: inline TyKeyTy
+                       | named (TypeName, SemId)
+                       | extern ExternRef
+data KeyTy            :: primitive Primitive
+                       | enum:3 EnumVariants
+                       | array:7 U16
+                       | unicode:16 Sizing
+                       | ascii Sizing
+                       | bytes Sizing
 data LibAlias         :: Ident
 data LibName          :: Ident
-data LibRef           :: inline Ty_InlineRef | named (TypeName, SemId) | extern ExternRef
-data LibType          :: name TypeName, ty Ty_LibRef
-data NamedFields_InlineRef :: [Field_InlineRef ^ 1..0xff]
-data NamedFields_InlineRef1 :: [Field_InlineRef1 ^ 1..0xff]
-data NamedFields_InlineRef2 :: [Field_InlineRef2 ^ 1..0xff]
-data NamedFields_KeyTy :: [Field_KeyTy ^ 1..0xff]
-data NamedFields_LibRef :: [Field_LibRef ^ 1..0xff]
-data PreFragment      :: ident Ident | digits U128
+data LibRef           :: inline TyInlineRef
+                       | named (TypeName, SemId)
+                       | extern ExternRef
+data LibType          :: name TypeName, ty TyLibRef
+data NamedFieldsInlineRef :: [FieldInlineRef ^ 1..0xff]
+data NamedFieldsInlineRef1 :: [FieldInlineRef1 ^ 1..0xff]
+data NamedFieldsInlineRef2 :: [FieldInlineRef2 ^ 1..0xff]
+data NamedFieldsKeyTy :: [FieldKeyTy ^ 1..0xff]
+data NamedFieldsLibRef :: [FieldLibRef ^ 1..0xff]
+data PreFragment      :: ident Ident
+                       | digits U128
 data Primitive        :: U8
 data SemId            :: [U8 ^ 32]
-data SemVer           :: major U16, minor U16, patch U16, pre [PreFragment ^ ..0xff], build [BuildFragment ^ ..0xff]
+data SemVer           :: major U16
+                       , minor U16
+                       , patch U16
+                       , pre [PreFragment ^ ..0xff]
+                       , build [BuildFragment ^ ..0xff]
 data Sizing           :: min U64, max U64
-data Ty_InlineRef     :: primitive Primitive | unicode () | enum:3 EnumVariants | union UnionVariants_InlineRef | tuple UnnamedFields_InlineRef | struct NamedFields_InlineRef | array (InlineRef, U16) | list (InlineRef, Sizing) | set (InlineRef, Sizing) | map (KeyTy, InlineRef, Sizing)
-data Ty_InlineRef1    :: primitive Primitive | unicode () | enum:3 EnumVariants | union UnionVariants_InlineRef1 | tuple UnnamedFields_InlineRef1 | struct NamedFields_InlineRef1 | array (InlineRef1, U16) | list (InlineRef1, Sizing) | set (InlineRef1, Sizing) | map (KeyTy, InlineRef1, Sizing)
-data Ty_InlineRef2    :: primitive Primitive | unicode () | enum:3 EnumVariants | union UnionVariants_InlineRef2 | tuple UnnamedFields_InlineRef2 | struct NamedFields_InlineRef2 | array (InlineRef2, U16) | list (InlineRef2, Sizing) | set (InlineRef2, Sizing) | map (KeyTy, InlineRef2, Sizing)
-data Ty_KeyTy         :: primitive Primitive | unicode () | enum:3 EnumVariants | union UnionVariants_KeyTy | tuple UnnamedFields_KeyTy | struct NamedFields_KeyTy | array (KeyTy, U16) | list (KeyTy, Sizing) | set (KeyTy, Sizing) | map (KeyTy, KeyTy, Sizing)
-data Ty_LibRef        :: primitive Primitive | unicode () | enum:3 EnumVariants | union UnionVariants_LibRef | tuple UnnamedFields_LibRef | struct NamedFields_LibRef | array (LibRef, U16) | list (LibRef, Sizing) | set (LibRef, Sizing) | map (KeyTy, LibRef, Sizing)
-data TypeLib          :: name LibName, dependencies {U8 -> ^ ..0xff Dependency}, types {U8 -> ^ 1.. LibType}
+data TyInlineRef      :: primitive Primitive
+                       | unicode ()
+                       | enum:3 EnumVariants
+                       | union UnionVariantsInlineRef
+                       | tuple UnnamedFieldsInlineRef
+                       | struct NamedFieldsInlineRef
+                       | array (InlineRef, U16)
+                       | list (InlineRef, Sizing)
+                       | set (InlineRef, Sizing)
+                       | map (KeyTy, InlineRef, Sizing)
+data TyInlineRef1     :: primitive Primitive
+                       | unicode ()
+                       | enum:3 EnumVariants
+                       | union UnionVariantsInlineRef1
+                       | tuple UnnamedFieldsInlineRef1
+                       | struct NamedFieldsInlineRef1
+                       | array (InlineRef1, U16)
+                       | list (InlineRef1, Sizing)
+                       | set (InlineRef1, Sizing)
+                       | map (KeyTy, InlineRef1, Sizing)
+data TyInlineRef2     :: primitive Primitive
+                       | unicode ()
+                       | enum:3 EnumVariants
+                       | union UnionVariantsInlineRef2
+                       | tuple UnnamedFieldsInlineRef2
+                       | struct NamedFieldsInlineRef2
+                       | array (InlineRef2, U16)
+                       | list (InlineRef2, Sizing)
+                       | set (InlineRef2, Sizing)
+                       | map (KeyTy, InlineRef2, Sizing)
+data TyKeyTy          :: primitive Primitive
+                       | unicode ()
+                       | enum:3 EnumVariants
+                       | union UnionVariantsKeyTy
+                       | tuple UnnamedFieldsKeyTy
+                       | struct NamedFieldsKeyTy
+                       | array (KeyTy, U16)
+                       | list (KeyTy, Sizing)
+                       | set (KeyTy, Sizing)
+                       | map (KeyTy, KeyTy, Sizing)
+data TyLibRef         :: primitive Primitive
+                       | unicode ()
+                       | enum:3 EnumVariants
+                       | union UnionVariantsLibRef
+                       | tuple UnnamedFieldsLibRef
+                       | struct NamedFieldsLibRef
+                       | array (LibRef, U16)
+                       | list (LibRef, Sizing)
+                       | set (LibRef, Sizing)
+                       | map (KeyTy, LibRef, Sizing)
+data TypeLib          :: name LibName
+                       , dependencies {U8 -> ^ ..0xff Dependency}
+                       , types {U8 -> ^ 1.. LibType}
 data TypeLibId        :: [U8 ^ 32]
 data TypeName         :: Ident
-data UnionVariants_InlineRef :: {U8 -> ^ ..0xff VariantInfo_InlineRef}
-data UnionVariants_InlineRef1 :: {U8 -> ^ ..0xff VariantInfo_InlineRef1}
-data UnionVariants_InlineRef2 :: {U8 -> ^ ..0xff VariantInfo_InlineRef2}
-data UnionVariants_KeyTy :: {U8 -> ^ ..0xff VariantInfo_KeyTy}
-data UnionVariants_LibRef :: {U8 -> ^ ..0xff VariantInfo_LibRef}
-data UnnamedFields_InlineRef :: [InlineRef ^ 1..0xff]
-data UnnamedFields_InlineRef1 :: [InlineRef1 ^ 1..0xff]
-data UnnamedFields_InlineRef2 :: [InlineRef2 ^ 1..0xff]
-data UnnamedFields_KeyTy :: [KeyTy ^ 1..0xff]
-data UnnamedFields_LibRef :: [LibRef ^ 1..0xff]
+data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}
+data UnionVariantsInlineRef1 :: {U8 -> ^ ..0xff VariantInfoInlineRef1}
+data UnionVariantsInlineRef2 :: {U8 -> ^ ..0xff VariantInfoInlineRef2}
+data UnionVariantsKeyTy :: {U8 -> ^ ..0xff VariantInfoKeyTy}
+data UnionVariantsLibRef :: {U8 -> ^ ..0xff VariantInfoLibRef}
+data UnnamedFieldsInlineRef :: [InlineRef ^ 1..0xff]
+data UnnamedFieldsInlineRef1 :: [InlineRef1 ^ 1..0xff]
+data UnnamedFieldsInlineRef2 :: [InlineRef2 ^ 1..0xff]
+data UnnamedFieldsKeyTy :: [KeyTy ^ 1..0xff]
+data UnnamedFieldsLibRef :: [LibRef ^ 1..0xff]
 data Variant          :: name FieldName, tag U8
-data VariantInfo_InlineRef :: name FieldName, ty InlineRef
-data VariantInfo_InlineRef1 :: name FieldName, ty InlineRef1
-data VariantInfo_InlineRef2 :: name FieldName, ty InlineRef2
-data VariantInfo_KeyTy :: name FieldName, ty KeyTy
-data VariantInfo_LibRef :: name FieldName, ty LibRef
+data VariantInfoInlineRef :: name FieldName, ty InlineRef
+data VariantInfoInlineRef1 :: name FieldName, ty InlineRef1
+data VariantInfoInlineRef2 :: name FieldName, ty InlineRef2
+data VariantInfoKeyTy :: name FieldName, ty KeyTy
+data VariantInfoLibRef :: name FieldName, ty LibRef
 

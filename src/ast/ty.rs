@@ -416,11 +416,16 @@ impl<Ref: TypeRef> Display for NamedFields<Ref>
 where Ref: Display
 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        let len = self.len();
         let mut iter = self.iter();
         let last = iter.next_back();
         for field in iter {
             Display::fmt(field, f)?;
-            f.write_str(", ")?;
+            if len >= 3 {
+                f.write_str("\n                       , ")?;
+            } else {
+                f.write_str(", ")?;
+            }
         }
         if let Some(field) = last {
             Display::fmt(field, f)?;
@@ -589,11 +594,11 @@ where Ref: Display
             }
             last_tag += 1;
             if ty.is_compound() {
-                write!(f, "({ty})")?;
+                writeln!(f, "({ty})")?;
             } else {
-                write!(f, "{ty}")?;
+                writeln!(f, "{ty}")?;
             }
-            write!(f, " | ")?;
+            write!(f, "                       | ")?;
         }
         if let Some((variant, ty)) = last {
             write!(f, "{variant}")?;
