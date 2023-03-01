@@ -24,7 +24,6 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
-use encoding::{StrictDeserialize, StrictSerialize};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
 use crate::typelib::TypeLib;
@@ -47,9 +46,6 @@ pub struct TypeLibId(
     #[from([u8; 32])]
     Bytes32,
 );
-
-impl StrictSerialize for TypeLib {}
-impl StrictDeserialize for TypeLib {}
 
 impl ToBaid58<32> for TypeLibId {
     const HRI: &'static str = "stl";

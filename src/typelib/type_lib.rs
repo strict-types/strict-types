@@ -26,7 +26,7 @@ use std::fmt::{self, Display, Formatter};
 use amplify::confinement::{Confined, TinyOrdMap};
 use amplify::Wrapper;
 use blake3::Hasher;
-use encoding::{Ident, InvalidIdent, StrictDumb};
+use encoding::{Ident, InvalidIdent, StrictDeserialize, StrictDumb, StrictSerialize};
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
@@ -413,6 +413,9 @@ pub struct TypeLib {
     pub types: TypeMap,
 }
 
+impl StrictSerialize for TypeLib {}
+impl StrictDeserialize for TypeLib {}
+
 impl TypeLib {
     pub fn with(name: LibName, root: LibType) -> Self {
         let types = Confined::with((root.name.clone(), root));
@@ -478,7 +481,6 @@ impl fmt::UpperHex for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use baid58::ToBaid58;
         use base64::Engine;
-        use strict_encoding::StrictSerialize;
 
         let id = self.id();
 

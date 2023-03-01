@@ -24,33 +24,42 @@
 //! dependencies
 
 use std::collections::BTreeMap;
-use std::ops::Deref;
+use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
+use blake3::Hasher;
+use encoding::{StrictDeserialize, StrictSerialize};
+use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::{SemId, Serialize, StenSchema, StenType, Ty, TypeRef};
+use crate::ast::HashId;
+use crate::{SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { EmbeddedRef::SemId(SemId::strict_dumb()) })]
 pub enum EmbeddedRef {
+    #[from]
     SemId(SemId),
 
     #[from]
     Inline(Ty<SemId>),
 }
 
-impl StenSchema for EmbeddedRef {
-    const STEN_TYPE_NAME: &'static str = "EmbeddedRef";
-
-    fn sten_ty() -> Ty<StenType> { todo!() }
-}
-
 impl TypeRef for EmbeddedRef {
+    const TYPE_NAME: &'static str = "EmbeddedRef";
+
     fn id(&self) -> SemId {
         match self {
             EmbeddedRef::SemId(id) => *id,
             EmbeddedRef::Inline(ty) => ty.id(None),
+        }
+    }
+    fn is_compound(&self) -> bool {
+        match self {
+            EmbeddedRef::SemId(_) => false,
+            EmbeddedRef::Inline(ty) => ty.is_compound(),
         }
     }
     fn is_byte(&self) -> bool {
@@ -73,28 +82,33 @@ impl TypeRef for EmbeddedRef {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, From)]
+impl HashId for EmbeddedRef {
+    fn hash_id(&self, hasher: &mut Hasher) {
+        match self {
+            EmbeddedRef::Inline(ty) => ty.hash_id(hasher),
+            EmbeddedRef::SemId(id) => id.hash_id(hasher),
+        }
+    }
+}
+
+impl Display for EmbeddedRef {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match self {
+            EmbeddedRef::SemId(id) => Display::fmt(id, f),
+            EmbeddedRef::Inline(ty) => Display::fmt(ty, f),
+        }
+    }
+}
+
+#[derive(Wrapper, WrapperMut, Clone, Eq, PartialEq, Debug, Default, From)]
+#[wrapper(Deref)]
+#[wrapper_mut(DerefMut)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 pub struct TypeSystem(MediumOrdMap<SemId, Ty<EmbeddedRef>>);
 
-impl Deref for TypeSystem {
-    type Target = BTreeMap<SemId, Ty<EmbeddedRef>>;
-
-    fn deref(&self) -> &Self::Target { &self.0 }
-}
-
-impl IntoIterator for TypeSystem {
-    type Item = (SemId, Ty<EmbeddedRef>);
-    type IntoIter = std::collections::btree_map::IntoIter<SemId, Ty<EmbeddedRef>>;
-
-    fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
-}
-
-impl<'lib> IntoIterator for &'lib TypeSystem {
-    type Item = (&'lib SemId, &'lib Ty<EmbeddedRef>);
-    type IntoIter = std::collections::btree_map::Iter<'lib, SemId, Ty<EmbeddedRef>>;
-
-    fn into_iter(self) -> Self::IntoIter { self.0.iter() }
-}
+impl StrictSerialize for TypeSystem {}
+impl StrictDeserialize for TypeSystem {}
 
 impl TypeSystem {
     pub fn try_from_iter<T: IntoIterator<Item = Ty<EmbeddedRef>>>(
@@ -102,11 +116,11 @@ impl TypeSystem {
     ) -> Result<Self, confinement::Error> {
         let mut lib: BTreeMap<SemId, Ty<EmbeddedRef>> = empty!();
         for ty in iter {
-            lib.insert(ty.id(), ty);
+            lib.insert(ty.id(None), ty);
         }
 
         let lib = TypeSystem(MediumOrdMap::try_from_iter(lib)?);
-        let len = lib.serialized_len();
+        let len = lib.strict_serialized_len().expect("in-memory writer");
         let max_len = u24::MAX.into_usize();
         if len > max_len {
             return Err(confinement::Error::Oversize { len, max_len }.into());
