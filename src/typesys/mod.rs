@@ -23,5 +23,5 @@ pub mod type_sys;
 mod id;
 
 pub use id::TypeSysId;
-pub use type_sys::{EmbeddedRef, TypeSystem};
+pub use type_sys::TypeSystem;
 // pub use translate::SystemBuilder;

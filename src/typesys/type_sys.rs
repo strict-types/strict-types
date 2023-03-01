@@ -24,97 +24,30 @@
 //! dependencies
 
 use std::collections::BTreeMap;
-use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
-use blake3::Hasher;
 use encoding::{StrictDeserialize, StrictSerialize};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::ast::HashId;
-use crate::{SemId, Ty, TypeRef};
-
-#[derive(Clone, Eq, PartialEq, Debug, From)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { EmbeddedRef::SemId(SemId::strict_dumb()) })]
-pub enum EmbeddedRef {
-    #[from]
-    SemId(SemId),
-
-    #[from]
-    Inline(Ty<SemId>),
-}
-
-impl TypeRef for EmbeddedRef {
-    const TYPE_NAME: &'static str = "EmbeddedRef";
-
-    fn id(&self) -> SemId {
-        match self {
-            EmbeddedRef::SemId(id) => *id,
-            EmbeddedRef::Inline(ty) => ty.id(None),
-        }
-    }
-    fn is_compound(&self) -> bool {
-        match self {
-            EmbeddedRef::SemId(_) => false,
-            EmbeddedRef::Inline(ty) => ty.is_compound(),
-        }
-    }
-    fn is_byte(&self) -> bool {
-        match self {
-            EmbeddedRef::SemId(_) => false,
-            EmbeddedRef::Inline(ty) => ty.is_byte(),
-        }
-    }
-    fn is_unicode_char(&self) -> bool {
-        match self {
-            EmbeddedRef::SemId(_) => false,
-            EmbeddedRef::Inline(ty) => ty.is_unicode_char(),
-        }
-    }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            EmbeddedRef::SemId(_) => false,
-            EmbeddedRef::Inline(ty) => ty.is_ascii_char(),
-        }
-    }
-}
-
-impl HashId for EmbeddedRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        match self {
-            EmbeddedRef::Inline(ty) => ty.hash_id(hasher),
-            EmbeddedRef::SemId(id) => id.hash_id(hasher),
-        }
-    }
-}
-
-impl Display for EmbeddedRef {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            EmbeddedRef::SemId(id) => Display::fmt(id, f),
-            EmbeddedRef::Inline(ty) => Display::fmt(ty, f),
-        }
-    }
-}
+use crate::{SemId, Ty};
 
 #[derive(Wrapper, WrapperMut, Clone, Eq, PartialEq, Debug, Default, From)]
 #[wrapper(Deref)]
 #[wrapper_mut(DerefMut)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeSystem(MediumOrdMap<SemId, Ty<EmbeddedRef>>);
+pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
 
 impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
 
 impl TypeSystem {
-    pub fn try_from_iter<T: IntoIterator<Item = Ty<EmbeddedRef>>>(
+    pub fn try_from_iter<T: IntoIterator<Item = Ty<SemId>>>(
         iter: T,
     ) -> Result<Self, confinement::Error> {
-        let mut lib: BTreeMap<SemId, Ty<EmbeddedRef>> = empty!();
+        let mut lib: BTreeMap<SemId, Ty<SemId>> = empty!();
         for ty in iter {
             lib.insert(ty.id(None), ty);
         }
