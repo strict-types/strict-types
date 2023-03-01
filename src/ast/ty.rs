@@ -278,7 +278,9 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::Enum(vars) => KeyTy::Enum(vars.clone()),
             Ty::Array(ty, len) if ty.is_byte() => KeyTy::Array(*len),
             Ty::List(ty, sizing) if ty.is_byte() => KeyTy::Bytes(*sizing),
-            Ty::Array(ty, len) if ty.is_unicode_char() => KeyTy::UnicodeStr(Sizing::fixed(*len)),
+            Ty::Array(ty, len) if ty.is_unicode_char() => {
+                KeyTy::UnicodeStr(Sizing::fixed(*len as u64))
+            }
             Ty::List(ty, sizing) if ty.is_unicode_char() => KeyTy::UnicodeStr(*sizing),
             Ty::List(ty, sizing) if ty.is_ascii_char() => KeyTy::AsciiStr(*sizing),
             Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
