@@ -78,6 +78,13 @@ impl TypeRef for CompileRef {
             }
         }
     }
+
+    fn is_compound(&self) -> bool {
+        match self {
+            CompileRef::Embedded(ty) => ty.is_compound(),
+            _ => false,
+        }
+    }
     fn is_byte(&self) -> bool {
         match self {
             CompileRef::Embedded(ty) => ty.is_byte(),

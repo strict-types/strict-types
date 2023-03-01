@@ -41,6 +41,7 @@ pub trait TypeRef:
 {
     const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
+    fn is_compound(&self) -> bool { false }
     fn is_byte(&self) -> bool { false }
     fn is_unicode_char(&self) -> bool { false }
     fn is_ascii_char(&self) -> bool { false }
@@ -211,6 +212,14 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(0..=127)) }
 
+    pub fn is_compound(&self) -> bool {
+        match self {
+            Ty::Tuple(fields) if fields.len() > 1 => true,
+            Ty::Struct(fields) if fields.len() > 1 => true,
+            Ty::Enum(_) | Ty::Union(_) => true,
+            _ => false,
+        }
+    }
     pub fn is_primitive(&self) -> bool { matches!(self, Ty::Primitive(_) | Ty::UnicodeChar) }
     pub fn is_collection(&self) -> bool {
         matches!(self, Ty::Array(..) | Ty::List(..) | Ty::Set(..) | Ty::Map(..))
@@ -480,17 +489,11 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
         let last = iter.next_back();
-        if self.len() > 1 {
-            f.write_str("(")?;
-        }
         for ty in iter {
             write!(f, "{ty}, ")?;
         }
         if let Some(ty) = last {
             write!(f, "{ty}")?;
-        }
-        if self.len() > 1 {
-            f.write_str(")")?;
         }
         Ok(())
     }
@@ -585,7 +588,12 @@ where Ref: Display
                 f.write_str(" ")?;
             }
             last_tag += 1;
-            write!(f, "{ty} | ")?;
+            if ty.is_compound() {
+                write!(f, "({ty})")?;
+            } else {
+                write!(f, "{ty}")?;
+            }
+            write!(f, " | ")?;
         }
         if let Some((variant, ty)) = last {
             write!(f, "{variant}")?;
@@ -595,7 +603,11 @@ where Ref: Display
             } else {
                 f.write_str(" ")?;
             }
-            write!(f, "{ty}")?;
+            if ty.is_compound() {
+                write!(f, "({ty})")?;
+            } else {
+                write!(f, "{ty}")?;
+            }
         }
         Ok(())
     }

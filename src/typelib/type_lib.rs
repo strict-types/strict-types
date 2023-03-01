@@ -103,6 +103,12 @@ impl TypeRef for InlineRef {
             InlineRef::Inline(ty) => ty.id(None),
         }
     }
+    fn is_compound(&self) -> bool {
+        match self {
+            InlineRef::Inline(ty) => ty.is_compound(),
+            _ => false,
+        }
+    }
     fn is_byte(&self) -> bool {
         match self {
             InlineRef::Inline(ty) => ty.is_byte(),
@@ -163,6 +169,12 @@ impl TypeRef for InlineRef1 {
             InlineRef1::Named(_, id) => *id,
             InlineRef1::Extern(ext) => ext.id,
             InlineRef1::Inline(ty) => ty.id(None),
+        }
+    }
+    fn is_compound(&self) -> bool {
+        match self {
+            InlineRef1::Inline(ty) => ty.is_compound(),
+            _ => false,
         }
     }
     fn is_byte(&self) -> bool {
@@ -227,6 +239,12 @@ impl TypeRef for InlineRef2 {
             InlineRef2::Inline(ty) => ty.id(None),
         }
     }
+    fn is_compound(&self) -> bool {
+        match self {
+            InlineRef2::Inline(ty) => ty.is_compound(),
+            _ => false,
+        }
+    }
     fn is_byte(&self) -> bool {
         match self {
             InlineRef2::Inline(ty) => ty.is_byte(),
@@ -287,6 +305,12 @@ impl TypeRef for LibRef {
             LibRef::Named(_, id) => *id,
             LibRef::Extern(ext) => ext.id,
             LibRef::Inline(ty) => ty.id(None),
+        }
+    }
+    fn is_compound(&self) -> bool {
+        match self {
+            LibRef::Inline(ty) => ty.is_compound(),
+            _ => false,
         }
     }
     fn is_byte(&self) -> bool {
