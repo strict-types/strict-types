@@ -358,7 +358,7 @@ impl TryFrom<String> for LibAlias {
 #[derive(Clone, PartialEq, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("import {name}@{ver} {id:#}")]
+#[display("import {id:+}")]
 pub struct Dependency {
     pub id: TypeLibId,
     pub name: LibName,
@@ -429,13 +429,13 @@ impl TypeLib {
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typelib {} -- {:#}", self.name, self.id())?;
+        writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
         writeln!(f)?;
         for (alias, dep) in &self.dependencies {
             if alias.as_inner() != dep.name.as_inner() {
                 writeln!(f, "{dep} as {alias}")?;
             } else {
-                Display::fmt(dep, f)?;
+                writeln!(f, "{dep} as {}", dep.name)?;
             }
         }
         if self.dependencies.is_empty() {
