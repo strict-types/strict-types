@@ -31,9 +31,9 @@ use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 use crate::ast::{HashId, NestedRef};
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
-use crate::typelib::type_lib::{LibType, TypeMap};
+use crate::typelib::type_lib::TypeMap;
 use crate::typelib::ExternRef;
-use crate::{Dependency, LibAlias, SemId, Ty, TypeLib, TypeRef};
+use crate::{Dependency, LibAlias, LibRef, SemId, Ty, TypeLib, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -195,7 +195,7 @@ impl LibBuilder {
 
         let mut old_types = types.into_inner();
         let mut index = TypeIndex::new();
-        let mut new_types = BTreeMap::<TypeName, LibType>::new();
+        let mut new_types = BTreeMap::<TypeName, Ty<LibRef>>::new();
         let names = old_types.keys().cloned().collect::<BTreeSet<_>>();
 
         while !old_types.is_empty() {
@@ -224,7 +224,7 @@ impl LibBuilder {
                 found = true;
                 let id = ty.id(Some(name));
                 index.insert(name.clone(), id);
-                new_types.insert(name.clone(), LibType::with(name.clone(), ty));
+                new_types.insert(name.clone(), ty);
                 old_types.remove(name);
             }
             debug_assert!(found, "incomplete type definition found in the library");

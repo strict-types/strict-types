@@ -1,5 +1,5 @@
 {-
-  Id: subject_leonid_rudolf_3VG9Cjoyx9MMAY2y4EZBgX9YQoyMngFfNrGLAUFbzQFU
+  Id: philips_regard_right_Fi7TdnxLgzHzeD14HKBynEPD7XMchNNLWigtuev3x2pC
   Name: StrictTypes
   Description: Confined generalized algebraic data types (GADT)
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
@@ -7,7 +7,7 @@
   License: Apache-2.0
 -}
 
-typelib StrictTypes -- subject_leonid_rudolf_3VG9Cjoyx9MMAY2y4EZBgX9YQoyMngFfNrGLAUFbzQFU
+typelib StrictTypes -- philips_regard_right_Fi7TdnxLgzHzeD14HKBynEPD7XMchNNLWigtuev3x2pC
 
 -- no dependencies
 
@@ -47,7 +47,6 @@ data LibName          :: Ident
 data LibRef           :: inline TyInlineRef
                        | named (TypeName, SemId)
                        | extern ExternRef
-data LibType          :: name TypeName, ty TyLibRef
 data NamedFieldsInlineRef :: [FieldInlineRef ^ 1..0xff]
 data NamedFieldsInlineRef1 :: [FieldInlineRef1 ^ 1..0xff]
 data NamedFieldsInlineRef2 :: [FieldInlineRef2 ^ 1..0xff]
@@ -115,7 +114,7 @@ data TyLibRef         :: primitive Primitive
                        | map (KeyTy, LibRef, Sizing)
 data TypeLib          :: name LibName
                        , dependencies {U8 -> ^ ..0xff Dependency}
-                       , types {U8 -> ^ 1.. LibType}
+                       , types {U8 -> ^ 1.. TyLibRef}
 data TypeLibId        :: [U8 ^ 32]
 data TypeName         :: Ident
 data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}

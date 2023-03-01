@@ -66,8 +66,8 @@ impl FromStr for TypeLibId {
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
         let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
-        for ty in self.types.values() {
-            hasher.update(ty.id().as_slice());
+        for (name, ty) in &self.types {
+            hasher.update(ty.id(Some(name)).as_slice());
         }
         TypeLibId::from_raw_array(hasher.finalize())
     }

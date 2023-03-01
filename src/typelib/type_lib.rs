@@ -34,21 +34,6 @@ use crate::typelib::id::TypeLibId;
 use crate::typelib::translate::TranslateError;
 use crate::{KeyTy, SemId, SemVer, Ty, TypeRef};
 
-/// Top-level data type contained within a library.
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("data {name:16} :: {ty}")]
-pub struct LibType {
-    pub name: TypeName,
-    pub ty: Ty<LibRef>,
-}
-
-impl LibType {
-    pub fn with(name: TypeName, ty: Ty<LibRef>) -> LibType { LibType { name, ty } }
-    pub fn id(&self) -> SemId { self.ty.id(Some(&self.name)) }
-}
-
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
@@ -395,7 +380,7 @@ impl Dependency {
     }
 }
 
-pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize }>;
+pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -404,7 +389,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, LibType>, 1, { u16::MAX as usize 
     dumb = { TypeLib {
         name: LibName::strict_dumb(),
         dependencies: default!(),
-        types: confined_bmap!(tn!("DumbType") => LibType::strict_dumb())
+        types: confined_bmap!(tn!("DumbType") => Ty::strict_dumb())
     } }
 )]
 pub struct TypeLib {
@@ -417,15 +402,6 @@ impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
 
 impl TypeLib {
-    pub fn with(name: LibName, root: LibType) -> Self {
-        let types = Confined::with((root.name.clone(), root));
-        TypeLib {
-            name,
-            dependencies: empty!(),
-            types,
-        }
-    }
-
     pub fn import(
         &mut self,
         dependency: Dependency,
@@ -442,11 +418,11 @@ impl TypeLib {
         Ok(())
     }
 
-    pub fn populate(&mut self, ty: LibType) -> Result<(), TranslateError> {
-        if self.types.contains_key(&ty.name) {
-            return Err(TranslateError::DuplicateName(ty.name));
+    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), TranslateError> {
+        if self.types.contains_key(&name) {
+            return Err(TranslateError::DuplicateName(name));
         }
-        self.types.insert(ty.name.clone(), ty)?;
+        self.types.insert(name, ty)?;
         Ok(())
     }
 
@@ -469,8 +445,8 @@ impl Display for TypeLib {
         }
         writeln!(f)?;
         writeln!(f)?;
-        for ty in self.types.values() {
-            writeln!(f, "{ty}")?;
+        for (name, ty) in &self.types {
+            writeln!(f, "data {name:16} :: {ty}")?;
         }
         Ok(())
     }
