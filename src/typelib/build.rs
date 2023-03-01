@@ -181,8 +181,9 @@ impl TypedWrite for LibBuilder {
                         .unwrap_or_else(|| panic!("unknown map key type '{name}'"))
                         .ty
                 }
-                me @ CompileRef::Extern(_) => {
-                    panic!("not supported map key type '{me}'")
+                CompileRef::Extern(ext) => {
+                    self.last_compiled = Some(CompileRef::Extern(ext.clone()));
+                    return self;
                 }
             };
             if let Ty::Tuple(fields) = ty {
