@@ -31,7 +31,7 @@ use std::{env, fs, io};
 use amplify::num::u24;
 use strict_encoding::{StrictEncode, StrictWriter, STRICT_TYPES_LIB};
 use strict_types::typelib::LibBuilder;
-use strict_types::typesys::TypeSysId;
+use strict_types::typesys::{TypeFqid, TypeSysId};
 use strict_types::{TypeLib, TypeSystem};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,6 +41,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .process::<TypeLib>()?
         .process::<TypeSystem>()?
         .process::<TypeSysId>()?
+        .process::<TypeFqid>()?
         .compile(none!())?;
     let id = lib.id();
 

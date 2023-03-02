@@ -21,12 +21,72 @@
 // limitations under the License.
 
 use std::collections::{BTreeMap, BTreeSet};
+use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
+use blake3::Hasher;
+use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
+use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
-use crate::typesys::TypeFqid;
+use crate::typesys::TypeFqn;
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+pub struct TypeFqid {
+    pub id: SemId,
+    pub fqn: Option<TypeFqn>,
+}
+
+impl TypeFqid {
+    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
+
+    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
+        TypeFqid {
+            id,
+            fqn: Some(TypeFqn::with(lib, name)),
+        }
+    }
+}
+
+impl HashId for TypeFqid {
+    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
+}
+
+impl TypeRef for TypeFqid {
+    fn id(&self) -> SemId { self.id }
+}
+
+impl Display for TypeFqid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.fqn {
+            Some(fqn) => Display::fmt(fqn, f),
+            None => Display::fmt(&self.id, f),
+        }
+    }
+}
+
+impl Translate<TypeFqid> for SemId {
+    type Builder = ();
+    type Context = TypeSystem;
+    type Error = Error;
+
+    fn translate(
+        self,
+        _builder: &mut Self::Builder,
+        ctx: &Self::Context,
+    ) -> Result<TypeFqid, Self::Error> {
+        ctx.iter()
+            .find(|(id, _)| **id == self)
+            .map(|(id, info)| TypeFqid {
+                id: *id,
+                fqn: info.fqn.clone(),
+            })
+            .ok_or(Error::UnknownType(self))
+    }
+}
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {

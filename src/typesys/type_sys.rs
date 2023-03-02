@@ -28,13 +28,11 @@ use std::fmt::{self, Display, Formatter};
 use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
-use blake3::Hasher;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use super::Error;
-use crate::ast::HashId;
-use crate::{SemId, Translate, Ty, TypeRef};
+use crate::typesys::TypeFqid;
+use crate::{SemId, Translate, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -49,54 +47,16 @@ impl TypeFqn {
     pub fn with(lib: LibName, name: TypeName) -> TypeFqn { TypeFqn { lib, name } }
 }
 
-#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeFqid {
-    pub id: SemId,
+pub struct TypeInfo {
     pub fqn: Option<TypeFqn>,
+    pub ty: Ty<SemId>,
 }
 
-impl TypeFqid {
-    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
-
-    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
-        TypeFqid {
-            id,
-            fqn: Some(TypeFqn::with(lib, name)),
-        }
-    }
-}
-
-impl Display for TypeFqid {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self.fqn {
-            Some(fqn) => Display::fmt(fqn, f),
-            None => Display::fmt(&self.id, f),
-        }
-    }
-}
-
-impl HashId for TypeFqid {
-    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
-}
-
-impl TypeRef for TypeFqid {
-    fn id(&self) -> SemId { self.id }
-}
-
-impl Translate<TypeFqid> for SemId {
-    type Builder = ();
-    type Context = TypeSystem;
-    type Error = Error;
-
-    fn translate(
-        self,
-        _builder: &mut Self::Builder,
-        ctx: &Self::Context,
-    ) -> Result<TypeFqid, Self::Error> {
-        ctx.keys().find(|fqid| fqid.id == self).cloned().ok_or(Error::UnknownType(self))
-    }
+impl TypeInfo {
+    pub fn with(fqn: Option<TypeFqn>, ty: Ty<SemId>) -> TypeInfo { TypeInfo { fqn, ty } }
 }
 
 /// Type system represents a set of strict types assembled from multiple
@@ -112,7 +72,7 @@ impl Translate<TypeFqid> for SemId {
 #[wrapper(Deref)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeSystem(MediumOrdMap<TypeFqid, Ty<SemId>>);
+pub struct TypeSystem(MediumOrdMap<SemId, TypeInfo>);
 
 impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
@@ -127,7 +87,7 @@ impl TypeSystem {
         fqid: TypeFqid,
         ty: Ty<SemId>,
     ) -> Result<bool, confinement::Error> {
-        self.0.insert(fqid, ty).map(|res| res.is_some())
+        self.0.insert(fqid.id, TypeInfo::with(fqid.fqn, ty)).map(|res| res.is_some())
     }
 }
 
@@ -135,12 +95,14 @@ impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
-        for (fqid, ty) in &self.0 {
-            let ty = ty.clone().translate(&mut (), self).expect("inconsistent type system");
-            if fqid.fqn.is_none() {
-                writeln!(f, "-- {:0}", fqid.id)?;
+        for (id, info) in &self.0 {
+            let ty = info.ty.clone().translate(&mut (), self).expect("type system inconsistency");
+            if let Some(fqn) = &info.fqn {
+                writeln!(f, "-- {id:0}")?;
+                writeln!(f, "data {fqn} :: {:0}", ty)?;
+            } else {
+                writeln!(f, "data {id:0} :: {:0}", ty)?;
             }
-            writeln!(f, "data {fqid:0} :: {ty:0}")?;
         }
         Ok(())
     }
