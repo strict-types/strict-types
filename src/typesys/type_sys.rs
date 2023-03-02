@@ -28,10 +28,13 @@ use std::fmt::{self, Display, Formatter};
 use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
+use blake3::Hasher;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::{SemId, Ty};
+use super::Error;
+use crate::ast::HashId;
+use crate::{SemId, Translate, Ty, TypeRef};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -74,6 +77,28 @@ impl Display for TypeFqid {
     }
 }
 
+impl HashId for TypeFqid {
+    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
+}
+
+impl TypeRef for TypeFqid {
+    fn id(&self) -> SemId { self.id }
+}
+
+impl Translate<TypeFqid> for SemId {
+    type Builder = ();
+    type Context = TypeSystem;
+    type Error = Error;
+
+    fn translate(
+        self,
+        _builder: &mut Self::Builder,
+        ctx: &Self::Context,
+    ) -> Result<TypeFqid, Self::Error> {
+        ctx.keys().find(|fqid| fqid.id == self).cloned().ok_or(Error::UnknownType(self))
+    }
+}
+
 /// Type system represents a set of strict types assembled from multiple
 /// libraries. It is designed to provide all necessary type information to
 /// analyze a type with all types it depends onto.
@@ -111,10 +136,11 @@ impl Display for TypeSystem {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
         for (fqid, ty) in &self.0 {
-            if let Some(fqn) = &fqid.fqn {
-                writeln!(f, "-- {fqn}")?;
+            let ty = ty.clone().translate(&mut (), self).expect("inconsistent type system");
+            if fqid.fqn.is_none() {
+                writeln!(f, "-- {:0}", fqid.id)?;
             }
-            writeln!(f, "data {:0} :: {ty:0}", fqid.id)?;
+            writeln!(f, "data {fqid:0} :: {ty:0}")?;
         }
         Ok(())
     }

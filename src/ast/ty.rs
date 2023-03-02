@@ -622,7 +622,7 @@ where Ref: Display
             } else {
                 Display::fmt(ty, f)?;
             }
-            write!(f, "                       | ")?;
+            write!(f, "\n                       | ")?;
         }
         if let Some((variant, ty)) = last {
             write!(f, "{variant}")?;
