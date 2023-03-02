@@ -27,32 +27,24 @@ extern crate strict_encoding;
 
 use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::typelib::LibBuilder;
+use strict_types::typesys::SystemBuilder;
 use strict_types::TypeLib;
 
 #[test]
 fn reflect() {
     let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>().unwrap();
-    builder.compile(none!()).unwrap();
+    let lib = builder.compile(none!()).unwrap();
 
-    /*
     let mut builder = SystemBuilder::new();
-    builder.import(lib);
+    builder.import(lib).unwrap();
     match builder.finalize() {
-        Ok((sys, warnings)) => {
-            for warning in warnings {
-                eprintln!("Warning: {}", warning);
-            }
-            println!("----- BEGIN STEN TYPE SYSTEM -----");
-            println!("Id: {}\n", sys.id());
-            pp(sys.to_serialized());
-            println!("\n----- END STEN TYPE SYSTEM -----\n");
+        Ok(sys) => {
+            println!("{sys}");
+            println!("{sys:X}");
         }
-        Err(errors) => {
-            for error in errors {
-                eprintln!("Error: {}", error);
-            }
+        Err(err) => {
+            eprintln!("Error: {err}");
             panic!()
         }
     }
-     */
 }

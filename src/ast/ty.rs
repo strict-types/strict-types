@@ -245,16 +245,34 @@ where Ref: Display
             Ty::Primitive(prim) => Display::fmt(prim, f),
             Ty::Enum(vars) => Display::fmt(vars, f),
             Ty::Union(fields) if self.is_option() => {
-                write!(f, "{}?", fields.get(&Variant::some()).expect("optional"))
+                let variant = fields.get(&Variant::some()).expect("optional");
+                Display::fmt(variant, f)?;
+                f.write_str("?")
             }
             Ty::Union(fields) => Display::fmt(fields, f),
             Ty::Struct(fields) => Display::fmt(fields, f),
             Ty::Tuple(fields) => Display::fmt(fields, f),
-            Ty::Array(ty, len) => write!(f, "[{ty} ^ {len}]"),
+            Ty::Array(ty, len) => {
+                f.write_str("[")?;
+                Display::fmt(ty, f)?;
+                write!(f, " ^ {len}]")
+            }
             Ty::UnicodeChar => write!(f, "Unicode"),
-            Ty::List(ty, sizing) => write!(f, "[{ty}{sizing}]"),
-            Ty::Set(ty, sizing) => write!(f, "{{{ty}{sizing}}}"),
-            Ty::Map(key, ty, sizing) => write!(f, "{{{key} ->{sizing} {ty}}}"),
+            Ty::List(ty, sizing) => {
+                f.write_str("[")?;
+                Display::fmt(ty, f)?;
+                write!(f, "{sizing}]")
+            }
+            Ty::Set(ty, sizing) => {
+                f.write_str("{")?;
+                Display::fmt(ty, f)?;
+                write!(f, "{sizing}}}")
+            }
+            Ty::Map(key, ty, sizing) => {
+                write!(f, "{{{key} ->{sizing} ")?;
+                Display::fmt(ty, f)?;
+                f.write_str("}")
+            }
         }
     }
 }
@@ -354,7 +372,11 @@ pub struct Field<Ref: TypeRef> {
 impl<Ref: TypeRef> Display for Field<Ref>
 where Ref: Display
 {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { write!(f, "{} {}", self.name, self.ty) }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.name, f)?;
+        f.write_str(" ")?;
+        Display::fmt(&self.ty, f)
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
@@ -497,10 +519,11 @@ where Ref: Display
         let mut iter = self.iter();
         let last = iter.next_back();
         for ty in iter {
-            write!(f, "{ty}, ")?;
+            Display::fmt(ty, f)?;
+            f.write_str(", ")?;
         }
         if let Some(ty) = last {
-            write!(f, "{ty}")?;
+            Display::fmt(ty, f)?;
         }
         Ok(())
     }
@@ -596,9 +619,11 @@ where Ref: Display
             }
             last_tag += 1;
             if ty.is_compound() {
-                writeln!(f, "({ty})")?;
+                f.write_str("(")?;
+                Display::fmt(ty, f)?;
+                f.write_str(")")?;
             } else {
-                writeln!(f, "{ty}")?;
+                Display::fmt(ty, f)?;
             }
             write!(f, "                       | ")?;
         }
@@ -611,9 +636,11 @@ where Ref: Display
                 f.write_str(" ")?;
             }
             if ty.is_compound() {
-                write!(f, "({ty})")?;
+                f.write_str("(")?;
+                Display::fmt(ty, f)?;
+                f.write_str(")")?;
             } else {
-                write!(f, "{ty}")?;
+                Display::fmt(ty, f)?;
             }
         }
         Ok(())

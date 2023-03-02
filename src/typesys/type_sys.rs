@@ -67,15 +67,44 @@ impl TypeSystem {
     }
 
     pub fn count_types(&self) -> u24 { self.0.len_u24() }
+}
 
-    pub fn is_complete(&self) -> bool {
-        for ty in self.values() {
-            for id in ty.type_refs() {
-                if !self.contains_key(id) {
-                    return false;
-                }
-            }
+impl Display for TypeSystem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typesys -- {:+}", self.id())?;
+        writeln!(f)?;
+        for (id, ty) in &self.0 {
+            writeln!(f, "data {id:0} :: {ty:0}")?;
         }
-        true
+        Ok(())
+    }
+}
+
+#[cfg(feature = "base64")]
+impl fmt::UpperHex for TypeSystem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use baid58::ToBaid58;
+        use base64::Engine;
+
+        let id = self.id();
+
+        writeln!(f, "----- BEGIN STRICT TYPE SYSTEM -----")?;
+        writeln!(f, "Id: {}", id)?;
+        writeln!(f, "Checksum: {}", id.to_baid58().mnemonic())?;
+        writeln!(f)?;
+
+        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
+        let engine = base64::engine::general_purpose::STANDARD;
+        let data = engine.encode(data);
+        let mut data = data.as_str();
+        while data.len() >= 76 {
+            let (line, rest) = data.split_at(76);
+            writeln!(f, "{}", line)?;
+            data = rest;
+        }
+        writeln!(f, "{}", data)?;
+
+        writeln!(f, "\n----- END STRICT TYPE SYSTEM -----")?;
+        Ok(())
     }
 }
