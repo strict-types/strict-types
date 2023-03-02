@@ -171,7 +171,7 @@ impl LibBuilder {
                     extern_types,
                     stack: empty!(),
                 };
-                let ty = match ty.clone().translate(&mut ctx) {
+                let ty = match ty.clone().translate(&mut ctx, &()) {
                     Ok(ty) => ty,
                     Err(TranslateError::Continue) => {
                         index = ctx.index;

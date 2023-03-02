@@ -30,9 +30,11 @@ use crate::SemId;
 
 pub trait Translate<To: Sized> {
     type Context;
+    type Builder;
     type Error;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<To, Self::Error>;
+    fn translate(self, builder: &mut Self::Builder, ctx: &Self::Context)
+        -> Result<To, Self::Error>;
 }
 
 /* TODO: Move into layout mod
