@@ -39,7 +39,6 @@ use crate::SemId;
 pub trait TypeRef:
     HashId + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
 {
-    const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
 
     fn as_ty(&self) -> Option<&Ty<Self>> { None }
@@ -52,12 +51,10 @@ pub trait TypeRef:
 }
 
 impl TypeRef for SemId {
-    const TYPE_NAME: &'static str = "SemId";
     fn id(&self) -> SemId { *self }
 }
 
 impl TypeRef for KeyTy {
-    const TYPE_NAME: &'static str = "KeyTy";
     fn id(&self) -> SemId { panic!("KeyTy can't have semantic id") }
 }
 

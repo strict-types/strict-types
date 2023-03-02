@@ -68,7 +68,6 @@ impl CompileRef {
 }
 
 impl TypeRef for CompileRef {
-    const TYPE_NAME: &'static str = "CompileRef";
     fn id(&self) -> SemId {
         match self {
             CompileRef::Embedded(ty) => ty.id(None),
