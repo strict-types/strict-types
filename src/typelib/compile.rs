@@ -23,17 +23,17 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement::{self, Confined};
+use amplify::confinement::Confined;
 use blake3::Hasher;
 use encoding::STD_LIB;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::build::LibBuilder;
-use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
+use crate::typelib::translate::{NestedContext, TranslateError, TypeIndex};
 use crate::typelib::type_lib::TypeMap;
 use crate::typelib::ExternRef;
-use crate::{Dependency, LibAlias, LibRef, SemId, Ty, TypeLib, TypeRef};
+use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -132,40 +132,6 @@ impl Display for CompileRef {
             CompileRef::Extern(ext) => Display::fmt(ext, f),
         }
     }
-}
-
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[display(doc_comments)]
-pub enum Warning {
-    /// unused import `{0}` for `{1}`
-    UnusedImport(LibAlias, Dependency),
-
-    /// type {1} from library {0} with id {2} is already known
-    RepeatedType(LibAlias, TypeName, SemId),
-}
-
-#[derive(Clone, Eq, PartialEq, Debug, Display, From, Error)]
-#[display(doc_comments)]
-pub enum Error {
-    /// type library {0} is not imported.
-    UnknownLib(LibAlias),
-
-    /// type {2} is not present in the type library {0}. The current version of the library is {1},
-    /// perhaps you need to import a different version.
-    TypeAbsent(LibAlias, Dependency, TypeName),
-
-    #[from]
-    #[display(inner)]
-    Confinement(confinement::Error),
-
-    /// type {name} in {dependency} expected to have a type id {expected} but {found} is found.
-    /// Perhaps a wrong version of the library is used?
-    TypeMismatch {
-        dependency: Dependency,
-        name: TypeName,
-        expected: SemId,
-        found: SemId,
-    },
 }
 
 impl LibBuilder {

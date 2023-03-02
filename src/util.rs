@@ -28,6 +28,13 @@ use strict_encoding::{Ident, STRICT_TYPES_LIB};
 use crate::typelib::TypeLibId;
 use crate::SemId;
 
+pub trait Translate<To: Sized> {
+    type Context;
+    type Error;
+
+    fn translate(self, ctx: &mut Self::Context) -> Result<To, Self::Error>;
+}
+
 /* TODO: Move into layout mod
 /// Measure of a type size in bytes
 #[derive(Copy, Clone, PartialEq, Eq, Debug, Display)]

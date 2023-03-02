@@ -22,86 +22,101 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
-use crate::ast::NestedRef;
-use crate::typelib::{Dependency, Error, InlineRef, LibAlias, LibRef, TypeLib, Warning};
-use crate::{EmbeddedRef, SemId, Translate, Ty, TypeName, TypeSystem};
+use amplify::confinement;
+use encoding::{LibName, TypeName};
+
+use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
+use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct TypeInfo {
+    pub ty: Ty<SemId>,
+    pub lib: Option<LibName>,
+    pub name: Option<TypeName>,
+}
+
+impl TypeInfo {
+    pub fn named(ty: Ty<SemId>, lib: &LibName, name: &TypeName) -> TypeInfo {
+        TypeInfo {
+            ty,
+            lib: Some(lib.clone()),
+            name: Some(name.clone()),
+        }
+    }
+    pub fn unnamed(ty: Ty<SemId>) -> TypeInfo {
+        TypeInfo {
+            ty,
+            lib: None,
+            name: None,
+        }
+    }
+}
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
-    pub(super) dependencies: BTreeMap<LibAlias, Dependency>,
-    types: BTreeMap<(LibAlias, TypeName), Ty<LibRef>>,
+    dependencies: BTreeSet<Dependency>,
+    types: BTreeMap<SemId, TypeInfo>,
 }
 
 impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
-    pub fn import(&mut self, lib: TypeLib) {
-        let alias = self
-            .dependencies
-            .iter()
-            .find(|(_, d)| d.name == lib.name)
-            .map(|(name, _)| name)
-            .unwrap_or(&lib.name);
-        let alias = alias.clone();
-        self.dependencies.remove(&alias);
-        self.types
-            .extend(lib.types.into_iter().map(|(ty_name, ty)| ((alias.clone(), ty_name), ty)));
+    pub fn import(&mut self, lib: TypeLib) -> Result<usize, Error> {
+        self.dependencies.retain(|dep| dep.name != lib.name);
+
+        let init_len = self.types.len();
+        for (ty_name, ty) in lib.types {
+            let id = ty.id(Some(&ty_name));
+            let ty = ty.translate(self)?;
+            let info = TypeInfo::named(ty, &lib.name, &ty_name);
+            self.types.insert(id, info);
+        }
+
         self.dependencies.extend(lib.dependencies);
+
+        Ok(self.types.len() - init_len)
     }
 
-    pub fn finalize(mut self) -> Result<(TypeSystem, Vec<Warning>), Vec<Error>> {
-        let mut warnings: Vec<Warning> = empty!();
-        let mut errors: Vec<Error> = empty!();
-        let mut lib: BTreeSet<Ty<EmbeddedRef>> = empty!();
-
-        for ((lib_alias, ty_name), ty) in self.types.clone() {
-            match ty.clone().translate(&mut self) {
-                Err(err) => errors.push(err),
-                Ok(ty) => {
-                    let id = ty.id(Some(&ty_name));
-                    if !lib.insert(ty) {
-                        warnings.push(Warning::RepeatedType(lib_alias, ty_name, id))
-                    }
+    pub fn finalize(self) -> Result<TypeSystem, Error> {
+        if let Some(dep) = self.dependencies.first() {
+            return Err(Error::UnusedImport(dep.clone()));
+        }
+        for (id, TypeInfo { ty, .. }) in &self.types {
+            for inner_id in ty.type_refs() {
+                if !self.types.contains_key(inner_id) {
+                    return Err(Error::TypeAbsent {
+                        unknown: *inner_id,
+                        known: *id,
+                    });
                 }
             }
         }
+        let mut sys = TypeSystem::new();
+        sys.extend(self.types.into_values().map(|info| info.ty))?;
+        Ok(sys)
+    }
 
-        match TypeSystem::try_from_iter(lib) {
-            Err(err) => {
-                errors.push(err.into());
-                return Err(errors);
-            }
-            Ok(lib) if errors.is_empty() => Ok((lib, warnings)),
-            Ok(_) => Err(errors),
-        }
+    fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
+    where Ref: Translate<SemId, Context = SystemBuilder, Error = Error> {
+        // compute id
+        let id = inline_ty.id(None);
+        // run for nested types
+        let ty = inline_ty.translate(self)?;
+        // add to system
+        self.types.insert(id, TypeInfo::unnamed(ty));
+        Ok(id)
     }
 }
 
-impl Translate<EmbeddedRef> for LibRef {
+impl Translate<SemId> for LibRef {
     type Context = SystemBuilder;
     type Error = Error;
 
-    fn translate(self, ctx: &mut Self::Context) -> Result<EmbeddedRef, Self::Error> {
+    fn translate(self, sys: &mut Self::Context) -> Result<SemId, Self::Error> {
         match self {
-            LibRef::Named(_, id) => Ok(EmbeddedRef::SemId(id)),
-            LibRef::Inline(inline_ty) => Ok(EmbeddedRef::Inline(inline_ty.translate(ctx)?)),
-            LibRef::Extern(ty_name, lib_alias, id) => {
-                let dep =
-                    ctx.dependencies.get(&lib_alias).ok_or(Error::UnknownLib(lib_alias.clone()))?;
-                let ty = ctx
-                    .types
-                    .get(&(lib_alias.clone(), ty_name.clone()))
-                    .ok_or_else(|| Error::TypeAbsent(lib_alias, dep.clone(), ty_name.clone()))?;
-                if id != ty.id() {
-                    return Err(Error::TypeMismatch {
-                        dependency: dep.clone(),
-                        name: ty_name,
-                        expected: id,
-                        found: ty.id(),
-                    });
-                }
-                Ok(EmbeddedRef::SemId(id))
-            }
+            LibRef::Named(_, id) => Ok(id),
+            LibRef::Inline(inline_ty) => sys.translate_inline(inline_ty),
+            LibRef::Extern(ExternRef { id, .. }) => Ok(id),
         }
     }
 }
@@ -110,10 +125,64 @@ impl Translate<SemId> for InlineRef {
     type Context = SystemBuilder;
     type Error = Error;
 
-    fn translate(self, _: &mut Self::Context) -> Result<SemId, Self::Error> {
+    fn translate(self, sys: &mut Self::Context) -> Result<SemId, Self::Error> {
         match self {
             InlineRef::Named(_, id) => Ok(id),
-            InlineRef::Extern(_, _, id) => Ok(id),
+            InlineRef::Inline(inline_ty) => sys.translate_inline(inline_ty),
+            InlineRef::Extern(ExternRef { id, .. }) => Ok(id),
         }
     }
+}
+
+impl Translate<SemId> for InlineRef1 {
+    type Context = SystemBuilder;
+    type Error = Error;
+
+    fn translate(self, sys: &mut Self::Context) -> Result<SemId, Self::Error> {
+        match self {
+            InlineRef1::Named(_, id) => Ok(id),
+            InlineRef1::Inline(inline_ty) => sys.translate_inline(inline_ty),
+            InlineRef1::Extern(ExternRef { id, .. }) => Ok(id),
+        }
+    }
+}
+
+impl Translate<SemId> for InlineRef2 {
+    type Context = SystemBuilder;
+    type Error = Error;
+
+    fn translate(self, sys: &mut Self::Context) -> Result<SemId, Self::Error> {
+        match self {
+            InlineRef2::Named(_, id) => Ok(id),
+            InlineRef2::Inline(inline_ty) => sys.translate_inline(inline_ty),
+            InlineRef2::Extern(ExternRef { id, .. }) => Ok(id),
+        }
+    }
+}
+
+impl Translate<SemId> for KeyTy {
+    type Context = SystemBuilder;
+    type Error = Error;
+
+    fn translate(self, _sys: &mut Self::Context) -> Result<SemId, Self::Error> {
+        Err(Error::TooDeep)
+    }
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Display, From, Error)]
+#[display(doc_comments)]
+pub enum Error {
+    /// unused import `{0}`.
+    UnusedImport(Dependency),
+
+    /// type `{unknown}` referenced from `{known}` is not known; perhaps you need to import a
+    /// library defining this type.
+    TypeAbsent { unknown: SemId, known: SemId },
+
+    #[from]
+    #[display(inner)]
+    Confinement(confinement::Error),
+
+    /// Too deeply nested types
+    TooDeep,
 }

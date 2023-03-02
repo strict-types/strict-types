@@ -23,7 +23,7 @@
 //! Embedded lib is a set of compiled type libraries having no external
 //! dependencies
 
-use std::collections::BTreeMap;
+use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
@@ -33,9 +33,17 @@ use strict_encoding::STRICT_TYPES_LIB;
 
 use crate::{SemId, Ty};
 
-#[derive(Wrapper, WrapperMut, Clone, Eq, PartialEq, Debug, Default, From)]
+/// Type system represents a set of strict types assembled from multiple
+/// libraries. It is designed to provide all necessary type information to
+/// analyze a type with all types it depends onto.
+///
+/// # Type guarantees
+///
+/// - Total number of types do not exceed 2^24-1;
+/// - Strict-serialized size is less than 2^24 bytes;
+/// - Type system is complete (i.e. no type references a type which is not a part of the system).
+#[derive(Wrapper, Clone, Eq, PartialEq, Debug, Default, From)]
 #[wrapper(Deref)]
-#[wrapper_mut(DerefMut)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
@@ -44,21 +52,18 @@ impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
 
 impl TypeSystem {
-    pub fn try_from_iter<T: IntoIterator<Item = Ty<SemId>>>(
-        iter: T,
-    ) -> Result<Self, confinement::Error> {
-        let mut lib: BTreeMap<SemId, Ty<SemId>> = empty!();
-        for ty in iter {
-            lib.insert(ty.id(None), ty);
-        }
+    pub fn new() -> Self { Self::default() }
 
-        let lib = TypeSystem(MediumOrdMap::try_from_iter(lib)?);
-        let len = lib.strict_serialized_len().expect("in-memory writer");
-        let max_len = u24::MAX.into_usize();
-        if len > max_len {
-            return Err(confinement::Error::Oversize { len, max_len }.into());
+    pub(super) fn extend<T: IntoIterator<Item = Ty<SemId>>>(
+        &mut self,
+        iter: T,
+    ) -> Result<usize, confinement::Error> {
+        let mut count = 0;
+        for ty in iter {
+            self.0.insert(ty.id(None), ty)?;
+            count += 0;
         }
-        Ok(lib)
+        Ok(count)
     }
 
     pub fn count_types(&self) -> u24 { self.0.len_u24() }

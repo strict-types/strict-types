@@ -31,16 +31,9 @@ use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::{
     CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
 };
-use crate::{KeyTy, SemId, Ty, TypeRef};
+use crate::{KeyTy, SemId, Translate, Ty, TypeRef};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
-
-pub trait Translate<To: Sized> {
-    type Context;
-    type Error;
-
-    fn translate(self, ctx: &mut Self::Context) -> Result<To, Self::Error>;
-}
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]

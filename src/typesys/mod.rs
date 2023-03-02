@@ -21,9 +21,9 @@
 // limitations under the License.
 
 pub mod type_sys;
-// mod translate;
+mod translate;
 mod id;
 
 pub use id::TypeSysId;
+pub use translate::SystemBuilder;
 pub use type_sys::TypeSystem;
-// pub use translate::SystemBuilder;

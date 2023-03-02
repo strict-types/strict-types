@@ -57,4 +57,4 @@ pub mod typesys;
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
 pub use typesys::TypeSystem;
-pub use util::{BuildFragment, PreFragment, SemVer, Urn};
+pub use util::{BuildFragment, PreFragment, SemVer, Translate, Urn};
