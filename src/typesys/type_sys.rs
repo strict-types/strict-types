@@ -62,4 +62,15 @@ impl TypeSystem {
     }
 
     pub fn count_types(&self) -> u24 { self.0.len_u24() }
+
+    pub fn is_complete(&self) -> bool {
+        for ty in self.values() {
+            for id in ty.type_refs() {
+                if !self.contains_key(id) {
+                    return false;
+                }
+            }
+        }
+        true
+    }
 }
