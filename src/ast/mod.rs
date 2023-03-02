@@ -27,7 +27,7 @@ mod iter;
 mod encoding;
 
 pub use id::{HashId, SemId};
-pub use iter::{CheckError, IntoIter, Iter, NestedRef};
+pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use ty::{
     Cls, EnumVariants, Field, KeyTy, NamedFields, Ty, TypeRef, UnionVariants, UnnamedFields,

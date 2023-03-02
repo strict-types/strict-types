@@ -25,10 +25,10 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{self, Confined};
 use blake3::Hasher;
-use encoding::{LibName, STD_LIB};
+use encoding::STD_LIB;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::{HashId, NestedRef};
+use crate::ast::HashId;
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, Translate, TranslateError, TypeIndex};
 use crate::typelib::type_lib::TypeMap;
@@ -79,6 +79,13 @@ impl TypeRef for CompileRef {
         }
     }
 
+    fn as_ty(&self) -> Option<&Ty<Self>> {
+        match self {
+            CompileRef::Embedded(ty) => Some(ty),
+            CompileRef::Named(_) | CompileRef::Extern(_) => None,
+        }
+    }
+
     fn is_compound(&self) -> bool {
         match self {
             CompileRef::Embedded(ty) => ty.is_compound(),
@@ -101,17 +108,6 @@ impl TypeRef for CompileRef {
         match self {
             CompileRef::Embedded(ty) => ty.is_ascii_char(),
             _ => false,
-        }
-    }
-}
-
-impl NestedRef for CompileRef {
-    type Ref = CompileRef;
-
-    fn as_ty(&self) -> Option<&Ty<Self>> {
-        match self {
-            CompileRef::Embedded(ty) => Some(ty),
-            CompileRef::Named(_) | CompileRef::Extern(_) => None,
         }
     }
 }

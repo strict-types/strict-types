@@ -32,7 +32,7 @@ use strict_encoding::{
 };
 
 use super::id::HashId;
-use crate::ast::NestedRef;
+use crate::ast::Iter;
 use crate::SemId;
 
 /// Glue for constructing ASTs.
@@ -41,6 +41,10 @@ pub trait TypeRef:
 {
     const TYPE_NAME: &'static str;
     fn id(&self) -> SemId;
+
+    fn as_ty(&self) -> Option<&Ty<Self>> { None }
+    fn type_refs(&self) -> Iter<Self> { Iter::from(self) }
+
     fn is_compound(&self) -> bool { false }
     fn is_byte(&self) -> bool { false }
     fn is_unicode_char(&self) -> bool { false }
@@ -255,7 +259,7 @@ where Ref: Display
     }
 }
 
-impl<Ref: NestedRef> Ty<Ref> {
+impl<Ref: TypeRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
             Ty::Union(fields) => fields.ty_by_ord(pos),
@@ -267,9 +271,7 @@ impl<Ref: NestedRef> Ty<Ref> {
             _ => None,
         }
     }
-}
 
-impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_byte(&self) -> bool { matches!(self, x if x == &Ty::BYTE || x == &Ty::U8) }
     pub fn is_unicode_char(&self) -> bool { matches!(self, x if x == &Ty::UNICODE) }
     pub fn is_ascii_char(&self) -> bool { matches!(self, x if x == &Ty::ascii_char()) }

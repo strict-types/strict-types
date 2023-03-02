@@ -26,8 +26,7 @@ use amplify::confinement::SmallVec;
 use amplify::Wrapper;
 use strict_encoding::{FieldName, STRICT_TYPES_LIB};
 
-use crate::ast::NestedRef;
-use crate::Ty;
+use crate::{Ty, TypeRef};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -86,16 +85,16 @@ impl Display for Path {
 
 #[derive(Debug, Display, Error)]
 #[display("no type path {path} exists within type {ty:?}")]
-pub struct PathError<'ty, Ref: NestedRef> {
+pub struct PathError<'ty, Ref: TypeRef> {
     pub ty: &'ty Ty<Ref>,
     pub path: Path,
 }
 
-impl<'ty, Ref: NestedRef> PathError<'ty, Ref> {
+impl<'ty, Ref: TypeRef> PathError<'ty, Ref> {
     pub fn new(ty: &'ty Ty<Ref>, path: Path) -> Self { PathError { ty, path } }
 }
 
-impl<Ref: NestedRef> Ty<Ref> {
+impl<Ref: TypeRef> Ty<Ref> {
     pub fn at_path(&self, path: &Path) -> Result<&Self, PathError<Ref>> {
         let mut ty = self;
         let mut path = path.clone();

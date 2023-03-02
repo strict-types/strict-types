@@ -23,12 +23,6 @@
 use crate::ast::Path;
 use crate::{Cls, Ty, TypeRef};
 
-pub trait NestedRef: TypeRef {
-    type Ref: TypeRef;
-    fn as_ty(&self) -> Option<&Ty<Self>>;
-    fn type_refs(&self) -> Iter<Self> { Iter::from(self) }
-}
-
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
 #[display(doc_comments)]
 pub enum CheckError {
@@ -45,23 +39,23 @@ pub enum CheckError {
     /// only {checked} fields were checked out of {total} fields in total
     UncheckedFields { checked: u8, total: u8 },
 }
-pub struct IntoIter<Ref: NestedRef> {
+pub struct IntoIter<Ref: TypeRef> {
     ty: Ty<Ref>,
     pos: u8,
 }
 
-impl<Ref: NestedRef> From<Ty<Ref>> for IntoIter<Ref> {
+impl<Ref: TypeRef> From<Ty<Ref>> for IntoIter<Ref> {
     fn from(ty: Ty<Ref>) -> Self { IntoIter { ty, pos: 0 } }
 }
 
-impl<Ref: NestedRef> IntoIterator for Ty<Ref> {
+impl<Ref: TypeRef> IntoIterator for Ty<Ref> {
     type Item = Ref;
     type IntoIter = IntoIter<Ref>;
 
     fn into_iter(self) -> Self::IntoIter { IntoIter::from(self) }
 }
 
-impl<Ref: NestedRef> Iterator for IntoIter<Ref> {
+impl<Ref: TypeRef> Iterator for IntoIter<Ref> {
     type Item = Ref;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -71,31 +65,31 @@ impl<Ref: NestedRef> Iterator for IntoIter<Ref> {
     }
 }
 
-pub struct Iter<'ty, Ref: NestedRef> {
+pub struct Iter<'ty, Ref: TypeRef> {
     ty: &'ty Ty<Ref>,
     pos: u8,
 }
 
-impl<Ref: NestedRef> Ty<Ref> {
+impl<Ref: TypeRef> Ty<Ref> {
     pub fn type_refs(&self) -> Iter<Ref> { Iter::from(self) }
 }
 
-impl<'ty, Ref: NestedRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
+impl<'ty, Ref: TypeRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
     fn from(ty: &'ty Ty<Ref>) -> Self { Iter { ty, pos: 0 } }
 }
 
-impl<'ty, Ref: NestedRef> From<&'ty Ref> for Iter<'ty, Ref> {
+impl<'ty, Ref: TypeRef> From<&'ty Ref> for Iter<'ty, Ref> {
     fn from(ty: &'ty Ref) -> Self { Self::from(ty.as_ty().unwrap_or(&Ty::UNIT)) }
 }
 
-impl<'ty, Ref: NestedRef> IntoIterator for &'ty Ty<Ref> {
+impl<'ty, Ref: TypeRef> IntoIterator for &'ty Ty<Ref> {
     type Item = &'ty Ref;
     type IntoIter = Iter<'ty, Ref>;
 
     fn into_iter(self) -> Self::IntoIter { Iter::from(self) }
 }
 
-impl<'ty, Ref: NestedRef + 'ty> Iterator for Iter<'ty, Ref> {
+impl<'ty, Ref: TypeRef + 'ty> Iterator for Iter<'ty, Ref> {
     type Item = &'ty Ref;
 
     fn next(&mut self) -> Option<Self::Item> {
