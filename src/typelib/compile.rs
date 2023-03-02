@@ -173,11 +173,11 @@ pub enum Error {
 }
 
 impl LibBuilder {
-    pub fn compile(
-        self,
-        mut known_libs: BTreeMap<LibName, Dependency>,
-    ) -> Result<TypeLib, TranslateError> {
+    pub fn compile(self, known_libs: BTreeSet<Dependency>) -> Result<TypeLib, TranslateError> {
         let name = self.name();
+
+        let mut known_libs: BTreeMap<_, _> =
+            known_libs.into_iter().map(|dep| (dep.name.clone(), dep)).collect();
 
         let (mut extern_types, types) = self.into_types();
         for el in types.values() {

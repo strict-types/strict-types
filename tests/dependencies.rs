@@ -105,10 +105,9 @@ pub struct Complex {
 fn serialize() {
     let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>().unwrap();
     let lib = builder.compile(none!()).unwrap();
-    let id = lib.id();
 
-    let imports = bmap! {
-        libname!(STRICT_TYPES_LIB) => (lib_alias!(STRICT_TYPES_LIB), Dependency::with(id, libname!(STRICT_TYPES_LIB), (0,1,0)))
+    let imports = bset! {
+        Dependency::with(lib.id(), lib.name)
     };
     let builder = LibBuilder::new(libname!(LIB)).process::<Complex>().unwrap();
     let lib = builder.compile(imports).unwrap();
