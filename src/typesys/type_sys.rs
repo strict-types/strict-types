@@ -28,10 +28,51 @@ use std::fmt::{self, Display, Formatter};
 use amplify::confinement;
 use amplify::confinement::MediumOrdMap;
 use amplify::num::u24;
-use encoding::{StrictDeserialize, StrictSerialize};
+use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
 use crate::{SemId, Ty};
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+#[display("{lib}.{name}")]
+pub struct TypeFqn {
+    pub lib: LibName,
+    pub name: TypeName,
+}
+
+impl TypeFqn {
+    pub fn with(lib: LibName, name: TypeName) -> TypeFqn { TypeFqn { lib, name } }
+}
+
+#[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+pub struct TypeFqid {
+    pub id: SemId,
+    pub fqn: Option<TypeFqn>,
+}
+
+impl TypeFqid {
+    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
+
+    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
+        TypeFqid {
+            id,
+            fqn: Some(TypeFqn::with(lib, name)),
+        }
+    }
+}
+
+impl Display for TypeFqid {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        match &self.fqn {
+            Some(fqn) => Display::fmt(fqn, f),
+            None => Display::fmt(&self.id, f),
+        }
+    }
+}
 
 /// Type system represents a set of strict types assembled from multiple
 /// libraries. It is designed to provide all necessary type information to
@@ -46,7 +87,7 @@ use crate::{SemId, Ty};
 #[wrapper(Deref)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
+pub struct TypeSystem(MediumOrdMap<TypeFqid, Ty<SemId>>);
 
 impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
@@ -54,19 +95,15 @@ impl StrictDeserialize for TypeSystem {}
 impl TypeSystem {
     pub fn new() -> Self { Self::default() }
 
-    pub(super) fn extend<T: IntoIterator<Item = Ty<SemId>>>(
-        &mut self,
-        iter: T,
-    ) -> Result<usize, confinement::Error> {
-        let mut count = 0;
-        for ty in iter {
-            self.0.insert(ty.id(None), ty)?;
-            count += 0;
-        }
-        Ok(count)
-    }
-
     pub fn count_types(&self) -> u24 { self.0.len_u24() }
+
+    pub(super) fn insert_unchecked(
+        &mut self,
+        fqid: TypeFqid,
+        ty: Ty<SemId>,
+    ) -> Result<bool, confinement::Error> {
+        self.0.insert(fqid, ty).map(|res| res.is_some())
+    }
 }
 
 impl Display for TypeSystem {

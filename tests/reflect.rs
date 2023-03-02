@@ -42,8 +42,10 @@ fn reflect() {
             println!("{sys}");
             println!("{sys:X}");
         }
-        Err(err) => {
-            eprintln!("Error: {err}");
+        Err(errors) => {
+            for err in errors {
+                eprintln!("Error: {err}");
+            }
             panic!()
         }
     }

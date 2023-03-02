@@ -23,39 +23,15 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use amplify::confinement;
-use encoding::{LibName, TypeName};
 
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
+use crate::typesys::TypeFqid;
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
-
-#[derive(Clone, Eq, PartialEq, Debug)]
-pub struct TypeInfo {
-    pub ty: Ty<SemId>,
-    pub lib: Option<LibName>,
-    pub name: Option<TypeName>,
-}
-
-impl TypeInfo {
-    pub fn named(ty: Ty<SemId>, lib: &LibName, name: &TypeName) -> TypeInfo {
-        TypeInfo {
-            ty,
-            lib: Some(lib.clone()),
-            name: Some(name.clone()),
-        }
-    }
-    pub fn unnamed(ty: Ty<SemId>) -> TypeInfo {
-        TypeInfo {
-            ty,
-            lib: None,
-            name: None,
-        }
-    }
-}
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
     dependencies: BTreeSet<Dependency>,
-    types: BTreeMap<SemId, TypeInfo>,
+    types: BTreeMap<TypeFqid, Ty<SemId>>,
 }
 
 impl SystemBuilder {
@@ -68,8 +44,8 @@ impl SystemBuilder {
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
             let ty = ty.translate(self)?;
-            let info = TypeInfo::named(ty, &lib.name, &ty_name);
-            self.types.insert(id, info);
+            let fqid = TypeFqid::named(id, lib.name.clone(), ty_name.clone());
+            self.types.insert(fqid, ty);
         }
 
         self.dependencies.extend(lib.dependencies);
@@ -77,23 +53,42 @@ impl SystemBuilder {
         Ok(self.types.len() - init_len)
     }
 
-    pub fn finalize(self) -> Result<TypeSystem, Error> {
+    pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
+        let mut errors = vec![];
         if let Some(dep) = self.dependencies.first() {
-            return Err(Error::UnusedImport(dep.clone()));
+            errors.push(Error::UnusedImport(dep.clone()));
         }
-        for (id, TypeInfo { ty, .. }) in &self.types {
+        for (fqid, ty) in &self.types {
             for inner_id in ty.type_refs() {
-                if !self.types.contains_key(inner_id) {
-                    return Err(Error::TypeAbsent {
+                if !self.types.contains_key(&fqid) {
+                    errors.push(Error::TypeAbsent {
                         unknown: *inner_id,
-                        known: *id,
+                        known: fqid.id,
                     });
                 }
             }
         }
+        if !errors.is_empty() {
+            return Err(errors);
+        }
+
         let mut sys = TypeSystem::new();
-        sys.extend(self.types.into_values().map(|info| info.ty))?;
-        Ok(sys)
+        for (fqid, ty) in self.types {
+            match sys.insert_unchecked(fqid, ty) {
+                Err(err) => {
+                    errors.push(err.into());
+                    return Err(errors);
+                }
+                Ok(true) => unreachable!("repeated type"),
+                Ok(false) => {}
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(sys)
+        } else {
+            Err(errors)
+        }
     }
 
     fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
@@ -103,7 +98,7 @@ impl SystemBuilder {
         // run for nested types
         let ty = inline_ty.translate(self)?;
         // add to system
-        self.types.insert(id, TypeInfo::unnamed(ty));
+        self.types.insert(TypeFqid::unnamed(id), ty);
         Ok(id)
     }
 }
@@ -183,6 +178,6 @@ pub enum Error {
     #[display(inner)]
     Confinement(confinement::Error),
 
-    /// Too deeply nested types
+    /// Too deeply nested types.
     TooDeep,
 }

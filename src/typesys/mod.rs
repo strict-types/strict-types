@@ -26,4 +26,4 @@ mod id;
 
 pub use id::TypeSysId;
 pub use translate::SystemBuilder;
-pub use type_sys::TypeSystem;
+pub use type_sys::{TypeFqid, TypeFqn, TypeSystem};
