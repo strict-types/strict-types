@@ -110,8 +110,11 @@ impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
-        for (id, ty) in &self.0 {
-            writeln!(f, "data {id:0} :: {ty:0}")?;
+        for (fqid, ty) in &self.0 {
+            if let Some(fqn) = &fqid.fqn {
+                writeln!(f, "-- {fqn}")?;
+            }
+            writeln!(f, "data {:0} :: {ty:0}", fqid.id)?;
         }
         Ok(())
     }
