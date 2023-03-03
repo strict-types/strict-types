@@ -25,8 +25,8 @@
 use std::io;
 
 use amplify::confinement::{
-    LargeAscii, LargeString, MediumAscii, MediumString, SmallAscii, SmallString, TinyAscii,
-    TinyString,
+    LargeAscii, LargeBlob, LargeString, MediumAscii, MediumBlob, MediumString, SmallAscii,
+    SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString,
 };
 use amplify::num::u24;
 use encoding::constants::*;
@@ -160,6 +160,24 @@ impl TypeSystem {
             }
             Ty::Array(_ty, _len) => {
                 todo!()
+            }
+
+            // Byte strings:
+            Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u8::MAX as u64 => {
+                let string = TinyBlob::strict_decode(&mut reader)?;
+                StrictVal::Bytes(string.into_inner())
+            }
+            Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u16::MAX as u64 => {
+                let string = SmallBlob::strict_decode(&mut reader)?;
+                StrictVal::Bytes(string.into_inner())
+            }
+            Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u24::MAX.into_u64() => {
+                let string = MediumBlob::strict_decode(&mut reader)?;
+                StrictVal::Bytes(string.into_inner())
+            }
+            Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u32::MAX as u64 => {
+                let string = LargeBlob::strict_decode(&mut reader)?;
+                StrictVal::Bytes(string.into_inner())
             }
 
             // Unicode strings:

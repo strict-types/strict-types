@@ -24,6 +24,8 @@
 
 use std::fmt::{self, Display, Formatter};
 
+use amplify::hex::ToHex;
+
 use super::StrictVal;
 
 impl StrictVal {
@@ -42,6 +44,7 @@ impl Display for StrictVal {
             StrictVal::Unit => f.write_str("()"),
             StrictVal::Number(n) => Display::fmt(n, f),
             StrictVal::String(s) => write!(f, r#""{s}""#),
+            StrictVal::Bytes(blob) => write!(f, "0x{}", blob.to_hex()),
             StrictVal::Tuple(fields) => {
                 let mut iter = fields.iter();
                 let last = iter.next_back();

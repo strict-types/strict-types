@@ -49,6 +49,13 @@ macro_rules! svstr {
 }
 
 #[macro_export]
+macro_rules! svbytes {
+    ($val:expr) => {
+        $crate::StrictVal::bytes($val)
+    };
+}
+
+#[macro_export]
 macro_rules! svtuple {
     ($val:expr) => {
         $crate::StrictVal::tuple($val)
@@ -211,6 +218,9 @@ pub enum StrictVal {
     #[from]
     String(String),
 
+    #[from]
+    Bytes(Vec<u8>),
+
     // TODO: Use confined collection
     Tuple(Vec<StrictVal>),
 
@@ -240,6 +250,7 @@ impl From<&StrictVal> for StrictVal {
 impl StrictVal {
     pub fn num(n: impl Into<StrictNum>) -> Self { StrictVal::Number(n.into()) }
     pub fn str(s: impl ToString) -> Self { StrictVal::String(s.to_string()) }
+    pub fn bytes(s: impl AsRef<[u8]>) -> Self { StrictVal::Bytes(s.as_ref().to_vec()) }
     pub fn tuple(fields: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
         StrictVal::Tuple(fields.into_iter().map(|v| v.into()).collect())
     }
