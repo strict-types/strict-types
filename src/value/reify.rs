@@ -24,56 +24,14 @@
 
 use std::io;
 
-use encoding::constants::UNIT;
-use encoding::Primitive;
-
-use super::{StrictNum, StrictVal};
 use crate::typify::TypedVal;
-use crate::{SemId, Ty, TypeSystem};
-
-pub trait TypeResolver {
-    fn ty_by_id(&self, id: SemId) -> Option<Ty<SemId>>;
-}
+use crate::{SemId, TypeSystem};
 
 impl TypeSystem {
     pub fn reify(&self, id: SemId, obj: TypedVal, e: impl io::Write) -> Result<(), Error> {
         todo!()
     }
     pub fn dereify(&self, id: SemId, d: impl io::Read) -> Result<TypedVal, Error> { todo!() }
-}
-
-trait PrimitiveValue {
-    fn is_small_unsigned(&self) -> bool;
-}
-
-impl PrimitiveValue for Primitive {
-    fn is_small_unsigned(&self) -> bool { self.into_code() <= 16 }
-}
-
-impl StrictVal {
-    fn encode(
-        &self,
-        ty: Ty<SemId>,
-        resolver: &impl TypeResolver,
-        e: impl io::Write,
-    ) -> io::Result<()> {
-        match (self, ty) {
-            (StrictVal::Unit, Ty::Primitive(prim)) if prim == UNIT => {}
-            (StrictVal::Number(StrictNum::Uint(val)), Ty::Primitive(prim))
-                if prim.is_small_unsigned() => {}
-            (StrictVal::Table(map), Ty::Struct(fields)) if map.len() == fields.len() => {}
-            _ => todo!(),
-        }
-        Ok(())
-    }
-
-    fn decode(
-        ty: Ty<SemId>,
-        resolver: &impl TypeResolver,
-        d: impl io::Read,
-    ) -> Result<Self, Error> {
-        todo!()
-    }
 }
 
 pub enum Error {}
