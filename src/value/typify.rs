@@ -178,6 +178,16 @@ impl TypeSystem {
                 return Err(Error::OutOfBounds(spec, s.len(), *sizing))
             }
 
+            // Ascii character
+            (StrictVal::String(s), ty @ Ty::Enum(_))
+                if ty.is_unicode_char()
+                    && s.len() == 1
+                    && s.as_bytes()[0] >= 0x20
+                    && s.as_bytes()[0] < 0x80 =>
+            {
+                StrictVal::String(s)
+            }
+
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
             (val @ StrictVal::String(_), Ty::List(id, _)) if id.is_unicode_char() => val,

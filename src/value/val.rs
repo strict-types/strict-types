@@ -214,10 +214,11 @@ pub enum StrictVal {
     //#[from(ieee::Oct)]
     Number(StrictNum),
 
-    // TODO: Add array type
+    // Covers unicode & ascii strings and characters
     #[from]
     String(String),
 
+    // Covers byte strings and fixed-size byte arrays
     #[from]
     Bytes(Vec<u8>),
 
@@ -232,10 +233,13 @@ pub enum StrictVal {
 
     Union(EnumTag, Box<StrictVal>),
 
+    // Covers both variable- and fixed-size non-byte and non-unicode arrays.
+    // May be used for representing tuples.
     List(Vec<StrictVal>),
 
     Set(Vec<StrictVal>),
 
+    // May be used to represent structures.
     Map(Vec<(StrictVal, StrictVal)>),
 }
 
