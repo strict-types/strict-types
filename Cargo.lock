@@ -636,6 +636,7 @@ dependencies = [
  "base64 0.21.0",
  "blake3",
  "half",
+ "indexmap",
  "serde",
  "serde_with",
  "serde_yaml",

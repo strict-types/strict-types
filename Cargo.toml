@@ -23,6 +23,7 @@ required-features = ["base64"]
 [dependencies]
 amplify = { version = "4.0.0-beta.18", features = ["apfloat"] }
 strict_encoding = { version = "2.0.0-rc.1", features = ["derive", "float"] }
+indexmap = "1.9.2"
 baid58 = "0.2.0"
 half = "2.1.0"
 blake3 = "1.3.3"

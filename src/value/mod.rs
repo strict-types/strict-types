@@ -20,69 +20,89 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::HashMap;
+use std::fmt::{self, Display, Formatter};
 use std::io;
 
 use amplify::num::{i1024, u1024};
 use encoding::constants::UNIT;
-use encoding::TypeName;
+use encoding::Primitive;
+use indexmap::IndexMap;
 
+use crate::typesys::TypeFqn;
 use crate::{SemId, Ty, TypeSystem};
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub struct StyObj {
-    pub name: Option<TypeName>,
-    pub val: Box<StyVal<StyObj>>,
+#[derive(Clone, Eq, PartialEq, Hash, Debug, From, Display)]
+#[display(inner)]
+pub enum TypeSpec {
+    #[from]
+    SemId(SemId),
+    #[from]
+    Fqn(TypeFqn),
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display("{val}@{name}")]
+pub struct StrictObj {
+    name: TypeSpec,
+    val: StrictVal,
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[display(inner)]
 #[non_exhaustive]
-pub enum StyNum {
+pub enum StrictNum {
     Uint(u128),
     BigUint(u1024),
     Int(i128),
     BitInt(i1024),
-    Float(f64),
-    // big float
+    // float
     // non-zero
 }
 
-#[derive(Clone, Eq, PartialEq, Hash, Debug)]
-pub enum StyVal<T = Box<StyVal>> {
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display(inner)]
+pub enum EnumTag {
+    Name(String),
+    Ord(u8),
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum StrictVal {
     Unit,
-    Number(StyNum),
+    Number(StrictNum),
     String(String),
-    List(Vec<T>),
-    Table(HashMap<String, T>),
+    Tuple(Vec<StrictVal>),
+    Struct(IndexMap<String, StrictVal>),
+    Enum(EnumTag),
+    Union(EnumTag, Box<StrictVal>),
+    List(Vec<StrictVal>),
+    Table(IndexMap<String, StrictVal>),
+}
+
+impl Display for StrictVal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { todo!() }
 }
 
 pub trait TypeResolver {
     fn ty_by_id(&self, id: SemId) -> Option<Ty<SemId>>;
 }
 
-trait StrictValue: Sized {
-    fn encode(
-        &self,
-        ty: Ty<SemId>,
-        resolver: &impl TypeResolver,
-        e: impl io::Write,
-    ) -> io::Result<()>;
-    fn decode(ty: Ty<SemId>, resolver: &impl TypeResolver, d: impl io::Read)
-        -> Result<Self, Error>;
-}
-
 impl TypeSystem {
-    pub fn typify(
-        &self,
-        id: SemId,
-        value: &impl StrictValue,
-        e: impl io::Write,
-    ) -> Result<(), Error> {
+    pub fn typify(&self, id: SemId, obj: StrictObj, e: impl io::Write) -> Result<(), Error> {
+        todo!()
     }
-    pub fn reify(&self, id: SemId, d: impl io::Read) -> Result<StyObj, Error> {}
+    pub fn reify(&self, id: SemId, d: impl io::Read) -> Result<StrictObj, Error> { todo!() }
 }
 
-impl StrictValue for StyVal {
+trait PrimitiveValue {
+    fn is_small_unsigned(&self) -> bool;
+}
+
+impl PrimitiveValue for Primitive {
+    fn is_small_unsigned(&self) -> bool { self.into_code() <= 16 }
+}
+
+impl StrictVal {
     fn encode(
         &self,
         ty: Ty<SemId>,
@@ -90,12 +110,21 @@ impl StrictValue for StyVal {
         e: impl io::Write,
     ) -> io::Result<()> {
         match (self, ty) {
-            (StyVal::Unit, Ty::Primitive(prim)) if prim == UNIT => {}
-            (StyVal::Number(StyNum::Uint(val)), Ty::Primitive(prim))
+            (StrictVal::Unit, Ty::Primitive(prim)) if prim == UNIT => {}
+            (StrictVal::Number(StrictNum::Uint(val)), Ty::Primitive(prim))
                 if prim.is_small_unsigned() => {}
-            (StyVal::Table(map), Ty::Struct(fields)) if map.len() == fields.len() => {}
+            (StrictVal::Table(map), Ty::Struct(fields)) if map.len() == fields.len() => {}
+            _ => todo!(),
         }
         Ok(())
+    }
+
+    fn decode(
+        ty: Ty<SemId>,
+        resolver: &impl TypeResolver,
+        d: impl io::Read,
+    ) -> Result<Self, Error> {
+        todo!()
     }
 }
 

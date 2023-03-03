@@ -52,7 +52,7 @@ mod util;
 pub mod ast;
 pub mod typelib;
 pub mod typesys;
-//pub mod value;
+pub mod value;
 
 pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
 pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
