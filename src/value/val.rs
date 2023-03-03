@@ -24,6 +24,7 @@
 
 // use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, u1024};
+use encoding::FieldName;
 use indexmap::IndexMap;
 
 #[macro_export]
@@ -206,7 +207,7 @@ pub enum StrictVal {
     Tuple(Vec<StrictVal>),
 
     // TODO: Use confined collection
-    Struct(IndexMap<String, StrictVal>),
+    Struct(IndexMap<FieldName, StrictVal>),
 
     #[from]
     Enum(EnumTag),
@@ -235,7 +236,7 @@ impl StrictVal {
         StrictVal::Tuple(fields.into_iter().map(|v| v.into()).collect())
     }
     pub fn struc(fields: impl IntoIterator<Item = (&'static str, impl Into<StrictVal>)>) -> Self {
-        StrictVal::Struct(fields.into_iter().map(|(n, v)| (n.to_string(), v.into())).collect())
+        StrictVal::Struct(fields.into_iter().map(|(n, v)| (fname!(n), v.into())).collect())
     }
     pub fn enumer(tag: impl Into<EnumTag>) -> Self { StrictVal::Enum(tag.into()) }
     pub fn union(tag: impl Into<EnumTag>, val: impl Into<StrictVal>) -> Self {
@@ -281,7 +282,7 @@ mod test {
         let strct = svstruct!(name => "Some name", ticker => "TICK", precision => 8u8);
         assert_eq!(
             format!("{strct:?}"),
-            r#"Struct({"name": String("Some name"), "ticker": String("TICK"), "precision": Number(Uint(8))})"#
+            r#"Struct({name: String("Some name"), ticker: String("TICK"), precision: Number(Uint(8))})"#
         )
     }
 }
