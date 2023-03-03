@@ -351,6 +351,31 @@ pub enum KeyTy {
 impl KeyTy {
     pub const U8: KeyTy = KeyTy::Primitive(U8);
     pub const BYTE: KeyTy = KeyTy::Primitive(BYTE);
+
+    pub fn to_ty(&self) -> Ty<SemId> { self.clone().into_ty() }
+
+    pub fn into_ty(self) -> Ty<SemId> {
+        match self {
+            KeyTy::Primitive(prim) => Ty::Primitive(prim),
+            KeyTy::Enum(variants) => Ty::Enum(variants),
+            KeyTy::Array(len) => Ty::Array(Ty::<SemId>::BYTE.id(None), len),
+            KeyTy::UnicodeStr(sizing) if sizing == Sizing::ONE => Ty::UnicodeChar,
+            KeyTy::UnicodeStr(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
+                Ty::Array(Ty::<SemId>::UnicodeChar.id(None), sizing.min as u16)
+            }
+            KeyTy::UnicodeStr(sizing) => Ty::List(Ty::<SemId>::UnicodeChar.id(None), sizing),
+            KeyTy::AsciiStr(sizing) if sizing == Sizing::ONE => Ty::ascii_char(),
+            KeyTy::AsciiStr(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
+                Ty::Array(Ty::<SemId>::ascii_char().id(None), sizing.min as u16)
+            }
+            KeyTy::AsciiStr(sizing) => Ty::List(Ty::<SemId>::ascii_char().id(None), sizing),
+            KeyTy::Bytes(sizing) if sizing == Sizing::ONE => Ty::BYTE,
+            KeyTy::Bytes(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
+                Ty::Array(Ty::<SemId>::BYTE.id(None), sizing.min as u16)
+            }
+            KeyTy::Bytes(sizing) => Ty::List(Ty::<SemId>::BYTE.id(None), sizing),
+        }
+    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
