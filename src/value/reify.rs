@@ -24,13 +24,17 @@
 
 use std::io;
 
+use amplify::confinement::{
+    LargeAscii, LargeString, MediumAscii, MediumString, SmallAscii, SmallString, TinyAscii,
+    TinyString,
+};
 use amplify::num::u24;
 use encoding::constants::*;
 use encoding::{DecodeError, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
 use crate::typify::{TypeSpec, TypedVal};
-use crate::{SemId, StrictVal, Ty, TypeSystem};
+use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -157,6 +161,44 @@ impl TypeSystem {
             Ty::Array(_ty, _len) => {
                 todo!()
             }
+
+            // Unicode strings:
+            Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u8::MAX as u64 => {
+                let string = TinyString::strict_decode(&mut reader)?;
+                StrictVal::String(string.into_inner())
+            }
+            Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u16::MAX as u64 => {
+                let string = SmallString::strict_decode(&mut reader)?;
+                StrictVal::String(string.into_inner())
+            }
+            Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u24::MAX.into_u64() => {
+                let string = MediumString::strict_decode(&mut reader)?;
+                StrictVal::String(string.into_inner())
+            }
+            Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u32::MAX as u64 => {
+                let string = LargeString::strict_decode(&mut reader)?;
+                StrictVal::String(string.into_inner())
+            }
+
+            // ASCII strings:
+            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u8::MAX as u64 => {
+                let string = TinyAscii::strict_decode(&mut reader)?;
+                StrictVal::String(string.to_string())
+            }
+            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u16::MAX as u64 => {
+                let string = SmallAscii::strict_decode(&mut reader)?;
+                StrictVal::String(string.to_string())
+            }
+            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u24::MAX.into_u64() => {
+                let string = MediumAscii::strict_decode(&mut reader)?;
+                StrictVal::String(string.to_string())
+            }
+            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u32::MAX as u64 => {
+                let string = LargeAscii::strict_decode(&mut reader)?;
+                StrictVal::String(string.to_string())
+            }
+
+            // Other lists:
             Ty::List(ty, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
                 d = reader.unbox();

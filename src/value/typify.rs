@@ -325,7 +325,7 @@ mod test {
     // use super::*;
 
     #[test]
-    fn typify() {
+    fn load() {
         let sys = test_system();
         let nominal = Nominal::with("TICK", "Some name", 2);
         let value = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(2));
