@@ -97,20 +97,19 @@ pub struct SystemBuilder {
 impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
-    pub fn import(&mut self, lib: TypeLib) -> Result<usize, Error> {
+    pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
         self.dependencies.retain(|dep| dep.name != lib.name);
 
-        let init_len = self.types.len();
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
-            let ty = ty.translate(self, &())?;
+            let ty = ty.translate(&mut self, &())?;
             let fqid = TypeFqid::named(id, lib.name.clone(), ty_name.clone());
             self.types.insert(fqid, ty);
         }
 
         self.dependencies.extend(lib.dependencies);
 
-        Ok(self.types.len() - init_len)
+        Ok(self)
     }
 
     pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {

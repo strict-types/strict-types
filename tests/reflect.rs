@@ -35,8 +35,7 @@ fn reflect() {
     let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).process::<TypeLib>().unwrap();
     let lib = builder.compile(none!()).unwrap();
 
-    let mut builder = SystemBuilder::new();
-    builder.import(lib).unwrap();
+    let builder = SystemBuilder::new().import(lib).unwrap();
     match builder.finalize() {
         Ok(sys) => {
             println!("{sys}");
