@@ -56,9 +56,9 @@ pub struct LibBuilder {
 }
 
 impl LibBuilder {
-    pub fn new(name: LibName) -> LibBuilder {
+    pub fn new(name: impl Into<LibName>) -> LibBuilder {
         LibBuilder {
-            lib: name,
+            lib: name.into(),
             extern_types: empty!(),
             types: empty!(),
             last_compiled: None,
