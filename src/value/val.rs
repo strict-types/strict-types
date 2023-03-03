@@ -22,7 +22,7 @@
 
 //! Strict value core types.
 
-use amplify::num::apfloat::ieee;
+// use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, u1024};
 use indexmap::IndexMap;
 
@@ -105,7 +105,7 @@ macro_rules! svtable {
     };
 }
 
-#[derive(Copy, Clone, PartialEq, Debug, Display, From)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Display, From)]
 #[display(inner)]
 #[non_exhaustive]
 pub enum StrictNum {
@@ -134,7 +134,6 @@ pub enum StrictNum {
     //#[from(i512)]
     #[from]
     BitInt(i1024),
-
     // TODO: Do conversion of number types in to amplify_num
     /*
     #[from(half::bf16)]
@@ -142,18 +141,18 @@ pub enum StrictNum {
     #[from(ieee::Single)]
     #[from(ieee::Double)]
     #[from(ieee::Quad)]
-     */
-    #[from]
-    //#[from(f32)]
-    //#[from(f64)]
+    #[from(ieee::Oct]
+    #[from(f32)]
+    #[from(f64)]
     Float(ieee::Oct),
-    // non-zero
+    */
+    // TODO: Addnon-zero
 }
 
 // TODO: Do conversion of number types in to amplify_num
 
 /// A tag specifying enum or union variant used in strict value representation.
-#[derive(Clone, Eq, PartialEq, Debug, Display, From)]
+#[derive(Clone, Eq, PartialEq, Hash, Debug, Display, From)]
 #[display(inner)]
 pub enum EnumTag {
     #[from]
@@ -162,7 +161,7 @@ pub enum EnumTag {
     Ord(u8),
 }
 
-#[derive(Clone, PartialEq, Debug, From)]
+#[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum StrictVal {
     #[from(())]
     Unit,
@@ -190,14 +189,16 @@ pub enum StrictVal {
     //#[from(ieee::Single)]
     //#[from(ieee::Double)]
     //#[from(ieee::Quad)]
-    #[from(ieee::Oct)]
+    //#[from(ieee::Oct)]
     Number(StrictNum),
 
     #[from]
     String(String),
 
+    // TODO: Use confined collection
     Tuple(Vec<StrictVal>),
 
+    // TODO: Use confined collection
     Struct(IndexMap<String, StrictVal>),
 
     #[from]
