@@ -22,6 +22,8 @@
 
 //! Checks strict values against provied strict type specification.
 
+use std::collections::BTreeSet;
+
 use amplify::ascii::{AsAsciiStrError, AsciiString};
 use amplify::Wrapper;
 use encoding::constants::UNIT;
@@ -29,8 +31,9 @@ use encoding::{FieldName, InvalidIdent, Primitive, Sizing};
 use indexmap::IndexMap;
 
 use super::StrictVal;
+use crate::ast::EnumVariants;
 use crate::typesys::{TypeFqn, TypeInfo};
-use crate::value::StrictNum;
+use crate::value::{EnumTag, StrictNum};
 use crate::{SemId, Ty, TypeRef, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, From, Display)]
@@ -40,6 +43,7 @@ pub enum TypeSpec {
     SemId(SemId),
 
     #[from]
+    #[from(&'static str)]
     // TODO: Add optional checkword suffix
     Fqn(TypeFqn /* , Option<CheckWords> */),
 }
@@ -94,6 +98,12 @@ pub enum Error {
     #[display(inner)]
     #[from]
     InvalidFieldName(InvalidIdent),
+
+    /// invalid enum tag `{0}`; allowed variants are {1}.
+    EnumTagInvalid(EnumTag, EnumVariants),
+
+    /// invalid union tag `{0}`; allowed variants are {1}.
+    UnionTagInvalid(EnumTag, EnumVariants),
 
     /// mapping found where a structure value was expected.
     MapNotStructure,
@@ -201,6 +211,40 @@ impl TypeSystem {
                     new.push((checked_key.val, checked_val.val));
                 }
                 StrictVal::Map(new)
+            }
+
+            // Enums:
+            (StrictVal::Enum(tag), Ty::Enum(variants)) => {
+                let vname = match &tag {
+                    EnumTag::Name(name) => variants.tag_by_name(name).map(|_| name),
+                    EnumTag::Ord(ord) => variants.name_by_tag(*ord),
+                };
+                match vname {
+                    None => return Err(Error::EnumTagInvalid(tag, variants.clone())),
+                    Some(name) => StrictVal::enumer(name.clone()),
+                }
+            }
+            (StrictVal::Number(StrictNum::Uint(tag)), Ty::Enum(variants)) if tag < 0x100 => {
+                let tag = tag as u8;
+                let vname = variants.name_by_tag(tag);
+                match vname {
+                    None => return Err(Error::EnumTagInvalid(tag.into(), variants.clone())),
+                    Some(name) => StrictVal::enumer(name.clone()),
+                }
+            }
+            (StrictVal::Union(tag, val), Ty::Union(vars_req)) => {
+                let Some(id) = (match &tag {
+                    EnumTag::Name(name) => vars_req.ty_by_name(name),
+                    EnumTag::Ord(ord) => vars_req.ty_by_ord(*ord),
+                }) else {
+                    return Err(Error::UnionTagInvalid(
+                        tag,
+                        EnumVariants::try_from(vars_req.keys().cloned().collect::<BTreeSet<_>>())
+                            .expect("same collection size"),
+                    ))
+                };
+                let checked = self.typify(*val, *id)?;
+                StrictVal::Union(tag, Box::new(checked.val))
             }
 
             // Field count check:
