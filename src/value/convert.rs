@@ -21,3 +21,68 @@
 // limitations under the License.
 
 //! Converts strict values from/to non-STON value serialization formats (JSON, YAML, TOML etc).
+
+use crate::StrictVal;
+
+impl From<serde_json::Value> for StrictVal {
+    fn from(json: serde_json::Value) -> Self {
+        use serde_json::Value;
+
+        match json {
+            Value::Null => StrictVal::Unit,
+            Value::Bool(v) => StrictVal::bool(v),
+            Value::Number(no) if no.is_u64() => StrictVal::num(no.as_u64().unwrap()),
+            Value::Number(no) if no.is_i64() => StrictVal::num(no.as_i64().unwrap()),
+            Value::Number(no) if no.is_f64() => todo!(),
+            Value::Number(_) => {
+                unreachable!()
+            }
+            Value::String(s) => StrictVal::String(s),
+            Value::Array(vec) => StrictVal::list(vec.into_iter().map(StrictVal::from)),
+            Value::Object(map) => {
+                StrictVal::map(map.into_iter().map(|(k, v)| (k, StrictVal::from(v))))
+            }
+        }
+    }
+}
+
+impl From<serde_yaml::Value> for StrictVal {
+    fn from(yaml: serde_yaml::Value) -> Self {
+        use serde_yaml::Value;
+
+        match yaml {
+            Value::Null => StrictVal::Unit,
+            Value::Bool(v) => StrictVal::bool(v),
+            Value::Number(no) if no.is_u64() => StrictVal::num(no.as_u64().unwrap()),
+            Value::Number(no) if no.is_i64() => StrictVal::num(no.as_i64().unwrap()),
+            Value::Number(no) if no.is_f64() => todo!(),
+            Value::Number(_) => {
+                unreachable!()
+            }
+            Value::String(s) => StrictVal::String(s),
+            Value::Sequence(vec) => StrictVal::list(vec.into_iter().map(StrictVal::from)),
+            Value::Mapping(map) => {
+                StrictVal::map(map.into_iter().map(|(k, v)| (k, StrictVal::from(v))))
+            }
+            Value::Tagged(tagged) => StrictVal::from(tagged.value),
+        }
+    }
+}
+
+impl From<toml::Value> for StrictVal {
+    fn from(toml: toml::Value) -> Self {
+        use toml::Value;
+
+        match toml {
+            Value::Integer(no) => StrictVal::num(no),
+            Value::Float(_f) => todo!(),
+            Value::Boolean(v) => StrictVal::bool(v),
+            Value::String(s) => StrictVal::String(s),
+            Value::Array(vec) => StrictVal::list(vec.into_iter().map(StrictVal::from)),
+            Value::Table(map) => {
+                StrictVal::map(map.into_iter().map(|(k, v)| (k, StrictVal::from(v))))
+            }
+            Value::Datetime(_dt) => todo!(),
+        }
+    }
+}

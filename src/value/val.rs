@@ -262,6 +262,7 @@ impl StrictVal {
         StrictVal::Struct(fields.into_iter().map(|(n, v)| (fname!(n), v.into())).collect())
     }
     pub fn enumer(tag: impl Into<EnumTag>) -> Self { StrictVal::Enum(tag.into()) }
+    pub fn bool(v: bool) -> Self { StrictVal::enumer(v as u8) }
     pub fn union(tag: impl Into<EnumTag>, val: impl Into<StrictVal>) -> Self {
         StrictVal::Union(tag.into(), Box::new(val.into()))
     }
@@ -273,7 +274,7 @@ impl StrictVal {
     pub fn set(items: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
         StrictVal::Set(items.into_iter().map(|v| v.into()).collect())
     }
-    pub fn table(
+    pub fn map(
         items: impl IntoIterator<Item = (impl Into<StrictVal>, impl Into<StrictVal>)>,
     ) -> Self {
         StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
