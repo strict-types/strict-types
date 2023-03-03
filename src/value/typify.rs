@@ -317,53 +317,22 @@ impl TypeSystem {
 
 #[cfg(test)]
 mod test {
-    use amplify::confinement::{Confined, TinyAscii};
+    use std::io;
 
-    use super::*;
-    use crate::typelib::LibBuilder;
-    use crate::typesys::SystemBuilder;
+    use encoding::StrictSerialize;
+
+    use super::super::test_helpers::*;
+    // use super::*;
 
     #[test]
     fn typify() {
-        #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
-        #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-        #[strict_type(lib = "TestLib", tags = repr, into_u8, try_from_u8)]
-        #[repr(u8)]
-        enum Precision {
-            #[strict_type(dumb)]
-            NoDecimals = 0,
-            OneDecimal = 1,
-            TwoDecimals = 2,
-        }
-
-        #[derive(Clone, Eq, PartialEq, Hash, Debug)]
-        #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-        #[strict_type(lib = "TestLib", dumb = { Nominal::with("DUMB", "Dumb", strict_dumb!()) })]
-        struct Nominal {
-            pub ticker: Confined<String, 1, 8>,
-            pub name: TinyAscii,
-            pub precision: Precision,
-        }
-        impl Nominal {
-            pub fn with(ticker: &'static str, name: &'static str, precision: u8) -> Self {
-                Nominal {
-                    ticker: Confined::try_from(ticker.to_owned()).unwrap(),
-                    name: Confined::try_from(AsciiString::from_ascii(name).unwrap()).unwrap(),
-                    precision: Precision::try_from(precision).unwrap(),
-                }
-            }
-        }
-
-        let lib =
-            LibBuilder::new("TestLib").process::<Nominal>().unwrap().compile(none!()).unwrap();
-        let sys = SystemBuilder::new().import(lib).unwrap().finalize().unwrap();
-
-        //let nominal = Nominal::with("TICK", "Some name", 2);
+        let sys = test_system();
+        let nominal = Nominal::with("TICK", "Some name", 2);
         let value = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(2));
-        let checked = sys.typify(value, "TestLib.Nominal").unwrap();
-        assert_eq!(
-            format!("{}", checked.val),
-            r#"(name="Some name", ticker="TICK", precision=twoDecimals)"#
-        );
+
+        let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
+        let mut reader = io::Cursor::new(data);
+        let loaded = sys.load("TestLib.Nominal", &mut reader).unwrap();
+        assert_eq!(loaded.val, value);
     }
 }

@@ -37,3 +37,53 @@ pub mod reify;
 pub mod convert;
 
 pub use val::{EnumTag, StrictNum, StrictVal};
+
+#[cfg(test)]
+pub(self) mod test_helpers {
+    use amplify::ascii::AsciiString;
+    use amplify::confinement::{Confined, TinyAscii};
+    use encoding::{StrictDeserialize, StrictSerialize};
+
+    use crate::typelib::LibBuilder;
+    use crate::typesys::SystemBuilder;
+    use crate::TypeSystem;
+
+    #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
+    #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = "TestLib", tags = repr, into_u8, try_from_u8)]
+    #[repr(u8)]
+    pub enum Precision {
+        #[strict_type(dumb)]
+        NoDecimals = 0,
+        OneDecimal = 1,
+        TwoDecimals = 2,
+    }
+
+    #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+    #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = "TestLib", dumb = { Nominal::with("DUMB", "Dumb", strict_dumb!()) })]
+    pub struct Nominal {
+        pub ticker: Confined<String, 1, 8>,
+        pub name: TinyAscii,
+        pub precision: Precision,
+    }
+
+    impl StrictSerialize for Nominal {}
+    impl StrictDeserialize for Nominal {}
+
+    impl Nominal {
+        pub fn with(ticker: &'static str, name: &'static str, precision: u8) -> Self {
+            Nominal {
+                ticker: Confined::try_from(ticker.to_owned()).unwrap(),
+                name: Confined::try_from(AsciiString::from_ascii(name).unwrap()).unwrap(),
+                precision: Precision::try_from(precision).unwrap(),
+            }
+        }
+    }
+
+    pub fn test_system() -> TypeSystem {
+        let lib =
+            LibBuilder::new("TestLib").process::<Nominal>().unwrap().compile(none!()).unwrap();
+        SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
+    }
+}
