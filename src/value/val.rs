@@ -182,6 +182,7 @@ pub enum StrictVal {
 
     #[from(u8)]
     #[from(u16)]
+    //#[from(u24)]
     #[from(u32)]
     #[from(u64)]
     #[from(u128)]
@@ -206,6 +207,7 @@ pub enum StrictVal {
     //#[from(ieee::Oct)]
     Number(StrictNum),
 
+    // TODO: Add array type
     #[from]
     String(String),
 

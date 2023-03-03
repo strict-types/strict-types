@@ -51,8 +51,8 @@ pub enum TypeSpec {
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("{val}@{spec}")]
 pub struct TypedVal {
-    spec: TypeSpec,
-    val: StrictVal,
+    pub(super) spec: TypeSpec,
+    pub(super) val: StrictVal,
 }
 
 impl TypedVal {

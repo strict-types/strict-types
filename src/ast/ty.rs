@@ -708,6 +708,7 @@ impl EnumVariants {
     pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
         self.0.iter().find(|v| v.tag == tag).map(|v| &v.name)
     }
+    pub fn has_tag(&self, tag: u8) -> bool { self.0.iter().find(|v| v.tag == tag).is_some() }
 }
 
 impl Display for EnumVariants {
