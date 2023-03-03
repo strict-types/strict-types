@@ -158,8 +158,22 @@ impl TypeSystem {
                 }
                 StrictVal::Struct(fields)
             }
-            Ty::Array(_ty, _len) => {
-                todo!()
+
+            // Fixed-size arrays:
+            Ty::Array(ty, len) if ty.is_byte() => {
+                let mut buf = vec![0u8; *len as usize];
+                let d = reader.unbox();
+                d.read_exact(&mut buf).map_err(DecodeError::from)?;
+                StrictVal::Bytes(buf.to_vec())
+            }
+            Ty::Array(ty, len) => {
+                let mut list = Vec::<StrictVal>::with_capacity(*len as usize);
+                let d = reader.unbox();
+                for _ in 0..*len {
+                    let checked = self.load(*ty, d)?;
+                    list.push(checked.val);
+                }
+                StrictVal::List(list)
             }
 
             // Byte strings:
