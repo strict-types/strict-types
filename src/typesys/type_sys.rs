@@ -47,6 +47,18 @@ impl TypeFqn {
     pub fn with(lib: LibName, name: TypeName) -> TypeFqn { TypeFqn { lib, name } }
 }
 
+impl From<&'static str> for TypeFqn {
+    fn from(value: &'static str) -> Self {
+        let Some((lib, name)) = value.split_once('.') else {
+            panic!("invalid fully qualified type name `{value}`");
+        };
+        TypeFqn {
+            lib: LibName::from(lib),
+            name: TypeName::from(name),
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
