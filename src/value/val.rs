@@ -141,7 +141,7 @@ pub enum StrictNum {
     //#[from(i256)]
     //#[from(i512)]
     #[from]
-    BitInt(i1024),
+    BigInt(i1024),
     // TODO: Do conversion of number types in to amplify_num
     /*
     #[from(half::bf16)]
