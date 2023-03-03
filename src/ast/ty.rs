@@ -207,7 +207,7 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn set(ty: Ref, sizing: Sizing) -> Self { Ty::Set(ty, sizing) }
     pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
 
-    pub fn ascii_char() -> Self { Ty::Enum(variants!(0..=127)) }
+    pub fn ascii_char() -> Self { Ty::Enum(variants!(32..=127)) }
 
     pub fn is_compound(&self) -> bool {
         match self {
@@ -236,6 +236,7 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Ty::Primitive(prim) => Display::fmt(prim, f),
+            Ty::Enum(_) if self.is_ascii_char() => f.write_str("Ascii"),
             Ty::Enum(vars) => Display::fmt(vars, f),
             Ty::Union(fields) if self.is_option() => {
                 let variant = fields.get(&Variant::some()).expect("optional");
@@ -250,7 +251,7 @@ where Ref: Display
                 Display::fmt(ty, f)?;
                 write!(f, " ^ {len}]")
             }
-            Ty::UnicodeChar => write!(f, "Unicode"),
+            Ty::UnicodeChar => f.write_str("Unicode"),
             Ty::List(ty, sizing) => {
                 f.write_str("[")?;
                 Display::fmt(ty, f)?;
