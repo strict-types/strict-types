@@ -282,7 +282,7 @@ mod test {
         let strct = svstruct!(name => "Some name", ticker => "TICK", precision => 8u8);
         assert_eq!(
             format!("{strct:?}"),
-            r#"Struct({name: String("Some name"), ticker: String("TICK"), precision: Number(Uint(8))})"#
+            r#"Struct({FieldName("name"): String("Some name"), FieldName("ticker"): String("TICK"), FieldName("precision"): Number(Uint(8))})"#
         )
     }
 }
