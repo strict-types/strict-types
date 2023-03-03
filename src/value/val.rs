@@ -99,6 +99,13 @@ macro_rules! svlist {
 }
 
 #[macro_export]
+macro_rules! svset {
+    ($val:expr) => {
+        $crate::StrictVal::set($val)
+    };
+}
+
+#[macro_export]
 macro_rules! svtable {
     ($val:expr) => {
         $crate::StrictVal::table($val)
@@ -208,6 +215,8 @@ pub enum StrictVal {
 
     List(Vec<StrictVal>),
 
+    Set(Vec<StrictVal>),
+
     Table(IndexMap<String, StrictVal>),
 }
 
@@ -236,6 +245,9 @@ impl StrictVal {
     pub fn some(val: impl Into<StrictVal>) -> Self { StrictVal::union(1, val) }
     pub fn list(items: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
         StrictVal::List(items.into_iter().map(|v| v.into()).collect())
+    }
+    pub fn set(items: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
+        StrictVal::Set(items.into_iter().map(|v| v.into()).collect())
     }
     pub fn table(items: impl IntoIterator<Item = (impl ToString, impl Into<StrictVal>)>) -> Self {
         StrictVal::Table(items.into_iter().map(|(n, v)| (n.to_string(), v.into())).collect())
