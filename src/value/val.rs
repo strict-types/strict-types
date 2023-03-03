@@ -217,7 +217,7 @@ pub enum StrictVal {
 
     Set(Vec<StrictVal>),
 
-    Table(IndexMap<String, StrictVal>),
+    Map(Vec<(StrictVal, StrictVal)>),
 }
 
 impl From<&str> for StrictVal {
@@ -249,8 +249,10 @@ impl StrictVal {
     pub fn set(items: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
         StrictVal::Set(items.into_iter().map(|v| v.into()).collect())
     }
-    pub fn table(items: impl IntoIterator<Item = (impl ToString, impl Into<StrictVal>)>) -> Self {
-        StrictVal::Table(items.into_iter().map(|(n, v)| (n.to_string(), v.into())).collect())
+    pub fn table(
+        items: impl IntoIterator<Item = (impl Into<StrictVal>, impl Into<StrictVal>)>,
+    ) -> Self {
+        StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
     }
 }
 

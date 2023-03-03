@@ -108,7 +108,7 @@ impl Display for StrictVal {
                 }
                 f.write_str("}")
             }
-            StrictVal::Table(items) => {
+            StrictVal::Map(items) => {
                 let mut iter = items.iter();
                 let last = iter.next_back();
                 f.write_str("{")?;
