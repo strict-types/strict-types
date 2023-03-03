@@ -24,7 +24,7 @@
 
 // use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, u1024};
-use encoding::FieldName;
+use encoding::{FieldName, VariantName};
 use indexmap::IndexMap;
 
 #[macro_export]
@@ -66,15 +66,21 @@ macro_rules! svstruct {
 
 #[macro_export]
 macro_rules! svenum {
-    ($tag:expr) => {
+    ($tag:literal) => {
         $crate::StrictVal::enumer($tag)
+    };
+    ($tag:ident) => {
+        $crate::StrictVal::enumer(vname!(stringify!($tag)))
     };
 }
 
 #[macro_export]
 macro_rules! svunion {
-    ($tag:expr => $val:expr) => {
+    ($tag:literal => $val:expr) => {
         $crate::StrictVal::union($tag, $val)
+    };
+    ($tag:ident => $val:expr) => {
+        $crate::StrictVal::union(vname!(stringify!($tag)), $val)
     };
 }
 
@@ -164,7 +170,7 @@ pub enum StrictNum {
 #[display(inner)]
 pub enum EnumTag {
     #[from]
-    Name(String),
+    Name(VariantName),
     #[from]
     Ord(u8),
 }
