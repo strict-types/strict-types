@@ -163,6 +163,24 @@ impl TypeSystem {
             }
 
             // Collection bounds check:
+            (StrictVal::Bytes(s), Ty::Array(id, len))
+                if id.is_byte() && s.len() > *len as usize =>
+            {
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+            }
+            (StrictVal::String(s), Ty::Array(id, len))
+                if id.is_unicode_char() && s.len() > *len as usize =>
+            {
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+            }
+            (StrictVal::String(s), Ty::Array(id, len))
+                if id.is_ascii_char() && s.len() > *len as usize =>
+            {
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+            }
+            (StrictVal::List(s), Ty::Array(_, len)) if s.len() > *len as usize => {
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+            }
             (StrictVal::String(s), Ty::List(_, sizing)) if !sizing.check(s.len()) => {
                 return Err(Error::OutOfBounds(spec, s.len(), *sizing))
             }
@@ -187,6 +205,14 @@ impl TypeSystem {
             {
                 StrictVal::String(s)
             }
+
+            (val @ StrictVal::Bytes(_), Ty::Array(id, _)) if id.is_byte() => val,
+            (val @ StrictVal::String(_), Ty::Array(id, _))
+                if id.is_ascii_char() || id.is_unicode_char() =>
+            {
+                val
+            }
+            (val @ StrictVal::List(_), Ty::Array(_, _)) => val,
 
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
