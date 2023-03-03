@@ -35,7 +35,7 @@ pub enum TypeSpec {
     Fqn(TypeFqn),
 }
 
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[derive(Clone, PartialEq, Debug, Display)]
 #[display("{val}@{name}")]
 pub struct StrictObj {
     name: TypeSpec,

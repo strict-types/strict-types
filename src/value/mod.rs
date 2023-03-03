@@ -28,6 +28,7 @@
 //! - [`convert`]: conversion between strict values and other text representations (JSON, YAML,
 //!   TOML, etc).
 
+#[macro_use]
 mod val;
 pub mod path;
 pub mod ston;
