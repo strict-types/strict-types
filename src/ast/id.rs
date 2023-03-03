@@ -65,6 +65,13 @@ pub trait HashId {
     fn hash_id(&self, hasher: &mut blake3::Hasher);
 }
 
+impl TypeRef for SemId {
+    fn id(&self) -> SemId { *self }
+    fn is_unicode_char(&self) -> bool { Ty::<Self>::UNICODE.id(None) == *self }
+    fn is_ascii_char(&self) -> bool { Ty::<Self>::ascii_char().id(None) == *self }
+    fn is_byte(&self) -> bool { Ty::<Self>::BYTE.id(None) == *self }
+}
+
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self, name: Option<&TypeName>) -> SemId {
         let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);

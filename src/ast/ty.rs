@@ -50,10 +50,6 @@ pub trait TypeRef:
     fn is_ascii_char(&self) -> bool { false }
 }
 
-impl TypeRef for SemId {
-    fn id(&self) -> SemId { *self }
-}
-
 impl TypeRef for KeyTy {
     fn id(&self) -> SemId { panic!("KeyTy can't have semantic id") }
 }
