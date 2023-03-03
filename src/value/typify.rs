@@ -31,13 +31,15 @@ use crate::SemId;
 pub enum TypeSpec {
     #[from]
     SemId(SemId),
+
     #[from]
-    Fqn(TypeFqn),
+    // TODO: Add optional checkword suffix
+    Fqn(TypeFqn /* , Option<CheckWords> */),
 }
 
-#[derive(Clone, PartialEq, Debug, Display)]
-#[display("{val}@{name}")]
-pub struct StrictObj {
-    name: TypeSpec,
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display("{val}@{spec}")]
+pub struct TypedVal {
+    spec: TypeSpec,
     val: StrictVal,
 }

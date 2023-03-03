@@ -28,7 +28,7 @@ use encoding::constants::UNIT;
 use encoding::Primitive;
 
 use super::{StrictNum, StrictVal};
-use crate::typify::StrictObj;
+use crate::typify::TypedVal;
 use crate::{SemId, Ty, TypeSystem};
 
 pub trait TypeResolver {
@@ -36,10 +36,10 @@ pub trait TypeResolver {
 }
 
 impl TypeSystem {
-    pub fn reify(&self, id: SemId, obj: StrictObj, e: impl io::Write) -> Result<(), Error> {
+    pub fn reify(&self, id: SemId, obj: TypedVal, e: impl io::Write) -> Result<(), Error> {
         todo!()
     }
-    pub fn dereify(&self, id: SemId, d: impl io::Read) -> Result<StrictObj, Error> { todo!() }
+    pub fn dereify(&self, id: SemId, d: impl io::Read) -> Result<TypedVal, Error> { todo!() }
 }
 
 trait PrimitiveValue {
