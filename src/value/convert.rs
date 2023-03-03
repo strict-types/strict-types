@@ -20,19 +20,4 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Strict values: schema-less representation of strict types. The module includes:
-//! - [`path`]: path accessors/introspects into strict values;
-//! - [STON][ston]: strict type object notation, a JSON-like representation of strict types;
-//! - [`reify`]: conversion between strict encoding and strict values;
-//! - [`typify`]: checks of strict values against strict type schema;
-//! - [`convert`]: conversion between strict values and other text representations (JSON, YAML,
-//!   TOML, etc).
-
-mod val;
-pub mod path;
-pub mod ston;
-pub mod typify;
-pub mod reify;
-pub mod convert;
-
-pub use val::{EnumTag, StrictNum, StrictVal};
+//! Converts strict values from/to non-STON value serialization formats (JSON, YAML, TOML etc).

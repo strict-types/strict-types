@@ -20,19 +20,39 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Strict values: schema-less representation of strict types. The module includes:
-//! - [`path`]: path accessors/introspects into strict values;
-//! - [STON][ston]: strict type object notation, a JSON-like representation of strict types;
-//! - [`reify`]: conversion between strict encoding and strict values;
-//! - [`typify`]: checks of strict values against strict type schema;
-//! - [`convert`]: conversion between strict values and other text representations (JSON, YAML,
-//!   TOML, etc).
+//! Strict value core types.
 
-mod val;
-pub mod path;
-pub mod ston;
-pub mod typify;
-pub mod reify;
-pub mod convert;
+use amplify::num::{i1024, u1024};
+use indexmap::IndexMap;
 
-pub use val::{EnumTag, StrictNum, StrictVal};
+#[derive(Copy, Clone, Eq, PartialEq, Hash, Debug, Display)]
+#[display(inner)]
+#[non_exhaustive]
+pub enum StrictNum {
+    Uint(u128),
+    BigUint(u1024),
+    Int(i128),
+    BitInt(i1024),
+    // float
+    // non-zero
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display(inner)]
+pub enum EnumTag {
+    Name(String),
+    Ord(u8),
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub enum StrictVal {
+    Unit,
+    Number(StrictNum),
+    String(String),
+    Tuple(Vec<StrictVal>),
+    Struct(IndexMap<String, StrictVal>),
+    Enum(EnumTag),
+    Union(EnumTag, Box<StrictVal>),
+    List(Vec<StrictVal>),
+    Table(IndexMap<String, StrictVal>),
+}

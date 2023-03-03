@@ -20,19 +20,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Strict values: schema-less representation of strict types. The module includes:
-//! - [`path`]: path accessors/introspects into strict values;
-//! - [STON][ston]: strict type object notation, a JSON-like representation of strict types;
-//! - [`reify`]: conversion between strict encoding and strict values;
-//! - [`typify`]: checks of strict values against strict type schema;
-//! - [`convert`]: conversion between strict values and other text representations (JSON, YAML,
-//!   TOML, etc).
+//! Strict type object notation (STON): JSON-like text serialization for stric types.
 
-mod val;
-pub mod path;
-pub mod ston;
-pub mod typify;
-pub mod reify;
-pub mod convert;
+use std::fmt::{self, Display, Formatter};
 
-pub use val::{EnumTag, StrictNum, StrictVal};
+use super::StrictVal;
+
+impl Display for StrictVal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { todo!() }
+}

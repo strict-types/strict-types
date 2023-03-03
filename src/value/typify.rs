@@ -20,19 +20,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//! Strict values: schema-less representation of strict types. The module includes:
-//! - [`path`]: path accessors/introspects into strict values;
-//! - [STON][ston]: strict type object notation, a JSON-like representation of strict types;
-//! - [`reify`]: conversion between strict encoding and strict values;
-//! - [`typify`]: checks of strict values against strict type schema;
-//! - [`convert`]: conversion between strict values and other text representations (JSON, YAML,
-//!   TOML, etc).
+//! Checks strict values against provied strict type specification.
 
-mod val;
-pub mod path;
-pub mod ston;
-pub mod typify;
-pub mod reify;
-pub mod convert;
+use super::StrictVal;
+use crate::typesys::TypeFqn;
+use crate::SemId;
 
-pub use val::{EnumTag, StrictNum, StrictVal};
+#[derive(Clone, Eq, PartialEq, Hash, Debug, From, Display)]
+#[display(inner)]
+pub enum TypeSpec {
+    #[from]
+    SemId(SemId),
+    #[from]
+    Fqn(TypeFqn),
+}
+
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[display("{val}@{name}")]
+pub struct StrictObj {
+    name: TypeSpec,
+    val: StrictVal,
+}
