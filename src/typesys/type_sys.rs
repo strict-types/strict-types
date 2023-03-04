@@ -38,6 +38,7 @@ use crate::{SemId, Translate, Ty};
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("{lib}.{name}")]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeFqn {
     pub lib: LibName,
     pub name: TypeName,
@@ -62,6 +63,7 @@ impl From<&'static str> for TypeFqn {
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeInfo {
     pub fqn: Option<TypeFqn>,
     pub ty: Ty<SemId>,
@@ -84,6 +86,7 @@ impl TypeInfo {
 #[wrapper(Deref)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeSystem(MediumOrdMap<SemId, TypeInfo>);
 
 impl StrictSerialize for TypeSystem {}
