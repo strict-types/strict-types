@@ -104,6 +104,12 @@ impl TypeSystem {
     ) -> Result<bool, confinement::Error> {
         self.0.insert(fqid.id, TypeInfo::with(fqid.fqn, ty)).map(|res| res.is_some())
     }
+
+    pub fn id_by_name(&self, name: &str) -> Option<SemId> {
+        self.iter()
+            .find(|(_, ty)| ty.fqn.as_ref().map(|f| f.to_string() == name).unwrap_or_default())
+            .map(|(id, _)| *id)
+    }
 }
 
 impl Display for TypeSystem {
