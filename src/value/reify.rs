@@ -53,9 +53,9 @@ pub enum Error {
 impl TypeSystem {
     pub fn store(
         &self,
-        spec: impl Into<TypeSpec>,
-        obj: TypedVal,
-        e: impl io::Write,
+        _spec: impl Into<TypeSpec>,
+        _obj: TypedVal,
+        _e: impl io::Write,
     ) -> Result<(), Error> {
         todo!()
     }
@@ -320,7 +320,7 @@ impl TypeSystem {
                 let list = self.read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
-            Ty::Map(key_ty, ty, sizing) => {
+            Ty::Map(key_ty, ty, _sizing) => {
                 let len = u64::strict_decode(&mut reader)?;
                 let key_ty = key_ty.to_ty().id(None);
                 d = reader.unbox();

@@ -29,19 +29,26 @@ use std::io::stdout;
 use std::{env, fs, io};
 
 use amplify::num::u24;
-use strict_encoding::{StrictEncode, StrictWriter, STRICT_TYPES_LIB};
+use strict_encoding::ascii::{
+    Alpha, AlphaCaps, AlphaNum, AlphaNumLodash, AlphaSmall, Dec, HexDecCaps, HexDecSmall,
+};
+use strict_encoding::{Bool, StrictEncode, StrictWriter, STD_LIB, U4};
 use strict_types::typelib::LibBuilder;
-use strict_types::typesys::{TypeFqid, TypeSysId};
-use strict_types::{TypeLib, TypeSystem};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let lib = LibBuilder::new(libname!(STRICT_TYPES_LIB))
-        .process::<TypeLib>()?
-        .process::<TypeSystem>()?
-        .process::<TypeSysId>()?
-        .process::<TypeFqid>()?
+    let lib = LibBuilder::new(libname!(STD_LIB))
+        .process::<Bool>()?
+        .process::<U4>()?
+        .process::<Alpha>()?
+        .process::<AlphaCaps>()?
+        .process::<Dec>()?
+        .process::<HexDecCaps>()?
+        .process::<HexDecSmall>()?
+        .process::<AlphaSmall>()?
+        .process::<AlphaNum>()?
+        .process::<AlphaNumLodash>()?
         .compile(none!())?;
     let id = lib.id();
 
@@ -50,7 +57,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("-h") => "asc.stl",
         _ => "sty",
     };
-    let filename = args.get(3).cloned().unwrap_or_else(|| format!("stl/StrictTypes.{ext}"));
+    let filename = args.get(3).cloned().unwrap_or_else(|| format!("stl/StdLib.{ext}"));
     let mut file = match args.len() {
         1 => Box::new(stdout()) as Box<dyn io::Write>,
         2 | 3 => Box::new(fs::File::create(filename)?) as Box<dyn io::Write>,

@@ -13,6 +13,10 @@ readme = "README.md"
 exclude = [".github"]
 
 [[bin]]
+name = "std-stl"
+required-features = ["base64"]
+
+[[bin]]
 name = "strict-stl"
 required-features = ["base64"]
 
