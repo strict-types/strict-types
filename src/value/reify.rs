@@ -48,6 +48,9 @@ pub enum Error {
     #[display(inner)]
     #[from]
     Decode(DecodeError),
+
+    /// data provided to reify operation are not entirely consumed during deserialization.
+    NotEntirelyConsumed,
 }
 
 impl TypeSystem {
@@ -88,6 +91,15 @@ impl TypeSystem {
             list.push((key.val, item.val));
         }
         Ok(list)
+    }
+
+    pub fn reify(&self, spec: impl Into<TypeSpec>, data: &[u8]) -> Result<TypedVal, Error> {
+        let mut cursor = io::Cursor::new(data);
+        let ty = self.load(spec, &mut cursor)?;
+        if cursor.position() as usize != data.len() {
+            return Err(Error::NotEntirelyConsumed);
+        }
+        Ok(ty)
     }
 
     pub fn load(
