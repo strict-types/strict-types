@@ -115,6 +115,8 @@ impl TypeSystem {
         let val = match ty {
             Ty::Primitive(prim) => {
                 match *prim {
+                    UNIT => StrictVal::Unit,
+                    BYTE => StrictVal::num(u8::strict_decode(&mut reader)?),
                     U8 => StrictVal::num(u8::strict_decode(&mut reader)?),
                     U16 => StrictVal::num(u16::strict_decode(&mut reader)?),
                     U24 => StrictVal::num(u24::strict_decode(&mut reader)?.into_u32()),
