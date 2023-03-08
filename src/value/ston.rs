@@ -27,6 +27,7 @@ use std::fmt::{self, Display, Formatter};
 use amplify::hex::ToHex;
 
 use super::StrictVal;
+use crate::value::EnumTag;
 
 impl StrictVal {
     fn needs_braces(&self) -> bool {
@@ -74,6 +75,12 @@ impl Display for StrictVal {
                 f.write_str(")")
             }
             StrictVal::Enum(tag) => Display::fmt(tag, f),
+            StrictVal::Union(tag, val)
+                if (*tag == EnumTag::Ord(0) || *tag == EnumTag::Name(vname!("none")))
+                    && **val == StrictVal::Unit =>
+            {
+                f.write_str("~")
+            }
             StrictVal::Union(tag, val) => {
                 Display::fmt(tag, f)?;
                 if val.needs_braces() {
