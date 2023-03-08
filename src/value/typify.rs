@@ -58,6 +58,7 @@ pub struct TypedVal {
 impl TypedVal {
     pub fn as_spec(&self) -> &TypeSpec { &self.spec }
     pub fn as_val(&self) -> &StrictVal { &self.val }
+    pub fn unbox(self) -> StrictVal { self.val }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
