@@ -36,6 +36,7 @@ pub mod typify;
 pub mod reify;
 #[cfg(feature = "serde")]
 pub mod convert;
+mod encode;
 
 pub use val::{EnumTag, StrictNum, StrictVal};
 
