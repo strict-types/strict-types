@@ -25,23 +25,41 @@ use std::io;
 use amplify::confinement::Confined;
 use amplify::num::u24;
 use encoding::constants::UNIT;
-use encoding::{SerializeError, Sizing};
+use encoding::{
+    SerializeError, Sizing, StrictEncode, StrictSerialize, StrictType, TypeName, TypedWrite,
+};
 
 use crate::typify::TypedVal;
 use crate::value::{EnumTag, StrictNum};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
+#[derive(Clone, Debug)]
+pub struct SerializedType<const MAX_LEN: usize>(Confined<Vec<u8>, 0, MAX_LEN>);
+
+#[doc(hidden)]
+impl<const MAX_LEN: usize> StrictType for SerializedType<MAX_LEN> {
+    const STRICT_LIB_NAME: &'static str = "";
+    fn strict_name() -> Option<TypeName> { None }
+}
+#[doc(hidden)]
+impl<const MAX_LEN: usize> StrictEncode for SerializedType<MAX_LEN> {
+    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
+        self.0.strict_encode(writer)
+    }
+}
+impl<const MAX_LEN: usize> StrictSerialize for SerializedType<MAX_LEN> {}
+
 impl TypeSystem {
-    pub fn strict_serialize<const MAX_LEN: usize>(
+    pub fn strict_serialize_type<const MAX_LEN: usize>(
         &self,
         typed: &TypedVal,
-    ) -> Result<Confined<Vec<u8>, 0, MAX_LEN>, SerializeError> {
+    ) -> Result<SerializedType<MAX_LEN>, SerializeError> {
         let mut buf = Vec::new();
-        self.strict_write(typed, &mut buf)?;
-        Confined::try_from(buf).map_err(SerializeError::from)
+        self.strict_write_type(typed, &mut buf)?;
+        Confined::try_from(buf).map(SerializedType).map_err(SerializeError::from)
     }
 
-    pub fn strict_write(
+    pub fn strict_write_type(
         &self,
         typed: &TypedVal,
         writer: &mut impl io::Write,
