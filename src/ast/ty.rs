@@ -607,6 +607,10 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
         self.0.into_inner().into_values()
     }
 
+    pub fn has_tag(&self, tag: u8) -> bool { self.0.keys().find(|v| v.tag == tag).is_some() }
+    pub fn by_name(&self, name: &FieldName) -> Option<(&Variant, &Ref)> {
+        self.0.iter().find(|(v, _)| &v.name == name)
+    }
     pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
     }
