@@ -278,7 +278,7 @@ impl TypeSystem {
             (StrictVal::Union(tag, val), Ty::Union(vars_req)) => {
                 let Some(id) = (match &tag {
                     EnumTag::Name(name) => vars_req.ty_by_name(name),
-                    EnumTag::Ord(ord) => vars_req.ty_by_ord(*ord),
+                    EnumTag::Ord(ord) => vars_req.ty_by_tag(*ord),
                 }) else {
                     return Err(Error::UnionTagInvalid(
                         tag,

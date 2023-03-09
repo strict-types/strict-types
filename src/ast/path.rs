@@ -104,7 +104,7 @@ impl<Ref: TypeRef> Ty<Ref> {
                 (Ty::Struct(fields), Step::NamedField(name)) => fields.ty_by_name(name),
                 (Ty::Union(variants), Step::NamedField(name)) => variants.ty_by_name(name),
                 (Ty::Struct(fields), Step::UnnamedField(tag)) => fields.ty_by_pos(*tag),
-                (Ty::Union(variants), Step::UnnamedField(tag)) => variants.ty_by_ord(*tag),
+                (Ty::Union(variants), Step::UnnamedField(tag)) => variants.ty_by_tag(*tag),
                 (Ty::Array(ty, _), Step::Index) => Some(ty),
                 (Ty::List(ty, _), Step::List) => Some(ty),
                 (Ty::Set(ty, _), Step::Set) => Some(ty),

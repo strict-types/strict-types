@@ -148,7 +148,7 @@ impl TypeSystem {
             }
             Ty::Union(variants) => {
                 let tag = u8::strict_decode(&mut reader)?;
-                let Some(ty) = variants.ty_by_ord(tag) else {
+                let Some(ty) = variants.ty_by_tag(tag) else {
                     return Err(DecodeError::EnumTagNotKnown(spec.to_string(), tag).into());
                 };
                 let fields = self.load(*ty, reader.unbox())?;

@@ -274,7 +274,7 @@ where Ref: Display
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
-            Ty::Union(fields) => fields.ty_by_ord(pos),
+            Ty::Union(fields) => fields.ty_by_tag(pos),
             Ty::Struct(fields) => fields.ty_by_pos(pos),
             Ty::Tuple(fields) => fields.ty_by_pos(pos),
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
@@ -610,13 +610,13 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
     }
-    pub fn ty_by_ord(&self, tag: u8) -> Option<&Ref> {
+    pub fn ty_by_tag(&self, tag: u8) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
-    pub fn ord_by_name(&self, name: &FieldName) -> Option<u8> {
+    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
         self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_ord(&self, tag: u8) -> Option<&FieldName> {
+    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
         self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
     }
 }
