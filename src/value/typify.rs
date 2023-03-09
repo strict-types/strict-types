@@ -197,12 +197,13 @@ impl TypeSystem {
                 return Err(Error::OutOfBounds(spec, s.len(), *sizing))
             }
 
-            // Ascii character
-            (StrictVal::String(s), ty @ Ty::Enum(_))
-                if ty.is_unicode_char()
-                    && s.len() == 1
-                    && s.as_bytes()[0] >= 0x20
-                    && s.as_bytes()[0] < 0x80 =>
+            // Ascii or other sub-byte character
+            (StrictVal::String(s), Ty::Enum(en)) if s.len() == 1 && en.has_tag(s.as_bytes()[0]) => {
+                StrictVal::String(s)
+            }
+            // Unicode character
+            (StrictVal::String(s), ty @ Ty::UnicodeChar)
+                if ty.is_unicode_char() && s.len() == 1 =>
             {
                 StrictVal::String(s)
             }
