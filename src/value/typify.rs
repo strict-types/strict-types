@@ -358,6 +358,12 @@ impl TypeSystem {
                 StrictVal::Struct(new)
             }
 
+            // Optional
+            (StrictVal::Unit, ty @ Ty::Union(_)) if ty.is_option() => StrictVal::union(0, ()),
+            (val, ty @ Ty::Union(fields)) if ty.is_option() => {
+                self.typify(val, fields.ty_by_tag(0).expect("optional always has none").id())?.val
+            }
+
             // Newtype wrapper
             (val, Ty::Tuple(fields)) if fields.len() == 1 => self.typify(val, fields[0].id())?.val,
 
