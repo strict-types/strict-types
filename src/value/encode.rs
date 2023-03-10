@@ -44,7 +44,7 @@ impl<const MAX_LEN: usize> StrictType for SerializedType<MAX_LEN> {
 #[doc(hidden)]
 impl<const MAX_LEN: usize> StrictEncode for SerializedType<MAX_LEN> {
     fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        self.0.strict_encode(writer)
+        unsafe { writer._write_raw::<MAX_LEN>(&self.0) }
     }
 }
 impl<const MAX_LEN: usize> StrictSerialize for SerializedType<MAX_LEN> {}
