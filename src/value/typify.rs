@@ -384,7 +384,10 @@ impl TypeSystem {
             }
 
             // Newtype wrapper
-            (val, Ty::Tuple(fields)) if fields.len() == 1 => self.typify(val, fields[0].id())?.val,
+            (val, Ty::Tuple(fields)) if fields.len() == 1 => {
+                let inner = self.typify(val, fields[0].id())?.val;
+                StrictVal::Tuple(vec![inner])
+            }
 
             (val, ty) => {
                 return Err(Error::TypeMismatch {
