@@ -373,9 +373,14 @@ impl TypeSystem {
             }
 
             // Optional
-            (StrictVal::Unit, ty @ Ty::Union(_)) if ty.is_option() => StrictVal::union(0, ()),
+            (StrictVal::Unit, ty @ Ty::Union(_)) if ty.is_option() => {
+                // this is `None`
+                StrictVal::union(0, ())
+            }
             (val, ty @ Ty::Union(fields)) if ty.is_option() => {
-                self.typify(val, fields.ty_by_tag(0).expect("optional always has none").id())?.val
+                // this is `Some`
+                self.typify(val, fields.ty_by_tag(1).expect("optional always have `Some`").id())?
+                    .val
             }
 
             // Newtype wrapper
