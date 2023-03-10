@@ -27,7 +27,7 @@ use std::collections::BTreeSet;
 use amplify::ascii::{AsAsciiStrError, AsciiString};
 use amplify::Wrapper;
 use encoding::constants::UNIT;
-use encoding::{FieldName, InvalidIdent, Primitive, Sizing};
+use encoding::{FieldName, InvalidIdent, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
 use super::StrictVal;
@@ -277,6 +277,20 @@ impl TypeSystem {
                 match vname {
                     None => return Err(Error::EnumTagInvalid(tag, variants.clone())),
                     Some(name) => StrictVal::enumer(name.clone()),
+                }
+            }
+            (StrictVal::String(s), Ty::Enum(variants)) => {
+                if let Ok(vname) = VariantName::try_from(s.clone()) {
+                    let tag = variants.tag_by_name(&vname);
+                    match tag {
+                        None => return Err(Error::EnumTagInvalid(vname.into(), variants.clone())),
+                        Some(name) => StrictVal::enumer(name.clone()),
+                    }
+                } else {
+                    return Err(Error::TypeMismatch {
+                        value: StrictVal::String(s),
+                        expected: ty.clone(),
+                    });
                 }
             }
             (StrictVal::Number(StrictNum::Uint(tag)), Ty::Enum(variants)) if tag < 0x100 => {
