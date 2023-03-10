@@ -176,7 +176,7 @@ impl TypeSystem {
                     self.strict_write_value(val, *sem_id, writer)?;
                 }
             }
-            _ => panic!("bug in business logic of type system"),
+            (a, b) => panic!("bug in business logic of type system. Details:\n{a:#?}\n{b:#?}"),
         }
 
         Ok(())
