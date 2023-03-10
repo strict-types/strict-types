@@ -23,7 +23,7 @@
 //! Strict values: schema-less representation of strict types. The module includes:
 //! - [`path`]: path accessors/introspects into strict values;
 //! - [STON][ston]: strict type object notation, a JSON-like representation of strict types;
-//! - [`reify`]: conversion between strict encoding and strict values;
+//! - [`decode`]: conversion between strict encoding and strict values;
 //! - [`typify`]: checks of strict values against strict type schema;
 //! - [`convert`]: conversion between strict values and other text representations (JSON, YAML,
 //!   TOML, etc).
@@ -33,7 +33,7 @@ mod val;
 pub mod path;
 pub mod ston;
 pub mod typify;
-pub mod reify;
+pub mod decode;
 #[cfg(feature = "serde")]
 pub mod convert;
 mod encode;

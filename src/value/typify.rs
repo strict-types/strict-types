@@ -358,6 +358,9 @@ impl TypeSystem {
                 StrictVal::Struct(new)
             }
 
+            // Newtype wrapper
+            (val, Ty::Tuple(fields)) if fields.len() == 1 => self.typify(val, fields[0].id())?.val,
+
             (val, ty) => {
                 return Err(Error::TypeMismatch {
                     value: val,
@@ -386,7 +389,7 @@ mod test {
 
         let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
         let mut reader = io::Cursor::new(data);
-        let loaded = sys.load("TestLib.Nominal", &mut reader).unwrap();
+        let loaded = sys.strict_read_type("TestLib.Nominal", &mut reader).unwrap();
         assert_eq!(loaded.val, value);
     }
 }

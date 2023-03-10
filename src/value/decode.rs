@@ -54,16 +54,7 @@ pub enum Error {
 }
 
 impl TypeSystem {
-    pub fn store(
-        &self,
-        _spec: impl Into<TypeSpec>,
-        _obj: TypedVal,
-        _e: impl io::Write,
-    ) -> Result<(), Error> {
-        todo!()
-    }
-
-    fn read_list(
+    fn strict_read_list(
         &self,
         len: usize,
         ty: SemId,
@@ -71,13 +62,13 @@ impl TypeSystem {
     ) -> Result<Vec<StrictVal>, Error> {
         let mut list = Vec::with_capacity(len);
         for _ in 0..len {
-            let item = self.load(ty, d)?;
+            let item = self.strict_read_type(ty, d)?;
             list.push(item.val);
         }
         Ok(list)
     }
 
-    fn read_map(
+    fn strict_read_map(
         &self,
         len: usize,
         key_ty: SemId,
@@ -86,23 +77,27 @@ impl TypeSystem {
     ) -> Result<Vec<(StrictVal, StrictVal)>, Error> {
         let mut list = Vec::with_capacity(len);
         for _ in 0..len {
-            let key = self.load(key_ty, d)?;
-            let item = self.load(ty, d)?;
+            let key = self.strict_read_type(key_ty, d)?;
+            let item = self.strict_read_type(ty, d)?;
             list.push((key.val, item.val));
         }
         Ok(list)
     }
 
-    pub fn reify(&self, spec: impl Into<TypeSpec>, data: &[u8]) -> Result<TypedVal, Error> {
+    pub fn strict_deserialize_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        data: &[u8],
+    ) -> Result<TypedVal, Error> {
         let mut cursor = io::Cursor::new(data);
-        let ty = self.load(spec, &mut cursor)?;
+        let ty = self.strict_read_type(spec, &mut cursor)?;
         if cursor.position() as usize != data.len() {
             return Err(Error::NotEntirelyConsumed);
         }
         Ok(ty)
     }
 
-    pub fn load(
+    pub fn strict_read_type(
         &self,
         spec: impl Into<TypeSpec>,
         mut d: &mut impl io::Read,
@@ -151,14 +146,14 @@ impl TypeSystem {
                 let Some(ty) = variants.ty_by_tag(tag) else {
                     return Err(DecodeError::EnumTagNotKnown(spec.to_string(), tag).into());
                 };
-                let fields = self.load(*ty, reader.unbox())?;
+                let fields = self.strict_read_type(*ty, reader.unbox())?;
                 StrictVal::union(tag, fields.val)
             }
             Ty::Tuple(reqs) => {
                 let mut fields = Vec::with_capacity(reqs.len());
                 let d = reader.unbox();
                 for ty in reqs {
-                    let checked = self.load(*ty, d)?;
+                    let checked = self.strict_read_type(*ty, d)?;
                     fields.push(checked.val);
                 }
                 StrictVal::tuple(fields)
@@ -167,7 +162,7 @@ impl TypeSystem {
                 let mut fields = IndexMap::with_capacity(reqs.len());
                 let d = reader.unbox();
                 for field in reqs {
-                    let checked = self.load(field.ty, d)?;
+                    let checked = self.strict_read_type(field.ty, d)?;
                     fields.insert(field.name.clone(), checked.val);
                 }
                 StrictVal::Struct(fields)
@@ -184,7 +179,7 @@ impl TypeSystem {
                 let mut list = Vec::<StrictVal>::with_capacity(*len as usize);
                 let d = reader.unbox();
                 for _ in 0..*len {
-                    let checked = self.load(*ty, d)?;
+                    let checked = self.strict_read_type(*ty, d)?;
                     list.push(checked.val);
                 }
                 StrictVal::List(list)
@@ -248,97 +243,97 @@ impl TypeSystem {
             Ty::List(ty, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::List(list)
             }
             Ty::List(ty, sizing) if sizing.max <= u16::MAX as u64 => {
                 let len = u16::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::List(list)
             }
             Ty::List(ty, sizing) if sizing.max <= u24::MAX.into_u64() => {
                 let len = u24::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len.into_usize(), *ty, d)?;
+                let list = self.strict_read_list(len.into_usize(), *ty, d)?;
                 StrictVal::List(list)
             }
             Ty::List(ty, sizing) if sizing.max <= u32::MAX as u64 => {
                 let len = u32::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::List(list)
             }
             Ty::List(ty, _) => {
                 let len = u64::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::List(list)
             }
             // TODO: Find a way to check for the uniqueness of the set values
             Ty::Set(ty, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::Set(list)
             }
             Ty::Set(ty, sizing) if sizing.max <= u16::MAX as u64 => {
                 let len = u16::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::Set(list)
             }
             Ty::Set(ty, sizing) if sizing.max <= u24::MAX.into_u64() => {
                 let len = u24::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len.into_usize(), *ty, d)?;
+                let list = self.strict_read_list(len.into_usize(), *ty, d)?;
                 StrictVal::Set(list)
             }
             Ty::Set(ty, sizing) if sizing.max <= u32::MAX as u64 => {
                 let len = u32::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::Set(list)
             }
             Ty::Set(ty, _) => {
                 let len = u64::strict_decode(&mut reader)?;
                 d = reader.unbox();
-                let list = self.read_list(len as usize, *ty, d)?;
+                let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::Set(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
                 let key_ty = key_ty.to_ty().id(None);
                 d = reader.unbox();
-                let list = self.read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u16::MAX as u64 => {
                 let len = u16::strict_decode(&mut reader)?;
                 let key_ty = key_ty.to_ty().id(None);
                 d = reader.unbox();
-                let list = self.read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u24::MAX.into_u64() => {
                 let len = u24::strict_decode(&mut reader)?;
                 let key_ty = key_ty.to_ty().id(None);
                 d = reader.unbox();
-                let list = self.read_map(len.into_usize(), key_ty, *ty, d)?;
+                let list = self.strict_read_map(len.into_usize(), key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u32::MAX as u64 => {
                 let len = u32::strict_decode(&mut reader)?;
                 let key_ty = key_ty.to_ty().id(None);
                 d = reader.unbox();
-                let list = self.read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, _sizing) => {
                 let len = u64::strict_decode(&mut reader)?;
                 let key_ty = key_ty.to_ty().id(None);
                 d = reader.unbox();
-                let list = self.read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
         };
