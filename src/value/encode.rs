@@ -177,11 +177,6 @@ impl TypeSystem {
                 }
             }
 
-            // Newtype wrappers
-            (val, Ty::Tuple(fields)) if fields.len() == 1 => {
-                self.strict_write_value(val, fields[0].id(), writer)?;
-            }
-
             (a, b) => panic!("bug in business logic of type system. Details:\n{a:#?}\n{b:#?}"),
         }
 
