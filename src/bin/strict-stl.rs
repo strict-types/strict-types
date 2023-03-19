@@ -46,11 +46,12 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let id = lib.id();
 
     let ext = match args.get(1).map(String::as_str) {
-        Some("-b") => "stl",
-        Some("-h") => "asc.stl",
+        Some("--stl") => "stl",
+        Some("--asc") => "asc.stl",
+        Some("--sty") => "sty",
         _ => "sty",
     };
-    let filename = args.get(3).cloned().unwrap_or_else(|| format!("stl/StrictTypes.{ext}"));
+    let filename = args.get(2).cloned().unwrap_or_else(|| format!("stl/StrictTypes.{ext}"));
     let mut file = match args.len() {
         1 => Box::new(stdout()) as Box<dyn io::Write>,
         2 | 3 => Box::new(fs::File::create(filename)?) as Box<dyn io::Write>,
