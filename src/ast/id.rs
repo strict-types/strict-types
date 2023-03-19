@@ -26,7 +26,7 @@ use std::str::FromStr;
 use amplify::{Bytes32, RawArray, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use blake3::Hasher;
-use strict_encoding::{Sizing, StrictDumb, TypeName, Variant, STRICT_TYPES_LIB};
+use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
 use crate::ast::{EnumVariants, NamedFields};
@@ -36,7 +36,7 @@ use crate::{Cls, KeyTy, Ty, TypeRef};
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
 #[display(Self::to_baid58)]
-#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(
     feature = "serde",
@@ -48,6 +48,10 @@ pub struct SemId(
     #[from([u8; 32])]
     Bytes32,
 );
+
+impl Default for SemId {
+    fn default() -> Self { Ty::<SemId>::UNIT.id(None) }
+}
 
 impl ToBaid58<32> for SemId {
     const HRI: &'static str = "sty";
