@@ -30,7 +30,7 @@
 
 #[macro_use]
 mod val;
-pub mod path;
+mod path;
 pub mod ston;
 pub mod typify;
 pub mod decode;
@@ -38,6 +38,7 @@ pub mod decode;
 pub mod convert;
 mod encode;
 
+pub use path::{KeyStep, Path, PathError, Step};
 pub use val::{EnumTag, StrictNum, StrictVal};
 
 #[cfg(test)]

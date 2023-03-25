@@ -25,16 +25,19 @@
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{SmallVec, TinyBlob, TinyString};
-use encoding::{FieldName, Primitive, STRICT_TYPES_LIB};
+use encoding::{FieldName, STRICT_TYPES_LIB};
+
+use crate::value::{EnumTag, StrictNum};
+use crate::StrictVal;
 
 // TODO: Convert into `StrictKey` and use in `StrictVal::Map` for key value repr.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = Self::Primitive(strict_dumb!()))]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = Self::Number(strict_dumb!()))]
 #[non_exhaustive]
 pub enum KeyStep {
     #[from]
-    Primitive(Primitive),
+    Number(u128),
 
     #[from]
     TinyBlob(TinyBlob),
@@ -43,10 +46,30 @@ pub enum KeyStep {
     TinyString(TinyString),
 }
 
+impl KeyStep {
+    pub fn has_match(&self, val: &StrictVal) -> bool {
+        match (self, val) {
+            (KeyStep::Number(no), StrictVal::Enum(EnumTag::Ord(tag))) if *tag as u128 == *no => {
+                true
+            }
+            (KeyStep::Number(num1), StrictVal::Number(StrictNum::Uint(num2))) if num1 == num2 => {
+                true
+            }
+            (KeyStep::TinyBlob(blob1), StrictVal::Bytes(blob2))
+                if blob1.as_slice() == blob2.as_slice() =>
+            {
+                true
+            }
+            (KeyStep::TinyString(s1), StrictVal::String(s2)) if s1.as_str() == s2.as_str() => true,
+            _ => false,
+        }
+    }
+}
+
 impl Display for KeyStep {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            KeyStep::Primitive(prim) => Display::fmt(prim, f),
+            KeyStep::Number(num) => Display::fmt(num, f),
             KeyStep::TinyBlob(data) => {
                 f.write_str("0h")?;
                 for byte in data {
@@ -108,5 +131,58 @@ impl Display for Path {
             Display::fmt(step, f)?;
         }
         Ok(())
+    }
+}
+
+// TODO: Implement FromStr for value Path expressions
+
+#[derive(Clone, PartialEq, Eq, Debug, Display, Error)]
+#[display(doc_comments)]
+pub enum PathError {
+    /// collection has less items than requested in the path ({0} vs {1}).
+    CollectionIndexOutOfBounds(u32, usize),
+    /// tuple has less fields than requested in the path ({0} vs {1}).
+    FieldNoOutOfBounds(u8, usize),
+    /// struct doesn't have field named `{0}`.
+    UnknownFieldName(FieldName),
+    /// map doesn't have key named `{0}`.
+    UnknownKey(KeyStep),
+    /// path doesn't match value at step {0}.
+    TypeMismatch(Step, StrictVal),
+}
+
+impl StrictVal {
+    pub fn at_path<'p>(
+        &self,
+        path: impl IntoIterator<Item = &'p Step>,
+    ) -> Result<&StrictVal, PathError> {
+        let mut iter = path.into_iter();
+        match (self, iter.next()) {
+            (val, None) => Ok(val),
+            (StrictVal::Tuple(fields), Some(Step::UnnamedField(no)))
+                if *no as usize >= fields.len() =>
+            {
+                Err(PathError::FieldNoOutOfBounds(*no, fields.len()))
+            }
+            (StrictVal::Tuple(fields), Some(Step::UnnamedField(no))) => Ok(&fields[*no as usize]),
+            (StrictVal::Struct(fields), Some(Step::NamedField(name))) => {
+                fields.get(name).ok_or(PathError::UnknownFieldName(name.clone()))
+            }
+            (StrictVal::List(items) | StrictVal::Set(items), Some(Step::Index(idx)))
+                if *idx as usize >= items.len() =>
+            {
+                Err(PathError::CollectionIndexOutOfBounds(*idx, items.len()))
+            }
+            (StrictVal::List(items) | StrictVal::Set(items), Some(Step::Index(idx))) => {
+                Ok(&items[*idx as usize])
+            }
+            (StrictVal::Map(items), Some(Step::Key(idx))) => items
+                .iter()
+                .find(|(key, _)| idx.has_match(key))
+                .map(|(_, val)| val)
+                .ok_or(PathError::UnknownKey(idx.clone())),
+
+            (_, Some(step)) => Err(PathError::TypeMismatch(step.clone(), self.clone())),
+        }
     }
 }
