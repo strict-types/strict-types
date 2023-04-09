@@ -33,7 +33,7 @@ pub const TYPESYS_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:sys:v01";
 
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
-#[display(Self::to_baid58)]
+#[display(Self::to_baid58_string)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(
@@ -61,6 +61,10 @@ impl FromStr for TypeSysId {
             Self::from_baid58_str(&format!("sts:{s}"))
         }
     }
+}
+
+impl TypeSysId {
+    fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
 impl TypeSystem {

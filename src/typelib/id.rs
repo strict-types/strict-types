@@ -34,7 +34,7 @@ pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
-#[display(Self::to_baid58)]
+#[display(Self::to_baid58_string)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(
@@ -62,6 +62,10 @@ impl FromStr for TypeLibId {
             Self::from_baid58_str(&format!("stl:{s}"))
         }
     }
+}
+
+impl TypeLibId {
+    fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
 impl TypeLib {

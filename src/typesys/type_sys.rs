@@ -132,14 +132,12 @@ impl Display for TypeSystem {
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use baid58::ToBaid58;
         use base64::Engine;
 
         let id = self.id();
 
         writeln!(f, "----- BEGIN STRICT TYPE SYSTEM -----")?;
         writeln!(f, "Id: {}", id)?;
-        writeln!(f, "Checksum: {}", id.to_baid58().mnemonic())?;
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
