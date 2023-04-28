@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "4.0.0-beta.22"
+version = "4.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "63ee47f02478dc742201353a504cba65c7ca0959b4830c9324e7e95c8f98b3fa"
+checksum = "f26966af46e0d200e8bf2b7f16230997c1c3f2d141bc27ccc091c012ed527b58"
 dependencies = [
  "amplify_apfloat",
  "amplify_derive",
@@ -33,9 +33,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_derive"
-version = "4.0.0-alpha.6"
+version = "3.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "01c4835e964725149d7961ec5af2ca1302f6f68c8c738b4acb06185f596c3333"
+checksum = "580f12b79a9e10cfa8d2515128d83a53f387e290096a75904c92b8a2a4d542a6"
 dependencies = [
  "amplify_syn",
  "proc-macro2",
@@ -54,9 +54,9 @@ dependencies = [
 
 [[package]]
 name = "amplify_syn"
-version = "2.0.0-beta.3"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa4ba0b995a9379a410822026a2bedbba790197dd7cb980954fb64b14476bb8d"
+checksum = "29b08d74fda406d5a94abfdcdb91ba13bb06562ccf0a4581867fa924ca242b01"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -621,9 +621,8 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding"
-version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8ff63df75d779e9005d7790b8e5d9d46d38a6c0ea74a8850f3d3a6b0145a05d9"
+version = "2.1.0"
+source = "git+https://github.com/strict-types/strict-encoding#f3e32e8afc9ee4880e4e5c02174ba52411203410"
 dependencies = [
  "amplify",
  "half",
@@ -634,8 +633,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding_derive"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f5adae55367464f5a229bfd539682c94f870b98a220be6e61dc43f85d612e7e"
+source = "git+https://github.com/strict-types/strict-encoding#f3e32e8afc9ee4880e4e5c02174ba52411203410"
 dependencies = [
  "amplify_syn",
  "heck",
@@ -646,7 +644,7 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "amplify",
  "baid58",
