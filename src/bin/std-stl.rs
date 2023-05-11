@@ -30,8 +30,8 @@ use std::{env, fs, io};
 
 use amplify::num::u24;
 use strict_encoding::ascii::{
-    Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumLodash, AlphaSmall, AsciiPrintable, Dec,
-    HexDecCaps, HexDecSmall,
+    Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
+    AsciiPrintable, Dec, HexDecCaps, HexDecSmall,
 };
 use strict_encoding::{Bool, StrictEncode, StrictWriter, STD_LIB, U4};
 use strict_types::typelib::LibBuilder;
@@ -51,6 +51,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .process::<HexDecSmall>()?
         .process::<AlphaNum>()?
         .process::<AlphaCapsNum>()?
+        .process::<AlphaNumDash>()?
         .process::<AlphaNumLodash>()?
         .compile(none!())?;
     let id = lib.id();
