@@ -25,10 +25,12 @@ mod type_lib;
 mod translate;
 pub mod build;
 pub mod compile;
+mod serialize;
 
 pub use build::LibBuilder;
 pub use compile::{CompileRef, CompileType};
 pub use id::TypeLibId;
+pub use serialize::{parse_args, StlFormat, UnknownFormat};
 pub use translate::TranslateError;
 pub use type_lib::{
     Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibAlias, LibRef, TypeLib,
