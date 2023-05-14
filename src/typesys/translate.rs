@@ -90,7 +90,8 @@ impl Translate<TypeFqid> for SemId {
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
-    dependencies: BTreeSet<Dependency>,
+    unused_deps: BTreeSet<Dependency>,
+    used_deps: BTreeSet<LibName>,
     types: BTreeMap<TypeFqid, Ty<SemId>>,
 }
 
@@ -98,8 +99,10 @@ impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
-        self.dependencies.extend(lib.dependencies);
-        self.dependencies.retain(|dep| dep.name != lib.name);
+        self.used_deps.insert(lib.name.clone());
+        self.unused_deps
+            .extend(lib.dependencies.into_iter().filter(|dep| !self.used_deps.contains(&dep.name)));
+        self.unused_deps.retain(|dep| dep.name != lib.name);
 
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
@@ -113,7 +116,7 @@ impl SystemBuilder {
 
     pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
         let mut errors = vec![];
-        for dep in &self.dependencies {
+        for dep in &self.unused_deps {
             errors.push(Error::UnusedImport(dep.clone()));
         }
         for (fqid, ty) in &self.types {
