@@ -40,19 +40,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let lib = LibBuilder::new(libname!(STD_LIB))
-        .process::<Bool>()?
-        .process::<U4>()?
-        .process::<AsciiPrintable>()?
-        .process::<Alpha>()?
-        .process::<AlphaCaps>()?
-        .process::<AlphaSmall>()?
-        .process::<Dec>()?
-        .process::<HexDecCaps>()?
-        .process::<HexDecSmall>()?
-        .process::<AlphaNum>()?
-        .process::<AlphaCapsNum>()?
-        .process::<AlphaNumDash>()?
-        .process::<AlphaNumLodash>()?
+        .transpile::<Bool>()
+        .transpile::<U4>()
+        .transpile::<AsciiPrintable>()
+        .transpile::<Alpha>()
+        .transpile::<AlphaCaps>()
+        .transpile::<AlphaSmall>()
+        .transpile::<Dec>()
+        .transpile::<HexDecCaps>()
+        .transpile::<HexDecSmall>()
+        .transpile::<AlphaNum>()
+        .transpile::<AlphaCapsNum>()
+        .transpile::<AlphaNumDash>()
+        .transpile::<AlphaNumLodash>()
         .compile(none!())?;
     let id = lib.id();
 

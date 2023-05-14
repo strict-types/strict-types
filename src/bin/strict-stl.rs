@@ -38,10 +38,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
     let lib = LibBuilder::new(libname!(STRICT_TYPES_LIB))
-        .process::<TypeLib>()?
-        .process::<TypeSystem>()?
-        .process::<TypeSysId>()?
-        .process::<TypeFqid>()?
+        .transpile::<TypeLib>()
+        .transpile::<TypeSystem>()
+        .transpile::<TypeSysId>()
+        .transpile::<TypeFqid>()
         .compile(none!())?;
     let id = lib.id();
 
