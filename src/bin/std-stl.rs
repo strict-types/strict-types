@@ -33,13 +33,13 @@ use strict_encoding::ascii::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
     AsciiPrintable, Dec, HexDecCaps, HexDecSmall,
 };
-use strict_encoding::{Bool, StrictEncode, StrictWriter, STD_LIB, U4};
+use strict_encoding::{Bool, StrictEncode, StrictWriter, LIB_NAME_STD, U4};
 use strict_types::typelib::LibBuilder;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let lib = LibBuilder::new(libname!(STD_LIB))
+    let lib = LibBuilder::new(libname!(LIB_NAME_STD))
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()

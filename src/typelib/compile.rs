@@ -25,7 +25,7 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::Confined;
 use blake3::Hasher;
-use encoding::STD_LIB;
+use encoding::LIB_EMBEDDED;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
@@ -193,7 +193,7 @@ impl LibBuilder {
 
         let mut dependencies = bset! {};
         for lib in extern_types.keys() {
-            if lib == &libname!(STD_LIB) {
+            if lib == &libname!(LIB_EMBEDDED) {
                 continue;
             }
             let dep = known_libs.remove(lib).ok_or(TranslateError::UnknownLib(lib.clone()))?;

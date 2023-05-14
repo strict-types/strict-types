@@ -30,7 +30,7 @@ use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
     SplitParent, StrictDumb, StrictEncode, StrictEnum, StrictParent, StrictStruct, StrictSum,
     StrictTuple, StrictUnion, StrictWriter, StructWriter, TypeName, TypedParent, TypedWrite,
-    UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, STD_LIB,
+    UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, LIB_EMBEDDED,
 };
 
 use super::compile::{CompileRef, CompileType};
@@ -231,7 +231,7 @@ impl BuilderParent for LibBuilder {
             (me, r)
         };
         match (T::STRICT_LIB_NAME, T::strict_name()) {
-            (STD_LIB, _) | (_, None) => _compile(self),
+            (LIB_EMBEDDED, _) | (_, None) => _compile(self),
             (lib, Some(name)) if lib != self.lib.as_str() => {
                 let (me, ty) = _compile(self);
                 (me, CompileRef::Extern(ExternRef::with(name, libname!(lib), ty.id())))
