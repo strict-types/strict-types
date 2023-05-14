@@ -114,7 +114,7 @@ impl SystemBuilder {
 
     pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
         let mut errors = vec![];
-        if let Some(dep) = self.dependencies.first() {
+        for dep in &self.dependencies {
             errors.push(Error::UnusedImport(dep.clone()));
         }
         for (fqid, ty) in &self.types {
