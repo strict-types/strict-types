@@ -51,7 +51,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some("--sty") => "sty",
         _ => "sty",
     };
-    let filename = args.get(2).cloned().unwrap_or_else(|| format!("stl/StrictTypes.{ext}"));
+    let filename =
+        args.get(2).cloned().unwrap_or_else(|| format!("stl/{STRICT_TYPES_LIB}@1.2.0.A.{ext}"));
     let mut file = match args.len() {
         1 => Box::new(stdout()) as Box<dyn io::Write>,
         2 | 3 => Box::new(fs::File::create(filename)?) as Box<dyn io::Write>,
