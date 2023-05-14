@@ -473,7 +473,7 @@ impl fmt::UpperHex for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use base64::Engine;
 
-        writeln!(f, "----- BEGIN STRICT TYPE LIB -----")?;
+        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
         writeln!(f, "Id: {}", self.id())?;
         writeln!(f, "Name: {}", self.name)?;
         write!(f, "Dependencies: ")?;
@@ -484,7 +484,7 @@ impl fmt::UpperHex for TypeLib {
         }
         let mut iter = self.dependencies.iter();
         while let Some(dep) = iter.next() {
-            write!(f, "  {} as {}", dep.id, dep.name)?;
+            write!(f, "  {}@{}", dep.name, dep.id)?;
             if iter.len() > 0 {
                 writeln!(f, ",")?;
             } else {
@@ -497,14 +497,14 @@ impl fmt::UpperHex for TypeLib {
         let engine = base64::engine::general_purpose::STANDARD;
         let data = engine.encode(data);
         let mut data = data.as_str();
-        while data.len() >= 76 {
-            let (line, rest) = data.split_at(76);
+        while data.len() >= 64 {
+            let (line, rest) = data.split_at(64);
             writeln!(f, "{}", line)?;
             data = rest;
         }
         writeln!(f, "{}", data)?;
 
-        writeln!(f, "\n----- END STRICT TYPE LIB -----")?;
+        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
         Ok(())
     }
 }

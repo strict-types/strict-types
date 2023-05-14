@@ -136,7 +136,7 @@ impl fmt::UpperHex for TypeSystem {
 
         let id = self.id();
 
-        writeln!(f, "----- BEGIN STRICT TYPE SYSTEM -----")?;
+        writeln!(f, "-----BEGIN STRICT TYPE SYSTEM-----")?;
         writeln!(f, "Id: {}", id)?;
         writeln!(f)?;
 
@@ -144,14 +144,14 @@ impl fmt::UpperHex for TypeSystem {
         let engine = base64::engine::general_purpose::STANDARD;
         let data = engine.encode(data);
         let mut data = data.as_str();
-        while data.len() >= 76 {
-            let (line, rest) = data.split_at(76);
+        while data.len() >= 64 {
+            let (line, rest) = data.split_at(64);
             writeln!(f, "{}", line)?;
             data = rest;
         }
         writeln!(f, "{}", data)?;
 
-        writeln!(f, "\n----- END STRICT TYPE SYSTEM -----")?;
+        writeln!(f, "\n-----END STRICT TYPE SYSTEM-----")?;
         Ok(())
     }
 }
