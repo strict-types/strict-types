@@ -29,7 +29,7 @@ use std::io::stdout;
 use std::{env, fs, io};
 
 use amplify::num::u24;
-use strict_encoding::ascii::{
+use strict_encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
     AsciiPrintable, Dec, HexDecCaps, HexDecSmall,
 };
