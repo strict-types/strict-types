@@ -29,7 +29,7 @@ fn main() {
     lib.serialize(
         format,
         dir,
-        "1.2.0.A",
+        "0.1.0",
         Some(
             "
   Description: Confined generalized algebraic data types (GADT)
