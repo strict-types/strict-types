@@ -20,40 +20,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate amplify;
-#[macro_use]
-extern crate strict_encoding;
-
 use std::io::stdout;
 use std::{env, fs, io};
 
 use amplify::num::u24;
-use strict_encoding::stl::{
-    Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
-    AsciiPrintable, Dec, HexDecCaps, HexDecSmall,
-};
-use strict_encoding::{Bool, StrictEncode, StrictWriter, LIB_NAME_STD, U4};
-use strict_types::typelib::LibBuilder;
+use strict_encoding::{StrictEncode, StrictWriter, LIB_NAME_STD};
+use strict_types::stl;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let lib = LibBuilder::new(libname!(LIB_NAME_STD))
-        .transpile::<Bool>()
-        .transpile::<U4>()
-        .transpile::<AsciiPrintable>()
-        .transpile::<Alpha>()
-        .transpile::<AlphaCaps>()
-        .transpile::<AlphaSmall>()
-        .transpile::<Dec>()
-        .transpile::<HexDecCaps>()
-        .transpile::<HexDecSmall>()
-        .transpile::<AlphaNum>()
-        .transpile::<AlphaCapsNum>()
-        .transpile::<AlphaNumDash>()
-        .transpile::<AlphaNumLodash>()
-        .compile(none!())?;
+    let lib = stl::std_stl();
     let id = lib.id();
 
     let ext = match args.get(1).map(String::as_str) {
