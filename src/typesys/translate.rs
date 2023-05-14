@@ -98,6 +98,7 @@ impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
+        self.dependencies.extend(lib.dependencies);
         self.dependencies.retain(|dep| dep.name != lib.name);
 
         for (ty_name, ty) in lib.types {
@@ -106,8 +107,6 @@ impl SystemBuilder {
             let fqid = TypeFqid::named(id, lib.name.clone(), ty_name.clone());
             self.types.insert(fqid, ty);
         }
-
-        self.dependencies.extend(lib.dependencies);
 
         Ok(self)
     }
