@@ -67,8 +67,13 @@ impl LibBuilder {
 
     pub fn name(&self) -> LibName { self.lib.clone() }
 
+    #[deprecated(since = "1.2.1", note = "use LibBuilder::transpile")]
     pub fn process<T: StrictEncode + StrictDumb>(self) -> io::Result<Self> {
         T::strict_dumb().strict_encode(self)
+    }
+
+    pub fn transpile<T: StrictEncode + StrictDumb>(self) -> Self {
+        T::strict_dumb().strict_encode(self).expect("memory encoding doesn't error")
     }
 
     pub fn into_types(
