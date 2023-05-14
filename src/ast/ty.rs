@@ -718,13 +718,20 @@ impl EnumVariants {
 impl Display for EnumVariants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
-        let last = iter.next_back();
-        for field in iter {
-            write!(f, "{field:#} | ")?;
+        if let Some(variant) = iter.next() {
+            write!(f, "{variant:#}")?;
         }
-        if let Some(field) = last {
-            write!(f, "{field:#}")?;
+        let mut chunk_size = None;
+        loop {
+            for variant in iter.by_ref().take(chunk_size.unwrap_or(3)) {
+                write!(f, " | {variant:#}")?;
+            }
+            chunk_size = Some(4);
+            if iter.by_ref().peekable().peek().is_none() {
+                break;
+            }
+            write!(f, "\n                      ")?;
         }
-        Ok(())
+        writeln!(f)
     }
 }
