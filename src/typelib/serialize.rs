@@ -39,7 +39,7 @@ pub enum StlFormat {
     Source,
     #[display("stl")]
     Binary,
-    #[display("asc.stl")]
+    #[display("sta")]
     Armored,
 }
 
@@ -49,7 +49,7 @@ impl FromStr for StlFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "stl" => Ok(StlFormat::Binary),
-            "asc" | "asc.stl" => Ok(StlFormat::Armored),
+            "sta" => Ok(StlFormat::Armored),
             "sty" => Ok(StlFormat::Source),
             invalid => Err(UnknownFormat(invalid.to_owned())),
         }
