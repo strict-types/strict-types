@@ -428,6 +428,8 @@ impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
 
 impl TypeLib {
+    pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
+
     pub fn import(&mut self, dependency: Dependency) -> Result<(), TranslateError> {
         if self.dependencies.contains(&dependency) {
             return Err(TranslateError::DuplicatedDependency(dependency));
