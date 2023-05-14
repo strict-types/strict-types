@@ -20,7 +20,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use strict_encoding::LIB_NAME_STD;
 use strict_types::stl;
 use strict_types::typelib::parse_args;
 
@@ -30,7 +29,6 @@ fn main() {
     lib.serialize(
         format,
         dir,
-        LIB_NAME_STD,
         "0.1.0",
         Some(
             "

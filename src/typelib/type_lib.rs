@@ -471,10 +471,20 @@ impl fmt::UpperHex for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use base64::Engine;
 
-        let id = self.id();
-
         writeln!(f, "----- BEGIN STRICT TYPE LIB -----")?;
-        writeln!(f, "Id: {}", id)?;
+        writeln!(f, "Id: {}", self.id())?;
+        writeln!(f, "Name: {}", self.name)?;
+        write!(f, "Dependencies: ")?;
+        if self.dependencies.is_empty() {
+            writeln!(f, "~")?;
+        }
+        let mut iter = self.dependencies.iter();
+        while let Some(dep) = iter.next() {
+            writeln!(f, "{} {},", dep.name, dep.id)?;
+            if iter.len() > 0 {
+                writeln!(f, "               ")?;
+            }
+        }
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");

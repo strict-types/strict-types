@@ -61,7 +61,6 @@ impl TypeLib {
         &self,
         format: StlFormat,
         dir: Option<impl AsRef<Path>>,
-        lib_name: &'static str,
         ver: &'static str,
         header: Option<&'static str>,
     ) -> io::Result<()> {
@@ -73,7 +72,7 @@ impl TypeLib {
             None => Box::new(stdout()) as Box<dyn io::Write>,
             Some(dir) => {
                 let mut filename = dir.as_ref().to_owned();
-                filename.push(format!("{lib_name}@{ver}.{format}"));
+                filename.push(format!("{}@{ver}.{format}", self.name));
                 Box::new(fs::File::create(filename)?) as Box<dyn io::Write>
             }
         };
@@ -88,7 +87,8 @@ impl TypeLib {
             StlFormat::Source => {
                 writeln!(
                     file,
-                    "{{-\n  Id: {id:+}\n  Name: {lib_name}\n  Version: {ver}{}\n-}}\n",
+                    "{{-\n  Id: {id:+}\n  Name: {}\n  Version: {ver}{}\n-}}\n",
+                    self.name,
                     header.unwrap_or_default()
                 )?;
                 writeln!(file, "{self}")?;
