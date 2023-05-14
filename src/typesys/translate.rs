@@ -116,8 +116,8 @@ impl SystemBuilder {
 
     pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
         let mut errors = vec![];
-        for dep in &self.unused_deps {
-            errors.push(Error::UnusedImport(dep.clone()));
+        for dep in self.unused_deps {
+            errors.push(Error::UnusedImport(dep));
         }
         for (fqid, ty) in &self.types {
             for inner_id in ty.type_refs() {
