@@ -20,29 +20,17 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate amplify;
-#[macro_use]
-extern crate strict_encoding;
-
 use std::io::stdout;
 use std::{env, fs, io};
 
 use amplify::num::u24;
 use strict_encoding::{StrictEncode, StrictWriter, STRICT_TYPES_LIB};
-use strict_types::typelib::LibBuilder;
-use strict_types::typesys::{TypeFqid, TypeSysId};
-use strict_types::{TypeLib, TypeSystem};
+use strict_types::stl::strict_types_stl;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args: Vec<String> = env::args().collect();
 
-    let lib = LibBuilder::new(libname!(STRICT_TYPES_LIB))
-        .transpile::<TypeLib>()
-        .transpile::<TypeSystem>()
-        .transpile::<TypeSysId>()
-        .transpile::<TypeFqid>()
-        .compile(none!())?;
+    let lib = strict_types_stl();
     let id = lib.id();
 
     let ext = match args.get(1).map(String::as_str) {
