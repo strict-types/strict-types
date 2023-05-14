@@ -479,12 +479,16 @@ impl fmt::UpperHex for TypeLib {
         write!(f, "Dependencies: ")?;
         if self.dependencies.is_empty() {
             writeln!(f, "~")?;
+        } else {
+            writeln!(f)?;
         }
         let mut iter = self.dependencies.iter();
         while let Some(dep) = iter.next() {
-            writeln!(f, "{} {},", dep.name, dep.id)?;
+            write!(f, "  {} as {}", dep.id, dep.name)?;
             if iter.len() > 0 {
-                writeln!(f, "               ")?;
+                writeln!(f, ",")?;
+            } else {
+                writeln!(f)?;
             }
         }
         writeln!(f)?;
