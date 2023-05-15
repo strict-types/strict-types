@@ -727,7 +727,7 @@ impl Display for EnumVariants {
                 write!(f, " | {variant:#}")?;
             }
             chunk_size = Some(4);
-            if iter.by_ref().peekable().peek().is_none() {
+            if iter.len() == 0 {
                 break;
             }
             write!(f, "\n                      ")?;
