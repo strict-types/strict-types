@@ -20,66 +20,23 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate amplify;
-#[macro_use]
-extern crate strict_encoding;
+use strict_types::stl;
+use strict_types::typelib::parse_args;
 
-use std::io::stdout;
-use std::{env, fs, io};
-
-use amplify::num::u24;
-use strict_encoding::{StrictEncode, StrictWriter, STRICT_TYPES_LIB};
-use strict_types::typelib::LibBuilder;
-use strict_types::typesys::{TypeFqid, TypeSysId};
-use strict_types::{TypeLib, TypeSystem};
-
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let args: Vec<String> = env::args().collect();
-
-    let lib = LibBuilder::new(libname!(STRICT_TYPES_LIB))
-        .process::<TypeLib>()?
-        .process::<TypeSystem>()?
-        .process::<TypeSysId>()?
-        .process::<TypeFqid>()?
-        .compile(none!())?;
-    let id = lib.id();
-
-    let ext = match args.get(1).map(String::as_str) {
-        Some("--stl") => "stl",
-        Some("--asc") => "asc.stl",
-        Some("--sty") => "sty",
-        _ => "sty",
-    };
-    let filename = args.get(2).cloned().unwrap_or_else(|| format!("stl/StrictTypes.{ext}"));
-    let mut file = match args.len() {
-        1 => Box::new(stdout()) as Box<dyn io::Write>,
-        2 | 3 => Box::new(fs::File::create(filename)?) as Box<dyn io::Write>,
-        _ => panic!("invalid argument count"),
-    };
-    match ext {
-        "stl" => {
-            lib.strict_encode(StrictWriter::with(u24::MAX.into_usize(), file))?;
-        }
-        "asc.stl" => {
-            writeln!(file, "{lib:X}")?;
-        }
-        _ => {
-            writeln!(
-                file,
-                "{{-
-  Id: {id:+}
-  Name: StrictTypes
+fn main() {
+    let lib = stl::strict_types_stl();
+    let (format, dir) = parse_args();
+    lib.serialize(
+        format,
+        dir,
+        "0.1.0",
+        Some(
+            "
   Description: Confined generalized algebraic data types (GADT)
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
   Copyright (C) 2023 UBIDECO Institute. All rights reserved.
-  License: Apache-2.0
--}}
-"
-            )?;
-            writeln!(file, "{lib}")?;
-        }
-    }
-
-    Ok(())
+  License: Apache-2.0",
+        ),
+    )
+    .expect("unable to write to the file");
 }

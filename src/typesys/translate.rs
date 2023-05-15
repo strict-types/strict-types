@@ -90,7 +90,8 @@ impl Translate<TypeFqid> for SemId {
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
-    dependencies: BTreeSet<Dependency>,
+    pending_deps: BTreeSet<Dependency>,
+    imported_deps: BTreeSet<LibName>,
     types: BTreeMap<TypeFqid, Ty<SemId>>,
 }
 
@@ -98,7 +99,11 @@ impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
-        self.dependencies.retain(|dep| dep.name != lib.name);
+        self.imported_deps.insert(lib.name.clone());
+        self.pending_deps.extend(
+            lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(&dep.name)),
+        );
+        self.pending_deps.retain(|dep| dep.name != lib.name);
 
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
@@ -107,16 +112,16 @@ impl SystemBuilder {
             self.types.insert(fqid, ty);
         }
 
-        self.dependencies.extend(lib.dependencies);
-
         Ok(self)
     }
 
     pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
         let mut errors = vec![];
-        if let Some(dep) = self.dependencies.first() {
-            errors.push(Error::UnusedImport(dep.clone()));
+
+        for dep in self.pending_deps {
+            errors.push(Error::AbsentImport(dep));
         }
+
         for (fqid, ty) in &self.types {
             for inner_id in ty.type_refs() {
                 if !self.types.contains_key(&fqid) {
@@ -251,8 +256,8 @@ impl Translate<SemId> for KeyTy {
 #[derive(Clone, Eq, PartialEq, Debug, Display, From, Error)]
 #[display(doc_comments)]
 pub enum Error {
-    /// unused import `{0}`.
-    UnusedImport(Dependency),
+    /// required dependency `{0}` was not imported into the builder.
+    AbsentImport(Dependency),
 
     /// type with id `{0}` is not a part of the type system.
     UnknownType(SemId),

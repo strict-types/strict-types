@@ -85,8 +85,7 @@ pub(self) mod test_helpers {
     }
 
     pub fn test_system() -> TypeSystem {
-        let lib =
-            LibBuilder::new("TestLib").process::<Nominal>().unwrap().compile(none!()).unwrap();
+        let lib = LibBuilder::new("TestLib").transpile::<Nominal>().compile(none!()).unwrap();
         SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
     }
 }

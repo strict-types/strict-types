@@ -428,6 +428,8 @@ impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
 
 impl TypeLib {
+    pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
+
     pub fn import(&mut self, dependency: Dependency) -> Result<(), TranslateError> {
         if self.dependencies.contains(&dependency) {
             return Err(TranslateError::DuplicatedDependency(dependency));
@@ -471,24 +473,38 @@ impl fmt::UpperHex for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use base64::Engine;
 
-        let id = self.id();
-
-        writeln!(f, "----- BEGIN STRICT TYPE LIB -----")?;
-        writeln!(f, "Id: {}", id)?;
+        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
+        writeln!(f, "Id: {}", self.id())?;
+        writeln!(f, "Name: {}", self.name)?;
+        write!(f, "Dependencies: ")?;
+        if self.dependencies.is_empty() {
+            writeln!(f, "~")?;
+        } else {
+            writeln!(f)?;
+        }
+        let mut iter = self.dependencies.iter();
+        while let Some(dep) = iter.next() {
+            write!(f, "  {}@{}", dep.name, dep.id)?;
+            if iter.len() > 0 {
+                writeln!(f, ",")?;
+            } else {
+                writeln!(f)?;
+            }
+        }
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
         let engine = base64::engine::general_purpose::STANDARD;
         let data = engine.encode(data);
         let mut data = data.as_str();
-        while data.len() >= 76 {
-            let (line, rest) = data.split_at(76);
+        while data.len() >= 64 {
+            let (line, rest) = data.split_at(64);
             writeln!(f, "{}", line)?;
             data = rest;
         }
         writeln!(f, "{}", data)?;
 
-        writeln!(f, "\n----- END STRICT TYPE LIB -----")?;
+        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
         Ok(())
     }
 }

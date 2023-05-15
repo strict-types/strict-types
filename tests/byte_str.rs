@@ -25,27 +25,26 @@ extern crate amplify;
 #[macro_use]
 extern crate strict_encoding;
 
-use strict_encoding::STRICT_TYPES_LIB;
+use amplify::confinement::SmallVec;
 use strict_types::typelib::LibBuilder;
-use strict_types::typesys::SystemBuilder;
-use strict_types::TypeLib;
 
 #[test]
 fn reflect() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).transpile::<TypeLib>();
+    #[derive(Clone, Debug, Default)]
+    #[derive(StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = "Test")]
+    struct ByteStr(SmallVec<u8>);
+
+    let builder = LibBuilder::new(libname!("Test")).transpile::<ByteStr>();
     let lib = builder.compile(none!()).unwrap();
 
-    let builder = SystemBuilder::new().import(lib).unwrap();
-    match builder.finalize() {
-        Ok(sys) => {
-            println!("{sys}");
-            println!("{sys:X}");
-        }
-        Err(errors) => {
-            for err in errors {
-                eprintln!("Error: {err}");
-            }
-            panic!()
-        }
-    }
+    assert_eq!(
+        lib.to_string(),
+        "typelib Test -- break_senior_ventura_HRmiM5TfA2egrTigBRuxVX192TNqJYNvtk17hu1b1hyf
+
+-- no dependencies
+
+data ByteStr          :: [Byte]
+"
+    );
 }
