@@ -39,6 +39,7 @@ pub enum StlFormat {
     Source,
     #[display("stl")]
     Binary,
+    #[cfg(feature = "base64")]
     #[display("sta")]
     Armored,
 }
@@ -49,6 +50,7 @@ impl FromStr for StlFormat {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "stl" => Ok(StlFormat::Binary),
+            #[cfg(feature = "base64")]
             "sta" => Ok(StlFormat::Armored),
             "sty" => Ok(StlFormat::Source),
             invalid => Err(UnknownFormat(invalid.to_owned())),
@@ -81,6 +83,7 @@ impl TypeLib {
             StlFormat::Binary => {
                 self.strict_encode(StrictWriter::with(u24::MAX.into_usize(), file))?;
             }
+            #[cfg(feature = "base64")]
             StlFormat::Armored => {
                 writeln!(file, "{self:X}")?;
             }
