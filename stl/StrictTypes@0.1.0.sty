@@ -1,5 +1,5 @@
 {-
-  Id: danube_cotton_kansas_3xcfudRJUuwQ187puYDdNcxGeTpG8AoHyTrfJ9ryo9k6
+  Id: classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -8,7 +8,7 @@
   License: Apache-2.0
 -}
 
-typelib StrictTypes -- danube_cotton_kansas_3xcfudRJUuwQ187puYDdNcxGeTpG8AoHyTrfJ9ryo9k6
+typelib StrictTypes -- classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29
 
 -- no dependencies
 
@@ -51,7 +51,7 @@ data NamedFieldsKeyTy :: [FieldKeyTy ^ 1..0xff]
 data NamedFieldsLibRef :: [FieldLibRef ^ 1..0xff]
 data NamedFieldsSemId :: [FieldSemId ^ 1..0xff]
 data Primitive        :: U8
-data SemId            :: [U8 ^ 32]
+data SemId            :: [Byte ^ 32]
 data Sizing           :: min U64, max U64
 data TyInlineRef      :: primitive Primitive
                        | unicode ()
@@ -119,9 +119,9 @@ data TypeInfo         :: fqn TypeFqn?, ty TySemId
 data TypeLib          :: name LibName
                        , dependencies {Dependency ^ ..0xff}
                        , types {[Ascii ^ 1..0x40] -> ^ 1.. TyLibRef}
-data TypeLibId        :: [U8 ^ 32]
+data TypeLibId        :: [Byte ^ 32]
 data TypeName         :: Ident
-data TypeSysId        :: [U8 ^ 32]
+data TypeSysId        :: [Byte ^ 32]
 data TypeSystem       :: {[Byte ^ 32] -> ^ ..0xffffff TypeInfo}
 data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}
 data UnionVariantsInlineRef1 :: {U8 -> ^ ..0xff VariantInfoInlineRef1}
