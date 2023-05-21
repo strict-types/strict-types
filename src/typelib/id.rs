@@ -70,9 +70,10 @@ impl TypeLibId {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        let hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
-        let engine = StrictWriter::with(usize::MAX, hasher);
+        let mut hasher = blake3::Hasher::new_keyed(&LIB_ID_TAG);
+        let engine = StrictWriter::in_memory(usize::MAX);
         let engine = self.strict_encode(engine).expect("hasher do not error");
-        TypeLibId::from_raw_array(engine.unbox().finalize())
+        hasher.update(&engine.unbox().to_vec());
+        TypeLibId::from_raw_array(hasher.finalize())
     }
 }
