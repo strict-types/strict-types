@@ -55,9 +55,7 @@ impl HashId for TypeFqid {
     fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
 }
 
-impl TypeRef for TypeFqid {
-    fn id(&self) -> SemId { self.id }
-}
+impl TypeRef for TypeFqid {}
 
 impl Display for TypeFqid {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

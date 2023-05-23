@@ -39,8 +39,6 @@ use crate::SemId;
 pub trait TypeRef:
     HashId + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
 {
-    fn id(&self) -> SemId;
-
     fn as_ty(&self) -> Option<&Ty<Self>> { None }
     fn type_refs(&self) -> Iter<Self> { Iter::from(self) }
 
@@ -50,9 +48,7 @@ pub trait TypeRef:
     fn is_ascii_char(&self) -> bool { false }
 }
 
-impl TypeRef for KeyTy {
-    fn id(&self) -> SemId { panic!("KeyTy can't have semantic id") }
-}
+impl TypeRef for KeyTy {}
 
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]

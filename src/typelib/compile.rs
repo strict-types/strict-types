@@ -24,11 +24,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::Confined;
+use amplify::RawArray;
 use blake3::Hasher;
 use encoding::LIB_EMBEDDED;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
+use crate::ast::{HashId, SEM_ID_TAG};
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, TranslateError, TypeIndex};
 use crate::typelib::type_lib::TypeMap;
@@ -65,19 +66,15 @@ pub enum CompileRef {
 
 impl CompileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
+
+    pub fn sem_id(&self) -> SemId {
+        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        self.hash_id(&mut hasher);
+        SemId::from_raw_array(hasher.finalize())
+    }
 }
 
 impl TypeRef for CompileRef {
-    fn id(&self) -> SemId {
-        match self {
-            CompileRef::Embedded(ty) => ty.id(None),
-            CompileRef::Extern(ext) => ext.id,
-            CompileRef::Named(name) => {
-                panic!("CompileRef::id must never be called for named refs (called for '{name}')")
-            }
-        }
-    }
-
     fn as_ty(&self) -> Option<&Ty<Self>> {
         match self {
             CompileRef::Embedded(ty) => Some(ty),

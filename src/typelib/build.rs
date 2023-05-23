@@ -36,7 +36,7 @@ use strict_encoding::{
 use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::ExternRef;
-use crate::{SemId, Ty, TypeRef};
+use crate::{SemId, Ty};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -233,8 +233,8 @@ impl BuilderParent for LibBuilder {
         match (T::STRICT_LIB_NAME, T::strict_name()) {
             (LIB_EMBEDDED, _) | (_, None) => _compile(self),
             (lib, Some(name)) if lib != self.lib.as_str() => {
-                let (me, ty) = _compile(self);
-                (me, CompileRef::Extern(ExternRef::with(name, libname!(lib), ty.id())))
+                let (me, r) = _compile(self);
+                (me, CompileRef::Extern(ExternRef::with(name, libname!(lib), r.sem_id())))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
             (_, Some(_)) => _compile(self),

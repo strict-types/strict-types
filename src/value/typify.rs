@@ -379,13 +379,12 @@ impl TypeSystem {
             }
             (val, ty @ Ty::Union(fields)) if ty.is_option() => {
                 // this is `Some`
-                self.typify(val, fields.ty_by_tag(1).expect("optional always have `Some`").id())?
-                    .val
+                self.typify(val, *fields.ty_by_tag(1).expect("optional always have `Some`"))?.val
             }
 
             // Newtype wrapper
             (val, Ty::Tuple(fields)) if fields.len() == 1 => {
-                let inner = self.typify(val, fields[0].id())?.val;
+                let inner = self.typify(val, fields[0])?.val;
                 StrictVal::Tuple(vec![inner])
             }
 

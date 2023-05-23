@@ -31,7 +31,7 @@ use encoding::{
 
 use crate::typify::TypedVal;
 use crate::value::{EnumTag, StrictNum};
-use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
+use crate::{SemId, StrictVal, Ty, TypeSystem};
 
 #[derive(Clone, Debug)]
 pub struct SerializedType<const MAX_LEN: usize>(Confined<Vec<u8>, 0, MAX_LEN>);
@@ -75,7 +75,16 @@ impl TypeSystem {
         writer: &mut impl io::Write,
     ) -> Result<(), io::Error> {
         let info = self.find(&sem_id.into()).expect("typified with some other TypeSystem");
-        match (&val, &info.ty) {
+        self.strict_write_ty(val, &info.ty, writer)
+    }
+
+    fn strict_write_ty(
+        &self,
+        val: &StrictVal,
+        ty: &Ty<SemId>,
+        writer: &mut impl io::Write,
+    ) -> Result<(), io::Error> {
+        match (val, ty) {
             (StrictVal::Unit, Ty::Primitive(prim)) => {
                 debug_assert_eq!(*prim, UNIT);
                 // Do nothing
@@ -172,7 +181,7 @@ impl TypeSystem {
                 let le_bytes = &list.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 for (key, val) in list {
-                    self.strict_write_value(key, key_id.id(), writer)?;
+                    self.strict_write_ty(key, &key_id.to_ty(), writer)?;
                     self.strict_write_value(val, *sem_id, writer)?;
                 }
             }

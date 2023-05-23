@@ -89,13 +89,6 @@ pub enum InlineRef {
 }
 
 impl TypeRef for InlineRef {
-    fn id(&self) -> SemId {
-        match self {
-            InlineRef::Named(_, id) => *id,
-            InlineRef::Extern(ext) => ext.id,
-            InlineRef::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             InlineRef::Inline(ty) => ty.is_compound(),
@@ -161,13 +154,6 @@ pub enum InlineRef1 {
 }
 
 impl TypeRef for InlineRef1 {
-    fn id(&self) -> SemId {
-        match self {
-            InlineRef1::Named(_, id) => *id,
-            InlineRef1::Extern(ext) => ext.id,
-            InlineRef1::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             InlineRef1::Inline(ty) => ty.is_compound(),
@@ -233,13 +219,6 @@ pub enum InlineRef2 {
 }
 
 impl TypeRef for InlineRef2 {
-    fn id(&self) -> SemId {
-        match self {
-            InlineRef2::Named(_, id) => *id,
-            InlineRef2::Extern(ext) => ext.id,
-            InlineRef2::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             InlineRef2::Inline(ty) => ty.is_compound(),
@@ -305,13 +284,6 @@ pub enum LibRef {
 }
 
 impl TypeRef for LibRef {
-    fn id(&self) -> SemId {
-        match self {
-            LibRef::Named(_, id) => *id,
-            LibRef::Extern(ext) => ext.id,
-            LibRef::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             LibRef::Inline(ty) => ty.is_compound(),
