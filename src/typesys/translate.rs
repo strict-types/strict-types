@@ -176,9 +176,9 @@ impl Translate<SemId> for LibRef {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            LibRef::Named(_, id) => Ok(id),
+            LibRef::Named(sem_id) => Ok(sem_id),
             LibRef::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            LibRef::Extern(ExternRef { id, .. }) => Ok(id),
+            LibRef::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -194,9 +194,9 @@ impl Translate<SemId> for InlineRef {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            InlineRef::Named(_, id) => Ok(id),
+            InlineRef::Named(sem_id) => Ok(sem_id),
             InlineRef::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            InlineRef::Extern(ExternRef { id, .. }) => Ok(id),
+            InlineRef::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -212,9 +212,9 @@ impl Translate<SemId> for InlineRef1 {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            InlineRef1::Named(_, id) => Ok(id),
+            InlineRef1::Named(sem_id) => Ok(sem_id),
             InlineRef1::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            InlineRef1::Extern(ExternRef { id, .. }) => Ok(id),
+            InlineRef1::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -230,9 +230,9 @@ impl Translate<SemId> for InlineRef2 {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            InlineRef2::Named(_, id) => Ok(id),
+            InlineRef2::Named(sem_id) => Ok(sem_id),
             InlineRef2::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            InlineRef2::Extern(ExternRef { id, .. }) => Ok(id),
+            InlineRef2::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }

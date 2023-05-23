@@ -36,7 +36,7 @@ use strict_encoding::{
 use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::ExternRef;
-use crate::{SemId, Ty};
+use crate::{SemId, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -50,6 +50,7 @@ pub trait BuilderParent: StrictParent<Sink> {
 #[derive(Debug)]
 pub struct LibBuilder {
     lib: LibName,
+    dependencies: BTreeMap<LibName, TypeLibId>,
     extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
     types: SmallOrdMap<TypeName, CompileType>,
     last_compiled: Option<CompileRef>,
@@ -59,6 +60,7 @@ impl LibBuilder {
     pub fn new(name: impl Into<LibName>) -> LibBuilder {
         LibBuilder {
             lib: name.into(),
+            dependencies: empty!(),
             extern_types: empty!(),
             types: empty!(),
             last_compiled: None,
@@ -82,6 +84,13 @@ impl LibBuilder {
     {
         let extern_types = Confined::try_from(self.extern_types).expect("too many dependencies");
         (extern_types, self.types)
+    }
+
+    fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
+        *self
+            .dependencies
+            .get(lib_name)
+            .unwrap_or_else(|| panic!("use of library '{lib_name}' which is not a dependency"))
     }
 }
 
@@ -232,9 +241,10 @@ impl BuilderParent for LibBuilder {
         };
         match (T::STRICT_LIB_NAME, T::strict_name()) {
             (LIB_EMBEDDED, _) | (_, None) => _compile(self),
-            (lib, Some(name)) if lib != self.lib.as_str() => {
+            (lib, Some(_name)) if lib != self.lib.as_str() => {
                 let (me, r) = _compile(self);
-                (me, CompileRef::Extern(ExternRef::with(name, libname!(lib), r.sem_id())))
+                let lib_id = me.dependency_id(&libname!(lib));
+                (me, CompileRef::Extern(ExternRef::with(lib_id, r.sem_id())))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
             (_, Some(_)) => _compile(self),
@@ -262,7 +272,8 @@ impl BuilderParent for LibBuilder {
                     .or_default()
                     .insert(name.clone(), id)
                     .expect("too many types");
-                CompileRef::Extern(ExternRef::with(name, lib, id))
+                let lib_id = self.dependency_id(&lib);
+                CompileRef::Extern(ExternRef::with(lib_id, id))
             }
             (_, None) => CompileRef::Embedded(Box::new(ty)),
         };

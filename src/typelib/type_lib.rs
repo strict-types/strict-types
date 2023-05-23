@@ -36,41 +36,28 @@ use crate::typelib::translate::TranslateError;
 use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib}.{name}")]
+#[display("{lib_id}.{sem_id}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", rename_all = "camelCase")
 )]
 pub struct ExternRef {
-    pub name: TypeName,
-    pub lib: LibName,
-    pub id: SemId,
-}
-
-impl StrictDumb for ExternRef {
-    fn strict_dumb() -> Self {
-        ExternRef {
-            name: TypeName::strict_dumb(),
-            lib: LibName::strict_dumb(),
-            id: SemId::strict_dumb(),
-        }
-    }
+    pub lib_id: TypeLibId,
+    pub sem_id: SemId,
 }
 
 impl HashId for ExternRef {
     fn hash_id(&self, hasher: &mut Hasher) {
-        hasher.update(self.lib.as_bytes());
-        hasher.update(self.id.as_slice());
+        hasher.update(self.lib_id.as_slice());
+        hasher.update(self.sem_id.as_slice());
     }
 }
 
 impl ExternRef {
-    pub fn with(name: TypeName, lib: LibName, id: SemId) -> ExternRef {
-        ExternRef { name, lib, id }
-    }
+    pub fn with(lib_id: TypeLibId, sem_id: SemId) -> ExternRef { ExternRef { lib_id, sem_id } }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
@@ -84,7 +71,7 @@ impl ExternRef {
 pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
@@ -119,10 +106,7 @@ impl HashId for InlineRef {
     fn hash_id(&self, hasher: &mut Hasher) {
         match self {
             InlineRef::Inline(ty) => ty.hash_id(hasher),
-            InlineRef::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
+            InlineRef::Named(id) => id.hash_id(hasher),
             InlineRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
@@ -131,7 +115,7 @@ impl HashId for InlineRef {
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef::Named(name, _) => write!(f, "{name}"),
+            InlineRef::Named(sem_id) => write!(f, "{sem_id}"),
             InlineRef::Extern(ext) => Display::fmt(ext, f),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
@@ -149,7 +133,7 @@ impl Display for InlineRef {
 pub enum InlineRef1 {
     #[from]
     Inline(Ty<InlineRef2>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
@@ -184,10 +168,7 @@ impl HashId for InlineRef1 {
     fn hash_id(&self, hasher: &mut Hasher) {
         match self {
             InlineRef1::Inline(ty) => ty.hash_id(hasher),
-            InlineRef1::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
+            InlineRef1::Named(id) => id.hash_id(hasher),
             InlineRef1::Extern(ext) => ext.hash_id(hasher),
         }
     }
@@ -196,7 +177,7 @@ impl HashId for InlineRef1 {
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef1::Named(name, _) => write!(f, "{name}"),
+            InlineRef1::Named(sem_id) => write!(f, "{sem_id}"),
             InlineRef1::Extern(ext) => Display::fmt(ext, f),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
@@ -214,7 +195,7 @@ impl Display for InlineRef1 {
 pub enum InlineRef2 {
     #[from]
     Inline(Ty<KeyTy>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
@@ -249,9 +230,8 @@ impl HashId for InlineRef2 {
     fn hash_id(&self, hasher: &mut Hasher) {
         match self {
             InlineRef2::Inline(ty) => ty.hash_id(hasher),
-            InlineRef2::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
+            InlineRef2::Named(sem_id) => {
+                hasher.update(sem_id.as_slice());
             }
             InlineRef2::Extern(ext) => ext.hash_id(hasher),
         }
@@ -261,7 +241,7 @@ impl HashId for InlineRef2 {
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef2::Named(name, _) => write!(f, "{name}"),
+            InlineRef2::Named(sem_id) => write!(f, "{sem_id}"),
             InlineRef2::Extern(ext) => Display::fmt(ext, f),
             InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
@@ -279,7 +259,7 @@ impl Display for InlineRef2 {
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
@@ -314,10 +294,7 @@ impl HashId for LibRef {
     fn hash_id(&self, hasher: &mut Hasher) {
         match self {
             LibRef::Inline(ty) => ty.hash_id(hasher),
-            LibRef::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
+            LibRef::Named(id) => id.hash_id(hasher),
             LibRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
@@ -326,7 +303,7 @@ impl HashId for LibRef {
 impl Display for LibRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibRef::Named(name, _) => Display::fmt(name, f),
+            LibRef::Named(sem_id) => Display::fmt(sem_id, f),
             LibRef::Inline(ty) => Display::fmt(ty, f),
             LibRef::Extern(ext) => Display::fmt(ext, f),
         }
