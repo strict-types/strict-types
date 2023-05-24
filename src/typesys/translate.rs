@@ -29,7 +29,7 @@ use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
-use crate::typesys::{TypeFqn, TypeSymbols};
+use crate::typesys::symbols::SymbolicTypes;
 use crate::typesys::{SymTy, TypeFqn};
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
 
@@ -89,7 +89,7 @@ impl Translate<TypeOrig> for SemId {
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
     pending_deps: BTreeSet<Dependency>,
-    imported_deps: BTreeSet<LibName>,
+    imported_deps: BTreeSet<Dependency>,
     types: BTreeMap<SemId, SymTy>,
 }
 
@@ -97,23 +97,23 @@ impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
-        self.imported_deps.insert(lib.name.clone());
-        self.pending_deps.extend(
-            lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(&dep.name)),
-        );
-        self.pending_deps.retain(|dep| dep.name != lib.name);
+        let dependency = Dependency::from(&lib);
+        self.pending_deps.remove(&dependency);
+        self.imported_deps.insert(dependency);
+        self.pending_deps
+            .extend(lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(dep)));
 
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
             let ty = ty.translate(&mut self, &())?;
-            let info = TypeSymbols::named(lib.name.clone(), ty_name.clone(), ty);
+            let info = SymTy::named(lib.name.clone(), ty_name.clone(), ty);
             self.types.insert(id, info);
         }
 
         Ok(self)
     }
 
-    pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
+    pub fn finalize(self) -> Result<SymbolicTypes, Vec<Error>> {
         let mut errors = vec![];
 
         for dep in self.pending_deps {
@@ -134,23 +134,7 @@ impl SystemBuilder {
             return Err(errors);
         }
 
-        let mut sys = TypeSystem::new();
-        for (sem_id, info) in self.types {
-            match sys.insert_unchecked(sem_id, info.ty) {
-                Err(err) => {
-                    errors.push(err.into());
-                    return Err(errors);
-                }
-                Ok(true) => unreachable!("repeated type"),
-                Ok(false) => {}
-            }
-        }
-
-        if errors.is_empty() {
-            Ok(sys)
-        } else {
-            Err(errors)
-        }
+        SymbolicTypes::with(self.imported_deps, self.types).map_err(|err| vec![err.into()])
     }
 
     fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>

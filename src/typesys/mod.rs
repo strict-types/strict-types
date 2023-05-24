@@ -23,7 +23,9 @@
 mod type_sys;
 mod translate;
 mod id;
+mod symbols;
 
 pub use id::TypeSysId;
+pub use symbols::{SymbolSystem, SymbolicTypes};
 pub use translate::{Error, SystemBuilder, TypeOrig};
-pub use type_sys::{TypeFqn, TypeSymbols, TypeSystem};
+pub use type_sys::{SymTy, TypeFqn, TypeSystem};

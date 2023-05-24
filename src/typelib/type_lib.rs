@@ -335,6 +335,15 @@ impl Dependency {
     pub fn with(id: TypeLibId, name: LibName) -> Self { Dependency { id, name } }
 }
 
+impl From<&TypeLib> for Dependency {
+    fn from(lib: &TypeLib) -> Self {
+        Dependency {
+            id: lib.id(),
+            name: lib.name.clone(),
+        }
+    }
+}
+
 pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]

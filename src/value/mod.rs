@@ -48,8 +48,7 @@ pub(self) mod test_helpers {
     use encoding::{StrictDeserialize, StrictSerialize};
 
     use crate::typelib::LibBuilder;
-    use crate::typesys::SystemBuilder;
-    use crate::TypeSystem;
+    use crate::typesys::{SymbolicTypes, SystemBuilder};
 
     #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
     #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -84,7 +83,7 @@ pub(self) mod test_helpers {
         }
     }
 
-    pub fn test_system() -> TypeSystem {
+    pub fn test_system() -> SymbolicTypes {
         let lib = LibBuilder::new("TestLib").transpile::<Nominal>().compile(none!()).unwrap();
         SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
     }
