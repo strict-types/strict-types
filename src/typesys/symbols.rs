@@ -28,7 +28,8 @@ use amplify::confinement::{MediumOrdSet, SmallOrdSet};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
 use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol};
-use crate::{Dependency, SemId, TypeSystem};
+use crate::typify::TypeSpec;
+use crate::{Dependency, SemId, Ty, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
@@ -71,8 +72,8 @@ impl SymbolSystem {
         Ok(())
     }
 
-    pub fn get(&self, name: &'static str) -> Option<&SemId> {
-        let needle = TypeFqn::from(name);
+    pub fn get(&self, spec: impl Into<TypeFqn>) -> Option<&SemId> {
+        let needle = spec.into();
         self.symbols.iter().find(|fqid| fqid.fqn.as_ref() == Some(&needle)).map(|fqid| &fqid.id)
     }
 }
@@ -118,13 +119,19 @@ impl SymbolicTypes {
 
     pub fn new(types: TypeSystem, symbols: SymbolSystem) -> Self { Self { symbols, types } }
 
-    pub fn get(&self, name: &'static str) -> Option<&SemId> { self.symbols.get(name) }
+    pub fn get(&self, spec: impl Into<TypeSpec>) -> Option<&Ty<SemId>> {
+        let sem_id = self.to_sem_id(spec)?;
+        self.types.get(sem_id)
+    }
+
+    pub fn resolve(&self, fqn: impl Into<TypeFqn>) -> Option<&SemId> { self.symbols.get(fqn) }
+
+    pub fn to_sem_id(&self, spec: impl Into<TypeSpec>) -> Option<SemId> {
+        match spec.into() {
+            TypeSpec::SemId(sem_id) => Some(sem_id),
+            TypeSpec::Fqn(fqn) => self.resolve(fqn).copied(),
+        }
+    }
 
     pub fn into_type_system(self) -> TypeSystem { self.types }
-}
-
-impl Index<&'static str> for SymbolicTypes {
-    type Output = SemId;
-
-    fn index(&self, index: &'static str) -> &Self::Output { &self.symbols[index] }
 }

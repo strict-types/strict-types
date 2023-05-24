@@ -24,6 +24,7 @@
 //! dependencies
 
 use std::fmt::{self, Display, Formatter};
+use std::ops::Index;
 
 use amplify::confinement::{self, MediumOrdMap, U32};
 use amplify::num::u24;
@@ -117,6 +118,18 @@ impl TypeSystem {
         ty: Ty<SemId>,
     ) -> Result<bool, confinement::Error> {
         self.0.insert(sem_id, ty).map(|r| r.is_some())
+    }
+
+    pub fn get(&self, sem_id: SemId) -> Option<&Ty<SemId>> { self.0.get(&sem_id) }
+}
+
+impl Index<SemId> for TypeSystem {
+    type Output = Ty<SemId>;
+
+    fn index(&self, index: SemId) -> &Self::Output {
+        self.get(index).unwrap_or_else(|| {
+            panic!("type with semantic id {index} is not a part of the type system")
+        })
     }
 }
 

@@ -125,30 +125,6 @@ impl PrimitiveValue for Primitive {
 }
 
 impl TypeSystem {
-    /*
-    pub fn to_sem_id(&self, spec: &TypeSpec) -> Option<SemId> {
-        match spec {
-            TypeSpec::SemId(sem_id) => Some(*sem_id),
-            TypeSpec::Fqn(fqn) => self
-                .as_inner()
-                .iter()
-                .find(|(_, info)| info.orig.iter().any(|f| f == fqn))
-                .map(|(id, _)| id)
-                .copied(),
-        }
-    }
-
-    pub fn find(&self, spec: &TypeSpec) -> Option<&TypeInfo> {
-        match spec {
-            TypeSpec::SemId(find_id) => {
-                self.as_inner().iter().find(|(my_id, _)| *my_id == find_id).map(|(_, info)| info)
-            }
-            TypeSpec::Fqn(fqn) => {
-                self.as_inner().values().find(|info| info.orig.iter().any(|f| f == fqn))
-            }
-        }
-    }
-     */
     pub fn find(&self, sem_id: SemId) -> Option<&Ty<SemId>> {
         self.as_inner().iter().find(|(my_id, _)| **my_id == sem_id).map(|(_, ty)| ty)
     }
