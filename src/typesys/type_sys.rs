@@ -25,7 +25,7 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement::{self, Confined, MediumOrdMap, SmallOrdSet, U32};
+use amplify::confinement::{self, MediumOrdMap, U32};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
@@ -64,32 +64,25 @@ impl From<&'static str> for TypeFqn {
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct SymTy {
-    /// Original type name.
-    pub name: Option<TypeName>,
-    /// Type origin providing information from which libraries the type is originating from. The
-    /// origin information may be empty for the unnamed types. Multiple symbols are possible
-    /// when several libraries define a type with the same semantic structure.
-    pub orig: SmallOrdSet<LibName>,
+    /// Type origin providing information from which library and under which name the type is
+    /// originating from. The origin information may be empty for the unnamed types.
+    pub orig: Option<TypeFqn>,
     /// Type definition, potentially referencing other types via semantic type id.
     pub ty: Ty<SemId>,
 }
 
 impl SymTy {
     pub fn named(lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> SymTy {
-        Self::with(Some(ty_name), Some(lib_name), ty)
+        Self::with(Some(TypeFqn::with(lib_name, ty_name)), ty)
     }
 
-    pub fn unnamed(ty: Ty<SemId>) -> SymTy { Self::with(None, vec![], ty) }
+    pub fn unnamed(ty: Ty<SemId>) -> SymTy { Self::with(None::<TypeFqn>, ty) }
 
-    pub fn with(
-        name: Option<TypeName>,
-        orig: impl IntoIterator<Item = LibName>,
-        ty: Ty<SemId>,
-    ) -> SymTy {
-        let orig = Confined::try_from_iter(orig).expect(
-            "number of original libraries provided to `TypeInfo::with` must not exceed 256",
-        );
-        SymTy { name, orig, ty }
+    pub fn with(orig: Option<impl Into<TypeFqn>>, ty: Ty<SemId>) -> SymTy {
+        SymTy {
+            orig: orig.map(|o| o.into()),
+            ty,
+        }
     }
 }
 

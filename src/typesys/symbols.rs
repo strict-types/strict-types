@@ -24,10 +24,10 @@ use std::collections::BTreeMap;
 use std::ops::Index;
 
 use amplify::confinement;
-use amplify::confinement::{MediumOrdMap, SmallOrdSet, TinyOrdSet};
+use amplify::confinement::{MediumOrdSet, SmallOrdSet};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
-use crate::typesys::{SymTy, TypeFqn};
+use crate::typesys::{SymTy, TypeFqid, TypeFqn};
 use crate::{Dependency, SemId, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -36,7 +36,7 @@ use crate::{Dependency, SemId, TypeSystem};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct SymbolSystem {
     libs: SmallOrdSet<Dependency>,
-    symbols: MediumOrdMap<SemId, TinyOrdSet<TypeFqn>>,
+    symbols: MediumOrdSet<TypeFqid>,
 }
 
 impl StrictSerialize for SymbolSystem {}
@@ -55,19 +55,17 @@ impl SymbolSystem {
     pub(crate) fn update_unchecked(
         &mut self,
         sem_id: SemId,
-        symbols: TinyOrdSet<TypeFqn>,
+        orig: Option<TypeFqn>,
     ) -> Result<(), confinement::Error> {
-        let mut sym = self.symbols.remove(&sem_id).ok().flatten().unwrap_or_default();
-        sym.extend(symbols)?;
-        self.symbols.insert(sem_id, sym).map(|_| ())
+        self.symbols.push(TypeFqid {
+            id: sem_id,
+            fqn: orig,
+        })
     }
 
     pub fn get(&self, name: &'static str) -> Option<&SemId> {
         let needle = TypeFqn::from(name);
-        self.symbols
-            .iter()
-            .find(|(_, symbols)| symbols.iter().any(|f| f == &needle))
-            .map(|(id, _)| id)
+        self.symbols.iter().find(|fqid| fqid.fqn.as_ref() == Some(&needle)).map(|fqid| &fqid.id)
     }
 }
 
@@ -101,7 +99,7 @@ impl SymbolicTypes {
 
         for (sem_id, info) in types {
             sys.insert_unchecked(sem_id, info.ty)?;
-            sym.update_unchecked(sem_id, info.symbols)?;
+            sym.update_unchecked(sem_id, info.orig)?;
         }
 
         Ok(Self {

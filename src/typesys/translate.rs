@@ -33,42 +33,43 @@ use crate::typesys::symbols::SymbolicTypes;
 use crate::typesys::{SymTy, TypeFqn};
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
 
-/// Information about type origin.
+/// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeOrig {
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+pub struct TypeFqid {
     pub id: SemId,
-    pub orig: Option<TypeFqn>,
+    pub fqn: Option<TypeFqn>,
 }
 
-impl TypeOrig {
-    pub fn unnamed(id: SemId) -> TypeOrig { TypeOrig { id, orig: None } }
+impl TypeFqid {
+    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
 
-    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeOrig {
-        TypeOrig {
+    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
+        TypeFqid {
             id,
-            orig: Some(TypeFqn::with(lib, name)),
+            fqn: Some(TypeFqn::with(lib, name)),
         }
     }
 }
 
-impl HashId for TypeOrig {
+impl HashId for TypeFqid {
     fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
 }
 
-impl TypeRef for TypeOrig {}
+impl TypeRef for TypeFqid {}
 
-impl Display for TypeOrig {
+impl Display for TypeFqid {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self.orig {
+        match &self.fqn {
             Some(fqn) => Display::fmt(fqn, f),
             None => Display::fmt(&self.id, f),
         }
     }
 }
 
-impl Translate<TypeOrig> for SemId {
+impl Translate<TypeFqid> for SemId {
     type Builder = ();
     type Context = TypeSystem;
     type Error = Error;
@@ -77,11 +78,11 @@ impl Translate<TypeOrig> for SemId {
         self,
         _builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<TypeOrig, Self::Error> {
+    ) -> Result<TypeFqid, Self::Error> {
         if !ctx.contains_key(&self) {
             Err(Error::UnknownType(self))
         } else {
-            Ok(TypeOrig::unnamed(self))
+            Ok(TypeFqid::unnamed(self))
         }
     }
 }
