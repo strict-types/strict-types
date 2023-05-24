@@ -194,7 +194,7 @@ impl Translate<LibRef> for CompileRef {
                 let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(LibRef::Named(*id))
             }
-            CompileRef::Extern(ext) => Ok(LibRef::Extern(ext)),
+            CompileRef::Extern(ext) => Ok(LibRef::Extern(ext.into())),
         }
     }
 }
@@ -220,7 +220,7 @@ impl Translate<InlineRef> for CompileRef {
                 let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(InlineRef::Named(*id))
             }
-            CompileRef::Extern(ext) => Ok(InlineRef::Extern(ext)),
+            CompileRef::Extern(ext) => Ok(InlineRef::Extern(ext.into())),
         }
     }
 }
@@ -246,7 +246,7 @@ impl Translate<InlineRef1> for CompileRef {
                 let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(InlineRef1::Named(*id))
             }
-            CompileRef::Extern(ext) => Ok(InlineRef1::Extern(ext)),
+            CompileRef::Extern(ext) => Ok(InlineRef1::Extern(ext.into())),
         }
     }
 }
@@ -272,7 +272,7 @@ impl Translate<InlineRef2> for CompileRef {
                 let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
                 Ok(InlineRef2::Named(*id))
             }
-            CompileRef::Extern(ext) => Ok(InlineRef2::Extern(ext)),
+            CompileRef::Extern(ext) => Ok(InlineRef2::Extern(ext.into())),
         }
     }
 }

@@ -35,7 +35,7 @@ use strict_encoding::{
 
 use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typelib::ExternRef;
+use crate::typelib::LinkRef;
 use crate::{Dependency, SemId, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
@@ -242,10 +242,11 @@ impl BuilderParent for LibBuilder {
         };
         match (T::STRICT_LIB_NAME, T::strict_name()) {
             (LIB_EMBEDDED, _) | (_, None) => _compile(self),
-            (lib, Some(_name)) if lib != self.lib.as_str() => {
+            (lib, Some(name)) if lib != self.lib.as_str() => {
                 let (me, r) = _compile(self);
-                let lib_id = me.dependency_id(&libname!(lib));
-                (me, CompileRef::Extern(ExternRef::with(lib_id, r.sem_id())))
+                let lib_name = libname!(lib);
+                let lib_id = me.dependency_id(&lib_name);
+                (me, CompileRef::Extern(LinkRef::with(lib_name, name, lib_id, r.sem_id())))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
             (_, Some(_)) => _compile(self),
@@ -274,7 +275,7 @@ impl BuilderParent for LibBuilder {
                     .insert(name.clone(), id)
                     .expect("too many types");
                 let lib_id = self.dependency_id(&lib);
-                CompileRef::Extern(ExternRef::with(lib_id, id))
+                CompileRef::Extern(LinkRef::with(lib, name, lib_id, id))
             }
             (_, None) => CompileRef::Embedded(Box::new(ty)),
         };

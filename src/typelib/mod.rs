@@ -28,7 +28,7 @@ pub mod compile;
 mod serialize;
 
 pub use build::LibBuilder;
-pub use compile::{CompileRef, CompileType};
+pub use compile::{CompileRef, CompileType, LinkRef};
 pub use id::TypeLibId;
 pub use serialize::{parse_args, StlFormat, UnknownFormat};
 pub use translate::TranslateError;

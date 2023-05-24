@@ -25,7 +25,7 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::Confined;
 use amplify::RawArray;
-use encoding::LIB_EMBEDDED;
+use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
@@ -34,7 +34,7 @@ use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, TranslateError, TypeIndex};
 use crate::typelib::type_lib::TypeMap;
 use crate::typelib::ExternRef;
-use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
+use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("data {name} :: {ty}")]
@@ -53,6 +53,36 @@ impl Default for Box<Ty<CompileRef>> {
     fn default() -> Self { panic!("default method shouldn't be called on this type") }
 }
 
+#[derive(Clone, Eq, PartialEq, Debug, Display)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+#[display("{lib_name}.{ty_name}")]
+pub struct LinkRef {
+    pub lib_name: LibName,
+    pub ty_name: TypeName,
+    pub lib_id: TypeLibId,
+    pub sem_id: SemId,
+}
+
+impl HashId for LinkRef {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(self.sem_id.as_slice()); }
+}
+
+impl LinkRef {
+    pub fn with(lib_name: LibName, ty_name: TypeName, lib_id: TypeLibId, sem_id: SemId) -> LinkRef {
+        LinkRef {
+            lib_name,
+            ty_name,
+            lib_id,
+            sem_id,
+        }
+    }
+}
+
+impl From<LinkRef> for ExternRef {
+    fn from(r: LinkRef) -> Self { ExternRef::with(r.lib_id, r.sem_id) }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { CompileRef::Named(TypeName::strict_dumb()) })]
@@ -61,7 +91,7 @@ pub enum CompileRef {
     Embedded(Box<Ty<CompileRef>>),
     #[from]
     Named(TypeName),
-    Extern(ExternRef),
+    Extern(LinkRef),
 }
 
 impl CompileRef {
