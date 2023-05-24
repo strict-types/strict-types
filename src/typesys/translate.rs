@@ -29,7 +29,8 @@ use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
-use crate::typesys::{TypeFqn, TypeInfo};
+use crate::typesys::{TypeFqn, TypeSymbols};
+use crate::typesys::{SymTy, TypeFqn};
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
 
 /// Information about type origin.
@@ -89,7 +90,7 @@ impl Translate<TypeOrig> for SemId {
 pub struct SystemBuilder {
     pending_deps: BTreeSet<Dependency>,
     imported_deps: BTreeSet<LibName>,
-    types: BTreeMap<SemId, TypeInfo>,
+    types: BTreeMap<SemId, SymTy>,
 }
 
 impl SystemBuilder {
@@ -105,7 +106,7 @@ impl SystemBuilder {
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
             let ty = ty.translate(&mut self, &())?;
-            let info = TypeInfo::named(lib.name.clone(), ty_name.clone(), ty);
+            let info = TypeSymbols::named(lib.name.clone(), ty_name.clone(), ty);
             self.types.insert(id, info);
         }
 
@@ -159,7 +160,7 @@ impl SystemBuilder {
         // run for nested types
         let ty = inline_ty.translate(self, &())?;
         // add to system
-        self.types.insert(id, TypeInfo::unnamed(ty));
+        self.types.insert(id, SymTy::unnamed(ty));
         Ok(id)
     }
 }

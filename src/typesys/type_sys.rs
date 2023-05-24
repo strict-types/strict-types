@@ -58,32 +58,33 @@ impl From<&'static str> for TypeFqn {
     }
 }
 
-/// Information about a type participating type system.
+/// Type coupled with symbolic information.
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeInfo {
-    /// Type origin: from which libraries under which name the type is originating from.
-    /// The origin information may be empty for the unnamed types. Multiple origins are possible
-    /// when several libraries define a type with the same semantic structure.
-    pub orig: TinyOrdSet<TypeFqn>,
+pub struct SymTy {
+    /// Type symbols providing information from which libraries under which name the type is
+    /// originating from. The origin information may be empty for the unnamed types. Multiple
+    /// symbols are possible when several libraries define a type with the same semantic
+    /// structure.
+    pub symbols: TinyOrdSet<TypeFqn>,
     /// Type definition, potentially referencing other types via semantic type id.
     pub ty: Ty<SemId>,
 }
 
-impl TypeInfo {
-    pub fn named(lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> TypeInfo {
+impl SymTy {
+    pub fn named(lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> SymTy {
         Self::with(Some(TypeFqn::with(lib_name, ty_name)), ty)
     }
 
-    pub fn unnamed(ty: Ty<SemId>) -> TypeInfo { Self::with(None, ty) }
+    pub fn unnamed(ty: Ty<SemId>) -> SymTy { Self::with(None, ty) }
 
-    pub fn with(orig: impl IntoIterator<Item = TypeFqn>, ty: Ty<SemId>) -> TypeInfo {
+    pub fn with(orig: impl IntoIterator<Item = TypeFqn>, ty: Ty<SemId>) -> SymTy {
         let orig = Confined::try_from_iter(orig).expect(
             "number of original libraries provided to `TypeInfo::with` must not exceed 256",
         );
-        TypeInfo { orig, ty }
+        SymTy { symbols: orig, ty }
     }
 }
 
