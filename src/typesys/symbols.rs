@@ -90,6 +90,46 @@ impl Index<&'static str> for SymbolSystem {
     }
 }
 
+impl Display for SymbolSystem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f)?;
+        for dep in &self.libs {
+            writeln!(f, "{dep} as {}", dep.name)?;
+        }
+        writeln!(f, "{{--")?;
+        for sym in &self.symbols {
+            if let Some(fqn) = &sym.fqn {
+                writeln!(f, "  {} => {}", fqn, sym.id)?;
+            }
+        }
+        writeln!(f, "--}}")
+    }
+}
+
+#[cfg(feature = "base64")]
+impl fmt::UpperHex for SymbolSystem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use base64::Engine;
+
+        writeln!(f, "-----BEGIN STRICT SYMBOL SYSTEM-----")?;
+        writeln!(f)?;
+
+        let data = self.to_strict_serialized::<U32>().expect("in-memory");
+        let engine = base64::engine::general_purpose::STANDARD;
+        let data = engine.encode(data);
+        let mut data = data.as_str();
+        while data.len() >= 64 {
+            let (line, rest) = data.split_at(64);
+            writeln!(f, "{}", line)?;
+            data = rest;
+        }
+        writeln!(f, "{}", data)?;
+
+        writeln!(f, "\n-----END STRICT SYMBOL SYSTEM-----")?;
+        Ok(())
+    }
+}
+
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
 #[getter(prefix = "as_")]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
