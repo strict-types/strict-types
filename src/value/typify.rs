@@ -131,7 +131,7 @@ impl TypeSystem {
             TypeSpec::Fqn(fqn) => self
                 .as_inner()
                 .iter()
-                .find(|(_, info)| info.fqn.as_ref() == Some(fqn))
+                .find(|(_, info)| info.orig.iter().any(|f| f == fqn))
                 .map(|(id, _)| id)
                 .copied(),
         }
@@ -143,7 +143,7 @@ impl TypeSystem {
                 self.as_inner().iter().find(|(my_id, _)| *my_id == find_id).map(|(_, info)| info)
             }
             TypeSpec::Fqn(fqn) => {
-                self.as_inner().values().find(|info| info.fqn.as_ref() == Some(fqn))
+                self.as_inner().values().find(|info| info.orig.iter().any(|f| f == fqn))
             }
         }
     }

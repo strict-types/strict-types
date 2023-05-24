@@ -26,12 +26,12 @@
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
-use amplify::confinement::MediumOrdMap;
+use amplify::confinement::{Confined, MediumOrdMap, TinyOrdSet};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::typesys::TypeFqid;
+use crate::typesys::TypeOrig;
 use crate::{SemId, Translate, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -60,17 +60,27 @@ impl From<&'static str> for TypeFqn {
     }
 }
 
+/// Information about a type participating type system.
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeInfo {
-    pub fqn: Option<TypeFqn>,
+    /// Type origin: from which libraries under which name the type is originating from.
+    /// The origin information may be empty for the unnamed types. Multiple origins are possible
+    /// when several libraries define a type with the same semantic structure.
+    pub orig: TinyOrdSet<TypeFqn>,
+    /// Type definition, potentially referencing other types via semantic type id.
     pub ty: Ty<SemId>,
 }
 
 impl TypeInfo {
-    pub fn with(fqn: Option<TypeFqn>, ty: Ty<SemId>) -> TypeInfo { TypeInfo { fqn, ty } }
+    pub fn with(orig: impl IntoIterator<Item = TypeFqn>, ty: Ty<SemId>) -> TypeInfo {
+        let orig = Confined::try_from_iter(orig).expect(
+            "number of original libraries provided to `TypeInfo::with` must not exceed 256",
+        );
+        TypeInfo { orig, ty }
+    }
 }
 
 /// Type system represents a set of strict types assembled from multiple
@@ -81,6 +91,7 @@ impl TypeInfo {
 ///
 /// - Total number of types do not exceed 2^24-1;
 /// - Strict-serialized size is less than 2^24 bytes;
+/// - A type with the same semantic id can't appear in more than 256 libraries;
 /// - Type system is complete (i.e. no type references a type which is not a part of the system).
 #[derive(Wrapper, Clone, Eq, PartialEq, Debug, Default, From)]
 #[wrapper(Deref)]
@@ -99,16 +110,15 @@ impl TypeSystem {
 
     pub(super) fn insert_unchecked(
         &mut self,
-        fqid: TypeFqid,
+        ty_orig: TypeOrig,
         ty: Ty<SemId>,
     ) -> Result<bool, confinement::Error> {
-        self.0.insert(fqid.id, TypeInfo::with(fqid.fqn, ty)).map(|res| res.is_some())
+        self.0.insert(ty_orig.id, TypeInfo::with(ty_orig.orig, ty)).map(|res| res.is_some())
     }
 
-    pub fn id_by_name(&self, name: &str) -> Option<SemId> {
-        self.iter()
-            .find(|(_, ty)| ty.fqn.as_ref().map(|f| f.to_string() == name).unwrap_or_default())
-            .map(|(id, _)| *id)
+    pub fn id_by_name(&self, name: &'static str) -> Option<SemId> {
+        let needle = TypeFqn::from(name);
+        self.iter().find(|(_, ty)| ty.orig.iter().any(|f| f == &needle)).map(|(id, _)| *id)
     }
 }
 
@@ -118,11 +128,13 @@ impl Display for TypeSystem {
         writeln!(f)?;
         for (id, info) in &self.0 {
             let ty = info.ty.clone().translate(&mut (), self).expect("type system inconsistency");
-            if let Some(fqn) = &info.fqn {
-                writeln!(f, "-- {id:0}")?;
-                writeln!(f, "data {fqn} :: {:0}", ty)?;
-            } else {
+            if info.orig.is_empty() {
                 writeln!(f, "data {id:0} :: {:0}", ty)?;
+            } else {
+                writeln!(f, "-- {id:0}")?;
+                for fqn in &info.orig {
+                    writeln!(f, "data {fqn} :: {:0}", ty)?;
+                }
             }
         }
         Ok(())

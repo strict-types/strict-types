@@ -27,12 +27,12 @@ use encoding::stl::{
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
 use crate::typelib::{LibBuilder, TranslateError};
-use crate::typesys::{TypeFqid, TypeSysId};
+use crate::typesys::{TypeOrig, TypeSysId};
 use crate::{TypeLib, TypeSystem};
 
 pub const LIB_ID_STD: &str = "quota_conan_fashion_3TZmAPf8EkQZnbGS1g8uMGes6jEWPqNkFB6pLUKeoefg";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "float_cement_bishop_FaVugsR69ooyVbFpDDMcf2wYbDFMTEvFbNwrb6uRSpWt";
+    "smoke_april_direct_28BL9Jmzm4fejcqRY41RKaYsCyBJnkgEE9Yf3bGMyXTy";
 
 fn _std_stl() -> Result<TypeLib, TranslateError> {
     LibBuilder::new(libname!(LIB_NAME_STD))
@@ -59,7 +59,7 @@ fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
-        .transpile::<TypeFqid>()
+        .transpile::<TypeOrig>()
         .compile(none!())
 }
 

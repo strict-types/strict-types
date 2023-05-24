@@ -32,41 +32,42 @@ use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
 use crate::typesys::TypeFqn;
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
 
+/// Information about type origin.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeFqid {
+pub struct TypeOrig {
     pub id: SemId,
-    pub fqn: Option<TypeFqn>,
+    pub orig: Option<TypeFqn>,
 }
 
-impl TypeFqid {
-    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
+impl TypeOrig {
+    pub fn unnamed(id: SemId) -> TypeOrig { TypeOrig { id, orig: None } }
 
-    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
-        TypeFqid {
+    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeOrig {
+        TypeOrig {
             id,
-            fqn: Some(TypeFqn::with(lib, name)),
+            orig: Some(TypeFqn::with(lib, name)),
         }
     }
 }
 
-impl HashId for TypeFqid {
+impl HashId for TypeOrig {
     fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
 }
 
-impl TypeRef for TypeFqid {}
+impl TypeRef for TypeOrig {}
 
-impl Display for TypeFqid {
+impl Display for TypeOrig {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match &self.fqn {
+        match &self.orig {
             Some(fqn) => Display::fmt(fqn, f),
             None => Display::fmt(&self.id, f),
         }
     }
 }
 
-impl Translate<TypeFqid> for SemId {
+impl Translate<TypeOrig> for SemId {
     type Builder = ();
     type Context = TypeSystem;
     type Error = Error;
@@ -75,12 +76,12 @@ impl Translate<TypeFqid> for SemId {
         self,
         _builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<TypeFqid, Self::Error> {
+    ) -> Result<TypeOrig, Self::Error> {
         ctx.iter()
             .find(|(id, _)| **id == self)
-            .map(|(id, info)| TypeFqid {
+            .map(|(id, info)| TypeOrig {
                 id: *id,
-                fqn: info.fqn.clone(),
+                orig: info.orig.first().cloned(),
             })
             .ok_or(Error::UnknownType(self))
     }
@@ -90,7 +91,7 @@ impl Translate<TypeFqid> for SemId {
 pub struct SystemBuilder {
     pending_deps: BTreeSet<Dependency>,
     imported_deps: BTreeSet<LibName>,
-    types: BTreeMap<TypeFqid, Ty<SemId>>,
+    types: BTreeMap<TypeOrig, Ty<SemId>>,
 }
 
 impl SystemBuilder {
@@ -106,7 +107,7 @@ impl SystemBuilder {
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
             let ty = ty.translate(&mut self, &())?;
-            let fqid = TypeFqid::named(id, lib.name.clone(), ty_name.clone());
+            let fqid = TypeOrig::named(id, lib.name.clone(), ty_name.clone());
             self.types.insert(fqid, ty);
         }
 
@@ -160,7 +161,7 @@ impl SystemBuilder {
         // run for nested types
         let ty = inline_ty.translate(self, &())?;
         // add to system
-        self.types.insert(TypeFqid::unnamed(id), ty);
+        self.types.insert(TypeOrig::unnamed(id), ty);
         Ok(id)
     }
 }
