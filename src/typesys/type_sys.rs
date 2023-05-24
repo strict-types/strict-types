@@ -120,13 +120,6 @@ impl TypeSystem {
     ) -> Result<bool, confinement::Error> {
         self.0.insert(sem_id, ty).map(|r| r.is_some())
     }
-
-    /*
-    pub fn id_by_name(&self, name: &'static str) -> Option<SemId> {
-        let needle = TypeFqn::from(name);
-        self.iter().find(|(_, ty)| ty.orig.iter().any(|f| f == &needle)).map(|(id, _)| *id)
-    }
-     */
 }
 
 impl Display for TypeSystem {

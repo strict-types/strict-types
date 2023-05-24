@@ -21,6 +21,7 @@
 // limitations under the License.
 
 use std::collections::BTreeMap;
+use std::ops::Index;
 
 use amplify::confinement;
 use amplify::confinement::{MediumOrdMap, SmallOrdSet, TinyOrdSet};
@@ -60,6 +61,22 @@ impl SymbolSystem {
         sym.extend(symbols)?;
         self.symbols.insert(sem_id, sym).map(|_| ())
     }
+
+    pub fn get(&self, name: &'static str) -> Option<&SemId> {
+        let needle = TypeFqn::from(name);
+        self.symbols
+            .iter()
+            .find(|(_, symbols)| symbols.iter().any(|f| f == &needle))
+            .map(|(id, _)| id)
+    }
+}
+
+impl Index<&'static str> for SymbolSystem {
+    type Output = SemId;
+
+    fn index(&self, index: &'static str) -> &Self::Output {
+        self.get(index).unwrap_or_else(|| panic!("type {index} is absent in the type system"))
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -95,5 +112,13 @@ impl SymbolicTypes {
 
     pub fn new(types: TypeSystem, symbols: SymbolSystem) -> Self { Self { symbols, types } }
 
+    pub fn get(&self, name: &'static str) -> Option<&SemId> { self.symbols.get(name) }
+
     pub fn into_type_system(self) -> TypeSystem { self.types }
+}
+
+impl Index<&'static str> for SymbolicTypes {
+    type Output = SemId;
+
+    fn index(&self, index: &'static str) -> &Self::Output { &self.symbols[index] }
 }
