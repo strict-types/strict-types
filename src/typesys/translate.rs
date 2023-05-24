@@ -77,13 +77,11 @@ impl Translate<TypeOrig> for SemId {
         _builder: &mut Self::Builder,
         ctx: &Self::Context,
     ) -> Result<TypeOrig, Self::Error> {
-        ctx.iter()
-            .find(|(id, _)| **id == self)
-            .map(|(id, info)| TypeOrig {
-                id: *id,
-                orig: info.orig.first().cloned(),
-            })
-            .ok_or(Error::UnknownType(self))
+        if !ctx.contains_key(&self) {
+            Err(Error::UnknownType(self))
+        } else {
+            Ok(TypeOrig::unnamed(self))
+        }
     }
 }
 
@@ -136,8 +134,8 @@ impl SystemBuilder {
         }
 
         let mut sys = TypeSystem::new();
-        for (sem_id, ty) in self.types {
-            match sys.insert_unchecked(sem_id, ty) {
+        for (sem_id, info) in self.types {
+            match sys.insert_unchecked(sem_id, info.ty) {
                 Err(err) => {
                     errors.push(err.into());
                     return Err(errors);

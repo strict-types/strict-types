@@ -31,7 +31,7 @@ use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::{SemId, Translate, Ty};
+use crate::{SemId, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -103,7 +103,7 @@ impl TypeInfo {
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeSystem(MediumOrdMap<SemId, TypeInfo>);
+pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
 
 impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
@@ -116,17 +116,31 @@ impl TypeSystem {
     pub(super) fn insert_unchecked(
         &mut self,
         sem_id: SemId,
-        info: TypeInfo,
+        ty: Ty<SemId>,
     ) -> Result<bool, confinement::Error> {
-        self.0.insert(sem_id, info).map(|r| r.is_some())
+        self.0.insert(sem_id, ty).map(|r| r.is_some())
     }
 
+    /*
     pub fn id_by_name(&self, name: &'static str) -> Option<SemId> {
         let needle = TypeFqn::from(name);
         self.iter().find(|(_, ty)| ty.orig.iter().any(|f| f == &needle)).map(|(id, _)| *id)
     }
+     */
 }
 
+impl Display for TypeSystem {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typesys -- {:+}", self.id())?;
+        writeln!(f)?;
+        for (id, ty) in &self.0 {
+            writeln!(f, "data {id:0} :: {:0}", ty)?;
+        }
+        Ok(())
+    }
+}
+
+/*
 impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
@@ -145,6 +159,7 @@ impl Display for TypeSystem {
         Ok(())
     }
 }
+ */
 
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for TypeSystem {

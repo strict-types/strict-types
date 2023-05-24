@@ -64,8 +64,7 @@ impl TypeSystem {
         typed: &TypedVal,
         writer: &mut impl io::Write,
     ) -> Result<(), io::Error> {
-        let sem_id = self.to_sem_id(typed.as_spec()).expect("typified with some other TypeSystem");
-        self.strict_write_value(&typed.val, sem_id, writer)
+        self.strict_write_value(&typed.val, typed.orig.id, writer)
     }
 
     fn strict_write_value(
@@ -74,8 +73,8 @@ impl TypeSystem {
         sem_id: SemId,
         writer: &mut impl io::Write,
     ) -> Result<(), io::Error> {
-        let info = self.find(&sem_id.into()).expect("typified with some other TypeSystem");
-        self.strict_write_ty(val, &info.ty, writer)
+        let ty = self.find(sem_id).expect("typified with some other TypeSystem");
+        self.strict_write_ty(val, ty, writer)
     }
 
     fn strict_write_ty(

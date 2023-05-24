@@ -32,7 +32,7 @@ use indexmap::IndexMap;
 
 use super::StrictVal;
 use crate::ast::EnumVariants;
-use crate::typesys::{TypeFqn, TypeInfo};
+use crate::typesys::{TypeFqn, TypeOrig};
 use crate::value::{EnumTag, StrictNum};
 use crate::{SemId, Ty, TypeRef, TypeSystem};
 
@@ -49,14 +49,14 @@ pub enum TypeSpec {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[display("{val}@{spec}")]
+#[display("{val}@{orig}")]
 pub struct TypedVal {
-    pub(super) spec: TypeSpec,
+    pub(super) orig: TypeOrig,
     pub(super) val: StrictVal,
 }
 
 impl TypedVal {
-    pub fn as_spec(&self) -> &TypeSpec { &self.spec }
+    pub fn as_orig(&self) -> &TypeOrig { &self.orig }
     pub fn as_val(&self) -> &StrictVal { &self.val }
     pub fn unbox(self) -> StrictVal { self.val }
 }
@@ -125,6 +125,7 @@ impl PrimitiveValue for Primitive {
 }
 
 impl TypeSystem {
+    /*
     pub fn to_sem_id(&self, spec: &TypeSpec) -> Option<SemId> {
         match spec {
             TypeSpec::SemId(sem_id) => Some(*sem_id),
@@ -147,10 +148,14 @@ impl TypeSystem {
             }
         }
     }
+     */
+    pub fn find(&self, sem_id: SemId) -> Option<&Ty<SemId>> {
+        self.as_inner().iter().find(|(my_id, _)| **my_id == sem_id).map(|(_, ty)| ty)
+    }
 
-    pub fn typify(&self, val: StrictVal, spec: impl Into<TypeSpec>) -> Result<TypedVal, Error> {
-        let spec = spec.into();
-        let ty = &self.find(&spec).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.ty;
+    pub fn typify(&self, val: StrictVal, sem_id: SemId) -> Result<TypedVal, Error> {
+        let spec = TypeSpec::from(sem_id);
+        let ty = self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
         let val = match (val, ty) {
             // Primitive direct matches:
             (val @ StrictVal::Unit, Ty::Primitive(prim)) if *prim == UNIT => val,
@@ -235,18 +240,18 @@ impl TypeSystem {
                 AsciiString::from_ascii(s.as_bytes()).map_err(|err| err.ascii_error())?;
                 StrictVal::String(s)
             }
-            (StrictVal::List(s), Ty::List(ty, _)) => {
+            (StrictVal::List(s), Ty::List(id, _)) => {
                 let mut new = Vec::with_capacity(s.len());
                 for item in s {
-                    let checked = self.typify(item, TypeSpec::SemId(*ty))?;
+                    let checked = self.typify(item, *id)?;
                     new.push(checked.val);
                 }
                 StrictVal::List(new)
             }
-            (StrictVal::Set(s), Ty::Set(ty, _)) => {
+            (StrictVal::Set(s), Ty::Set(id, _)) => {
                 let mut new = Vec::with_capacity(s.len());
                 for item in s {
-                    let checked = self.typify(item, TypeSpec::SemId(*ty))?;
+                    let checked = self.typify(item, *id)?;
                     if new.contains(&checked.val) {
                         return Err(Error::RepeatedSetValue(spec, checked.val));
                     }
@@ -254,12 +259,12 @@ impl TypeSystem {
                 }
                 StrictVal::Set(new)
             }
-            (StrictVal::Map(s), Ty::Map(key_ty, ty, _)) => {
+            (StrictVal::Map(s), Ty::Map(key_ty, id, _)) => {
                 let mut new = Vec::<(StrictVal, StrictVal)>::with_capacity(s.len());
                 let key_id = key_ty.to_ty().id(None);
                 for (key, item) in s {
-                    let checked_key = self.typify(key, TypeSpec::SemId(key_id))?;
-                    let checked_val = self.typify(item, TypeSpec::SemId(*ty))?;
+                    let checked_key = self.typify(key, key_id)?;
+                    let checked_val = self.typify(item, *id)?;
                     if new.iter().find(|(k, _)| k == &checked_key.val).is_some() {
                         return Err(Error::RepeatedKeyValue(spec, checked_key.val));
                     }
@@ -340,7 +345,7 @@ impl TypeSystem {
             (StrictVal::Tuple(s) | StrictVal::List(s), Ty::Tuple(fields_req)) => {
                 let mut new = Vec::with_capacity(s.len());
                 for (item, id) in s.into_iter().zip(fields_req) {
-                    let checked = self.typify(item, TypeSpec::SemId(*id))?;
+                    let checked = self.typify(item, *id)?;
                     new.push(checked.val);
                 }
                 StrictVal::Tuple(new)
@@ -351,7 +356,7 @@ impl TypeSystem {
                     let Some(field) = fields_req.ty_by_name(&fname) else {
                         return Err(Error::ExtraField(fname));
                     };
-                    let checked = self.typify(item, TypeSpec::SemId(*field))?;
+                    let checked = self.typify(item, *field)?;
                     new.insert(fname, checked.val);
                 }
                 StrictVal::Struct(new)
@@ -366,7 +371,7 @@ impl TypeSystem {
                     let Some(field) = fields_req.ty_by_name(&fname) else {
                         return Err(Error::ExtraField(fname));
                     };
-                    let checked = self.typify(item, TypeSpec::SemId(*field))?;
+                    let checked = self.typify(item, *field)?;
                     new.insert(fname, checked.val);
                 }
                 StrictVal::Struct(new)
@@ -395,7 +400,10 @@ impl TypeSystem {
                 })
             }
         };
-        Ok(TypedVal { spec, val })
+        Ok(TypedVal {
+            orig: TypeOrig::unnamed(sem_id),
+            val,
+        })
     }
 }
 
