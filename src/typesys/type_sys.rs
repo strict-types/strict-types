@@ -25,8 +25,7 @@
 
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement;
-use amplify::confinement::{Confined, MediumOrdMap, TinyOrdSet};
+use amplify::confinement::{self, Confined, MediumOrdMap, TinyOrdSet, U32};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
@@ -172,7 +171,7 @@ impl fmt::UpperHex for TypeSystem {
         writeln!(f, "Id: {}", id)?;
         writeln!(f)?;
 
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
+        let data = self.to_strict_serialized::<U32>().expect("in-memory");
         let engine = base64::engine::general_purpose::STANDARD;
         let data = engine.encode(data);
         let mut data = data.as_str();
