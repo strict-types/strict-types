@@ -27,7 +27,7 @@ use amplify::confinement;
 use amplify::confinement::{MediumOrdSet, SmallOrdSet};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
-use crate::typesys::{SymTy, TypeFqn, TypeSymbol};
+use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol};
 use crate::{Dependency, SemId, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -56,11 +56,19 @@ impl SymbolSystem {
         &mut self,
         sem_id: SemId,
         orig: Option<TypeFqn>,
-    ) -> Result<(), confinement::Error> {
-        self.symbols.push(TypeSymbol {
+    ) -> Result<(), translate::Error> {
+        let sym = TypeSymbol {
             id: sem_id,
             fqn: orig,
-        })
+        };
+        if let Some(present) = self.symbols.get(&sym) {
+            return Err(translate::Error::RepeatedType {
+                new: sym,
+                present: present.clone(),
+            });
+        }
+        self.symbols.push(sym)?;
+        Ok(())
     }
 
     pub fn get(&self, name: &'static str) -> Option<&SemId> {
@@ -93,7 +101,7 @@ impl SymbolicTypes {
     pub(crate) fn with(
         libs: impl IntoIterator<Item = Dependency>,
         types: BTreeMap<SemId, SymTy>,
-    ) -> Result<Self, confinement::Error> {
+    ) -> Result<Self, translate::Error> {
         let mut sys = TypeSystem::new();
         let mut sym = SymbolSystem::with(libs)?;
 

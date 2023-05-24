@@ -242,6 +242,12 @@ pub enum Error {
     /// required dependency `{0}` was not imported into the builder.
     AbsentImport(Dependency),
 
+    /// type `{new}` is already exists in the type system as `{present}`.
+    RepeatedType {
+        new: TypeSymbol,
+        present: TypeSymbol,
+    },
+
     /// type with id `{0}` is not a part of the type system.
     UnknownType(SemId),
 
