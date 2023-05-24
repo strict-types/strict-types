@@ -27,7 +27,7 @@ use encoding::stl::{
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
 use crate::typelib::{LibBuilder, TranslateError};
-use crate::typesys::{TypeFqid, TypeSysId};
+use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{TypeLib, TypeSystem};
 
 pub const LIB_ID_STD: &str = "quota_conan_fashion_3TZmAPf8EkQZnbGS1g8uMGes6jEWPqNkFB6pLUKeoefg";
@@ -59,7 +59,7 @@ fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
-        .transpile::<TypeFqid>()
+        .transpile::<TypeSymbol>()
         .compile(none!())
 }
 

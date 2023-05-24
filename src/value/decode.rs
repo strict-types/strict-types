@@ -33,7 +33,7 @@ use encoding::constants::*;
 use encoding::{DecodeError, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
-use crate::typesys::TypeFqid;
+use crate::typesys::TypeSymbol;
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
@@ -337,7 +337,7 @@ impl TypeSystem {
 
         Ok(TypedVal {
             val,
-            orig: TypeFqid::unnamed(sem_id),
+            orig: TypeSymbol::unnamed(sem_id),
         })
     }
 }

@@ -38,29 +38,29 @@ use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, T
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeFqid {
+pub struct TypeSymbol {
     pub id: SemId,
     pub fqn: Option<TypeFqn>,
 }
 
-impl TypeFqid {
-    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
+impl TypeSymbol {
+    pub fn unnamed(id: SemId) -> TypeSymbol { TypeSymbol { id, fqn: None } }
 
-    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
-        TypeFqid {
+    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeSymbol {
+        TypeSymbol {
             id,
             fqn: Some(TypeFqn::with(lib, name)),
         }
     }
 }
 
-impl HashId for TypeFqid {
+impl HashId for TypeSymbol {
     fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
 }
 
-impl TypeRef for TypeFqid {}
+impl TypeRef for TypeSymbol {}
 
-impl Display for TypeFqid {
+impl Display for TypeSymbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.fqn {
             Some(fqn) => Display::fmt(fqn, f),
@@ -69,7 +69,7 @@ impl Display for TypeFqid {
     }
 }
 
-impl Translate<TypeFqid> for SemId {
+impl Translate<TypeSymbol> for SemId {
     type Builder = ();
     type Context = TypeSystem;
     type Error = Error;
@@ -78,11 +78,11 @@ impl Translate<TypeFqid> for SemId {
         self,
         _builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<TypeFqid, Self::Error> {
+    ) -> Result<TypeSymbol, Self::Error> {
         if !ctx.contains_key(&self) {
             Err(Error::UnknownType(self))
         } else {
-            Ok(TypeFqid::unnamed(self))
+            Ok(TypeSymbol::unnamed(self))
         }
     }
 }

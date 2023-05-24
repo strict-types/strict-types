@@ -32,7 +32,7 @@ use indexmap::IndexMap;
 
 use super::StrictVal;
 use crate::ast::EnumVariants;
-use crate::typesys::{TypeFqid, TypeFqn};
+use crate::typesys::{TypeFqn, TypeSymbol};
 use crate::value::{EnumTag, StrictNum};
 use crate::{SemId, Ty, TypeRef, TypeSystem};
 
@@ -51,12 +51,12 @@ pub enum TypeSpec {
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[display("{val}@{orig}")]
 pub struct TypedVal {
-    pub(super) orig: TypeFqid,
+    pub(super) orig: TypeSymbol,
     pub(super) val: StrictVal,
 }
 
 impl TypedVal {
-    pub fn as_orig(&self) -> &TypeFqid { &self.orig }
+    pub fn as_orig(&self) -> &TypeSymbol { &self.orig }
     pub fn as_val(&self) -> &StrictVal { &self.val }
     pub fn unbox(self) -> StrictVal { self.val }
 }
@@ -401,7 +401,7 @@ impl TypeSystem {
             }
         };
         Ok(TypedVal {
-            orig: TypeFqid::unnamed(sem_id),
+            orig: TypeSymbol::unnamed(sem_id),
             val,
         })
     }

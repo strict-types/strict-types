@@ -27,7 +27,7 @@ use amplify::confinement;
 use amplify::confinement::{MediumOrdSet, SmallOrdSet};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
-use crate::typesys::{SymTy, TypeFqid, TypeFqn};
+use crate::typesys::{SymTy, TypeFqn, TypeSymbol};
 use crate::{Dependency, SemId, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -36,7 +36,7 @@ use crate::{Dependency, SemId, TypeSystem};
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct SymbolSystem {
     libs: SmallOrdSet<Dependency>,
-    symbols: MediumOrdSet<TypeFqid>,
+    symbols: MediumOrdSet<TypeSymbol>,
 }
 
 impl StrictSerialize for SymbolSystem {}
@@ -57,7 +57,7 @@ impl SymbolSystem {
         sem_id: SemId,
         orig: Option<TypeFqn>,
     ) -> Result<(), confinement::Error> {
-        self.symbols.push(TypeFqid {
+        self.symbols.push(TypeSymbol {
             id: sem_id,
             fqn: orig,
         })
