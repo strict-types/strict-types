@@ -309,7 +309,7 @@ impl Display for LibRef {
     }
 }
 
-#[derive(Clone, PartialEq, Eq, Debug, Display)]
+#[derive(Clone, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("import {id:+}")]
@@ -317,6 +317,10 @@ impl Display for LibRef {
 pub struct Dependency {
     pub id: TypeLibId,
     pub name: LibName,
+}
+
+impl PartialEq for Dependency {
+    fn eq(&self, other: &Self) -> bool { self.id == other.id || self.name == other.name }
 }
 
 impl PartialOrd for Dependency {
