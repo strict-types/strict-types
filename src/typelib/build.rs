@@ -78,14 +78,6 @@ impl LibBuilder {
         T::strict_dumb().strict_encode(self).expect("memory encoding doesn't error")
     }
 
-    pub fn into_types(
-        self,
-    ) -> (TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>, SmallOrdMap<TypeName, CompileType>)
-    {
-        let extern_types = Confined::try_from(self.extern_types).expect("too many dependencies");
-        (extern_types, self.types)
-    }
-
     fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
         self.known_libs
             .iter()
