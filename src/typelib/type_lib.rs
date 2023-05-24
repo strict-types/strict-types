@@ -49,10 +49,7 @@ pub struct ExternRef {
 }
 
 impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        hasher.update(self.lib_id.as_slice());
-        hasher.update(self.sem_id.as_slice());
-    }
+    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.sem_id.as_slice()); }
 }
 
 impl ExternRef {

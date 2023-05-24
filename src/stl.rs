@@ -32,7 +32,7 @@ use crate::{TypeLib, TypeSystem};
 
 pub const LIB_ID_STD: &str = "quota_conan_fashion_3TZmAPf8EkQZnbGS1g8uMGes6jEWPqNkFB6pLUKeoefg";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "smoke_april_direct_28BL9Jmzm4fejcqRY41RKaYsCyBJnkgEE9Yf3bGMyXTy";
+    "pepper_sheriff_isotope_9znaENdRpBdtSqx9iLXhy2ZQpQG8YkdLhUj1nK1eFhU";
 
 fn _std_stl() -> Result<TypeLib, TranslateError> {
     LibBuilder::new(libname!(LIB_NAME_STD), none!())
