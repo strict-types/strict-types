@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap, TinyOrdSet};
+use amplify::confinement::{Confined, SmallOrdMap, TinyOrdSet};
 use amplify::Wrapper;
 use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
@@ -33,7 +33,7 @@ use strict_encoding::{
     UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, LIB_EMBEDDED,
 };
 
-use super::compile::{CompileRef, CompileType};
+use super::compile::CompileRef;
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::LinkRef;
 use crate::{Dependency, SemId, Ty, TypeLibId};
@@ -52,7 +52,7 @@ pub struct LibBuilder {
     lib: LibName,
     pub(super) known_libs: TinyOrdSet<Dependency>,
     pub(super) extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
-    pub(super) types: SmallOrdMap<TypeName, CompileType>,
+    pub(super) types: SmallOrdMap<TypeName, Ty<CompileRef>>,
     last_compiled: Option<CompileRef>,
 }
 
@@ -182,11 +182,7 @@ impl TypedWrite for LibBuilder {
             let ty = match r {
                 CompileRef::Embedded(ty) => ty.as_ref(),
                 CompileRef::Named(name) => {
-                    &self
-                        .types
-                        .get(name)
-                        .unwrap_or_else(|| panic!("unknown map key type '{name}'"))
-                        .ty
+                    &self.types.get(name).unwrap_or_else(|| panic!("unknown map key type '{name}'"))
                 }
                 CompileRef::Extern(ext) => {
                     self.last_compiled = Some(CompileRef::Extern(ext.clone()));
@@ -248,15 +244,13 @@ impl BuilderParent for LibBuilder {
     fn report_compiled(mut self, lib: LibName, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
         let r = match (lib, name) {
             (lib, Some(name)) if lib == self.lib => {
-                let new_ty = CompileType::new(name.clone(), ty);
                 if let Some(old_ty) = self.types.get(&name) {
                     assert_eq!(
-                        old_ty, &new_ty,
-                        "repeated type name '{name}' for two different types '{old_ty}' and \
-                         '{new_ty}'",
+                        old_ty, &ty,
+                        "repeated type name '{name}' for two different types '{old_ty}' and '{ty}'",
                     );
                 }
-                self.types.insert(name.clone(), new_ty).expect("too many types");
+                self.types.insert(name.clone(), ty).expect("too many types");
                 CompileRef::Named(name)
             }
             (lib, Some(name)) => {

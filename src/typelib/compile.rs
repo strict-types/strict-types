@@ -37,23 +37,6 @@ use crate::typelib::ExternRef;
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[display("data {name} :: {ty}")]
-pub struct CompileType {
-    pub name: TypeName,
-    pub ty: Ty<CompileRef>,
-}
-
-impl CompileType {
-    pub fn new(name: TypeName, ty: Ty<CompileRef>) -> Self { CompileType { name, ty } }
-}
-
-impl Default for Box<Ty<CompileRef>> {
-    /// Provided as a workaround required due to derivation of strict types for [`CompileRef`].
-    /// Always panics.
-    fn default() -> Self { panic!("default method shouldn't be called on this type") }
-}
-
-#[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("{lib_name}.{ty_name}")]
@@ -92,6 +75,12 @@ pub enum CompileRef {
     #[from]
     Named(TypeName),
     Extern(LinkRef),
+}
+
+impl Default for Box<Ty<CompileRef>> {
+    /// Provided as a workaround required due to derivation of strict types for [`CompileRef`].
+    /// Always panics.
+    fn default() -> Self { panic!("default method shouldn't be called on this type") }
 }
 
 impl CompileRef {
@@ -167,7 +156,7 @@ impl LibBuilder {
         let (known_libs, extern_types, types) = (self.known_libs, self.extern_types, self.types);
         let mut extern_types = Confined::try_from(extern_types).expect("too many dependencies");
         for el in types.values() {
-            for subty in el.ty.type_refs() {
+            for subty in el.type_refs() {
                 if let CompileRef::Named(name) = subty {
                     if !types.contains_key(name) {
                         return Err(TranslateError::UnknownType {
@@ -187,7 +176,7 @@ impl LibBuilder {
         while !old_types.is_empty() {
             let mut found = false;
             for name in &names {
-                let Some(ty) = old_types.get(name).map(|c| &c.ty) else {
+                let Some(ty) = old_types.get(name) else {
                     continue
                 };
                 let mut ctx = NestedContext {

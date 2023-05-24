@@ -28,9 +28,7 @@ use encoding::LibName;
 use strict_encoding::{InvalidIdent, TypeName};
 
 use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typelib::{
-    CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
-};
+use crate::typelib::{CompileRef, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef};
 use crate::{KeyTy, SemId, Translate, Ty, TypeRef};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
@@ -53,7 +51,7 @@ pub enum TranslateError {
     /// type `{unknown}` referenced inside `{within}` is not known
     UnknownType {
         unknown: TypeName,
-        within: CompileType,
+        within: Ty<CompileRef>,
     },
 
     /// return type indicating continue operation
