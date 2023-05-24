@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdSet};
-use blake3::Hasher;
+use commit_verify::Sha256;
 use encoding::{StrictDeserialize, StrictDumb, StrictSerialize};
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
@@ -49,7 +49,7 @@ pub struct ExternRef {
 }
 
 impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.sem_id.as_slice()); }
+    fn hash_id(&self, hasher: &mut Sha256) { hasher.input_raw(self.sem_id.as_slice()); }
 }
 
 impl ExternRef {
@@ -99,7 +99,7 @@ impl TypeRef for InlineRef {
 }
 
 impl HashId for InlineRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
+    fn hash_id(&self, hasher: &mut Sha256) {
         match self {
             InlineRef::Inline(ty) => ty.hash_id(hasher),
             InlineRef::Named(id) => id.hash_id(hasher),
@@ -161,7 +161,7 @@ impl TypeRef for InlineRef1 {
 }
 
 impl HashId for InlineRef1 {
-    fn hash_id(&self, hasher: &mut Hasher) {
+    fn hash_id(&self, hasher: &mut Sha256) {
         match self {
             InlineRef1::Inline(ty) => ty.hash_id(hasher),
             InlineRef1::Named(id) => id.hash_id(hasher),
@@ -223,11 +223,11 @@ impl TypeRef for InlineRef2 {
 }
 
 impl HashId for InlineRef2 {
-    fn hash_id(&self, hasher: &mut Hasher) {
+    fn hash_id(&self, hasher: &mut Sha256) {
         match self {
             InlineRef2::Inline(ty) => ty.hash_id(hasher),
             InlineRef2::Named(sem_id) => {
-                hasher.update(sem_id.as_slice());
+                hasher.input_raw(sem_id.as_slice());
             }
             InlineRef2::Extern(ext) => ext.hash_id(hasher),
         }
@@ -287,7 +287,7 @@ impl TypeRef for LibRef {
 }
 
 impl HashId for LibRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
+    fn hash_id(&self, hasher: &mut Sha256) {
         match self {
             LibRef::Inline(ty) => ty.hash_id(hasher),
             LibRef::Named(id) => id.hash_id(hasher),

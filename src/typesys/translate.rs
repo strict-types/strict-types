@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
-use blake3::Hasher;
+use commit_verify::Sha256;
 use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
@@ -57,7 +57,7 @@ impl TypeSymbol {
 }
 
 impl HashId for TypeSymbol {
-    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
+    fn hash_id(&self, hasher: &mut Sha256) { hasher.input_raw(self.id.as_slice()); }
 }
 
 impl TypeRef for TypeSymbol {}

@@ -24,6 +24,7 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use commit_verify::Sha256;
 use encoding::{StrictEncode, StrictWriter};
 use strict_encoding::STRICT_TYPES_LIB;
 
@@ -69,9 +70,9 @@ impl TypeSysId {
 
 impl TypeSystem {
     pub fn id(&self) -> TypeSysId {
-        let hasher = blake3::Hasher::new_keyed(&TYPESYS_ID_TAG);
+        let hasher = Sha256::from_tag(TYPESYS_ID_TAG);
         let engine = StrictWriter::with(usize::MAX, hasher);
         let engine = self.strict_encode(engine).expect("hasher do not error");
-        TypeSysId::from_raw_array(engine.unbox().finalize())
+        TypeSysId::from_raw_array(engine.unbox().finish())
     }
 }

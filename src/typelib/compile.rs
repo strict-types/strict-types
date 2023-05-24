@@ -25,7 +25,7 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::Confined;
 use amplify::RawArray;
-use blake3::Hasher;
+use commit_verify::Sha256;
 use encoding::LIB_EMBEDDED;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
@@ -68,9 +68,9 @@ impl CompileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
 
     pub fn sem_id(&self) -> SemId {
-        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        let mut hasher = Sha256::from_tag(SEM_ID_TAG);
         self.hash_id(&mut hasher);
-        SemId::from_raw_array(hasher.finalize())
+        SemId::from_raw_array(hasher.finish())
     }
 }
 
@@ -109,11 +109,11 @@ impl TypeRef for CompileRef {
 }
 
 impl HashId for CompileRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
+    fn hash_id(&self, hasher: &mut Sha256) {
         match self {
             CompileRef::Embedded(ty) => ty.hash_id(hasher),
             CompileRef::Named(name) => {
-                hasher.update(name.as_bytes());
+                hasher.input_raw(name.as_bytes());
             }
             CompileRef::Extern(ext) => ext.hash_id(hasher),
         }

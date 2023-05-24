@@ -40,7 +40,7 @@ fn reflect() {
 
     assert_eq!(
         lib.to_string(),
-        "typelib Test -- break_senior_ventura_HRmiM5TfA2egrTigBRuxVX192TNqJYNvtk17hu1b1hyf
+        "typelib Test -- lotus_chance_cinema_FPkSaFT19rf5n37WGMMsmyAyYXzcCQLFQ3kNoQ52ZdBN
 
 -- no dependencies
 
