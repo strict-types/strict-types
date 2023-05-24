@@ -86,7 +86,8 @@ impl Index<&'static str> for SymbolSystem {
     }
 }
 
-#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(Getters, Clone, Eq, PartialEq, Debug)]
+#[getter(prefix = "as_")]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]

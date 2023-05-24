@@ -33,7 +33,7 @@ use encoding::constants::*;
 use encoding::{DecodeError, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
-use crate::typesys::TypeSymbol;
+use crate::typesys::{SymbolicTypes, TypeSymbol};
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
@@ -52,6 +52,28 @@ pub enum Error {
 
     /// data provided to reify operation are not entirely consumed during deserialization.
     NotEntirelyConsumed,
+}
+
+impl SymbolicTypes {
+    pub fn strict_deserialize_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        data: &[u8],
+    ) -> Result<TypedVal, Error> {
+        let spec = spec.into();
+        let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
+        self.as_types().strict_deserialize_type(sem_id, data)
+    }
+
+    pub fn strict_read_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        d: &mut impl io::Read,
+    ) -> Result<TypedVal, Error> {
+        let spec = spec.into();
+        let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
+        self.as_types().strict_read_type(sem_id, d)
+    }
 }
 
 impl TypeSystem {
