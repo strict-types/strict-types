@@ -35,7 +35,7 @@ pub const LIB_ID_STRICT_TYPES: &str =
     "smoke_april_direct_28BL9Jmzm4fejcqRY41RKaYsCyBJnkgEE9Yf3bGMyXTy";
 
 fn _std_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(LIB_NAME_STD))
+    LibBuilder::new(libname!(LIB_NAME_STD), none!())
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -49,18 +49,18 @@ fn _std_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<AlphaCapsNum>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
-        .compile(none!())
+        .compile()
 }
 
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB))
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
-        .compile(none!())
+        .compile()
 }
 
 pub fn strict_types_stl() -> TypeLib {

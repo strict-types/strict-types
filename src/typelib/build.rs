@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap};
+use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap, TinyOrdSet};
 use amplify::Wrapper;
 use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
@@ -36,7 +36,7 @@ use strict_encoding::{
 use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::ExternRef;
-use crate::{SemId, Ty, TypeLibId};
+use crate::{Dependency, SemId, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -50,17 +50,17 @@ pub trait BuilderParent: StrictParent<Sink> {
 #[derive(Debug)]
 pub struct LibBuilder {
     lib: LibName,
-    dependencies: BTreeMap<LibName, TypeLibId>,
-    extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
-    types: SmallOrdMap<TypeName, CompileType>,
+    pub(super) known_libs: TinyOrdSet<Dependency>,
+    pub(super) extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
+    pub(super) types: SmallOrdMap<TypeName, CompileType>,
     last_compiled: Option<CompileRef>,
 }
 
 impl LibBuilder {
-    pub fn new(name: impl Into<LibName>) -> LibBuilder {
+    pub fn new(name: impl Into<LibName>, known_libs: TinyOrdSet<Dependency>) -> LibBuilder {
         LibBuilder {
             lib: name.into(),
-            dependencies: empty!(),
+            known_libs,
             extern_types: empty!(),
             types: empty!(),
             last_compiled: None,
@@ -87,9 +87,10 @@ impl LibBuilder {
     }
 
     fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
-        *self
-            .dependencies
-            .get(lib_name)
+        self.known_libs
+            .iter()
+            .find(|dep| &dep.name == lib_name)
+            .map(|dep| dep.id)
             .unwrap_or_else(|| panic!("use of library '{lib_name}' which is not a dependency"))
     }
 }
@@ -462,7 +463,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: LibBuilder::new(self.lib.clone()),
+            parent: LibBuilder::new(self.lib.clone(), none!()),
             writer: UnionWriter::sink(),
         }
     }
