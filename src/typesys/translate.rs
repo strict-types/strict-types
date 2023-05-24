@@ -29,7 +29,7 @@ use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
-use crate::typesys::TypeFqn;
+use crate::typesys::{TypeFqn, TypeInfo};
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
 
 /// Information about type origin.
@@ -91,7 +91,7 @@ impl Translate<TypeOrig> for SemId {
 pub struct SystemBuilder {
     pending_deps: BTreeSet<Dependency>,
     imported_deps: BTreeSet<LibName>,
-    types: BTreeMap<TypeOrig, Ty<SemId>>,
+    types: BTreeMap<SemId, TypeInfo>,
 }
 
 impl SystemBuilder {
@@ -107,8 +107,8 @@ impl SystemBuilder {
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
             let ty = ty.translate(&mut self, &())?;
-            let fqid = TypeOrig::named(id, lib.name.clone(), ty_name.clone());
-            self.types.insert(fqid, ty);
+            let info = TypeInfo::named(lib.name.clone(), ty_name.clone(), ty);
+            self.types.insert(id, info);
         }
 
         Ok(self)
@@ -121,12 +121,12 @@ impl SystemBuilder {
             errors.push(Error::AbsentImport(dep));
         }
 
-        for (fqid, ty) in &self.types {
-            for inner_id in ty.type_refs() {
-                if !self.types.contains_key(&fqid) {
+        for (sem_id, info) in &self.types {
+            for inner_id in info.ty.type_refs() {
+                if !self.types.contains_key(sem_id) {
                     errors.push(Error::InnerTypeAbsent {
                         unknown: *inner_id,
-                        known: fqid.id,
+                        known: *sem_id,
                     });
                 }
             }
@@ -136,8 +136,8 @@ impl SystemBuilder {
         }
 
         let mut sys = TypeSystem::new();
-        for (fqid, ty) in self.types {
-            match sys.insert_unchecked(fqid, ty) {
+        for (sem_id, ty) in self.types {
+            match sys.insert_unchecked(sem_id, ty) {
                 Err(err) => {
                     errors.push(err.into());
                     return Err(errors);
@@ -161,7 +161,7 @@ impl SystemBuilder {
         // run for nested types
         let ty = inline_ty.translate(self, &())?;
         // add to system
-        self.types.insert(TypeOrig::unnamed(id), ty);
+        self.types.insert(id, TypeInfo::unnamed(ty));
         Ok(id)
     }
 }

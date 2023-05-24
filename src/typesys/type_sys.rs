@@ -31,7 +31,6 @@ use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::typesys::TypeOrig;
 use crate::{SemId, Translate, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
@@ -75,6 +74,12 @@ pub struct TypeInfo {
 }
 
 impl TypeInfo {
+    pub fn named(lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> TypeInfo {
+        Self::with(Some(TypeFqn::with(lib_name, ty_name)), ty)
+    }
+
+    pub fn unnamed(ty: Ty<SemId>) -> TypeInfo { Self::with(None, ty) }
+
     pub fn with(orig: impl IntoIterator<Item = TypeFqn>, ty: Ty<SemId>) -> TypeInfo {
         let orig = Confined::try_from_iter(orig).expect(
             "number of original libraries provided to `TypeInfo::with` must not exceed 256",
@@ -110,10 +115,10 @@ impl TypeSystem {
 
     pub(super) fn insert_unchecked(
         &mut self,
-        ty_orig: TypeOrig,
-        ty: Ty<SemId>,
+        sem_id: SemId,
+        info: TypeInfo,
     ) -> Result<bool, confinement::Error> {
-        self.0.insert(ty_orig.id, TypeInfo::with(ty_orig.orig, ty)).map(|res| res.is_some())
+        self.0.insert(sem_id, info).map(|r| r.is_some())
     }
 
     pub fn id_by_name(&self, name: &'static str) -> Option<SemId> {
