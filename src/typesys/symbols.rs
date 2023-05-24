@@ -24,7 +24,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 use std::ops::Index;
 
-use amplify::confinement::{self, MediumOrdSet, SmallOrdSet, U32};
+use amplify::confinement::{self, MediumOrdSet, SmallOrdSet};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
 use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol, TypeSysId};
@@ -109,6 +109,7 @@ impl Display for SymbolSystem {
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for SymbolSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::confinement::U32;
         use base64::Engine;
 
         writeln!(f, "-----BEGIN STRICT SYMBOL SYSTEM-----")?;
@@ -206,6 +207,7 @@ impl Display for SymbolicTypes {
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for SymbolicTypes {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::confinement::U32;
         use base64::Engine;
 
         let id = self.id();

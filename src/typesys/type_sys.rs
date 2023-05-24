@@ -26,7 +26,7 @@
 use std::fmt::{self, Display, Formatter};
 use std::ops::Index;
 
-use amplify::confinement::{self, MediumOrdMap, U32};
+use amplify::confinement::{self, MediumOrdMap};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
@@ -168,6 +168,7 @@ impl Display for TypeSystem {
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::confinement::U32;
         use base64::Engine;
 
         let id = self.id();
