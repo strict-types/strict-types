@@ -35,8 +35,8 @@ fn reflect() {
     #[strict_type(lib = "Test")]
     struct ByteStr(SmallVec<u8>);
 
-    let builder = LibBuilder::new(libname!("Test")).transpile::<ByteStr>();
-    let lib = builder.compile(none!()).unwrap();
+    let builder = LibBuilder::new(libname!("Test"), none!()).transpile::<ByteStr>();
+    let lib = builder.compile().unwrap();
 
     assert_eq!(
         lib.to_string(),

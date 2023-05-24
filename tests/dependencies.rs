@@ -103,14 +103,14 @@ pub struct Complex {
 
 #[test]
 fn serialize() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).transpile::<TypeLib>();
-    let lib = builder.compile(none!()).unwrap();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
+    let lib = builder.compile().unwrap();
 
-    let imports = bset! {
+    let imports = tiny_bset! {
         Dependency::with(lib.id(), lib.name)
     };
-    let builder = LibBuilder::new(libname!(LIB)).transpile::<Complex>();
-    let lib = builder.compile(imports).unwrap();
+    let builder = LibBuilder::new(libname!(LIB), imports).transpile::<Complex>();
+    let lib = builder.compile().unwrap();
 
     println!("{}", lib);
 }

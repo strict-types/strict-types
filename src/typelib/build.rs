@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap};
+use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap, TinyOrdSet};
 use amplify::Wrapper;
 use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
@@ -36,7 +36,7 @@ use strict_encoding::{
 use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::typelib::ExternRef;
-use crate::{SemId, Ty, TypeRef};
+use crate::{Dependency, SemId, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -50,15 +50,17 @@ pub trait BuilderParent: StrictParent<Sink> {
 #[derive(Debug)]
 pub struct LibBuilder {
     lib: LibName,
-    extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
-    types: SmallOrdMap<TypeName, CompileType>,
+    pub(super) known_libs: TinyOrdSet<Dependency>,
+    pub(super) extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
+    pub(super) types: SmallOrdMap<TypeName, CompileType>,
     last_compiled: Option<CompileRef>,
 }
 
 impl LibBuilder {
-    pub fn new(name: impl Into<LibName>) -> LibBuilder {
+    pub fn new(name: impl Into<LibName>, known_libs: TinyOrdSet<Dependency>) -> LibBuilder {
         LibBuilder {
             lib: name.into(),
+            known_libs,
             extern_types: empty!(),
             types: empty!(),
             last_compiled: None,
@@ -82,6 +84,14 @@ impl LibBuilder {
     {
         let extern_types = Confined::try_from(self.extern_types).expect("too many dependencies");
         (extern_types, self.types)
+    }
+
+    fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
+        self.known_libs
+            .iter()
+            .find(|dep| &dep.name == lib_name)
+            .map(|dep| dep.id)
+            .unwrap_or_else(|| panic!("use of library '{lib_name}' which is not a dependency"))
     }
 }
 
@@ -232,9 +242,10 @@ impl BuilderParent for LibBuilder {
         };
         match (T::STRICT_LIB_NAME, T::strict_name()) {
             (LIB_EMBEDDED, _) | (_, None) => _compile(self),
-            (lib, Some(name)) if lib != self.lib.as_str() => {
-                let (me, ty) = _compile(self);
-                (me, CompileRef::Extern(ExternRef::with(name, libname!(lib), ty.id())))
+            (lib, Some(_name)) if lib != self.lib.as_str() => {
+                let (me, r) = _compile(self);
+                let lib_id = me.dependency_id(&libname!(lib));
+                (me, CompileRef::Extern(ExternRef::with(lib_id, r.sem_id())))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
             (_, Some(_)) => _compile(self),
@@ -262,7 +273,8 @@ impl BuilderParent for LibBuilder {
                     .or_default()
                     .insert(name.clone(), id)
                     .expect("too many types");
-                CompileRef::Extern(ExternRef::with(name, lib, id))
+                let lib_id = self.dependency_id(&lib);
+                CompileRef::Extern(ExternRef::with(lib_id, id))
             }
             (_, None) => CompileRef::Embedded(Box::new(ty)),
         };
@@ -451,7 +463,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: LibBuilder::new(self.lib.clone()),
+            parent: LibBuilder::new(self.lib.clone(), none!()),
             writer: UnionWriter::sink(),
         }
     }

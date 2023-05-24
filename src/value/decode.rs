@@ -33,6 +33,7 @@ use encoding::constants::*;
 use encoding::{DecodeError, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
+use crate::typesys::{SymbolicTypes, TypeSymbol};
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
@@ -51,6 +52,28 @@ pub enum Error {
 
     /// data provided to reify operation are not entirely consumed during deserialization.
     NotEntirelyConsumed,
+}
+
+impl SymbolicTypes {
+    pub fn strict_deserialize_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        data: &[u8],
+    ) -> Result<TypedVal, Error> {
+        let spec = spec.into();
+        let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
+        self.as_types().strict_deserialize_type(sem_id, data)
+    }
+
+    pub fn strict_read_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        d: &mut impl io::Read,
+    ) -> Result<TypedVal, Error> {
+        let spec = spec.into();
+        let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
+        self.as_types().strict_read_type(sem_id, d)
+    }
 }
 
 impl TypeSystem {
@@ -84,13 +107,9 @@ impl TypeSystem {
         Ok(list)
     }
 
-    pub fn strict_deserialize_type(
-        &self,
-        spec: impl Into<TypeSpec>,
-        data: &[u8],
-    ) -> Result<TypedVal, Error> {
+    pub fn strict_deserialize_type(&self, sem_id: SemId, data: &[u8]) -> Result<TypedVal, Error> {
         let mut cursor = io::Cursor::new(data);
-        let ty = self.strict_read_type(spec, &mut cursor)?;
+        let ty = self.strict_read_type(sem_id, &mut cursor)?;
         if cursor.position() as usize != data.len() {
             return Err(Error::NotEntirelyConsumed);
         }
@@ -99,11 +118,11 @@ impl TypeSystem {
 
     pub fn strict_read_type(
         &self,
-        spec: impl Into<TypeSpec>,
+        sem_id: SemId,
         mut d: &mut impl io::Read,
     ) -> Result<TypedVal, Error> {
-        let spec = spec.into();
-        let ty = &self.find(&spec).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.ty;
+        let spec = TypeSpec::from(sem_id);
+        let ty = self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
 
         let mut reader = StrictReader::with(usize::MAX, d);
 
@@ -338,7 +357,10 @@ impl TypeSystem {
             }
         };
 
-        Ok(TypedVal { val, spec })
+        Ok(TypedVal {
+            val,
+            orig: TypeSymbol::unnamed(sem_id),
+        })
     }
 }
 

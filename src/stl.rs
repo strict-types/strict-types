@@ -27,15 +27,15 @@ use encoding::stl::{
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
 use crate::typelib::{LibBuilder, TranslateError};
-use crate::typesys::{TypeFqid, TypeSysId};
+use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{TypeLib, TypeSystem};
 
 pub const LIB_ID_STD: &str = "quota_conan_fashion_3TZmAPf8EkQZnbGS1g8uMGes6jEWPqNkFB6pLUKeoefg";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29";
+    "pepper_sheriff_isotope_9znaENdRpBdtSqx9iLXhy2ZQpQG8YkdLhUj1nK1eFhU";
 
 fn _std_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(LIB_NAME_STD))
+    LibBuilder::new(libname!(LIB_NAME_STD), none!())
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -49,18 +49,18 @@ fn _std_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<AlphaCapsNum>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
-        .compile(none!())
+        .compile()
 }
 
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB))
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
-        .transpile::<TypeFqid>()
-        .compile(none!())
+        .transpile::<TypeSymbol>()
+        .compile()
 }
 
 pub fn strict_types_stl() -> TypeLib {

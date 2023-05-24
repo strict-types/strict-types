@@ -24,11 +24,12 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::Confined;
+use amplify::RawArray;
 use blake3::Hasher;
 use encoding::LIB_EMBEDDED;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
+use crate::ast::{HashId, SEM_ID_TAG};
 use crate::typelib::build::LibBuilder;
 use crate::typelib::translate::{NestedContext, TranslateError, TypeIndex};
 use crate::typelib::type_lib::TypeMap;
@@ -65,19 +66,15 @@ pub enum CompileRef {
 
 impl CompileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
+
+    pub fn sem_id(&self) -> SemId {
+        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        self.hash_id(&mut hasher);
+        SemId::from_raw_array(hasher.finalize())
+    }
 }
 
 impl TypeRef for CompileRef {
-    fn id(&self) -> SemId {
-        match self {
-            CompileRef::Embedded(ty) => ty.id(None),
-            CompileRef::Extern(ext) => ext.id,
-            CompileRef::Named(name) => {
-                panic!("CompileRef::id must never be called for named refs (called for '{name}')")
-            }
-        }
-    }
-
     fn as_ty(&self) -> Option<&Ty<Self>> {
         match self {
             CompileRef::Embedded(ty) => Some(ty),
@@ -134,13 +131,11 @@ impl Display for CompileRef {
 }
 
 impl LibBuilder {
-    pub fn compile(self, known_libs: BTreeSet<Dependency>) -> Result<TypeLib, TranslateError> {
+    pub fn compile(self) -> Result<TypeLib, TranslateError> {
         let name = self.name();
 
-        let mut known_libs: BTreeMap<_, _> =
-            known_libs.into_iter().map(|dep| (dep.name.clone(), dep)).collect();
-
-        let (mut extern_types, types) = self.into_types();
+        let (known_libs, extern_types, types) = (self.known_libs, self.extern_types, self.types);
+        let mut extern_types = Confined::try_from(extern_types).expect("too many dependencies");
         for el in types.values() {
             for subty in el.ty.type_refs() {
                 if let CompileRef::Named(name) = subty {
@@ -191,20 +186,26 @@ impl LibBuilder {
             debug_assert!(found, "incomplete type definition found in the library");
         }
 
-        let mut dependencies = bset! {};
+        let mut used_dependencies = BTreeSet::<Dependency>::new();
         for lib in extern_types.keys() {
             if lib == &libname!(LIB_EMBEDDED) {
                 continue;
             }
-            let dep = known_libs.remove(lib).ok_or(TranslateError::UnknownLib(lib.clone()))?;
-            dependencies.insert(dep);
+            match known_libs.iter().find(|dep| &dep.name == lib) {
+                None if !used_dependencies.iter().any(|dep| &dep.name == lib) => {
+                    return Err(TranslateError::UnknownLib(lib.clone()))
+                }
+                None => {}
+                Some(dep) => {
+                    used_dependencies.insert(dep.clone());
+                }
+            }
         }
 
         let types = TypeMap::try_from(new_types)?;
         Ok(TypeLib {
             name,
-            dependencies: Confined::try_from_iter(dependencies)
-                .expect("same size as previous confinmenet"),
+            dependencies: Confined::try_from_iter(used_dependencies)?,
             types,
         })
     }

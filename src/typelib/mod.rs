@@ -32,6 +32,4 @@ pub use compile::{CompileRef, CompileType};
 pub use id::TypeLibId;
 pub use serialize::{parse_args, StlFormat, UnknownFormat};
 pub use translate::TranslateError;
-pub use type_lib::{
-    Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibAlias, LibRef, TypeLib,
-};
+pub use type_lib::{Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibRef, TypeLib};

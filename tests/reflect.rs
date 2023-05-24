@@ -32,8 +32,8 @@ use strict_types::TypeLib;
 
 #[test]
 fn reflect() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).transpile::<TypeLib>();
-    let lib = builder.compile(none!()).unwrap();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
+    let lib = builder.compile().unwrap();
 
     let builder = SystemBuilder::new().import(lib).unwrap();
     match builder.finalize() {
