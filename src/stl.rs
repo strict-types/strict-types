@@ -30,9 +30,9 @@ use crate::typelib::{LibBuilder, TranslateError};
 use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{TypeLib, TypeSystem};
 
-pub const LIB_ID_STD: &str = "quota_conan_fashion_3TZmAPf8EkQZnbGS1g8uMGes6jEWPqNkFB6pLUKeoefg";
+pub const LIB_ID_STD: &str = "gemini_door_jeep_2UoUiDCVTjZJHh8XjFgWQ2cX6zdiwUDZJM3DQm1i4FT1";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "pepper_sheriff_isotope_9znaENdRpBdtSqx9iLXhy2ZQpQG8YkdLhUj1nK1eFhU";
+    "explore_outside_albert_3Ses9snQxYBWwsvb4AgUzgpS3QYB7BLBWamkcNUCmgzu";
 
 fn _std_stl() -> Result<TypeLib, TranslateError> {
     LibBuilder::new(libname!(LIB_NAME_STD), none!())
