@@ -21,15 +21,15 @@
 // limitations under the License.
 
 use std::collections::BTreeMap;
+use std::fmt::{self, Display, Formatter};
 use std::ops::Index;
 
-use amplify::confinement;
-use amplify::confinement::{MediumOrdSet, SmallOrdSet};
+use amplify::confinement::{self, MediumOrdSet, SmallOrdSet, U32};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
-use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol};
+use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol, TypeSysId};
 use crate::typify::TypeSpec;
-use crate::{Dependency, SemId, Ty, TypeSystem};
+use crate::{Dependency, SemId, Translate, Ty, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
@@ -76,6 +76,10 @@ impl SymbolSystem {
         let needle = spec.into();
         self.symbols.iter().find(|fqid| fqid.fqn.as_ref() == Some(&needle)).map(|fqid| &fqid.id)
     }
+
+    pub fn lookup(&self, sem_id: SemId) -> Option<&TypeFqn> {
+        self.symbols.iter().find(|sym| sym.id == sem_id).and_then(|sym| sym.fqn.as_ref())
+    }
 }
 
 impl Index<&'static str> for SymbolSystem {
@@ -120,12 +124,16 @@ impl SymbolicTypes {
 
     pub fn new(types: TypeSystem, symbols: SymbolSystem) -> Self { Self { symbols, types } }
 
+    pub fn id(&self) -> TypeSysId { self.types.id() }
+
     pub fn get(&self, spec: impl Into<TypeSpec>) -> Option<&Ty<SemId>> {
         let sem_id = self.to_sem_id(spec)?;
         self.types.get(sem_id)
     }
 
     pub fn resolve(&self, fqn: impl Into<TypeFqn>) -> Option<&SemId> { self.symbols.get(fqn) }
+
+    pub fn lookup(&self, sem_id: SemId) -> Option<&TypeFqn> { self.symbols.lookup(sem_id) }
 
     pub fn to_sem_id(&self, spec: impl Into<TypeSpec>) -> Option<SemId> {
         match spec.into() {
@@ -135,4 +143,49 @@ impl SymbolicTypes {
     }
 
     pub fn into_type_system(self) -> TypeSystem { self.types }
+}
+
+impl Display for SymbolicTypes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typesys -- {:+}", self.id())?;
+        writeln!(f)?;
+        for (id, ty) in self.types.as_inner() {
+            let ty = ty.clone().translate(&mut (), self).expect("type system inconsistency");
+            match self.lookup(*id) {
+                Some(fqn) => {
+                    writeln!(f, "-- {id:0}")?;
+                    writeln!(f, "data {fqn} :: {:0}", ty)?;
+                }
+                None => writeln!(f, "data {id:0} :: {:0}", ty)?,
+            }
+        }
+        Ok(())
+    }
+}
+
+#[cfg(feature = "base64")]
+impl fmt::UpperHex for SymbolicTypes {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use base64::Engine;
+
+        let id = self.id();
+
+        writeln!(f, "-----BEGIN STRICT SYMBOLIC TYPES-----")?;
+        writeln!(f, "Id: {}", id)?;
+        writeln!(f)?;
+
+        let data = self.to_strict_serialized::<U32>().expect("in-memory");
+        let engine = base64::engine::general_purpose::STANDARD;
+        let data = engine.encode(data);
+        let mut data = data.as_str();
+        while data.len() >= 64 {
+            let (line, rest) = data.split_at(64);
+            writeln!(f, "{}", line)?;
+            data = rest;
+        }
+        writeln!(f, "{}", data)?;
+
+        writeln!(f, "\n-----END STRICT SYMBOLIC TYPES-----")?;
+        Ok(())
+    }
 }

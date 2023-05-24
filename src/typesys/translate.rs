@@ -31,7 +31,7 @@ use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
 use crate::typesys::symbols::SymbolicTypes;
 use crate::typesys::{SymTy, TypeFqn};
-use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
+use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
 /// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -44,6 +44,8 @@ pub struct TypeSymbol {
 }
 
 impl TypeSymbol {
+    pub fn with(id: SemId, fqn: TypeFqn) -> TypeSymbol { TypeSymbol { id, fqn: Some(fqn) } }
+
     pub fn unnamed(id: SemId) -> TypeSymbol { TypeSymbol { id, fqn: None } }
 
     pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeSymbol {
@@ -71,7 +73,7 @@ impl Display for TypeSymbol {
 
 impl Translate<TypeSymbol> for SemId {
     type Builder = ();
-    type Context = TypeSystem;
+    type Context = SymbolicTypes;
     type Error = Error;
 
     fn translate(
@@ -79,10 +81,9 @@ impl Translate<TypeSymbol> for SemId {
         _builder: &mut Self::Builder,
         ctx: &Self::Context,
     ) -> Result<TypeSymbol, Self::Error> {
-        if !ctx.contains_key(&self) {
-            Err(Error::UnknownType(self))
-        } else {
-            Ok(TypeSymbol::unnamed(self))
+        match ctx.lookup(self) {
+            None => Ok(TypeSymbol::unnamed(self)),
+            Some(fqn) => Ok(TypeSymbol::with(self, fqn.clone())),
         }
     }
 }
