@@ -128,7 +128,7 @@ impl SymbolicTypes {
     pub fn typify(&self, val: StrictVal, spec: impl Into<TypeSpec>) -> Result<TypedVal, Error> {
         let spec = spec.into();
         let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
-        self.typify(val, sem_id)
+        self.as_types().typify(val, sem_id)
     }
 }
 
