@@ -85,6 +85,15 @@ impl Display for SymbolicLib {
         writeln!(f)?;
         for dep in self.dependencies() {
             writeln!(f, "{dep} as {}", dep.name)?;
+            if f.alternate() {
+                if let Some(index) = self.extern_types().get(&dep.name) {
+                    writeln!(f, "-- Imports")?;
+                    for (name, sem_id) in index {
+                        writeln!(f, "-- {name} := {sem_id}")?;
+                    }
+                    writeln!(f)?;
+                }
+            }
         }
         if self.dependencies().is_empty() {
             f.write_str("-- no dependencies")?;
