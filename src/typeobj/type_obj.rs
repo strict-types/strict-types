@@ -29,7 +29,7 @@ use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use super::Transpiler;
+use super::LibBuilder;
 use crate::ast::{HashId, SEM_ID_TAG};
 use crate::typelib::{CompileError, ExternRef, NestedContext, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
@@ -196,7 +196,7 @@ pub enum TranspileError {
     LibTooLarge(LibName),
 }
 
-impl Transpiler {
+impl LibBuilder {
     pub fn compile_symbols(self) -> Result<TypeObjects, TranspileError> {
         let (name, known_libs, extern_types, types) =
             (self.lib_name, self.known_libs, self.extern_types, self.types);

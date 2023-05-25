@@ -30,7 +30,7 @@ use std::io;
 use strict_encoding::{
     DecodeError, StrictDecode, StrictEncode, StrictType, TypedRead, TypedWrite, STRICT_TYPES_LIB,
 };
-use strict_types::typeobj::Transpiler;
+use strict_types::typeobj::LibBuilder;
 use strict_types::{Dependency, KeyTy, TypeLib};
 
 const LIB: &str = "Test";
@@ -103,13 +103,13 @@ pub struct Complex {
 
 #[test]
 fn serialize() {
-    let builder = Transpiler::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
     let lib = builder.compile().unwrap();
 
     let imports = bset! {
         Dependency::with(lib.id(), lib.name)
     };
-    let builder = Transpiler::new(libname!(LIB), imports).transpile::<Complex>();
+    let builder = LibBuilder::new(libname!(LIB), imports).transpile::<Complex>();
     let lib = builder.compile_symbols().unwrap();
 
     println!("{}", lib);

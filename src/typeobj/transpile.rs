@@ -47,7 +47,7 @@ pub trait BuilderParent: StrictParent<Sink> {
 }
 
 #[derive(Debug)]
-pub struct Transpiler {
+pub struct LibBuilder {
     pub(super) lib_name: LibName,
     pub(super) known_libs: BTreeSet<Dependency>,
     pub(super) extern_types: BTreeMap<LibName, BTreeMap<TypeName, SemId>>,
@@ -55,9 +55,9 @@ pub struct Transpiler {
     last_compiled: Option<TranspileRef>,
 }
 
-impl Transpiler {
-    pub fn new(name: impl Into<LibName>, known_libs: BTreeSet<Dependency>) -> Transpiler {
-        Transpiler {
+impl LibBuilder {
+    pub fn new(name: impl Into<LibName>, known_libs: BTreeSet<Dependency>) -> LibBuilder {
+        LibBuilder {
             lib_name: name.into(),
             known_libs,
             extern_types: empty!(),
@@ -79,7 +79,7 @@ impl Transpiler {
     }
 }
 
-impl TypedWrite for Transpiler {
+impl TypedWrite for LibBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
     type UnionDefiner = UnionBuilder;
@@ -204,15 +204,15 @@ impl TypedWrite for Transpiler {
     }
 }
 
-impl TypedParent for Transpiler {}
-impl StrictParent<Sink> for Transpiler {
-    type Remnant = Transpiler;
+impl TypedParent for LibBuilder {}
+impl StrictParent<Sink> for LibBuilder {
+    type Remnant = LibBuilder;
     fn from_write_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
     fn into_write_split(self) -> (StrictWriter<Sink>, Self::Remnant) {
         (StrictWriter::sink(), self)
     }
 }
-impl BuilderParent for Transpiler {
+impl BuilderParent for LibBuilder {
     fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, TranspileRef) {
         let _compile = |mut me: Self| -> (Self, TranspileRef) {
             me = value.strict_encode(me).expect("too many types in the library");
@@ -423,12 +423,12 @@ pub struct UnionBuilder {
     lib: LibName,
     name: Option<TypeName>,
     variants: BTreeMap<u8, TranspileRef>,
-    parent: Transpiler,
+    parent: LibBuilder,
     writer: UnionWriter<Sink>,
 }
 
 impl UnionBuilder {
-    pub fn with<T: StrictSum>(parent: Transpiler) -> Self {
+    pub fn with<T: StrictSum>(parent: LibBuilder) -> Self {
         UnionBuilder {
             lib: libname!(T::STRICT_LIB_NAME),
             name: T::strict_name(),
@@ -443,7 +443,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: Transpiler::new(self.lib.clone(), none!()),
+            parent: LibBuilder::new(self.lib.clone(), none!()),
             writer: UnionWriter::sink(),
         }
     }
@@ -484,7 +484,7 @@ impl UnionBuilder {
         self
     }
 
-    fn _complete_write(self, ty: Ty<TranspileRef>) -> Transpiler {
+    fn _complete_write(self, ty: Ty<TranspileRef>) -> LibBuilder {
         let _ = WriteUnion::complete(self.writer);
         self.parent.report_compiled(self.lib, self.name, ty)
     }
@@ -533,7 +533,7 @@ impl BuilderParent for UnionBuilder {
 }
 
 impl DefineEnum for UnionBuilder {
-    type Parent = Transpiler;
+    type Parent = LibBuilder;
     type EnumWriter = Self;
 
     fn define_variant(mut self, name: VariantName) -> Self {
@@ -550,7 +550,7 @@ impl DefineEnum for UnionBuilder {
 }
 
 impl WriteEnum for UnionBuilder {
-    type Parent = Transpiler;
+    type Parent = LibBuilder;
 
     fn write_variant(mut self, name: VariantName) -> io::Result<Self> {
         self.parent = self.parent.report_compiled(self.lib.clone(), None, Ty::U8);
@@ -558,14 +558,14 @@ impl WriteEnum for UnionBuilder {
         Ok(self)
     }
 
-    fn complete(self) -> Transpiler {
+    fn complete(self) -> LibBuilder {
         let ty = self._build_enum();
         self._complete_write(ty)
     }
 }
 
 impl DefineUnion for UnionBuilder {
-    type Parent = Transpiler;
+    type Parent = LibBuilder;
     type TupleDefiner = StructBuilder<Self>;
     type StructDefiner = StructBuilder<Self>;
     type UnionWriter = Self;
@@ -632,7 +632,7 @@ impl DefineUnion for UnionBuilder {
 }
 
 impl WriteUnion for UnionBuilder {
-    type Parent = Transpiler;
+    type Parent = LibBuilder;
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
 
@@ -688,7 +688,7 @@ impl WriteUnion for UnionBuilder {
         Ok(self)
     }
 
-    fn complete(self) -> Transpiler {
+    fn complete(self) -> LibBuilder {
         let ty = self._build_union();
         self._complete_write(ty)
     }

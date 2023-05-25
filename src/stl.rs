@@ -26,7 +26,7 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typeobj::Transpiler;
+use crate::typeobj::LibBuilder;
 use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{TranspileError, TypeLib, TypeObjects, TypeSystem};
 
@@ -35,7 +35,7 @@ pub const LIB_ID_STRICT_TYPES: &str =
     "sardine_mimic_stella_AP9Ttup5cS6XFY8ZsPFcYV4REjrgaT85wQhRmXN2tuZ9";
 
 fn _std_stl() -> Result<TypeObjects, TranspileError> {
-    Transpiler::new(libname!(LIB_NAME_STD), none!())
+    LibBuilder::new(libname!(LIB_NAME_STD), none!())
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -55,7 +55,7 @@ fn _std_stl() -> Result<TypeObjects, TranspileError> {
 pub fn std_stl() -> TypeObjects { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_stl() -> Result<TypeObjects, TranspileError> {
-    Transpiler::new(libname!(STRICT_TYPES_LIB), none!())
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()

@@ -26,13 +26,13 @@ extern crate amplify;
 extern crate strict_encoding;
 
 use strict_encoding::STRICT_TYPES_LIB;
-use strict_types::typeobj::Transpiler;
+use strict_types::typeobj::LibBuilder;
 use strict_types::typesys::SystemBuilder;
 use strict_types::TypeLib;
 
 #[test]
 fn reflect() {
-    let builder = Transpiler::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
     let lib = builder.compile().unwrap();
 
     let builder = SystemBuilder::new().import(lib).unwrap();

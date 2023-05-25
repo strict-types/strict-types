@@ -32,6 +32,9 @@ use crate::{KeyTy, SemId, Translate, TranspileError, Ty};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
 
+#[deprecated(since = "1.3.0", note = "use CompileError")]
+pub type TranslateError = CompileError;
+
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
 pub enum CompileError {
