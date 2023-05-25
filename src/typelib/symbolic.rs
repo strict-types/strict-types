@@ -111,12 +111,16 @@ impl TranspileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
 
     pub fn id(&self) -> SemId {
-        let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
-        let mut hasher = sha2::Sha256::new();
-        hasher.update(tag);
-        hasher.update(tag);
-        self.hash_id(&mut hasher);
-        SemId::from_raw_array(hasher.finalize())
+        if let TranspileRef::Extern(r) = self {
+            r.sem_id
+        } else {
+            let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(tag);
+            hasher.update(tag);
+            self.hash_id(&mut hasher);
+            SemId::from_raw_array(hasher.finalize())
+        }
     }
 }
 
