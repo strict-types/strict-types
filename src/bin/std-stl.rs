@@ -23,7 +23,7 @@
 use strict_types::{parse_args, stl};
 
 fn main() {
-    let lib = stl::std_stl().compile().expect("invalid STL library");
+    let lib = stl::std_stl();
     let (format, dir) = parse_args();
     lib.serialize(
         format,

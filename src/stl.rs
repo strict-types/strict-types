@@ -28,13 +28,13 @@ use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
 use crate::typeobj::LibBuilder;
 use crate::typesys::{TypeSymbol, TypeSysId};
-use crate::{TranspileError, TypeLib, TypeObjects, TypeSystem};
+use crate::{CompileError, TranspileError, TypeLib, TypeObjects, TypeSystem};
 
 pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
 pub const LIB_ID_STRICT_TYPES: &str =
     "sardine_mimic_stella_AP9Ttup5cS6XFY8ZsPFcYV4REjrgaT85wQhRmXN2tuZ9";
 
-fn _std_stl() -> Result<TypeObjects, TranspileError> {
+fn _std_sym() -> Result<TypeObjects, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), none!())
         .transpile::<Bool>()
         .transpile::<U4>()
@@ -52,9 +52,13 @@ fn _std_stl() -> Result<TypeObjects, TranspileError> {
         .compile_symbols()
 }
 
-pub fn std_stl() -> TypeObjects { _std_stl().expect("invalid strict type Std library") }
+fn _std_stl() -> Result<TypeLib, CompileError> { _std_sym()?.compile() }
 
-fn _strict_types_stl() -> Result<TypeObjects, TranspileError> {
+pub fn std_sym() -> TypeObjects { _std_sym().expect("invalid strict type Std library") }
+
+pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
+
+fn _strict_types_sym() -> Result<TypeObjects, TranspileError> {
     LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
@@ -62,8 +66,13 @@ fn _strict_types_stl() -> Result<TypeObjects, TranspileError> {
         .transpile::<TypeSymbol>()
         .compile_symbols()
 }
+fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }
 
-pub fn strict_types_stl() -> TypeObjects {
+pub fn strict_types_sym() -> TypeObjects {
+    _strict_types_sym().expect("invalid strict type StrictTypes library")
+}
+
+pub fn strict_types_stl() -> TypeLib {
     _strict_types_stl().expect("invalid strict type StrictTypes library")
 }
 
@@ -73,13 +82,13 @@ mod test {
 
     #[test]
     fn std_lib_id() {
-        let lib = std_stl().compile().unwrap();
+        let lib = std_stl();
         assert_eq!(lib.id().to_string(), LIB_ID_STD);
     }
 
     #[test]
     fn strict_types_lib_id() {
-        let lib = strict_types_stl().compile().unwrap();
+        let lib = strict_types_stl();
         assert_eq!(lib.id().to_string(), LIB_ID_STRICT_TYPES);
     }
 }
