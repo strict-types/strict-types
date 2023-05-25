@@ -24,14 +24,18 @@ mod id;
 mod type_lib;
 mod compile;
 mod serialize;
+mod transpile;
+mod symbolic;
+mod translate;
 
 pub(crate) use compile::NestedContext;
 #[allow(deprecated)]
 pub use compile::TranslateError;
 pub use compile::{CompileError, TypeIndex};
 pub use id::TypeLibId;
+pub use symbolic::{SymbolRef, SymbolicLib, TranspileError, TranspileRef};
+pub(self) use translate::SymbolContext;
+pub use translate::SymbolError;
+pub use transpile::LibBuilder;
 pub(crate) use type_lib::TypeMap;
 pub use type_lib::{Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibRef, TypeLib};
-
-#[deprecated(since = "1.3.0", note = "import from crate level")]
-pub use super::{parse_args, LibBuilder};

@@ -29,10 +29,9 @@ use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use super::LibBuilder;
+use super::{LibBuilder, SymbolContext};
 use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
-use crate::symlib::{SymbolContext, SymbolError};
-use crate::typelib::{CompileError, ExternRef, NestedContext, TypeIndex, TypeMap};
+use crate::typelib::{CompileError, ExternRef, NestedContext, SymbolError, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]

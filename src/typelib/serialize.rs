@@ -27,7 +27,7 @@ use std::{fmt, io};
 use amplify::num::u24;
 use encoding::{StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
-use crate::{StlFormat, TypeLib};
+use crate::{StlFormat, SymbolicLib, TypeLib};
 
 impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
@@ -72,6 +72,33 @@ impl TypeLib {
             }
         }
 
+        Ok(())
+    }
+}
+
+impl StrictSerialize for SymbolicLib {}
+impl StrictDeserialize for SymbolicLib {}
+
+impl Display for SymbolicLib {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typelib {}", self.name())?;
+        writeln!(f)?;
+        for dep in self.dependencies() {
+            writeln!(f, "{dep} as {}", dep.name)?;
+        }
+        if self.dependencies().is_empty() {
+            f.write_str("-- no dependencies")?;
+        }
+        writeln!(f)?;
+        writeln!(f)?;
+        for (name, ty) in self.types() {
+            if f.alternate() {
+                writeln!(f, "-- {}", ty.id(Some(name)))?;
+            }
+            write!(f, "data {name:0$} :: ", f.width().unwrap_or(16))?;
+            Display::fmt(ty, f)?;
+            writeln!(f)?;
+        }
         Ok(())
     }
 }
