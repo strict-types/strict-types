@@ -33,7 +33,7 @@ pub(crate) use compile::NestedContext;
 pub use compile::TranslateError;
 pub use compile::{CompileError, TypeIndex};
 pub use id::TypeLibId;
-pub use symbolic::{SymbolRef, SymbolicLib, TranspileError, TranspileRef};
+pub use symbolic::{ExternTypes, SymbolRef, SymbolicLib, TranspileError, TranspileRef};
 pub(self) use translate::SymbolContext;
 pub use translate::SymbolError;
 pub use transpile::LibBuilder;

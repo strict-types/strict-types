@@ -34,6 +34,8 @@ use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
 use crate::typelib::{CompileError, ExternRef, NestedContext, SymbolError, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
+pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>;
+
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
@@ -45,7 +47,7 @@ use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRe
 pub struct SymbolicLib {
     name: LibName,
     dependencies: TinyOrdSet<Dependency>,
-    extern_types: TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>,
+    extern_types: ExternTypes,
     types: SmallOrdMap<TypeName, Ty<TranspileRef>>,
 }
 
@@ -337,17 +339,20 @@ impl TypeLib {
             reverse_index,
             lib_index,
         };
+        let mut extern_types = ExternTypes::default();
         let types = Confined::try_from(
             self.types
                 .iter()
-                .map(|(name, ty)| Ok((name.clone(), ty.clone().translate(&mut (), &ctx)?)))
+                .map(|(name, ty)| {
+                    Ok((name.clone(), ty.clone().translate(&mut extern_types, &ctx)?))
+                })
                 .collect::<Result<_, _>>()?,
         )
         .expect("same collection size");
         Ok(SymbolicLib {
             name: self.name.clone(),
             dependencies: self.dependencies.clone(),
-            extern_types: Default::default(),
+            extern_types,
             types,
         })
     }

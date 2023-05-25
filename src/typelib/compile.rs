@@ -22,11 +22,10 @@
 
 use std::collections::BTreeMap;
 
-use amplify::confinement::{SmallOrdMap, TinyOrdMap};
 use encoding::LibName;
 use strict_encoding::TypeName;
 
-use crate::typelib::{Dependency, InlineRef, InlineRef1, InlineRef2, LibRef};
+use crate::typelib::{Dependency, ExternTypes, InlineRef, InlineRef1, InlineRef2, LibRef};
 use crate::{KeyTy, SemId, Translate, TranspileError, TranspileRef, Ty};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
@@ -85,7 +84,7 @@ impl From<TranspileError> for CompileError {
 pub struct NestedContext {
     pub top_name: TypeName,
     pub index: TypeIndex,
-    pub extern_types: TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>,
+    pub extern_types: ExternTypes,
     pub stack: Vec<String>,
 }
 
