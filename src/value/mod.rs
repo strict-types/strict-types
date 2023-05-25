@@ -84,7 +84,7 @@ pub(self) mod test_helpers {
     }
 
     pub fn test_system() -> SymbolicTypes {
-        let lib = LibBuilder::new("TestLib", none!()).transpile::<Nominal>().compile().unwrap();
+        let lib = LibBuilder::new("TestLib", None).transpile::<Nominal>().compile().unwrap();
         SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
     }
 }

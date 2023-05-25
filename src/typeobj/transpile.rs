@@ -56,10 +56,13 @@ pub struct LibBuilder {
 }
 
 impl LibBuilder {
-    pub fn new(name: impl Into<LibName>, known_libs: BTreeSet<Dependency>) -> LibBuilder {
+    pub fn new(
+        name: impl Into<LibName>,
+        known_libs: impl IntoIterator<Item = Dependency>,
+    ) -> LibBuilder {
         LibBuilder {
             lib_name: name.into(),
-            known_libs,
+            known_libs: known_libs.into_iter().collect(),
             extern_types: empty!(),
             types: empty!(),
             last_compiled: None,
@@ -443,7 +446,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: LibBuilder::new(self.lib.clone(), none!()),
+            parent: LibBuilder::new(self.lib.clone(), None),
             writer: UnionWriter::sink(),
         }
     }

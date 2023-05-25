@@ -21,8 +21,6 @@
 // limitations under the License.
 
 #[macro_use]
-extern crate amplify;
-#[macro_use]
 extern crate strict_encoding;
 
 use amplify::confinement::SmallVec;
@@ -35,7 +33,7 @@ fn reflect() {
     #[strict_type(lib = "Test")]
     struct ByteStr(SmallVec<u8>);
 
-    let builder = LibBuilder::new(libname!("Test"), none!()).transpile::<ByteStr>();
+    let builder = LibBuilder::new(libname!("Test"), None).transpile::<ByteStr>();
     let lib = builder.compile_symbols().unwrap();
 
     assert_eq!(

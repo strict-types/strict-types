@@ -35,7 +35,7 @@ pub const LIB_ID_STRICT_TYPES: &str =
     "darwin_popular_welcome_4fFBHxWbs1ysSL59Nc4xFExBVAucfKbTvujACbZy8ATc";
 
 fn _std_sym() -> Result<TypeObjects, TranspileError> {
-    LibBuilder::new(libname!(LIB_NAME_STD), none!())
+    LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -59,7 +59,7 @@ pub fn std_sym() -> TypeObjects { _std_sym().expect("invalid strict type Std lib
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_sym() -> Result<TypeObjects, TranspileError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
         .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
