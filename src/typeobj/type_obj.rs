@@ -101,10 +101,8 @@ pub enum TranspileRef {
     Extern(SymbolRef),
 }
 
-impl Default for Box<Ty<TranspileRef>> {
-    /// Provided as a workaround required due to derivation of strict types for [`TranspileRef`].
-    /// Always panics.
-    fn default() -> Self { panic!("default method shouldn't be called on this type") }
+impl StrictDumb for Box<Ty<TranspileRef>> {
+    fn strict_dumb() -> Self { Box::new(Ty::UNIT) }
 }
 
 impl TranspileRef {

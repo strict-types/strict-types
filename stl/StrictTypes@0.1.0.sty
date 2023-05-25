@@ -1,5 +1,4 @@
 {-
-  Id: classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -8,15 +7,13 @@
   License: Apache-2.0
 -}
 
-typelib StrictTypes -- classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29
+typelib StrictTypes
 
 -- no dependencies
 
 data Dependency       :: id TypeLibId, name LibName
 data EnumVariants     :: {Variant ^ 1..0xff}
-data ExternRef        :: name TypeName
-                       , lib LibName
-                       , id SemId
+data ExternRef        :: libId TypeLibId, semId SemId
 data FieldInlineRef   :: name FieldName, ty InlineRef
 data FieldInlineRef1  :: name FieldName, ty InlineRef1
 data FieldInlineRef2  :: name FieldName, ty InlineRef2
@@ -26,13 +23,13 @@ data FieldName        :: Ident
 data FieldSemId       :: name FieldName, ty SemId
 data Ident            :: [Ascii ^ 1..0x40]
 data InlineRef        :: inline TyInlineRef1
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
 data InlineRef1       :: inline TyInlineRef2
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
 data InlineRef2       :: inline TyKeyTy
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
 data KeyTy            :: primitive Primitive
                        | enum:3 EnumVariants
@@ -42,7 +39,7 @@ data KeyTy            :: primitive Primitive
                        | bytes Sizing
 data LibName          :: Ident
 data LibRef           :: inline TyInlineRef
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
 data NamedFieldsInlineRef :: [FieldInlineRef ^ 1..0xff]
 data NamedFieldsInlineRef1 :: [FieldInlineRef1 ^ 1..0xff]
@@ -53,6 +50,10 @@ data NamedFieldsSemId :: [FieldSemId ^ 1..0xff]
 data Primitive        :: U8
 data SemId            :: [Byte ^ 32]
 data Sizing           :: min U64, max U64
+data SymbolRef        :: libName LibName
+                       , tyName TypeName
+                       , libId TypeLibId
+                       , semId SemId
 data TyInlineRef      :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -113,16 +114,15 @@ data TySemId          :: primitive Primitive
                        | list (SemId, Sizing)
                        | set (SemId, Sizing)
                        | map (KeyTy, SemId, Sizing)
-data TypeFqid         :: id SemId, fqn TypeFqn?
 data TypeFqn          :: lib LibName, name TypeName
-data TypeInfo         :: fqn TypeFqn?, ty TySemId
 data TypeLib          :: name LibName
                        , dependencies {Dependency ^ ..0xff}
                        , types {[Ascii ^ 1..0x40] -> ^ 1.. TyLibRef}
 data TypeLibId        :: [Byte ^ 32]
 data TypeName         :: Ident
+data TypeSymbol       :: id SemId, fqn TypeFqn?
 data TypeSysId        :: [Byte ^ 32]
-data TypeSystem       :: {[Byte ^ 32] -> ^ ..0xffffff TypeInfo}
+data TypeSystem       :: {[Byte ^ 32] -> ^ ..0xffffff TySemId}
 data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}
 data UnionVariantsInlineRef1 :: {U8 -> ^ ..0xff VariantInfoInlineRef1}
 data UnionVariantsInlineRef2 :: {U8 -> ^ ..0xff VariantInfoInlineRef2}

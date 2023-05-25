@@ -26,13 +26,13 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typeobj::LibBuilder;
+use crate::typeobj::{LibBuilder, SymbolRef};
 use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{CompileError, TranspileError, TypeLib, TypeObjects, TypeSystem};
 
 pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "sardine_mimic_stella_AP9Ttup5cS6XFY8ZsPFcYV4REjrgaT85wQhRmXN2tuZ9";
+    "darwin_popular_welcome_4fFBHxWbs1ysSL59Nc4xFExBVAucfKbTvujACbZy8ATc";
 
 fn _std_sym() -> Result<TypeObjects, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), none!())
@@ -60,6 +60,7 @@ pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library
 
 fn _strict_types_sym() -> Result<TypeObjects, TranspileError> {
     LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
+        .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
