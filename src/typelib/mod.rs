@@ -33,5 +33,5 @@ pub use id::TypeLibId;
 pub(crate) use type_lib::TypeMap;
 pub use type_lib::{Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibRef, TypeLib};
 
-#[deprecated(since = "1.3.0", note = "import as strict_types::LibBuilder")]
-pub use super::LibBuilder;
+#[deprecated(since = "1.3.0", note = "import from crate level")]
+pub use super::{parse_args, LibBuilder};
