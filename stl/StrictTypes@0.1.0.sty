@@ -1,5 +1,5 @@
 {-
-  Id: darwin_popular_welcome_4fFBHxWbs1ysSL59Nc4xFExBVAucfKbTvujACbZy8ATc
+  Id: albert_magic_ariel_3xNAL6xY7z1u3qrnMHF79Kso6kgVPaM55KYz4TbJp92k
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -55,6 +55,8 @@ data SymbolRef        :: libName LibName
                        , tyName TypeName
                        , libId TypeLibId
                        , semId SemId
+data SymbolicSys      :: symbols Symbols, types TypeSystem
+data Symbols          :: libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
 data TyInlineRef      :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants

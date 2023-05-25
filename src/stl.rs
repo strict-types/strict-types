@@ -27,13 +27,13 @@ use encoding::stl::{
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
 use crate::{
-    CompileError, LibBuilder, SymbolRef, SymbolicLib, TranspileError, TypeLib, TypeSymbol,
-    TypeSysId, TypeSystem,
+    CompileError, LibBuilder, SymbolRef, SymbolicLib, SymbolicSys, TranspileError, TypeLib,
+    TypeSymbol, TypeSysId,
 };
 
 pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "darwin_popular_welcome_4fFBHxWbs1ysSL59Nc4xFExBVAucfKbTvujACbZy8ATc";
+    "albert_magic_ariel_3xNAL6xY7z1u3qrnMHF79Kso6kgVPaM55KYz4TbJp92k";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
@@ -63,9 +63,9 @@ fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
         .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
-        .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
+        .transpile::<SymbolicSys>()
         .compile_symbols()
 }
 fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }
