@@ -28,7 +28,7 @@ use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
-use crate::typesys::symbols::SymbolicTypes;
+use crate::typesys::symbols::SymbolicSys;
 use crate::typesys::{SymTy, TypeFqn};
 use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
@@ -72,7 +72,7 @@ impl Display for TypeSymbol {
 
 impl Translate<TypeSymbol> for SemId {
     type Builder = ();
-    type Context = SymbolicTypes;
+    type Context = SymbolicSys;
     type Error = Error;
 
     fn translate(
@@ -114,7 +114,7 @@ impl SystemBuilder {
         Ok(self)
     }
 
-    pub fn finalize(self) -> Result<SymbolicTypes, Vec<Error>> {
+    pub fn finalize(self) -> Result<SymbolicSys, Vec<Error>> {
         let mut errors = vec![];
 
         for dep in self.pending_deps {
@@ -135,7 +135,7 @@ impl SystemBuilder {
             return Err(errors);
         }
 
-        SymbolicTypes::with(self.imported_deps, self.types).map_err(|err| vec![err.into()])
+        SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err.into()])
     }
 
     fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>

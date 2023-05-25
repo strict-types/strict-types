@@ -60,6 +60,6 @@ pub use typelib::{
     CompileError, Dependency, LibBuilder, LibRef, SymbolRef, SymbolicLib, TranspileError,
     TranspileRef, TypeLib, TypeLibId,
 };
-pub use typesys::{SymbolicTypes, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};
+pub use typesys::{SymbolicSys, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};
 pub use util::{parse_args, BuildFragment, PreFragment, SemVer, StlFormat, UnknownFormat, Urn};
 pub use value::{decode, ston, typify, KeyStep, Path, PathError, Step, StrictVal};

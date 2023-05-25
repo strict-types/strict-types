@@ -33,7 +33,7 @@ use encoding::constants::*;
 use encoding::{DecodeError, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
-use crate::typesys::{SymbolicTypes, TypeSymbol};
+use crate::typesys::{SymbolicSys, TypeSymbol};
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
@@ -54,7 +54,7 @@ pub enum Error {
     NotEntirelyConsumed,
 }
 
-impl SymbolicTypes {
+impl SymbolicSys {
     pub fn strict_deserialize_type(
         &self,
         spec: impl Into<TypeSpec>,

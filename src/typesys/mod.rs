@@ -26,6 +26,6 @@ mod id;
 mod symbols;
 
 pub use id::TypeSysId;
-pub use symbols::{SymbolSystem, SymbolicTypes};
+pub use symbols::{SymbolicSys, Symbols};
 pub use translate::{Error, SystemBuilder, TypeSymbol};
 pub use type_sys::{SymTy, TypeFqn, TypeSystem};
