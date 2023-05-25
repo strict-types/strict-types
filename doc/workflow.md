@@ -2,14 +2,16 @@
 
 ```mermaid
 flowchart RL
-    Source -- Translate --> TypeObj
-    Rust -- Transpile --> TypeObj
-    TypeObj -- Compile --> TypeLib
-    TypeObj -- Disasm --> Source
-    TypeObj -- Encode --> Base64
+    Source -- Compile --> SymbolicLib
+    Rust -- Transpile --> SymbolicLib
+    SymbolicLib -- Compile --> TypeLib
+    SymbolicLib -- Disasm --> Source
+    TypeLib -- Translate --> SymbolicLib
     TypeLib -- Link --> TypeSys
-    TypeLib -- Disasm --> Source
     TypeLib -- Encode --> Base64
     TypeSys -- Encode --> Base64
     TypeSys -- Disasm --> Source
+    TypeLib --> SymbolicSys
+    SymbolicSys --> TypeSys
+    SymbolicSys -- encode --> Base64
 ```

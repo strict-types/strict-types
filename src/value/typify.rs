@@ -32,7 +32,7 @@ use indexmap::IndexMap;
 
 use super::StrictVal;
 use crate::ast::EnumVariants;
-use crate::typesys::{SymbolicTypes, TypeFqn, TypeSymbol};
+use crate::typesys::{SymbolicSys, TypeFqn, TypeSymbol};
 use crate::value::{EnumTag, StrictNum};
 use crate::{SemId, Ty, TypeRef, TypeSystem};
 
@@ -124,7 +124,7 @@ impl PrimitiveValue for Primitive {
     fn is_large_signed(&self) -> bool { self.into_code() > 0x4f && self.into_code() < 0x80 }
 }
 
-impl SymbolicTypes {
+impl SymbolicSys {
     pub fn typify(&self, val: StrictVal, spec: impl Into<TypeSpec>) -> Result<TypedVal, Error> {
         let spec = spec.into();
         let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
@@ -245,7 +245,7 @@ impl TypeSystem {
             }
             (StrictVal::Map(s), Ty::Map(key_ty, id, _)) => {
                 let mut new = Vec::<(StrictVal, StrictVal)>::with_capacity(s.len());
-                let key_id = key_ty.to_ty().id(None);
+                let key_id = key_ty.to_ty::<SemId>().id(None);
                 for (key, item) in s {
                     let checked_key = self.typify(key, key_id)?;
                     let checked_val = self.typify(item, *id)?;

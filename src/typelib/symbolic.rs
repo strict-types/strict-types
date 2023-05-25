@@ -29,10 +29,12 @@ use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
-use super::LibBuilder;
-use crate::ast::{HashId, SEM_ID_TAG};
-use crate::typelib::{CompileError, ExternRef, NestedContext, TypeIndex, TypeMap};
+use super::{LibBuilder, SymbolContext};
+use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
+use crate::typelib::{CompileError, ExternRef, NestedContext, SymbolError, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
+
+pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<SemId, TypeName>>;
 
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -42,17 +44,17 @@ use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRe
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", rename_all = "camelCase")
 )]
-pub struct TypeObjects {
+pub struct SymbolicLib {
     name: LibName,
     dependencies: TinyOrdSet<Dependency>,
-    extern_types: TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>,
+    extern_types: ExternTypes,
     types: SmallOrdMap<TypeName, Ty<TranspileRef>>,
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib_name}.{ty_name}")]
+#[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name} {{- {sem_id:0} -}}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -63,10 +65,6 @@ pub struct SymbolRef {
     pub ty_name: TypeName,
     pub lib_id: TypeLibId,
     pub sem_id: SemId,
-}
-
-impl HashId for SymbolRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl SymbolRef {
@@ -108,13 +106,17 @@ impl StrictDumb for Box<Ty<TranspileRef>> {
 impl TranspileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
 
-    pub fn sem_id(&self) -> SemId {
-        let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
-        let mut hasher = sha2::Sha256::new();
-        hasher.update(tag);
-        hasher.update(tag);
-        self.hash_id(&mut hasher);
-        SemId::from_raw_array(hasher.finalize())
+    pub fn id(&self) -> SemId {
+        if let TranspileRef::Extern(r) = self {
+            r.sem_id
+        } else {
+            let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+            let mut hasher = sha2::Sha256::new();
+            hasher.update(tag);
+            hasher.update(tag);
+            self.hash_id(&mut hasher);
+            SemId::from_raw_array(hasher.finalize())
+        }
     }
 }
 
@@ -152,14 +154,10 @@ impl TypeRef for TranspileRef {
     }
 }
 
-impl HashId for TranspileRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            TranspileRef::Embedded(ty) => ty.hash_id(hasher),
-            TranspileRef::Named(name) => name.hash_id(hasher),
-            TranspileRef::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
+impl PrimitiveRef for TranspileRef {
+    fn byte() -> Self { TranspileRef::Embedded(Box::new(Ty::BYTE)) }
+    fn ascii_char() -> Self { TranspileRef::Embedded(Box::new(Ty::ascii_char())) }
+    fn unicode_char() -> Self { TranspileRef::Embedded(Box::new(Ty::UNICODE)) }
 }
 
 impl Display for TranspileRef {
@@ -195,7 +193,7 @@ pub enum TranspileError {
 }
 
 impl LibBuilder {
-    pub fn compile_symbols(self) -> Result<TypeObjects, TranspileError> {
+    pub fn compile_symbols(self) -> Result<SymbolicLib, TranspileError> {
         let (name, known_libs, extern_types, types) =
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
@@ -242,7 +240,7 @@ impl LibBuilder {
                 .collect::<Result<_, _>>()?,
         )
         .map_err(|_| TranspileError::TooManyDependencies)?;
-        Ok(TypeObjects {
+        Ok(SymbolicLib {
             name,
             extern_types,
             dependencies,
@@ -253,7 +251,7 @@ impl LibBuilder {
     pub fn compile(self) -> Result<TypeLib, CompileError> { self.compile_symbols()?.compile() }
 }
 
-impl TypeObjects {
+impl SymbolicLib {
     pub fn compile(self) -> Result<TypeLib, CompileError> {
         let name = self.name;
         let dependencies = self.dependencies;
@@ -317,6 +315,35 @@ impl TypeObjects {
         Ok(TypeLib {
             name,
             dependencies,
+            extern_types,
+            types,
+        })
+    }
+}
+
+impl TypeLib {
+    pub fn to_symbolic(&self) -> Result<SymbolicLib, SymbolError> {
+        let lib_index = self.dependencies.iter().map(|dep| (dep.id, dep.name.clone())).collect();
+        let reverse_index =
+            self.types.iter().map(|(name, ty)| (ty.id(Some(name)), name.clone())).collect();
+        let ctx = SymbolContext {
+            reverse_index,
+            lib_index,
+        };
+        let mut extern_types = self.extern_types.clone();
+        let types = Confined::try_from(
+            self.types
+                .iter()
+                .map(|(name, ty)| {
+                    Ok((name.clone(), ty.clone().translate(&mut extern_types, &ctx)?))
+                })
+                .collect::<Result<_, _>>()?,
+        )
+        .expect("same collection size");
+        Ok(SymbolicLib {
+            name: self.name.clone(),
+            dependencies: self.dependencies.clone(),
+            extern_types,
             types,
         })
     }

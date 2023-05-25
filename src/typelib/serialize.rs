@@ -27,7 +27,7 @@ use std::{fmt, io};
 use amplify::num::u24;
 use encoding::{StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
-use crate::{StlFormat, TypeLib};
+use crate::{StlFormat, SymbolicLib, TypeLib};
 
 impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
@@ -68,10 +68,77 @@ impl TypeLib {
                     self.name,
                     header.unwrap_or_default()
                 )?;
-                writeln!(file, "{self}")?;
+                writeln!(file, "{:#}", self.to_symbolic().expect("invalid library data"))?;
             }
         }
 
+        Ok(())
+    }
+}
+
+impl StrictSerialize for SymbolicLib {}
+impl StrictDeserialize for SymbolicLib {}
+
+impl SymbolicLib {
+    pub fn serialize(
+        &self,
+        dir: Option<impl AsRef<Path>>,
+        ver: &'static str,
+        header: Option<&'static str>,
+    ) -> io::Result<()> {
+        use std::fs;
+        use std::io::stdout;
+
+        let mut file = match dir {
+            None => Box::new(stdout()) as Box<dyn io::Write>,
+            Some(dir) => {
+                let mut filename = dir.as_ref().to_owned();
+                filename.push(format!("{}@{ver}.sty", self.name()));
+                Box::new(fs::File::create(filename)?) as Box<dyn io::Write>
+            }
+        };
+
+        writeln!(
+            file,
+            "{{-\n  Name: {}\n  Version: {ver}{}\n-}}\n",
+            self.name(),
+            header.unwrap_or_default()
+        )?;
+        writeln!(file, "{self:#}")?;
+
+        Ok(())
+    }
+}
+
+impl Display for SymbolicLib {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typelib {}", self.name())?;
+        writeln!(f)?;
+        for dep in self.dependencies() {
+            writeln!(f, "{dep} as {}", dep.name)?;
+            if f.alternate() {
+                if let Some(index) = self.extern_types().get(&dep.name) {
+                    writeln!(f, "-- Imports:")?;
+                    for (sem_id, name) in index {
+                        writeln!(f, "-- {name} := {sem_id:0}")?;
+                    }
+                    writeln!(f)?;
+                }
+            }
+        }
+        if self.dependencies().is_empty() {
+            f.write_str("-- no dependencies")?;
+        }
+        writeln!(f)?;
+        writeln!(f)?;
+        for (name, ty) in self.types() {
+            if f.alternate() {
+                writeln!(f, "-- {:0}", ty.id(Some(name)))?;
+            }
+            write!(f, "data {name:0$} :: ", f.width().unwrap_or(16))?;
+            Display::fmt(ty, f)?;
+            writeln!(f)?;
+        }
         Ok(())
     }
 }

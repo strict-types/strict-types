@@ -35,15 +35,15 @@ use crate::{Dependency, SemId, Translate, Ty, TypeSystem};
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct SymbolSystem {
+pub struct Symbols {
     libs: SmallOrdSet<Dependency>,
     symbols: MediumOrdSet<TypeSymbol>,
 }
 
-impl StrictSerialize for SymbolSystem {}
-impl StrictDeserialize for SymbolSystem {}
+impl StrictSerialize for Symbols {}
+impl StrictDeserialize for Symbols {}
 
-impl SymbolSystem {
+impl Symbols {
     pub(crate) fn with(
         libs: impl IntoIterator<Item = Dependency>,
     ) -> Result<Self, confinement::Error> {
@@ -82,7 +82,7 @@ impl SymbolSystem {
     }
 }
 
-impl Index<&'static str> for SymbolSystem {
+impl Index<&'static str> for Symbols {
     type Output = SemId;
 
     fn index(&self, index: &'static str) -> &Self::Output {
@@ -90,7 +90,7 @@ impl Index<&'static str> for SymbolSystem {
     }
 }
 
-impl Display for SymbolSystem {
+impl Display for Symbols {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f)?;
         for dep in &self.libs {
@@ -107,7 +107,7 @@ impl Display for SymbolSystem {
 }
 
 #[cfg(feature = "base64")]
-impl fmt::UpperHex for SymbolSystem {
+impl fmt::UpperHex for Symbols {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::confinement::U32;
         use base64::Engine;
@@ -136,21 +136,21 @@ impl fmt::UpperHex for SymbolSystem {
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct SymbolicTypes {
-    symbols: SymbolSystem,
+pub struct SymbolicSys {
+    symbols: Symbols,
     types: TypeSystem,
 }
 
-impl StrictSerialize for SymbolicTypes {}
-impl StrictDeserialize for SymbolicTypes {}
+impl StrictSerialize for SymbolicSys {}
+impl StrictDeserialize for SymbolicSys {}
 
-impl SymbolicTypes {
+impl SymbolicSys {
     pub(crate) fn with(
         libs: impl IntoIterator<Item = Dependency>,
         types: BTreeMap<SemId, SymTy>,
     ) -> Result<Self, translate::Error> {
         let mut sys = TypeSystem::new();
-        let mut sym = SymbolSystem::with(libs)?;
+        let mut sym = Symbols::with(libs)?;
 
         for (sem_id, info) in types {
             sys.insert_unchecked(sem_id, info.ty)?;
@@ -163,7 +163,7 @@ impl SymbolicTypes {
         })
     }
 
-    pub fn new(types: TypeSystem, symbols: SymbolSystem) -> Self { Self { symbols, types } }
+    pub fn new(types: TypeSystem, symbols: Symbols) -> Self { Self { symbols, types } }
 
     pub fn id(&self) -> TypeSysId { self.types.id() }
 
@@ -186,7 +186,7 @@ impl SymbolicTypes {
     pub fn into_type_system(self) -> TypeSystem { self.types }
 }
 
-impl Display for SymbolicTypes {
+impl Display for SymbolicSys {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
@@ -205,7 +205,7 @@ impl Display for SymbolicTypes {
 }
 
 #[cfg(feature = "base64")]
-impl fmt::UpperHex for SymbolicTypes {
+impl fmt::UpperHex for SymbolicSys {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::confinement::U32;
         use base64::Engine;

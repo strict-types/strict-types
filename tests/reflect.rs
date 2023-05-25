@@ -24,9 +24,8 @@
 extern crate strict_encoding;
 
 use strict_encoding::STRICT_TYPES_LIB;
-use strict_types::typeobj::LibBuilder;
 use strict_types::typesys::SystemBuilder;
-use strict_types::TypeLib;
+use strict_types::{LibBuilder, TypeLib};
 
 #[test]
 fn reflect() {

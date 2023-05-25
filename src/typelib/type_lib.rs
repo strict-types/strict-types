@@ -28,15 +28,15 @@ use amplify::confinement::{Confined, TinyOrdSet};
 use encoding::StrictDumb;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
 use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
+use crate::typelib::ExternTypes;
 use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib_id}.{sem_id}")]
+#[display("{lib_id}.{sem_id:0}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -45,10 +45,6 @@ use crate::{KeyTy, SemId, Ty, TypeRef};
 pub struct ExternRef {
     pub lib_id: TypeLibId,
     pub sem_id: SemId,
-}
-
-impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl ExternRef {
@@ -97,20 +93,10 @@ impl TypeRef for InlineRef {
     }
 }
 
-impl HashId for InlineRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            InlineRef::Inline(ty) => ty.hash_id(hasher),
-            InlineRef::Named(id) => id.hash_id(hasher),
-            InlineRef::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef::Named(sem_id) => write!(f, "{sem_id}"),
+            InlineRef::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef::Extern(ext) => Display::fmt(ext, f),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
@@ -159,20 +145,10 @@ impl TypeRef for InlineRef1 {
     }
 }
 
-impl HashId for InlineRef1 {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            InlineRef1::Inline(ty) => ty.hash_id(hasher),
-            InlineRef1::Named(id) => id.hash_id(hasher),
-            InlineRef1::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef1::Named(sem_id) => write!(f, "{sem_id}"),
+            InlineRef1::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef1::Extern(ext) => Display::fmt(ext, f),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
@@ -221,20 +197,10 @@ impl TypeRef for InlineRef2 {
     }
 }
 
-impl HashId for InlineRef2 {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            InlineRef2::Inline(ty) => ty.hash_id(hasher),
-            InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
-            InlineRef2::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef2::Named(sem_id) => write!(f, "{sem_id}"),
+            InlineRef2::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef2::Extern(ext) => Display::fmt(ext, f),
             InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
@@ -279,16 +245,6 @@ impl TypeRef for LibRef {
         match self {
             LibRef::Inline(ty) => ty.is_ascii_char(),
             _ => false,
-        }
-    }
-}
-
-impl HashId for LibRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            LibRef::Inline(ty) => ty.hash_id(hasher),
-            LibRef::Named(id) => id.hash_id(hasher),
-            LibRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
 }
@@ -347,6 +303,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
     dumb = { TypeLib {
         name: LibName::strict_dumb(),
         dependencies: default!(),
+        extern_types: default!(),
         types: confined_bmap!(tn!("DumbType") => Ty::strict_dumb())
     } }
 )]
@@ -354,6 +311,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdSet<Dependency>,
+    pub extern_types: ExternTypes,
     pub types: TypeMap,
 }
 

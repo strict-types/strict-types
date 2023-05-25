@@ -29,8 +29,8 @@ use sha2::{Digest, Sha256};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
-use crate::typelib::TypeLib;
-use crate::Dependency;
+use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2, TypeLib};
+use crate::{Dependency, LibRef, SymbolRef, TranspileRef};
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
@@ -92,6 +92,64 @@ impl HashId for TypeLib {
 
 impl HashId for Dependency {
     fn hash_id(&self, hasher: &mut Sha256) { self.id.hash_id(hasher); }
+}
+
+impl HashId for TranspileRef {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        match self {
+            TranspileRef::Embedded(ty) => ty.hash_id(hasher),
+            TranspileRef::Named(name) => name.hash_id(hasher),
+            TranspileRef::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
+impl HashId for SymbolRef {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
+}
+
+impl HashId for LibRef {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        match self {
+            LibRef::Inline(ty) => ty.hash_id(hasher),
+            LibRef::Named(id) => id.hash_id(hasher),
+            LibRef::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
+impl HashId for InlineRef2 {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        match self {
+            InlineRef2::Inline(ty) => ty.hash_id(hasher),
+            InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
+            InlineRef2::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
+impl HashId for InlineRef1 {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        match self {
+            InlineRef1::Inline(ty) => ty.hash_id(hasher),
+            InlineRef1::Named(id) => id.hash_id(hasher),
+            InlineRef1::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
+impl HashId for InlineRef {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        match self {
+            InlineRef::Inline(ty) => ty.hash_id(hasher),
+            InlineRef::Named(id) => id.hash_id(hasher),
+            InlineRef::Extern(ext) => ext.hash_id(hasher),
+        }
+    }
+}
+
+impl HashId for ExternRef {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl TypeLib {

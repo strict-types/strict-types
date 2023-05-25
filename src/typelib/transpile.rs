@@ -34,8 +34,7 @@ use strict_encoding::{
 };
 
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typeobj::{SymbolRef, TranspileRef};
-use crate::{Dependency, SemId, Ty, TypeLibId};
+use crate::{Dependency, SemId, SymbolRef, TranspileRef, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
@@ -50,7 +49,7 @@ pub trait BuilderParent: StrictParent<Sink> {
 pub struct LibBuilder {
     pub(super) lib_name: LibName,
     pub(super) known_libs: BTreeSet<Dependency>,
-    pub(super) extern_types: BTreeMap<LibName, BTreeMap<TypeName, SemId>>,
+    pub(super) extern_types: BTreeMap<LibName, BTreeMap<SemId, TypeName>>,
     pub(super) types: BTreeMap<TypeName, Ty<TranspileRef>>,
     last_compiled: Option<TranspileRef>,
 }
@@ -229,7 +228,7 @@ impl BuilderParent for LibBuilder {
                 let (me, r) = _compile(self);
                 let lib_name = libname!(lib);
                 let lib_id = me.dependency_id(&lib_name);
-                (me, TranspileRef::Extern(SymbolRef::with(lib_name, name, lib_id, r.sem_id())))
+                (me, TranspileRef::Extern(SymbolRef::with(lib_name, name, lib_id, r.id())))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, TranspileRef::Named(name)),
             (_, Some(_)) => _compile(self),
@@ -255,7 +254,7 @@ impl BuilderParent for LibBuilder {
             }
             (lib, Some(name)) => {
                 let id = ty.id(Some(&name));
-                self.extern_types.entry(lib.clone()).or_default().insert(name.clone(), id);
+                self.extern_types.entry(lib.clone()).or_default().insert(id, name.clone());
                 let lib_id = self.dependency_id(&lib);
                 TranspileRef::Extern(SymbolRef::with(lib, name, lib_id, id))
             }
