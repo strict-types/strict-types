@@ -89,7 +89,7 @@ impl Display for SymbolicLib {
                 if let Some(index) = self.extern_types().get(&dep.name) {
                     writeln!(f, "-- Imports")?;
                     for (name, sem_id) in index {
-                        writeln!(f, "-- {name} := {sem_id}")?;
+                        writeln!(f, "-- {name} := {sem_id:0}")?;
                     }
                     writeln!(f)?;
                 }
@@ -102,7 +102,7 @@ impl Display for SymbolicLib {
         writeln!(f)?;
         for (name, ty) in self.types() {
             if f.alternate() {
-                writeln!(f, "-- {}", ty.id(Some(name)))?;
+                writeln!(f, "-- {:0}", ty.id(Some(name)))?;
             }
             write!(f, "data {name:0$} :: ", f.width().unwrap_or(16))?;
             Display::fmt(ty, f)?;
