@@ -30,10 +30,8 @@ use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::{HashId, SEM_ID_TAG};
-use crate::typelib::build::LibBuilder;
-use crate::typelib::translate::{NestedContext, TranslateError, TypeIndex};
-use crate::typelib::type_lib::TypeMap;
-use crate::typelib::ExternRef;
+use crate::typelib::{ExternRef, NestedContext, TranslateError, TypeIndex, TypeMap};
+use crate::typeobj::LibBuilder;
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]

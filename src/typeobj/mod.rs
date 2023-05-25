@@ -20,32 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate amplify;
-#[macro_use]
-extern crate strict_encoding;
+pub mod build;
+pub mod compile;
 
-use strict_encoding::STRICT_TYPES_LIB;
-use strict_types::typeobj::LibBuilder;
-use strict_types::typesys::SystemBuilder;
-use strict_types::TypeLib;
-
-#[test]
-fn reflect() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), none!()).transpile::<TypeLib>();
-    let lib = builder.compile().unwrap();
-
-    let builder = SystemBuilder::new().import(lib).unwrap();
-    match builder.finalize() {
-        Ok(sys) => {
-            println!("{sys}");
-            println!("{sys:X}");
-        }
-        Err(errors) => {
-            for err in errors {
-                eprintln!("Error: {err}");
-            }
-            panic!()
-        }
-    }
-}
+pub use build::LibBuilder;
+pub use compile::{CompileRef, LinkRef};

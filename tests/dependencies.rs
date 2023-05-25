@@ -30,7 +30,7 @@ use std::io;
 use strict_encoding::{
     DecodeError, StrictDecode, StrictEncode, StrictType, TypedRead, TypedWrite, STRICT_TYPES_LIB,
 };
-use strict_types::typelib::build::LibBuilder;
+use strict_types::typeobj::LibBuilder;
 use strict_types::{Dependency, KeyTy, TypeLib};
 
 const LIB: &str = "Test";

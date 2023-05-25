@@ -33,9 +33,8 @@ use strict_encoding::{
     UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, LIB_EMBEDDED,
 };
 
-use super::compile::CompileRef;
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typelib::LinkRef;
+use crate::typeobj::{CompileRef, LinkRef};
 use crate::{Dependency, SemId, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {

@@ -50,6 +50,7 @@ pub use strict_encoding::{
 mod macros;
 mod util;
 pub mod ast;
+pub mod typeobj;
 pub mod typelib;
 pub mod typesys;
 pub mod value;

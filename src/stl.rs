@@ -26,7 +26,8 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typelib::{LibBuilder, TranslateError};
+use crate::typelib::TranslateError;
+use crate::typeobj::LibBuilder;
 use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{TypeLib, TypeSystem};
 
