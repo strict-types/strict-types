@@ -26,7 +26,6 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdSet};
 use encoding::StrictDumb;
-use sha2::Digest;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
@@ -49,7 +48,7 @@ pub struct ExternRef {
 }
 
 impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(self.sem_id.as_slice()); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl ExternRef {
@@ -226,9 +225,7 @@ impl HashId for InlineRef2 {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
         match self {
             InlineRef2::Inline(ty) => ty.hash_id(hasher),
-            InlineRef2::Named(sem_id) => {
-                hasher.update(sem_id.as_slice());
-            }
+            InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
             InlineRef2::Extern(ext) => ext.hash_id(hasher),
         }
     }

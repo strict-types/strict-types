@@ -30,9 +30,9 @@ use crate::typeobj::Transpiler;
 use crate::typesys::{TypeSymbol, TypeSysId};
 use crate::{TranspileError, TypeLib, TypeObjects, TypeSystem};
 
-pub const LIB_ID_STD: &str = "gemini_door_jeep_2UoUiDCVTjZJHh8XjFgWQ2cX6zdiwUDZJM3DQm1i4FT1";
+pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "explore_outside_albert_3Ses9snQxYBWwsvb4AgUzgpS3QYB7BLBWamkcNUCmgzu";
+    "sardine_mimic_stella_AP9Ttup5cS6XFY8ZsPFcYV4REjrgaT85wQhRmXN2tuZ9";
 
 fn _std_stl() -> Result<TypeObjects, TranspileError> {
     Transpiler::new(libname!(LIB_NAME_STD), none!())

@@ -66,7 +66,7 @@ pub struct SymbolRef {
 }
 
 impl HashId for SymbolRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(self.sem_id.as_slice()); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl SymbolRef {
@@ -111,7 +111,10 @@ impl TranspileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
 
     pub fn sem_id(&self) -> SemId {
-        let mut hasher = sha2::Sha256::new_with_prefix(&SEM_ID_TAG);
+        let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(tag);
+        hasher.update(tag);
         self.hash_id(&mut hasher);
         SemId::from_raw_array(hasher.finalize())
     }
@@ -155,9 +158,7 @@ impl HashId for TranspileRef {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
         match self {
             TranspileRef::Embedded(ty) => ty.hash_id(hasher),
-            TranspileRef::Named(name) => {
-                hasher.update(name.as_bytes());
-            }
+            TranspileRef::Named(name) => name.hash_id(hasher),
             TranspileRef::Extern(ext) => ext.hash_id(hasher),
         }
     }

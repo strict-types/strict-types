@@ -24,11 +24,13 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
-use encoding::{StrictEncode, StrictWriter};
-use sha2::Digest;
+use encoding::StrictEncode;
+use sha2::{Digest, Sha256};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
+use crate::ast::HashId;
 use crate::typelib::TypeLib;
+use crate::Dependency;
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
@@ -69,12 +71,36 @@ impl TypeLibId {
     fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
+impl HashId for TypeLibId {
+    fn hash_id(&self, hasher: &mut Sha256) { hasher.update(self.as_slice()); }
+}
+
+impl HashId for TypeLib {
+    fn hash_id(&self, hasher: &mut Sha256) {
+        self.name.hash_id(hasher);
+        hasher.update([self.dependencies.len_u8()]);
+        for dep in &self.dependencies {
+            dep.hash_id(hasher);
+        }
+        hasher.update(self.types.len_u16().to_le_bytes());
+        for (name, ty) in &self.types {
+            let sem_id = ty.id(Some(name));
+            sem_id.hash_id(hasher);
+        }
+    }
+}
+
+impl HashId for Dependency {
+    fn hash_id(&self, hasher: &mut Sha256) { self.id.hash_id(hasher); }
+}
+
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        // TODO: Refactor
-        let hasher = sha2::Sha256::new_with_prefix(&LIB_ID_TAG);
-        let engine = StrictWriter::with(usize::MAX, hasher);
-        let engine = self.strict_encode(engine).expect("hasher do not error");
-        TypeLibId::from_raw_array(engine.unbox().finalize())
+        let tag = Sha256::new_with_prefix(&LIB_ID_TAG).finalize();
+        let mut hasher = Sha256::new();
+        hasher.update(tag);
+        hasher.update(tag);
+        self.hash_id(&mut hasher);
+        TypeLibId::from_raw_array(hasher.finalize())
     }
 }
