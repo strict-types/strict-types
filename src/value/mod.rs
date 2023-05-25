@@ -47,7 +47,7 @@ pub(self) mod test_helpers {
     use amplify::confinement::{Confined, TinyAscii};
     use encoding::{StrictDeserialize, StrictSerialize};
 
-    use crate::typeobj::LibBuilder;
+    use crate::typeobj::Transpiler;
     use crate::typesys::{SymbolicTypes, SystemBuilder};
 
     #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -84,7 +84,12 @@ pub(self) mod test_helpers {
     }
 
     pub fn test_system() -> SymbolicTypes {
-        let lib = LibBuilder::new("TestLib", none!()).transpile::<Nominal>().compile().unwrap();
+        let lib = Transpiler::new("TestLib", none!())
+            .transpile::<Nominal>()
+            .finish()
+            .unwrap()
+            .compile()
+            .unwrap();
         SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
     }
 }

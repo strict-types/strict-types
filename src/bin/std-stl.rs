@@ -24,7 +24,7 @@ use strict_types::stl;
 use strict_types::typelib::parse_args;
 
 fn main() {
-    let lib = stl::std_stl();
+    let lib = stl::std_stl().compile().expect("invalid STL library");
     let (format, dir) = parse_args();
     lib.serialize(
         format,

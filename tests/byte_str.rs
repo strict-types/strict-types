@@ -26,7 +26,7 @@ extern crate amplify;
 extern crate strict_encoding;
 
 use amplify::confinement::SmallVec;
-use strict_types::typeobj::LibBuilder;
+use strict_types::typeobj::Transpiler;
 
 #[test]
 fn reflect() {
@@ -35,8 +35,8 @@ fn reflect() {
     #[strict_type(lib = "Test")]
     struct ByteStr(SmallVec<u8>);
 
-    let builder = LibBuilder::new(libname!("Test"), none!()).transpile::<ByteStr>();
-    let lib = builder.compile().unwrap();
+    let builder = Transpiler::new(libname!("Test"), none!()).transpile::<ByteStr>();
+    let lib = builder.finish().unwrap().compile().unwrap();
 
     assert_eq!(
         lib.to_string(),

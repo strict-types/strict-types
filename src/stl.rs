@@ -26,17 +26,16 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typelib::TranslateError;
-use crate::typeobj::LibBuilder;
+use crate::typeobj::Transpiler;
 use crate::typesys::{TypeSymbol, TypeSysId};
-use crate::{TypeLib, TypeSystem};
+use crate::{TranspileError, TypeLib, TypeObjects, TypeSystem};
 
 pub const LIB_ID_STD: &str = "gemini_door_jeep_2UoUiDCVTjZJHh8XjFgWQ2cX6zdiwUDZJM3DQm1i4FT1";
 pub const LIB_ID_STRICT_TYPES: &str =
     "explore_outside_albert_3Ses9snQxYBWwsvb4AgUzgpS3QYB7BLBWamkcNUCmgzu";
 
-fn _std_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(LIB_NAME_STD), none!())
+fn _std_stl() -> Result<TypeObjects, TranspileError> {
+    Transpiler::new(libname!(LIB_NAME_STD), none!())
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -50,21 +49,21 @@ fn _std_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<AlphaCapsNum>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
-        .compile()
+        .finish()
 }
 
-pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
+pub fn std_stl() -> TypeObjects { _std_stl().expect("invalid strict type Std library") }
 
-fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
+fn _strict_types_stl() -> Result<TypeObjects, TranspileError> {
+    Transpiler::new(libname!(STRICT_TYPES_LIB), none!())
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
-        .compile()
+        .finish()
 }
 
-pub fn strict_types_stl() -> TypeLib {
+pub fn strict_types_stl() -> TypeObjects {
     _strict_types_stl().expect("invalid strict type StrictTypes library")
 }
 
@@ -74,13 +73,13 @@ mod test {
 
     #[test]
     fn std_lib_id() {
-        let lib = std_stl();
+        let lib = std_stl().compile().unwrap();
         assert_eq!(lib.id().to_string(), LIB_ID_STD);
     }
 
     #[test]
     fn strict_types_lib_id() {
-        let lib = strict_types_stl();
+        let lib = strict_types_stl().compile().unwrap();
         assert_eq!(lib.id().to_string(), LIB_ID_STRICT_TYPES);
     }
 }

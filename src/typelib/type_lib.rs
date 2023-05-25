@@ -30,8 +30,8 @@ use sha2::Digest;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
+use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
-use crate::typelib::translate::TranslateError;
 use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -366,17 +366,17 @@ impl StrictDeserialize for TypeLib {}
 impl TypeLib {
     pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
 
-    pub fn import(&mut self, dependency: Dependency) -> Result<(), TranslateError> {
+    pub fn import(&mut self, dependency: Dependency) -> Result<(), CompileError> {
         if self.dependencies.contains(&dependency) {
-            return Err(TranslateError::DuplicatedDependency(dependency));
+            return Err(CompileError::DuplicatedDependency(dependency));
         }
         self.dependencies.push(dependency)?;
         Ok(())
     }
 
-    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), TranslateError> {
+    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), CompileError> {
         if self.types.contains_key(&name) {
-            return Err(TranslateError::DuplicateName(name));
+            return Err(CompileError::DuplicateName(name));
         }
         self.types.insert(name, ty)?;
         Ok(())

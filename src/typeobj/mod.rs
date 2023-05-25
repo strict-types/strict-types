@@ -20,8 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod build;
-pub mod compile;
+mod transpile;
+mod type_obj;
 
-pub use build::LibBuilder;
-pub use compile::{CompileRef, LinkRef};
+pub use transpile::Transpiler;
+pub use type_obj::{SymbolRef, TranspileError, TranspileRef, TypeObjects};
