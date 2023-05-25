@@ -68,7 +68,7 @@ impl TypeLib {
                     self.name,
                     header.unwrap_or_default()
                 )?;
-                writeln!(file, "{self}")?;
+                writeln!(file, "{}", self.to_symbolic().expect("invalid library data"))?;
             }
         }
 

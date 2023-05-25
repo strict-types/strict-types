@@ -56,7 +56,7 @@ pub mod typesys;
 pub mod value;
 pub mod stl;
 
-pub use ast::{Cls, KeyTy, SemId, Translate, Ty, TypeRef};
+pub use ast::{Cls, KeyTy, PrimitiveRef, SemId, Translate, Ty, TypeRef};
 pub use symlib::{LibBuilder, SymbolRef, SymbolicLib, TranspileError, TranspileRef};
 pub use typelib::{CompileError, Dependency, LibRef, TypeLib, TypeLibId};
 pub use typesys::{SymbolicTypes, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};

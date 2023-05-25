@@ -23,6 +23,9 @@
 mod transpile;
 mod symbolic;
 mod serialize;
+mod translate;
 
 pub use symbolic::{SymbolRef, SymbolicLib, TranspileError, TranspileRef};
+pub(self) use translate::SymbolContext;
+pub use translate::SymbolError;
 pub use transpile::LibBuilder;

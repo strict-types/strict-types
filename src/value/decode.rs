@@ -322,35 +322,35 @@ impl TypeSystem {
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u16::MAX as u64 => {
                 let len = u16::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u24::MAX.into_u64() => {
                 let len = u24::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len.into_usize(), key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u32::MAX as u64 => {
                 let len = u32::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, _sizing) => {
                 let len = u64::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)

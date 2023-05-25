@@ -245,7 +245,7 @@ impl TypeSystem {
             }
             (StrictVal::Map(s), Ty::Map(key_ty, id, _)) => {
                 let mut new = Vec::<(StrictVal, StrictVal)>::with_capacity(s.len());
-                let key_id = key_ty.to_ty().id(None);
+                let key_id = key_ty.to_ty::<SemId>().id(None);
                 for (key, item) in s {
                     let checked_key = self.typify(key, key_id)?;
                     let checked_val = self.typify(item, *id)?;

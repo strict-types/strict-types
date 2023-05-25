@@ -43,7 +43,12 @@ impl Display for SymbolicLib {
         writeln!(f)?;
         writeln!(f)?;
         for (name, ty) in self.types() {
-            writeln!(f, "data {name:16} :: {ty}")?;
+            if f.alternate() {
+                writeln!(f, "-- {}", ty.id(Some(name)))?;
+            }
+            write!(f, "data {name:0$} :: ", f.width().unwrap_or(16))?;
+            Display::fmt(ty, f)?;
+            writeln!(f)?;
         }
         Ok(())
     }

@@ -33,7 +33,6 @@ use strict_encoding::{
 
 use super::id::HashId;
 use crate::ast::Iter;
-use crate::SemId;
 
 /// Glue for constructing ASTs.
 pub trait TypeRef:
@@ -46,6 +45,12 @@ pub trait TypeRef:
     fn is_byte(&self) -> bool { false }
     fn is_unicode_char(&self) -> bool { false }
     fn is_ascii_char(&self) -> bool { false }
+}
+
+pub trait PrimitiveRef: TypeRef {
+    fn byte() -> Self;
+    fn ascii_char() -> Self;
+    fn unicode_char() -> Self;
 }
 
 impl TypeRef for KeyTy {}
@@ -349,28 +354,28 @@ impl KeyTy {
     pub const U8: KeyTy = KeyTy::Primitive(U8);
     pub const BYTE: KeyTy = KeyTy::Primitive(BYTE);
 
-    pub fn to_ty(&self) -> Ty<SemId> { self.clone().into_ty() }
+    pub fn to_ty<Ref: PrimitiveRef>(&self) -> Ty<Ref> { self.clone().into_ty() }
 
-    pub fn into_ty(self) -> Ty<SemId> {
+    pub fn into_ty<Ref: PrimitiveRef>(self) -> Ty<Ref> {
         match self {
-            KeyTy::Primitive(prim) => Ty::Primitive(prim),
-            KeyTy::Enum(variants) => Ty::Enum(variants),
-            KeyTy::Array(len) => Ty::Array(Ty::<SemId>::BYTE.id(None), len),
-            KeyTy::UnicodeStr(sizing) if sizing == Sizing::ONE => Ty::UnicodeChar,
+            KeyTy::Primitive(prim) => Ty::<Ref>::Primitive(prim),
+            KeyTy::Enum(variants) => Ty::<Ref>::Enum(variants),
+            KeyTy::Array(len) => Ty::<Ref>::Array(Ref::byte(), len),
+            KeyTy::UnicodeStr(sizing) if sizing == Sizing::ONE => Ty::<Ref>::UnicodeChar,
             KeyTy::UnicodeStr(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
-                Ty::Array(Ty::<SemId>::UnicodeChar.id(None), sizing.min as u16)
+                Ty::<Ref>::Array(Ref::unicode_char(), sizing.min as u16)
             }
-            KeyTy::UnicodeStr(sizing) => Ty::List(Ty::<SemId>::UnicodeChar.id(None), sizing),
+            KeyTy::UnicodeStr(sizing) => Ty::<Ref>::List(Ref::unicode_char(), sizing),
             KeyTy::AsciiStr(sizing) if sizing == Sizing::ONE => Ty::ascii_char(),
             KeyTy::AsciiStr(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
-                Ty::Array(Ty::<SemId>::ascii_char().id(None), sizing.min as u16)
+                Ty::<Ref>::Array(Ref::ascii_char(), sizing.min as u16)
             }
-            KeyTy::AsciiStr(sizing) => Ty::List(Ty::<SemId>::ascii_char().id(None), sizing),
+            KeyTy::AsciiStr(sizing) => Ty::<Ref>::List(Ref::ascii_char(), sizing),
             KeyTy::Bytes(sizing) if sizing == Sizing::ONE => Ty::BYTE,
             KeyTy::Bytes(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
-                Ty::Array(Ty::<SemId>::BYTE.id(None), sizing.min as u16)
+                Ty::<Ref>::Array(Ref::byte(), sizing.min as u16)
             }
-            KeyTy::Bytes(sizing) => Ty::List(Ty::<SemId>::BYTE.id(None), sizing),
+            KeyTy::Bytes(sizing) => Ty::<Ref>::List(Ref::byte(), sizing),
         }
     }
 }

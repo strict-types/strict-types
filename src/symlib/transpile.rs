@@ -228,7 +228,7 @@ impl BuilderParent for LibBuilder {
                 let (me, r) = _compile(self);
                 let lib_name = libname!(lib);
                 let lib_id = me.dependency_id(&lib_name);
-                (me, TranspileRef::Extern(SymbolRef::with(lib_name, name, lib_id, r.sem_id())))
+                (me, TranspileRef::Extern(SymbolRef::with(lib_name, name, lib_id, r.id())))
             }
             (_, Some(name)) if self.types.contains_key(&name) => (self, TranspileRef::Named(name)),
             (_, Some(_)) => _compile(self),

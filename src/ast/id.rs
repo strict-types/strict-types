@@ -30,7 +30,7 @@ use sha2::Digest;
 use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
-use crate::ast::{EnumVariants, NamedFields};
+use crate::ast::{EnumVariants, NamedFields, PrimitiveRef};
 use crate::{Cls, KeyTy, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
@@ -67,11 +67,15 @@ impl FromStr for SemId {
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
 impl TypeRef for SemId {
-    fn is_unicode_char(&self) -> bool { Ty::<Self>::UNICODE.id(None) == *self }
-    fn is_ascii_char(&self) -> bool { Ty::<Self>::ascii_char().id(None) == *self }
-    fn is_byte(&self) -> bool {
-        Ty::<Self>::BYTE.id(None) == *self || Ty::<Self>::U8.id(None) == *self
-    }
+    fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
+    fn is_ascii_char(&self) -> bool { Self::ascii_char() == *self }
+    fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.id(None) == *self }
+}
+
+impl PrimitiveRef for SemId {
+    fn byte() -> Self { Ty::<Self>::BYTE.id(None) }
+    fn ascii_char() -> Self { Ty::<Self>::ascii_char().id(None) }
+    fn unicode_char() -> Self { Ty::<Self>::UNICODE.id(None) }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {

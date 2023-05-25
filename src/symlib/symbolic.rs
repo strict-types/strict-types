@@ -30,7 +30,8 @@ use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use super::LibBuilder;
-use crate::ast::{HashId, SEM_ID_TAG};
+use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
+use crate::symlib::{SymbolContext, SymbolError};
 use crate::typelib::{CompileError, ExternRef, NestedContext, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
@@ -52,7 +53,7 @@ pub struct SymbolicLib {
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib_name}.{ty_name}")]
+#[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name} {{- {sem_id} -}}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -108,7 +109,7 @@ impl StrictDumb for Box<Ty<TranspileRef>> {
 impl TranspileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
 
-    pub fn sem_id(&self) -> SemId {
+    pub fn id(&self) -> SemId {
         let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
         let mut hasher = sha2::Sha256::new();
         hasher.update(tag);
@@ -150,6 +151,12 @@ impl TypeRef for TranspileRef {
             _ => false,
         }
     }
+}
+
+impl PrimitiveRef for TranspileRef {
+    fn byte() -> Self { TranspileRef::Embedded(Box::new(Ty::BYTE)) }
+    fn ascii_char() -> Self { TranspileRef::Embedded(Box::new(Ty::ascii_char())) }
+    fn unicode_char() -> Self { TranspileRef::Embedded(Box::new(Ty::UNICODE)) }
 }
 
 impl HashId for TranspileRef {
@@ -317,6 +324,31 @@ impl SymbolicLib {
         Ok(TypeLib {
             name,
             dependencies,
+            types,
+        })
+    }
+}
+
+impl TypeLib {
+    pub fn to_symbolic(&self) -> Result<SymbolicLib, SymbolError> {
+        let lib_index = self.dependencies.iter().map(|dep| (dep.id, dep.name.clone())).collect();
+        let reverse_index =
+            self.types.iter().map(|(name, ty)| (ty.id(Some(name)), name.clone())).collect();
+        let ctx = SymbolContext {
+            reverse_index,
+            lib_index,
+        };
+        let types = Confined::try_from(
+            self.types
+                .iter()
+                .map(|(name, ty)| Ok((name.clone(), ty.clone().translate(&mut (), &ctx)?)))
+                .collect::<Result<_, _>>()?,
+        )
+        .expect("same collection size");
+        Ok(SymbolicLib {
+            name: self.name.clone(),
+            dependencies: self.dependencies.clone(),
+            extern_types: Default::default(),
             types,
         })
     }
