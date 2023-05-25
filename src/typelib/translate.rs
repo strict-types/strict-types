@@ -76,12 +76,18 @@ impl SymbolContext {
     ) -> Result<TranspileRef, SymbolError> {
         let lib_name =
             self.lib_index.get(&ext.lib_id).ok_or(SymbolError::UnknownLib(ext.lib_id))?;
-        let ty_name =
-            self.reverse_index.get(&ext.sem_id).ok_or(SymbolError::UnknownType(ext.sem_id))?;
+        let ty_name = builder
+            .get(lib_name)
+            .ok_or(SymbolError::UnknownLib(ext.lib_id.clone()))?
+            .iter()
+            .find(|(_, id)| *id == &ext.sem_id)
+            .map(|(name, _)| name)
+            .ok_or(SymbolError::UnknownType(ext.sem_id))?
+            .clone();
         let r = SymbolRef::with(lib_name.clone(), ty_name.clone(), ext.lib_id, ext.sem_id);
         let mut index = builder.remove(&lib_name).ok().flatten().unwrap_or_default();
         index
-            .insert(ty_name.clone(), ext.sem_id)
+            .insert(ty_name, ext.sem_id)
             .map_err(|_| SymbolError::LibTooLarge(lib_name.clone()))?;
         builder.insert(lib_name.clone(), index).map_err(|_| SymbolError::TooManyDependencies)?;
         Ok(TranspileRef::Extern(r))

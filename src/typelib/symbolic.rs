@@ -340,7 +340,7 @@ impl TypeLib {
             reverse_index,
             lib_index,
         };
-        let mut extern_types = ExternTypes::default();
+        let mut extern_types = self.extern_types.clone();
         let types = Confined::try_from(
             self.types
                 .iter()
