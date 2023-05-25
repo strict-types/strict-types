@@ -89,7 +89,6 @@ impl SymbolicLib {
         use std::fs;
         use std::io::stdout;
 
-        let id = self.id();
         let mut file = match dir {
             None => Box::new(stdout()) as Box<dyn io::Write>,
             Some(dir) => {
@@ -101,7 +100,7 @@ impl SymbolicLib {
 
         writeln!(
             file,
-            "{{-\n  Id: {id:+}\n  Name: {}\n  Version: {ver}{}\n-}}\n",
+            "{{-\n  Name: {}\n  Version: {ver}{}\n-}}\n",
             self.name(),
             header.unwrap_or_default()
         )?;

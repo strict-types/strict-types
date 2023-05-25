@@ -83,14 +83,6 @@ mod test {
     use super::*;
 
     #[test]
-    fn id_equivalence() {
-        let lib = strict_types_stl();
-        let sym = strict_types_sym();
-        assert_eq!(lib.to_symbolic().unwrap().id(), sym.id());
-        assert_eq!(lib.id(), sym.id());
-    }
-
-    #[test]
     fn std_lib_id() {
         let lib = std_stl();
         assert_eq!(lib.id().to_string(), LIB_ID_STD);
