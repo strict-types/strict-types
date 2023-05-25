@@ -79,6 +79,38 @@ impl TypeLib {
 impl StrictSerialize for SymbolicLib {}
 impl StrictDeserialize for SymbolicLib {}
 
+impl SymbolicLib {
+    pub fn serialize(
+        &self,
+        dir: Option<impl AsRef<Path>>,
+        ver: &'static str,
+        header: Option<&'static str>,
+    ) -> io::Result<()> {
+        use std::fs;
+        use std::io::stdout;
+
+        let id = self.id();
+        let mut file = match dir {
+            None => Box::new(stdout()) as Box<dyn io::Write>,
+            Some(dir) => {
+                let mut filename = dir.as_ref().to_owned();
+                filename.push(format!("{}@{ver}.sty", self.name()));
+                Box::new(fs::File::create(filename)?) as Box<dyn io::Write>
+            }
+        };
+
+        writeln!(
+            file,
+            "{{-\n  Id: {id:+}\n  Name: {}\n  Version: {ver}{}\n-}}\n",
+            self.name(),
+            header.unwrap_or_default()
+        )?;
+        writeln!(file, "{self:#}")?;
+
+        Ok(())
+    }
+}
+
 impl Display for SymbolicLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typelib {}", self.name())?;
