@@ -34,8 +34,7 @@ use strict_encoding::{
 };
 
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typeobj::{SymbolRef, TranspileRef};
-use crate::{Dependency, SemId, Ty, TypeLibId};
+use crate::{Dependency, SemId, SymbolRef, TranspileRef, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the

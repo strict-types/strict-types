@@ -20,9 +20,31 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod transpile;
-mod type_obj;
-mod serialize;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
-pub use transpile::LibBuilder;
-pub use type_obj::{SymbolRef, TranspileError, TranspileRef, TypeObjects};
+use encoding::{StrictDeserialize, StrictSerialize};
+
+use crate::SymbolicLib;
+
+impl StrictSerialize for SymbolicLib {}
+impl StrictDeserialize for SymbolicLib {}
+
+impl Display for SymbolicLib {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "typelib {}", self.name())?;
+        writeln!(f)?;
+        for dep in self.dependencies() {
+            writeln!(f, "{dep} as {}", dep.name)?;
+        }
+        if self.dependencies().is_empty() {
+            f.write_str("-- no dependencies")?;
+        }
+        writeln!(f)?;
+        writeln!(f)?;
+        for (name, ty) in self.types() {
+            writeln!(f, "data {name:16} :: {ty}")?;
+        }
+        Ok(())
+    }
+}

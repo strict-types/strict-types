@@ -24,7 +24,7 @@
 extern crate strict_encoding;
 
 use amplify::confinement::SmallVec;
-use strict_types::typeobj::LibBuilder;
+use strict_types::LibBuilder;
 
 #[test]
 fn reflect() {

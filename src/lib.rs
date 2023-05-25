@@ -50,15 +50,15 @@ pub use strict_encoding::{
 mod macros;
 mod util;
 pub mod ast;
-pub mod typeobj;
+pub mod symlib;
 pub mod typelib;
 pub mod typesys;
 pub mod value;
 pub mod stl;
 
 pub use ast::{Cls, KeyTy, SemId, Translate, Ty, TypeRef};
+pub use symlib::{LibBuilder, SymbolRef, SymbolicLib, TranspileError, TranspileRef};
 pub use typelib::{CompileError, Dependency, LibRef, TypeLib, TypeLibId};
-pub use typeobj::{LibBuilder, TranspileError, TypeObjects};
-pub use typesys::TypeSystem;
+pub use typesys::{SymbolicTypes, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};
 pub use util::{parse_args, BuildFragment, PreFragment, SemVer, StlFormat, UnknownFormat, Urn};
 pub use value::{decode, ston, typify, KeyStep, Path, PathError, Step, StrictVal};

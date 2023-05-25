@@ -27,8 +27,7 @@ use encoding::LibName;
 use strict_encoding::TypeName;
 
 use crate::typelib::{Dependency, InlineRef, InlineRef1, InlineRef2, LibRef};
-use crate::typeobj::TranspileRef;
-use crate::{KeyTy, SemId, Translate, TranspileError, Ty};
+use crate::{KeyTy, SemId, Translate, TranspileError, TranspileRef, Ty};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
 

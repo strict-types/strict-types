@@ -47,8 +47,8 @@ pub(self) mod test_helpers {
     use amplify::confinement::{Confined, TinyAscii};
     use encoding::{StrictDeserialize, StrictSerialize};
 
-    use crate::typeobj::LibBuilder;
     use crate::typesys::{SymbolicTypes, SystemBuilder};
+    use crate::LibBuilder;
 
     #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
     #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]

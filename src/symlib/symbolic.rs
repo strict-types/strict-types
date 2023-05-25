@@ -42,7 +42,7 @@ use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRe
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", rename_all = "camelCase")
 )]
-pub struct TypeObjects {
+pub struct SymbolicLib {
     name: LibName,
     dependencies: TinyOrdSet<Dependency>,
     extern_types: TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>,
@@ -195,7 +195,7 @@ pub enum TranspileError {
 }
 
 impl LibBuilder {
-    pub fn compile_symbols(self) -> Result<TypeObjects, TranspileError> {
+    pub fn compile_symbols(self) -> Result<SymbolicLib, TranspileError> {
         let (name, known_libs, extern_types, types) =
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
@@ -242,7 +242,7 @@ impl LibBuilder {
                 .collect::<Result<_, _>>()?,
         )
         .map_err(|_| TranspileError::TooManyDependencies)?;
-        Ok(TypeObjects {
+        Ok(SymbolicLib {
             name,
             extern_types,
             dependencies,
@@ -253,7 +253,7 @@ impl LibBuilder {
     pub fn compile(self) -> Result<TypeLib, CompileError> { self.compile_symbols()?.compile() }
 }
 
-impl TypeObjects {
+impl SymbolicLib {
     pub fn compile(self) -> Result<TypeLib, CompileError> {
         let name = self.name;
         let dependencies = self.dependencies;

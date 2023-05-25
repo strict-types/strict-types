@@ -20,29 +20,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate strict_encoding;
+mod transpile;
+mod symbolic;
+mod serialize;
 
-use strict_encoding::STRICT_TYPES_LIB;
-use strict_types::typesys::SystemBuilder;
-use strict_types::{LibBuilder, TypeLib};
-
-#[test]
-fn reflect() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), None).transpile::<TypeLib>();
-    let lib = builder.compile().unwrap();
-
-    let builder = SystemBuilder::new().import(lib).unwrap();
-    match builder.finalize() {
-        Ok(sys) => {
-            println!("{sys}");
-            println!("{sys:X}");
-        }
-        Err(errors) => {
-            for err in errors {
-                eprintln!("Error: {err}");
-            }
-            panic!()
-        }
-    }
-}
+pub use symbolic::{SymbolRef, SymbolicLib, TranspileError, TranspileRef};
+pub use transpile::LibBuilder;

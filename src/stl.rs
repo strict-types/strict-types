@@ -26,15 +26,16 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typeobj::{LibBuilder, SymbolRef};
-use crate::typesys::{TypeSymbol, TypeSysId};
-use crate::{CompileError, TranspileError, TypeLib, TypeObjects, TypeSystem};
+use crate::{
+    CompileError, LibBuilder, SymbolRef, SymbolicLib, TranspileError, TypeLib, TypeSymbol,
+    TypeSysId, TypeSystem,
+};
 
 pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
 pub const LIB_ID_STRICT_TYPES: &str =
     "darwin_popular_welcome_4fFBHxWbs1ysSL59Nc4xFExBVAucfKbTvujACbZy8ATc";
 
-fn _std_sym() -> Result<TypeObjects, TranspileError> {
+fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
@@ -54,11 +55,11 @@ fn _std_sym() -> Result<TypeObjects, TranspileError> {
 
 fn _std_stl() -> Result<TypeLib, CompileError> { _std_sym()?.compile() }
 
-pub fn std_sym() -> TypeObjects { _std_sym().expect("invalid strict type Std library") }
+pub fn std_sym() -> SymbolicLib { _std_sym().expect("invalid strict type Std library") }
 
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
-fn _strict_types_sym() -> Result<TypeObjects, TranspileError> {
+fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
         .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
@@ -69,7 +70,7 @@ fn _strict_types_sym() -> Result<TypeObjects, TranspileError> {
 }
 fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }
 
-pub fn strict_types_sym() -> TypeObjects {
+pub fn strict_types_sym() -> SymbolicLib {
     _strict_types_sym().expect("invalid strict type StrictTypes library")
 }
 
