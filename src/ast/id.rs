@@ -80,9 +80,12 @@ impl PrimitiveRef for SemId {
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self, name: Option<&TypeName>) -> SemId {
-        let mut hasher = sha2::Sha256::new_with_prefix(&SEM_ID_TAG);
+        let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(tag);
+        hasher.update(tag);
         if let Some(name) = name {
-            hasher.update(name.as_bytes());
+            name.hash_id(&mut hasher);
         }
         self.hash_id(&mut hasher);
         SemId::from_raw_array(hasher.finalize())

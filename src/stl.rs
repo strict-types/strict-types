@@ -31,9 +31,9 @@ use crate::{
     TypeSymbol, TypeSysId,
 };
 
-pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
+pub const LIB_ID_STD: &str = "left_pierre_food_5cmoZctpx98FbTzWTArm3G53pMzUXuRPXmMhuCd8zyXb";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "sonata_subject_anatomy_4pngysCgdWnzyu9WJSYEVPusj5svQLRvUhnin8ELYiZT";
+    "future_herman_value_CHLCSEqfvbER8P4NoVwTbAFH3d9HzX5EA5BFns2ziQgS";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
