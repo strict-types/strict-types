@@ -30,7 +30,7 @@ use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::TypeLib;
-use crate::Dependency;
+use crate::{Dependency, SymbolicLib};
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
@@ -90,11 +90,37 @@ impl HashId for TypeLib {
     }
 }
 
+impl HashId for SymbolicLib {
+    fn hash_id(&self, hasher: &mut Sha256) {
+        self.name().hash_id(hasher);
+        hasher.update([self.dependencies().len_u8()]);
+        for dep in self.dependencies() {
+            dep.hash_id(hasher);
+        }
+        hasher.update(self.types().len_u16().to_le_bytes());
+        for (name, ty) in self.types() {
+            let sem_id = ty.id(Some(name));
+            sem_id.hash_id(hasher);
+        }
+    }
+}
+
 impl HashId for Dependency {
     fn hash_id(&self, hasher: &mut Sha256) { self.id.hash_id(hasher); }
 }
 
 impl TypeLib {
+    pub fn id(&self) -> TypeLibId {
+        let tag = Sha256::new_with_prefix(&LIB_ID_TAG).finalize();
+        let mut hasher = Sha256::new();
+        hasher.update(tag);
+        hasher.update(tag);
+        self.hash_id(&mut hasher);
+        TypeLibId::from_raw_array(hasher.finalize())
+    }
+}
+
+impl SymbolicLib {
     pub fn id(&self) -> TypeLibId {
         let tag = Sha256::new_with_prefix(&LIB_ID_TAG).finalize();
         let mut hasher = Sha256::new();
