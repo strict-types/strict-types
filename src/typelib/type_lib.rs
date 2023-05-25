@@ -31,6 +31,7 @@ use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 use crate::ast::HashId;
 use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
+use crate::typelib::ExternTypes;
 use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -347,6 +348,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
     dumb = { TypeLib {
         name: LibName::strict_dumb(),
         dependencies: default!(),
+        extern_types: default!(),
         types: confined_bmap!(tn!("DumbType") => Ty::strict_dumb())
     } }
 )]
@@ -354,6 +356,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdSet<Dependency>,
+    pub extern_types: ExternTypes,
     pub types: TypeMap,
 }
 

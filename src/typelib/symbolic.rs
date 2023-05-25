@@ -325,6 +325,7 @@ impl SymbolicLib {
         Ok(TypeLib {
             name,
             dependencies,
+            extern_types,
             types,
         })
     }

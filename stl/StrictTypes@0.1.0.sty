@@ -1,5 +1,5 @@
 {-
-  Id: albert_magic_ariel_3xNAL6xY7z1u3qrnMHF79Kso6kgVPaM55KYz4TbJp92k
+  Id: nobody_alias_vienna_337HsmqEAYenesChi2eY5zUFUwaaxedxJmjcaz1gwAyN
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -154,9 +154,10 @@ data TySemId          :: primitive Primitive
                        | map (KeyTy, SemId, Sizing)
 -- TrustPodiumAlex05oZcN2FjqhyQ1yzU9nE8yVKZkbu6x2TsSnbpxV3EWKTA
 data TypeFqn          :: lib LibName, name TypeName
--- BombayPaperMimic08TgrpqaXiA6XP1VX1EcPca8wwiLV2uFeT1fkM9thPWEu
+-- CoverContourStore0JDyCRk7LbrBfR8pkyaR3rk23g5uToGveBr7SQTwM5ZvX
 data TypeLib          :: name LibName
                        , dependencies {Dependency ^ ..0xff}
+                       , externTypes {[Ascii ^ 1..0x40] -> ^ ..0xff {[Ascii ^ 1..0x40] -> SemId}}
                        , types {[Ascii ^ 1..0x40] -> ^ 1.. TyLibRef}
 -- ProductAnvilNatural0389GS6SKRfkTTf65gwibm8dbSA6kYjyxyGenvcacwY6a
 data TypeLibId        :: [Byte ^ 32]
