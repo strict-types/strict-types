@@ -370,7 +370,7 @@ impl TypeLib {
         if self.dependencies.contains(&dependency) {
             return Err(CompileError::DuplicatedDependency(dependency));
         }
-        self.dependencies.push(dependency)?;
+        self.dependencies.push(dependency).map_err(|_| CompileError::TooManyDependencies)?;
         Ok(())
     }
 
@@ -378,7 +378,7 @@ impl TypeLib {
         if self.types.contains_key(&name) {
             return Err(CompileError::DuplicateName(name));
         }
-        self.types.insert(name, ty)?;
+        self.types.insert(name, ty).map_err(|_| CompileError::TooManyTypes)?;
         Ok(())
     }
 

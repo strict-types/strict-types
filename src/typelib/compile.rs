@@ -22,14 +22,13 @@
 
 use std::collections::BTreeMap;
 
-use amplify::confinement;
 use amplify::confinement::{SmallOrdMap, TinyOrdMap};
 use encoding::LibName;
 use strict_encoding::TypeName;
 
 use crate::typelib::{Dependency, InlineRef, InlineRef1, InlineRef2, LibRef};
 use crate::typeobj::TranspileRef;
-use crate::{KeyTy, SemId, Translate, Ty};
+use crate::{KeyTy, SemId, Translate, TranspileError, Ty};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
 
@@ -51,15 +50,34 @@ pub enum CompileError {
     /// dependency {0} is already present in the library
     DuplicatedDependency(Dependency),
 
-    #[from]
-    #[display(inner)]
-    Confinement(confinement::Error),
-
     /// too deep type nesting for type {2} inside {0}, path {1}
     NestedInline(TypeName, String, String),
 
     /// unknown library {0}
     UnknownLib(LibName),
+
+    /// too many dependencies.
+    TooManyDependencies,
+
+    /// too many types
+    TooManyTypes,
+
+    /// library `{0}` contains too many types.
+    LibTooLarge(LibName),
+}
+
+impl From<TranspileError> for CompileError {
+    fn from(err: TranspileError) -> Self {
+        match err {
+            TranspileError::UnknownType { unknown, within } => {
+                Self::UnknownType { unknown, within }
+            }
+            TranspileError::UnknownLib(lib) => Self::UnknownLib(lib),
+            TranspileError::TooManyDependencies => Self::TooManyDependencies,
+            TranspileError::TooManyTypes => Self::TooManyTypes,
+            TranspileError::LibTooLarge(lib) => Self::LibTooLarge(lib),
+        }
+    }
 }
 
 pub struct NestedContext {
