@@ -49,7 +49,7 @@ fn _std_stl() -> Result<TypeObjects, TranspileError> {
         .transpile::<AlphaCapsNum>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
-        .finish()
+        .compile_symbols()
 }
 
 pub fn std_stl() -> TypeObjects { _std_stl().expect("invalid strict type Std library") }
@@ -60,7 +60,7 @@ fn _strict_types_stl() -> Result<TypeObjects, TranspileError> {
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
-        .finish()
+        .compile_symbols()
 }
 
 pub fn strict_types_stl() -> TypeObjects {

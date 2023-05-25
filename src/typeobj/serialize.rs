@@ -27,12 +27,12 @@ use std::{fmt, io};
 use amplify::num::u24;
 use encoding::{StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
-use crate::{StlFormat, TypeLib};
+use crate::{StlFormat, TypeObjects};
 
-impl StrictSerialize for TypeLib {}
-impl StrictDeserialize for TypeLib {}
+impl StrictSerialize for TypeObjects {}
+impl StrictDeserialize for TypeObjects {}
 
-impl TypeLib {
+impl TypeObjects {
     pub fn serialize(
         &self,
         format: StlFormat,
@@ -43,12 +43,11 @@ impl TypeLib {
         use std::fs;
         use std::io::stdout;
 
-        let id = self.id();
         let mut file = match dir {
             None => Box::new(stdout()) as Box<dyn io::Write>,
             Some(dir) => {
                 let mut filename = dir.as_ref().to_owned();
-                filename.push(format!("{}@{ver}.{format}", self.name));
+                filename.push(format!("{}@{ver}.{format}", self.name()));
                 Box::new(fs::File::create(filename)?) as Box<dyn io::Write>
             }
         };
@@ -64,8 +63,8 @@ impl TypeLib {
             StlFormat::Source => {
                 writeln!(
                     file,
-                    "{{-\n  Id: {id:+}\n  Name: {}\n  Version: {ver}{}\n-}}\n",
-                    self.name,
+                    "{{-\n  Name: {}\n  Version: {ver}{}\n-}}\n",
+                    self.name(),
                     header.unwrap_or_default()
                 )?;
                 writeln!(file, "{self}")?;
@@ -76,19 +75,19 @@ impl TypeLib {
     }
 }
 
-impl Display for TypeLib {
+impl Display for TypeObjects {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
+        writeln!(f, "typelib {}", self.name())?;
         writeln!(f)?;
-        for dep in &self.dependencies {
+        for dep in self.dependencies() {
             writeln!(f, "{dep} as {}", dep.name)?;
         }
-        if self.dependencies.is_empty() {
+        if self.dependencies().is_empty() {
             f.write_str("-- no dependencies")?;
         }
         writeln!(f)?;
         writeln!(f)?;
-        for (name, ty) in &self.types {
+        for (name, ty) in self.types() {
             writeln!(f, "data {name:16} :: {ty}")?;
         }
         Ok(())
@@ -96,20 +95,19 @@ impl Display for TypeLib {
 }
 
 #[cfg(feature = "base64")]
-impl fmt::UpperHex for TypeLib {
+impl fmt::UpperHex for TypeObjects {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use base64::Engine;
 
-        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {}", self.id())?;
-        writeln!(f, "Name: {}", self.name)?;
+        writeln!(f, "-----BEGIN STRICT TYPE OBJ-----")?;
+        writeln!(f, "Name: {}", self.name())?;
         write!(f, "Dependencies: ")?;
-        if self.dependencies.is_empty() {
+        if self.dependencies().is_empty() {
             writeln!(f, "~")?;
         } else {
             writeln!(f)?;
         }
-        let mut iter = self.dependencies.iter();
+        let mut iter = self.dependencies().iter();
         while let Some(dep) = iter.next() {
             write!(f, "  {}@{}", dep.name, dep.id)?;
             if iter.len() > 0 {
@@ -131,7 +129,7 @@ impl fmt::UpperHex for TypeLib {
         }
         writeln!(f, "{}", data)?;
 
-        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
+        writeln!(f, "\n-----END STRICT TYPE OBJ-----")?;
         Ok(())
     }
 }

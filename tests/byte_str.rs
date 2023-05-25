@@ -36,11 +36,11 @@ fn reflect() {
     struct ByteStr(SmallVec<u8>);
 
     let builder = Transpiler::new(libname!("Test"), none!()).transpile::<ByteStr>();
-    let lib = builder.finish().unwrap().compile().unwrap();
+    let lib = builder.compile_symbols().unwrap();
 
     assert_eq!(
         lib.to_string(),
-        "typelib Test -- consul_century_latin_6FMzvqgdXK15a6ToYi9NnjujxpyUURw9wAxwjoJEP27x
+        "typelib Test
 
 -- no dependencies
 

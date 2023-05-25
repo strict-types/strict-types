@@ -71,6 +71,7 @@ impl TypeLibId {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
+        // TODO: Refactor
         let hasher = sha2::Sha256::new_with_prefix(&LIB_ID_TAG);
         let engine = StrictWriter::with(usize::MAX, hasher);
         let engine = self.strict_encode(engine).expect("hasher do not error");

@@ -28,6 +28,5 @@ mod serialize;
 pub(crate) use compile::NestedContext;
 pub use compile::{CompileError, TypeIndex};
 pub use id::TypeLibId;
-pub use serialize::{parse_args, StlFormat, UnknownFormat};
 pub(crate) use type_lib::TypeMap;
 pub use type_lib::{Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibRef, TypeLib};

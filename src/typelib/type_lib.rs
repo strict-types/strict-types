@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdSet};
-use encoding::{StrictDeserialize, StrictDumb, StrictSerialize};
+use encoding::StrictDumb;
 use sha2::Digest;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
@@ -360,9 +360,6 @@ pub struct TypeLib {
     pub types: TypeMap,
 }
 
-impl StrictSerialize for TypeLib {}
-impl StrictDeserialize for TypeLib {}
-
 impl TypeLib {
     pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
 
@@ -383,64 +380,4 @@ impl TypeLib {
     }
 
     // TODO: Check that all dependencies are used
-}
-
-impl Display for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
-        writeln!(f)?;
-        for dep in &self.dependencies {
-            writeln!(f, "{dep} as {}", dep.name)?;
-        }
-        if self.dependencies.is_empty() {
-            f.write_str("-- no dependencies")?;
-        }
-        writeln!(f)?;
-        writeln!(f)?;
-        for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} :: {ty}")?;
-        }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "base64")]
-impl fmt::UpperHex for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use base64::Engine;
-
-        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {}", self.id())?;
-        writeln!(f, "Name: {}", self.name)?;
-        write!(f, "Dependencies: ")?;
-        if self.dependencies.is_empty() {
-            writeln!(f, "~")?;
-        } else {
-            writeln!(f)?;
-        }
-        let mut iter = self.dependencies.iter();
-        while let Some(dep) = iter.next() {
-            write!(f, "  {}@{}", dep.name, dep.id)?;
-            if iter.len() > 0 {
-                writeln!(f, ",")?;
-            } else {
-                writeln!(f)?;
-            }
-        }
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
-        Ok(())
-    }
 }

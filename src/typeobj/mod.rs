@@ -22,6 +22,7 @@
 
 mod transpile;
 mod type_obj;
+mod serialize;
 
 pub use transpile::Transpiler;
 pub use type_obj::{SymbolRef, TranspileError, TranspileRef, TypeObjects};

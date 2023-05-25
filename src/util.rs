@@ -20,13 +20,56 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::env;
 use std::fmt::{self, Display, Formatter};
+use std::str::FromStr;
 
 use amplify::confinement::TinyVec;
 use strict_encoding::{Ident, STRICT_TYPES_LIB};
 
 use crate::typelib::TypeLibId;
 use crate::SemId;
+
+#[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
+#[display("unknown name for the file format '{0}'")]
+pub struct UnknownFormat(String);
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
+pub enum StlFormat {
+    #[display("sty")]
+    Source,
+    #[display("stl")]
+    Binary,
+    #[cfg(feature = "base64")]
+    #[display("sta")]
+    Armored,
+}
+
+impl FromStr for StlFormat {
+    type Err = UnknownFormat;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "stl" => Ok(StlFormat::Binary),
+            #[cfg(feature = "base64")]
+            "sta" => Ok(StlFormat::Armored),
+            "sty" => Ok(StlFormat::Source),
+            invalid => Err(UnknownFormat(invalid.to_owned())),
+        }
+    }
+}
+
+pub fn parse_args() -> (StlFormat, Option<String>) {
+    let args: Vec<String> = env::args().collect();
+    let ext = args.get(1).map(String::as_str).map(|s| s.trim_start_matches("--")).unwrap_or("sty");
+    let format = StlFormat::from_str(ext).expect("unrecognized file format argument");
+    let dir = match args.len() {
+        1 => None,
+        2 | 3 => Some(args.get(2).cloned().unwrap_or_else(|| s!("stl"))),
+        _ => panic!("invalid argument count"),
+    };
+    (format, dir)
+}
 
 /* TODO: Move into layout mod
 /// Measure of a type size in bytes

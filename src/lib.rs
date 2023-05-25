@@ -60,5 +60,5 @@ pub use ast::{Cls, KeyTy, SemId, Translate, Ty, TypeRef};
 pub use typelib::{Dependency, LibRef, TypeLib, TypeLibId};
 pub use typeobj::{TranspileError, Transpiler, TypeObjects};
 pub use typesys::TypeSystem;
-pub use util::{BuildFragment, PreFragment, SemVer, Urn};
+pub use util::{parse_args, BuildFragment, PreFragment, SemVer, StlFormat, UnknownFormat, Urn};
 pub use value::{decode, ston, typify, KeyStep, Path, PathError, Step, StrictVal};

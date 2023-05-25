@@ -196,7 +196,7 @@ pub enum TranspileError {
 }
 
 impl Transpiler {
-    pub fn finish(self) -> Result<TypeObjects, TranspileError> {
+    pub fn compile_symbols(self) -> Result<TypeObjects, TranspileError> {
         let (name, known_libs, extern_types, types) =
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
@@ -250,6 +250,8 @@ impl Transpiler {
             types,
         })
     }
+
+    pub fn compile(self) -> Result<TypeLib, CompileError> { self.compile_symbols()?.compile() }
 }
 
 impl TypeObjects {
