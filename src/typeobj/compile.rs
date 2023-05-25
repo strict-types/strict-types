@@ -38,6 +38,11 @@ use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRe
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("{lib_name}.{ty_name}")]
+#[cfg_attr(
+    feature = "serde",
+    derive(Serialize, Deserialize),
+    serde(crate = "serde_crate", rename = "camelCase")
+)]
 pub struct LinkRef {
     pub lib_name: LibName,
     pub ty_name: TypeName,
@@ -67,6 +72,7 @@ impl From<LinkRef> for ExternRef {
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { CompileRef::Named(TypeName::strict_dumb()) })]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub enum CompileRef {
     #[from(Ty<CompileRef>)]
     Embedded(Box<Ty<CompileRef>>),

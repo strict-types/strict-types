@@ -31,6 +31,7 @@ use strict_encoding::{
     SplitParent, StrictDumb, StrictEncode, StrictEnum, StrictParent, StrictStruct, StrictSum,
     StrictTuple, StrictUnion, StrictWriter, StructWriter, TypeName, TypedParent, TypedWrite,
     UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, LIB_EMBEDDED,
+    STRICT_TYPES_LIB,
 };
 
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
@@ -44,6 +45,16 @@ pub trait BuilderParent: StrictParent<Sink> {
     /// Notifies lib builder about complete type built, even for unnamed inline types, such that it
     /// can register last compiled type for the `compile_type` procedure.
     fn report_compiled(self, lib: LibName, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self;
+}
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+pub struct TypeObj {
+    lib: LibName,
+    dependencies: TinyOrdSet<Dependency>,
+    types: SmallOrdMap<TypeName, Ty<CompileRef>>,
 }
 
 #[derive(Debug)]
