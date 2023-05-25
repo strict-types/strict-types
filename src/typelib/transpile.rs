@@ -49,7 +49,7 @@ pub trait BuilderParent: StrictParent<Sink> {
 pub struct LibBuilder {
     pub(super) lib_name: LibName,
     pub(super) known_libs: BTreeSet<Dependency>,
-    pub(super) extern_types: BTreeMap<LibName, BTreeMap<TypeName, SemId>>,
+    pub(super) extern_types: BTreeMap<LibName, BTreeMap<SemId, TypeName>>,
     pub(super) types: BTreeMap<TypeName, Ty<TranspileRef>>,
     last_compiled: Option<TranspileRef>,
 }
@@ -254,7 +254,7 @@ impl BuilderParent for LibBuilder {
             }
             (lib, Some(name)) => {
                 let id = ty.id(Some(&name));
-                self.extern_types.entry(lib.clone()).or_default().insert(name.clone(), id);
+                self.extern_types.entry(lib.clone()).or_default().insert(id, name.clone());
                 let lib_id = self.dependency_id(&lib);
                 TranspileRef::Extern(SymbolRef::with(lib, name, lib_id, id))
             }

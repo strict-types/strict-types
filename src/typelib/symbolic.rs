@@ -34,7 +34,7 @@ use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
 use crate::typelib::{CompileError, ExternRef, NestedContext, SymbolError, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
-pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>;
+pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<SemId, TypeName>>;
 
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]

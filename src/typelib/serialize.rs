@@ -119,8 +119,8 @@ impl Display for SymbolicLib {
             writeln!(f, "{dep} as {}", dep.name)?;
             if f.alternate() {
                 if let Some(index) = self.extern_types().get(&dep.name) {
-                    writeln!(f, "-- Imports")?;
-                    for (name, sem_id) in index {
+                    writeln!(f, "-- Imports:")?;
+                    for (sem_id, name) in index {
                         writeln!(f, "-- {name} := {sem_id:0}")?;
                     }
                     writeln!(f)?;
