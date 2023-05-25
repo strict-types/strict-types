@@ -25,6 +25,7 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use encoding::{FieldName, LibName};
 use sha2::Digest;
 use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
@@ -65,10 +66,6 @@ impl FromStr for SemId {
 
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
-pub trait HashId {
-    fn hash_id(&self, hasher: &mut sha2::Sha256);
-}
-
 impl TypeRef for SemId {
     fn is_unicode_char(&self) -> bool { Ty::<Self>::UNICODE.id(None) == *self }
     fn is_ascii_char(&self) -> bool { Ty::<Self>::ascii_char().id(None) == *self }
@@ -85,6 +82,31 @@ impl<Ref: TypeRef> Ty<Ref> {
         }
         self.hash_id(&mut hasher);
         SemId::from_raw_array(hasher.finalize())
+    }
+}
+
+pub trait HashId {
+    fn hash_id(&self, hasher: &mut sha2::Sha256);
+}
+
+impl HashId for LibName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
+    }
+}
+
+impl HashId for TypeName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
+    }
+}
+
+impl HashId for FieldName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
     }
 }
 
@@ -149,7 +171,7 @@ impl HashId for Cls {
 
 impl<Ref: TypeRef> HashId for Field<Ref> {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        hasher.update(self.name.as_bytes());
+        self.name.hash_id(hasher);
         self.ty.hash_id(hasher);
     }
 }
@@ -189,7 +211,7 @@ impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
 
 impl HashId for Variant {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        hasher.update(self.name.as_bytes());
+        self.name.hash_id(hasher);
         hasher.update(&[self.tag]);
     }
 }

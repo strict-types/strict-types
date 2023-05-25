@@ -24,10 +24,11 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
-use encoding::{StrictEncode, StrictWriter};
-use sha2::Digest;
+use encoding::StrictEncode;
+use sha2::{Digest, Sha256};
 use strict_encoding::STRICT_TYPES_LIB;
 
+use crate::ast::HashId;
 use crate::TypeSystem;
 
 pub const TYPESYS_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:sys:v01";
@@ -68,11 +69,22 @@ impl TypeSysId {
     fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
 }
 
+impl HashId for TypeSystem {
+    fn hash_id(&self, hasher: &mut Sha256) {
+        hasher.update(self.len_u24().to_le_bytes());
+        for sem_id in self.keys() {
+            sem_id.hash_id(hasher);
+        }
+    }
+}
+
 impl TypeSystem {
     pub fn id(&self) -> TypeSysId {
-        let hasher = sha2::Sha256::new_with_prefix(&TYPESYS_ID_TAG);
-        let engine = StrictWriter::with(usize::MAX, hasher);
-        let engine = self.strict_encode(engine).expect("hasher do not error");
-        TypeSysId::from_raw_array(engine.unbox().finalize())
+        let tag = Sha256::new_with_prefix(&TYPESYS_ID_TAG).finalize();
+        let mut hasher = Sha256::new();
+        hasher.update(tag);
+        hasher.update(tag);
+        self.hash_id(&mut hasher);
+        TypeSysId::from_raw_array(hasher.finalize())
     }
 }

@@ -20,18 +20,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod id;
-mod type_lib;
-mod compile;
+mod transpile;
+mod type_obj;
 mod serialize;
 
-pub(crate) use compile::NestedContext;
-#[allow(deprecated)]
-pub use compile::TranslateError;
-pub use compile::{CompileError, TypeIndex};
-pub use id::TypeLibId;
-pub(crate) use type_lib::TypeMap;
-pub use type_lib::{Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibRef, TypeLib};
-
-#[deprecated(since = "1.3.0", note = "import from crate level")]
-pub use super::{parse_args, LibBuilder};
+pub use transpile::LibBuilder;
+pub use type_obj::{SymbolRef, TranspileError, TranspileRef, TypeObjects};

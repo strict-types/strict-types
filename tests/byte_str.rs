@@ -21,12 +21,10 @@
 // limitations under the License.
 
 #[macro_use]
-extern crate amplify;
-#[macro_use]
 extern crate strict_encoding;
 
 use amplify::confinement::SmallVec;
-use strict_types::typelib::LibBuilder;
+use strict_types::typeobj::LibBuilder;
 
 #[test]
 fn reflect() {
@@ -35,12 +33,12 @@ fn reflect() {
     #[strict_type(lib = "Test")]
     struct ByteStr(SmallVec<u8>);
 
-    let builder = LibBuilder::new(libname!("Test"), none!()).transpile::<ByteStr>();
-    let lib = builder.compile().unwrap();
+    let builder = LibBuilder::new(libname!("Test"), None).transpile::<ByteStr>();
+    let lib = builder.compile_symbols().unwrap();
 
     assert_eq!(
         lib.to_string(),
-        "typelib Test -- consul_century_latin_6FMzvqgdXK15a6ToYi9NnjujxpyUURw9wAxwjoJEP27x
+        "typelib Test
 
 -- no dependencies
 

@@ -25,7 +25,6 @@ use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
 use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
-use sha2::Digest;
 
 use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
@@ -57,7 +56,7 @@ impl TypeSymbol {
 }
 
 impl HashId for TypeSymbol {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(self.id.as_slice()); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.id.hash_id(hasher); }
 }
 
 impl TypeRef for TypeSymbol {}

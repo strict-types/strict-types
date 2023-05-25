@@ -25,13 +25,12 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdSet};
-use encoding::{StrictDeserialize, StrictDumb, StrictSerialize};
-use sha2::Digest;
+use encoding::StrictDumb;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
+use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
-use crate::typelib::translate::TranslateError;
 use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -49,7 +48,7 @@ pub struct ExternRef {
 }
 
 impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(self.sem_id.as_slice()); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl ExternRef {
@@ -226,9 +225,7 @@ impl HashId for InlineRef2 {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
         match self {
             InlineRef2::Inline(ty) => ty.hash_id(hasher),
-            InlineRef2::Named(sem_id) => {
-                hasher.update(sem_id.as_slice());
-            }
+            InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
             InlineRef2::Extern(ext) => ext.hash_id(hasher),
         }
     }
@@ -360,87 +357,24 @@ pub struct TypeLib {
     pub types: TypeMap,
 }
 
-impl StrictSerialize for TypeLib {}
-impl StrictDeserialize for TypeLib {}
-
 impl TypeLib {
     pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
 
-    pub fn import(&mut self, dependency: Dependency) -> Result<(), TranslateError> {
+    pub fn import(&mut self, dependency: Dependency) -> Result<(), CompileError> {
         if self.dependencies.contains(&dependency) {
-            return Err(TranslateError::DuplicatedDependency(dependency));
+            return Err(CompileError::DuplicatedDependency(dependency));
         }
-        self.dependencies.push(dependency)?;
+        self.dependencies.push(dependency).map_err(|_| CompileError::TooManyDependencies)?;
         Ok(())
     }
 
-    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), TranslateError> {
+    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), CompileError> {
         if self.types.contains_key(&name) {
-            return Err(TranslateError::DuplicateName(name));
+            return Err(CompileError::DuplicateName(name));
         }
-        self.types.insert(name, ty)?;
+        self.types.insert(name, ty).map_err(|_| CompileError::TooManyTypes)?;
         Ok(())
     }
 
     // TODO: Check that all dependencies are used
-}
-
-impl Display for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
-        writeln!(f)?;
-        for dep in &self.dependencies {
-            writeln!(f, "{dep} as {}", dep.name)?;
-        }
-        if self.dependencies.is_empty() {
-            f.write_str("-- no dependencies")?;
-        }
-        writeln!(f)?;
-        writeln!(f)?;
-        for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} :: {ty}")?;
-        }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "base64")]
-impl fmt::UpperHex for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use base64::Engine;
-
-        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {}", self.id())?;
-        writeln!(f, "Name: {}", self.name)?;
-        write!(f, "Dependencies: ")?;
-        if self.dependencies.is_empty() {
-            writeln!(f, "~")?;
-        } else {
-            writeln!(f)?;
-        }
-        let mut iter = self.dependencies.iter();
-        while let Some(dep) = iter.next() {
-            write!(f, "  {}@{}", dep.name, dep.id)?;
-            if iter.len() > 0 {
-                writeln!(f, ",")?;
-            } else {
-                writeln!(f)?;
-            }
-        }
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
-        Ok(())
-    }
 }

@@ -144,27 +144,6 @@ impl Display for TypeSystem {
     }
 }
 
-/*
-impl Display for TypeSystem {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typesys -- {:+}", self.id())?;
-        writeln!(f)?;
-        for (id, info) in &self.0 {
-            let ty = info.ty.clone().translate(&mut (), self).expect("type system inconsistency");
-            if info.orig.is_empty() {
-                writeln!(f, "data {id:0} :: {:0}", ty)?;
-            } else {
-                writeln!(f, "-- {id:0}")?;
-                for fqn in &info.orig {
-                    writeln!(f, "data {fqn} :: {:0}", ty)?;
-                }
-            }
-        }
-        Ok(())
-    }
-}
- */
-
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {

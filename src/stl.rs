@@ -26,16 +26,16 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typelib::{LibBuilder, TranslateError};
+use crate::typeobj::{LibBuilder, SymbolRef};
 use crate::typesys::{TypeSymbol, TypeSysId};
-use crate::{TypeLib, TypeSystem};
+use crate::{CompileError, TranspileError, TypeLib, TypeObjects, TypeSystem};
 
-pub const LIB_ID_STD: &str = "gemini_door_jeep_2UoUiDCVTjZJHh8XjFgWQ2cX6zdiwUDZJM3DQm1i4FT1";
+pub const LIB_ID_STD: &str = "regard_light_ninja_9fsgNpJdXxPiJztBbJVZQKcRbxF8DtpBcYQduxUgXKps";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "explore_outside_albert_3Ses9snQxYBWwsvb4AgUzgpS3QYB7BLBWamkcNUCmgzu";
+    "darwin_popular_welcome_4fFBHxWbs1ysSL59Nc4xFExBVAucfKbTvujACbZy8ATc";
 
-fn _std_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(LIB_NAME_STD), none!())
+fn _std_sym() -> Result<TypeObjects, TranspileError> {
+    LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -49,18 +49,28 @@ fn _std_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<AlphaCapsNum>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
-        .compile()
+        .compile_symbols()
 }
+
+fn _std_stl() -> Result<TypeLib, CompileError> { _std_sym()?.compile() }
+
+pub fn std_sym() -> TypeObjects { _std_sym().expect("invalid strict type Std library") }
 
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
-fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB), none!())
+fn _strict_types_sym() -> Result<TypeObjects, TranspileError> {
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
+        .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
         .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
-        .compile()
+        .compile_symbols()
+}
+fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }
+
+pub fn strict_types_sym() -> TypeObjects {
+    _strict_types_sym().expect("invalid strict type StrictTypes library")
 }
 
 pub fn strict_types_stl() -> TypeLib {
