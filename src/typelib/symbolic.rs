@@ -67,10 +67,6 @@ pub struct SymbolRef {
     pub sem_id: SemId,
 }
 
-impl HashId for SymbolRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
-}
-
 impl SymbolRef {
     pub fn with(
         lib_name: LibName,
@@ -162,16 +158,6 @@ impl PrimitiveRef for TranspileRef {
     fn byte() -> Self { TranspileRef::Embedded(Box::new(Ty::BYTE)) }
     fn ascii_char() -> Self { TranspileRef::Embedded(Box::new(Ty::ascii_char())) }
     fn unicode_char() -> Self { TranspileRef::Embedded(Box::new(Ty::UNICODE)) }
-}
-
-impl HashId for TranspileRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            TranspileRef::Embedded(ty) => ty.hash_id(hasher),
-            TranspileRef::Named(name) => name.hash_id(hasher),
-            TranspileRef::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
 }
 
 impl Display for TranspileRef {

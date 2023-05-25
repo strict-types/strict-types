@@ -33,7 +33,7 @@ use crate::{
 
 pub const LIB_ID_STD: &str = "left_pierre_food_5cmoZctpx98FbTzWTArm3G53pMzUXuRPXmMhuCd8zyXb";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "future_herman_value_CHLCSEqfvbER8P4NoVwTbAFH3d9HzX5EA5BFns2ziQgS";
+    "figure_radical_liquid_8pj6Q4MDsaQW97omrv5DhAX1yid5Hjmbi8uoBzLQayMh";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
@@ -81,6 +81,14 @@ pub fn strict_types_stl() -> TypeLib {
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn id_equivalence() {
+        let lib = strict_types_stl();
+        let sym = strict_types_sym();
+        assert_eq!(lib.to_symbolic().unwrap().id(), sym.id());
+        assert_eq!(lib.id(), sym.id());
+    }
 
     #[test]
     fn std_lib_id() {

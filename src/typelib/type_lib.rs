@@ -28,7 +28,6 @@ use amplify::confinement::{Confined, TinyOrdSet};
 use encoding::StrictDumb;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
 use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
 use crate::typelib::ExternTypes;
@@ -46,10 +45,6 @@ use crate::{KeyTy, SemId, Ty, TypeRef};
 pub struct ExternRef {
     pub lib_id: TypeLibId,
     pub sem_id: SemId,
-}
-
-impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
 }
 
 impl ExternRef {
@@ -94,16 +89,6 @@ impl TypeRef for InlineRef {
         match self {
             InlineRef::Inline(ty) => ty.is_ascii_char(),
             _ => false,
-        }
-    }
-}
-
-impl HashId for InlineRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            InlineRef::Inline(ty) => ty.hash_id(hasher),
-            InlineRef::Named(id) => id.hash_id(hasher),
-            InlineRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
 }
@@ -160,16 +145,6 @@ impl TypeRef for InlineRef1 {
     }
 }
 
-impl HashId for InlineRef1 {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            InlineRef1::Inline(ty) => ty.hash_id(hasher),
-            InlineRef1::Named(id) => id.hash_id(hasher),
-            InlineRef1::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -222,16 +197,6 @@ impl TypeRef for InlineRef2 {
     }
 }
 
-impl HashId for InlineRef2 {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            InlineRef2::Inline(ty) => ty.hash_id(hasher),
-            InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
-            InlineRef2::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
@@ -280,16 +245,6 @@ impl TypeRef for LibRef {
         match self {
             LibRef::Inline(ty) => ty.is_ascii_char(),
             _ => false,
-        }
-    }
-}
-
-impl HashId for LibRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        match self {
-            LibRef::Inline(ty) => ty.hash_id(hasher),
-            LibRef::Named(id) => id.hash_id(hasher),
-            LibRef::Extern(ext) => ext.hash_id(hasher),
         }
     }
 }
