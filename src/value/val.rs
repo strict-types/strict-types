@@ -305,7 +305,7 @@ impl StrictVal {
 
     pub fn unwrap_option(&self) -> Option<&StrictVal> {
         let StrictVal::Union(tag, value) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
+            panic!("StrictVal expected to be a number but holds non-numeric value `{self}`");
         };
         match tag {
             EnumTag::Name(name)
@@ -322,7 +322,7 @@ impl StrictVal {
 
     pub fn unwrap_num(&self) -> &StrictNum {
         let StrictVal::Number(v) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
+            panic!("StrictVal expected to be a number but holds non-numeric value `{self}`");
         };
         v
     }
@@ -343,20 +343,20 @@ impl StrictVal {
                     .collect::<Vec<_>>();
                 String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
             }
-            _ => panic!("StrictVal expected to be a string but holds non-string value ({self})"),
+            _ => panic!("StrictVal expected to be a string but holds non-string value `{self}`"),
         }
     }
 
     pub fn unwrap_bytes(&self) -> &[u8] {
         let StrictVal::Bytes(v) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be a byte string but holds different value ({self})");
+            panic!("StrictVal expected to be a byte string but holds different value `{self}`");
         };
         v
     }
 
     pub fn unwrap_tuple(&self, no: u16) -> &StrictVal {
         let StrictVal::Tuple(v) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be a tuple but holds different value ({self})");
+            panic!("StrictVal expected to be a tuple but holds different value `{self}`");
         };
         v.get(no as usize)
             .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
@@ -364,7 +364,7 @@ impl StrictVal {
 
     pub fn unwrap_struct(&self, field: &'static str) -> &StrictVal {
         let StrictVal::Struct(v) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be a string but holds different value ({self})");
+            panic!("StrictVal expected to be a string but holds different value `{self}`");
         };
         v.get::<FieldName>(&fname!(field))
             .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
@@ -372,7 +372,7 @@ impl StrictVal {
 
     pub fn unwrap_enum_tag(&self) -> &EnumTag {
         let StrictVal::Enum(tag) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be an enum but holds different value ({self})");
+            panic!("StrictVal expected to be an enum but holds different value `{self}`");
         };
         tag
     }
@@ -397,7 +397,7 @@ impl StrictVal {
 
     pub fn unwrap_union(&self) -> (&EnumTag, &StrictVal) {
         let StrictVal::Union(tag, v) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be an enum but holds different value ({self})");
+            panic!("StrictVal expected to be an enum but holds different value `{self}`");
         };
         (tag, v.as_ref())
     }
@@ -407,13 +407,13 @@ impl StrictVal {
             v.get(no)
                 .unwrap_or_else(|| panic!("StrictVal list or set doesn't have item at index {no}"))
         } else {
-            panic!("StrictVal expected to be a list or a set but holds different value ({self})");
+            panic!("StrictVal expected to be a list or a set but holds different value `{self}`");
         }
     }
 
     pub fn unwrap_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
         let StrictVal::Map(v) = self.skip_wrapper() else {
-            panic!("StrictVal expected to be a map or a set but holds different value ({self})");
+            panic!("StrictVal expected to be a map or a set but holds different value `{self}`");
         };
         let key = key.into();
         v.iter()
