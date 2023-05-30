@@ -298,7 +298,7 @@ impl StrictVal {
         loop {
             match me {
                 StrictVal::Tuple(fields) if fields.len() == 1 => me = &fields[0],
-                _ => return self,
+                _ => return me,
             }
         }
     }
