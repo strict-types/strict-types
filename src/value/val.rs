@@ -338,9 +338,12 @@ impl StrictVal {
     }
 
     pub fn skip_wrapper(&self) -> &StrictVal {
-        match self {
-            StrictVal::Tuple(fields) if fields.len() == 1 => &fields[0],
-            _ => self,
+        let mut me = self;
+        loop {
+            match me {
+                StrictVal::Tuple(fields) if fields.len() == 1 => me = &fields[0],
+                _ => return self,
+            }
         }
     }
 
