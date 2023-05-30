@@ -24,7 +24,7 @@
 
 // use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, u1024};
-use encoding::{FieldName, VariantName};
+use encoding::{FieldName, StrictEnum, VariantName};
 use indexmap::IndexMap;
 
 #[macro_export]
@@ -182,6 +182,17 @@ pub enum EnumTag {
     Ord(u8),
 }
 
+impl EnumTag {
+    pub fn unwrap_ord(&self) -> u8 {
+        match self {
+            EnumTag::Name(name) => {
+                panic!("enum tag value expected to be a numeric value and not '{name}' string")
+            }
+            EnumTag::Ord(tag) => *tag,
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum StrictVal {
     #[from(())]
@@ -280,6 +291,125 @@ impl StrictVal {
         items: impl IntoIterator<Item = (impl Into<StrictVal>, impl Into<StrictVal>)>,
     ) -> Self {
         StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
+    }
+
+    pub fn unwrap_option(&self) -> Option<&StrictVal> {
+        let StrictVal::Union(tag, value) = self else {
+            panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
+        };
+        match tag {
+            EnumTag::Name(name)
+                if name.as_str() == "None" && value.as_ref() == &StrictVal::Unit =>
+            {
+                None
+            }
+            EnumTag::Ord(0) if value.as_ref() == &StrictVal::Unit => None,
+            EnumTag::Name(name) if name.as_str() == "Some" => Some(value.as_ref()),
+            EnumTag::Ord(1) => Some(value.as_ref()),
+            _ => panic!("StrictVal expected to be an optional, but it is not: {self}"),
+        }
+    }
+
+    pub fn unwrap_num(&self) -> &StrictNum {
+        let StrictVal::Number(v) = self else {
+            panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
+        };
+        v
+    }
+
+    pub fn unwrap_string(&self) -> String {
+        match self {
+            StrictVal::String(v) => v.clone(),
+            StrictVal::Bytes(v) => {
+                String::from_utf8(v.clone()).expect("non-Unicode and non-ASCII string")
+            }
+            StrictVal::List(v) if v.is_empty() => s!(""),
+            // Here we process strings made of restricted character sets
+            StrictVal::List(v) if v.iter().all(|c| matches!(c, StrictVal::Enum(_))) => {
+                let bytes = v
+                    .iter()
+                    .map(StrictVal::unwrap_enum_tag)
+                    .map(EnumTag::unwrap_ord)
+                    .collect::<Vec<_>>();
+                String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
+            }
+            _ => panic!("StrictVal expected to be a string but holds non-string value ({self})"),
+        }
+    }
+
+    pub fn unwrap_bytes(&self) -> &[u8] {
+        let StrictVal::Bytes(v) = self else {
+            panic!("StrictVal expected to be a byte string but holds different value ({self})");
+        };
+        v
+    }
+
+    pub fn unwrap_tuple(&self, no: u16) -> &StrictVal {
+        let StrictVal::Tuple(v) = self else {
+            panic!("StrictVal expected to be a tuple but holds different value ({self})");
+        };
+        v.get(no as usize)
+            .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
+    }
+
+    pub fn unwrap_struct(&self, field: &'static str) -> &StrictVal {
+        let StrictVal::Struct(v) = self else {
+            panic!("StrictVal expected to be a string but holds different value ({self})");
+        };
+        v.get::<FieldName>(&fname!(field))
+            .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
+    }
+
+    pub fn unwrap_enum_tag(&self) -> &EnumTag {
+        let StrictVal::Enum(tag) = self else {
+            panic!("StrictVal expected to be an enum but holds different value ({self})");
+        };
+        tag
+    }
+
+    pub fn unwrap_enum<E: StrictEnum>(&self) -> E
+    where u8: From<E> {
+        match self.unwrap_enum_tag() {
+            EnumTag::Name(name) => E::from_variant_name(name).unwrap_or_else(|_| {
+                panic!(
+                    "enum {} doesn't have variant matching tag {name}",
+                    E::strict_name().unwrap_or(tn!("unnamed"))
+                )
+            }),
+            EnumTag::Ord(ord) => E::try_from(*ord).unwrap_or_else(|_| {
+                panic!(
+                    "enum {} doesn't have variant matching tag {ord}",
+                    E::strict_name().unwrap_or(tn!("unnamed"))
+                )
+            }),
+        }
+    }
+
+    pub fn unwrap_union(&self) -> (&EnumTag, &StrictVal) {
+        let StrictVal::Union(tag, v) = self  else {
+            panic!("StrictVal expected to be an enum but holds different value ({self})");
+        };
+        (tag, v.as_ref())
+    }
+
+    pub fn unwrap_pos(&self, no: usize) -> &StrictVal {
+        if let StrictVal::Set(v) | StrictVal::List(v) = self {
+            v.get(no)
+                .unwrap_or_else(|| panic!("StrictVal list or set doesn't have item at index {no}"))
+        } else {
+            panic!("StrictVal expected to be a list or a set but holds different value ({self})");
+        }
+    }
+
+    pub fn unwrap_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
+        let StrictVal::Map(v) = self else {
+            panic!("StrictVal expected to be a map or a set but holds different value ({self})");
+        };
+        let key = key.into();
+        v.iter()
+            .find(|(k, _)| k == &key)
+            .map(|(_, v)| v)
+            .unwrap_or_else(|| panic!("StrictVal map doesn't have key {key}"))
     }
 }
 
