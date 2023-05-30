@@ -281,6 +281,85 @@ impl StrictVal {
     ) -> Self {
         StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
     }
+
+    pub fn as_num(&self) -> &StrictNum {
+        if let StrictVal::Number(v) = self {
+            v
+        } else {
+            panic!("StrictVal expected to be a number holds non-numeric value ({self})");
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        if let StrictVal::String(v) = self {
+            v
+        } else {
+            panic!("StrictVal expected to be a string holds non-string value ({self})");
+        }
+    }
+
+    pub fn as_bytes(&self) -> &[u8] {
+        if let StrictVal::Bytes(v) = self {
+            v
+        } else {
+            panic!("StrictVal expected to be a byte string holds different value ({self})");
+        }
+    }
+
+    pub fn tuple_field(&self, no: u16) -> &StrictVal {
+        if let StrictVal::Tuple(v) = self {
+            v.get(no as usize)
+                .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
+        } else {
+            panic!("StrictVal expected to be a tuple holds different value ({self})");
+        }
+    }
+
+    pub fn struct_field(&self, field: &FieldName) -> &StrictVal {
+        if let StrictVal::Struct(v) = self {
+            v.get(field)
+                .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
+        } else {
+            panic!("StrictVal expected to be a string holds different value ({self})");
+        }
+    }
+
+    pub fn as_enum(&self) -> &EnumTag {
+        if let StrictVal::Enum(tag) = self {
+            tag
+        } else {
+            panic!("StrictVal expected to be an enum holds different value ({self})");
+        }
+    }
+
+    pub fn as_union(&self) -> (&EnumTag, &StrictVal) {
+        if let StrictVal::Union(tag, v) = self {
+            (tag, v.as_ref())
+        } else {
+            panic!("StrictVal expected to be an enum holds different value ({self})");
+        }
+    }
+
+    pub fn get_at_pos(&self, no: usize) -> &StrictVal {
+        if let StrictVal::Set(v) | StrictVal::List(v) = self {
+            v.get(no)
+                .unwrap_or_else(|| panic!("StrictVal list or set doesn't have item at index {no}"))
+        } else {
+            panic!("StrictVal expected to be a list or a set holds different value ({self})");
+        }
+    }
+
+    pub fn get_at_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
+        if let StrictVal::Map(v) = self {
+            let key = key.into();
+            v.iter()
+                .find(|(k, _)| k == &key)
+                .map(|(_, v)| v)
+                .unwrap_or_else(|| panic!("StrictVal map doesn't have key {key}"))
+        } else {
+            panic!("StrictVal expected to be a map or a set holds different value ({self})");
+        }
+    }
 }
 
 impl<T: Into<StrictVal>> From<Option<T>> for StrictVal {
