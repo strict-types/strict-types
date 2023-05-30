@@ -182,6 +182,17 @@ pub enum EnumTag {
     Ord(u8),
 }
 
+impl EnumTag {
+    pub fn unwrap_ord(&self) -> u8 {
+        match self {
+            EnumTag::Name(name) => {
+                panic!("enum tag value expected to be a numeric value and not '{name}' string")
+            }
+            EnumTag::Ord(tag) => *tag,
+        }
+    }
+}
+
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 pub enum StrictVal {
     #[from(())]
