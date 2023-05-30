@@ -293,8 +293,18 @@ impl StrictVal {
         StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
     }
 
+    pub fn skip_wrapper(&self) -> &StrictVal {
+        let mut me = self;
+        loop {
+            match me {
+                StrictVal::Tuple(fields) if fields.len() == 1 => me = &fields[0],
+                _ => return self,
+            }
+        }
+    }
+
     pub fn unwrap_option(&self) -> Option<&StrictVal> {
-        let StrictVal::Union(tag, value) = self else {
+        let StrictVal::Union(tag, value) = self.skip_wrapper() else {
             panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
         };
         match tag {
@@ -311,14 +321,14 @@ impl StrictVal {
     }
 
     pub fn unwrap_num(&self) -> &StrictNum {
-        let StrictVal::Number(v) = self else {
+        let StrictVal::Number(v) = self.skip_wrapper() else {
             panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
         };
         v
     }
 
     pub fn unwrap_string(&self) -> String {
-        match self {
+        match self.skip_wrapper() {
             StrictVal::String(v) => v.clone(),
             StrictVal::Bytes(v) => {
                 String::from_utf8(v.clone()).expect("non-Unicode and non-ASCII string")
@@ -334,16 +344,6 @@ impl StrictVal {
                 String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
             }
             _ => panic!("StrictVal expected to be a string but holds non-string value ({self})"),
-        }
-    }
-
-    pub fn skip_wrapper(&self) -> &StrictVal {
-        let mut me = self;
-        loop {
-            match me {
-                StrictVal::Tuple(fields) if fields.len() == 1 => me = &fields[0],
-                _ => return self,
-            }
         }
     }
 
