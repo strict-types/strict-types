@@ -315,9 +315,9 @@ impl StrictVal {
         }
     }
 
-    pub fn struct_field(&self, field: &FieldName) -> &StrictVal {
+    pub fn struct_field(&self, field: &'static str) -> &StrictVal {
         if let StrictVal::Struct(v) = self {
-            v.get(field)
+            v.get::<FieldName>(&fname!(field))
                 .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
         } else {
             panic!("StrictVal expected to be a string holds different value ({self})");
