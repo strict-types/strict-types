@@ -297,7 +297,7 @@ impl StrictVal {
         if let StrictVal::Number(v) = self {
             v
         } else {
-            panic!("StrictVal expected to be a number holds non-numeric value ({self})");
+            panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
         }
     }
 
@@ -317,7 +317,7 @@ impl StrictVal {
                     .collect::<Vec<_>>();
                 String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
             }
-            _ => panic!("StrictVal expected to be a string holds non-string value ({self})"),
+            _ => panic!("StrictVal expected to be a string but holds non-string value ({self})"),
         }
     }
 
@@ -325,7 +325,7 @@ impl StrictVal {
         if let StrictVal::Bytes(v) = self {
             v
         } else {
-            panic!("StrictVal expected to be a byte string holds different value ({self})");
+            panic!("StrictVal expected to be a byte string but holds different value ({self})");
         }
     }
 
@@ -334,7 +334,7 @@ impl StrictVal {
             v.get(no as usize)
                 .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
         } else {
-            panic!("StrictVal expected to be a tuple holds different value ({self})");
+            panic!("StrictVal expected to be a tuple but holds different value ({self})");
         }
     }
 
@@ -343,7 +343,7 @@ impl StrictVal {
             v.get::<FieldName>(&fname!(field))
                 .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
         } else {
-            panic!("StrictVal expected to be a string holds different value ({self})");
+            panic!("StrictVal expected to be a string but holds different value ({self})");
         }
     }
 
@@ -351,7 +351,7 @@ impl StrictVal {
         if let StrictVal::Enum(tag) = self {
             tag
         } else {
-            panic!("StrictVal expected to be an enum holds different value ({self})");
+            panic!("StrictVal expected to be an enum but holds different value ({self})");
         }
     }
 
@@ -359,7 +359,7 @@ impl StrictVal {
         if let StrictVal::Union(tag, v) = self {
             (tag, v.as_ref())
         } else {
-            panic!("StrictVal expected to be an enum holds different value ({self})");
+            panic!("StrictVal expected to be an enum but holds different value ({self})");
         }
     }
 
@@ -368,7 +368,7 @@ impl StrictVal {
             v.get(no)
                 .unwrap_or_else(|| panic!("StrictVal list or set doesn't have item at index {no}"))
         } else {
-            panic!("StrictVal expected to be a list or a set holds different value ({self})");
+            panic!("StrictVal expected to be a list or a set but holds different value ({self})");
         }
     }
 
@@ -380,7 +380,7 @@ impl StrictVal {
                 .map(|(_, v)| v)
                 .unwrap_or_else(|| panic!("StrictVal map doesn't have key {key}"))
         } else {
-            panic!("StrictVal expected to be a map or a set holds different value ({self})");
+            panic!("StrictVal expected to be a map or a set but holds different value ({self})");
         }
     }
 }
