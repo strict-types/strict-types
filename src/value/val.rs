@@ -24,7 +24,7 @@
 
 // use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, u1024};
-use encoding::{FieldName, VariantName};
+use encoding::{FieldName, StrictEnum, VariantName};
 use indexmap::IndexMap;
 
 #[macro_export]
@@ -330,7 +330,7 @@ impl StrictVal {
             StrictVal::List(v) if v.iter().all(|c| matches!(c, StrictVal::Enum(_))) => {
                 let bytes = v
                     .iter()
-                    .map(StrictVal::unwrap_enum)
+                    .map(StrictVal::unwrap_enum_tag)
                     .map(EnumTag::unwrap_ord)
                     .collect::<Vec<_>>();
                 String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
@@ -365,11 +365,28 @@ impl StrictVal {
         }
     }
 
-    pub fn unwrap_enum(&self) -> &EnumTag {
-        if let StrictVal::Enum(tag) = self {
-            tag
-        } else {
+    pub fn unwrap_enum_tag(&self) -> &EnumTag {
+        let StrictVal::Enum(tag) = self else {
             panic!("StrictVal expected to be an enum but holds different value ({self})");
+        };
+        tag
+    }
+
+    pub fn unwrap_enum<E: StrictEnum>(&self) -> E
+    where u8: From<E> {
+        match self.unwrap_enum_tag() {
+            EnumTag::Name(name) => E::from_variant_name(name).unwrap_or_else(|_| {
+                panic!(
+                    "enum {} doesn't have variant matching tag {name}",
+                    E::strict_name().unwrap_or(tn!("unnamed"))
+                )
+            }),
+            EnumTag::Ord(ord) => E::try_from(*ord).unwrap_or_else(|_| {
+                panic!(
+                    "enum {} doesn't have variant matching tag {ord}",
+                    E::strict_name().unwrap_or(tn!("unnamed"))
+                )
+            }),
         }
     }
 
