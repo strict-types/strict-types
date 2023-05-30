@@ -337,15 +337,22 @@ impl StrictVal {
         }
     }
 
+    pub fn skip_wrapper(&self) -> &StrictVal {
+        match self {
+            StrictVal::Tuple(fields) if fields.len() == 1 => &fields[0],
+            _ => self,
+        }
+    }
+
     pub fn unwrap_bytes(&self) -> &[u8] {
-        let StrictVal::Bytes(v) = self else {
+        let StrictVal::Bytes(v) = self.skip_wrapper() else {
             panic!("StrictVal expected to be a byte string but holds different value ({self})");
         };
         v
     }
 
     pub fn unwrap_tuple(&self, no: u16) -> &StrictVal {
-        let StrictVal::Tuple(v) = self else {
+        let StrictVal::Tuple(v) = self.skip_wrapper() else {
             panic!("StrictVal expected to be a tuple but holds different value ({self})");
         };
         v.get(no as usize)
@@ -353,7 +360,7 @@ impl StrictVal {
     }
 
     pub fn unwrap_struct(&self, field: &'static str) -> &StrictVal {
-        let StrictVal::Struct(v) = self else {
+        let StrictVal::Struct(v) = self.skip_wrapper() else {
             panic!("StrictVal expected to be a string but holds different value ({self})");
         };
         v.get::<FieldName>(&fname!(field))
@@ -361,7 +368,7 @@ impl StrictVal {
     }
 
     pub fn unwrap_enum_tag(&self) -> &EnumTag {
-        let StrictVal::Enum(tag) = self else {
+        let StrictVal::Enum(tag) = self.skip_wrapper() else {
             panic!("StrictVal expected to be an enum but holds different value ({self})");
         };
         tag
@@ -386,14 +393,14 @@ impl StrictVal {
     }
 
     pub fn unwrap_union(&self) -> (&EnumTag, &StrictVal) {
-        let StrictVal::Union(tag, v) = self  else {
+        let StrictVal::Union(tag, v) = self.skip_wrapper() else {
             panic!("StrictVal expected to be an enum but holds different value ({self})");
         };
         (tag, v.as_ref())
     }
 
     pub fn unwrap_pos(&self, no: usize) -> &StrictVal {
-        if let StrictVal::Set(v) | StrictVal::List(v) = self {
+        if let StrictVal::Set(v) | StrictVal::List(v) = self.skip_wrapper() {
             v.get(no)
                 .unwrap_or_else(|| panic!("StrictVal list or set doesn't have item at index {no}"))
         } else {
@@ -402,7 +409,7 @@ impl StrictVal {
     }
 
     pub fn unwrap_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
-        let StrictVal::Map(v) = self else {
+        let StrictVal::Map(v) = self.skip_wrapper() else {
             panic!("StrictVal expected to be a map or a set but holds different value ({self})");
         };
         let key = key.into();
