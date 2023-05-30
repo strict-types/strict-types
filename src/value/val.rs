@@ -293,6 +293,24 @@ impl StrictVal {
         StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
     }
 
+    pub fn unwrap_option(&self) -> Option<&StrictVal> {
+        if let StrictVal::Union(tag, value) = self {
+            match tag {
+                EnumTag::Name(name)
+                    if name.as_str() == "None" && value.as_ref() == &StrictVal::Unit =>
+                {
+                    None
+                }
+                EnumTag::Ord(0) if value.as_ref() == &StrictVal::Unit => None,
+                EnumTag::Name(name) if name.as_str() == "Some" => Some(value.as_ref()),
+                EnumTag::Ord(1) => Some(value.as_ref()),
+                _ => panic!("StrictVal expected to be an optional, but it is not: {self}"),
+            }
+        } else {
+            panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
+        }
+    }
+
     pub fn unwrap_num(&self) -> &StrictNum {
         if let StrictVal::Number(v) = self {
             v
