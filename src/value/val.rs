@@ -294,29 +294,27 @@ impl StrictVal {
     }
 
     pub fn unwrap_option(&self) -> Option<&StrictVal> {
-        if let StrictVal::Union(tag, value) = self {
-            match tag {
-                EnumTag::Name(name)
-                    if name.as_str() == "None" && value.as_ref() == &StrictVal::Unit =>
-                {
-                    None
-                }
-                EnumTag::Ord(0) if value.as_ref() == &StrictVal::Unit => None,
-                EnumTag::Name(name) if name.as_str() == "Some" => Some(value.as_ref()),
-                EnumTag::Ord(1) => Some(value.as_ref()),
-                _ => panic!("StrictVal expected to be an optional, but it is not: {self}"),
-            }
-        } else {
+        let StrictVal::Union(tag, value) = self else {
             panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
+        };
+        match tag {
+            EnumTag::Name(name)
+                if name.as_str() == "None" && value.as_ref() == &StrictVal::Unit =>
+            {
+                None
+            }
+            EnumTag::Ord(0) if value.as_ref() == &StrictVal::Unit => None,
+            EnumTag::Name(name) if name.as_str() == "Some" => Some(value.as_ref()),
+            EnumTag::Ord(1) => Some(value.as_ref()),
+            _ => panic!("StrictVal expected to be an optional, but it is not: {self}"),
         }
     }
 
     pub fn unwrap_num(&self) -> &StrictNum {
-        if let StrictVal::Number(v) = self {
-            v
-        } else {
+        let StrictVal::Number(v) = self else {
             panic!("StrictVal expected to be a number but holds non-numeric value ({self})");
-        }
+        };
+        v
     }
 
     pub fn unwrap_string(&self) -> String {
@@ -340,29 +338,26 @@ impl StrictVal {
     }
 
     pub fn unwrap_bytes(&self) -> &[u8] {
-        if let StrictVal::Bytes(v) = self {
-            v
-        } else {
+        let StrictVal::Bytes(v) = self else {
             panic!("StrictVal expected to be a byte string but holds different value ({self})");
-        }
+        };
+        v
     }
 
     pub fn unwrap_tuple(&self, no: u16) -> &StrictVal {
-        if let StrictVal::Tuple(v) = self {
-            v.get(no as usize)
-                .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
-        } else {
+        let StrictVal::Tuple(v) = self else {
             panic!("StrictVal expected to be a tuple but holds different value ({self})");
-        }
+        };
+        v.get(no as usize)
+            .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
     }
 
     pub fn unwrap_struct(&self, field: &'static str) -> &StrictVal {
-        if let StrictVal::Struct(v) = self {
-            v.get::<FieldName>(&fname!(field))
-                .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
-        } else {
+        let StrictVal::Struct(v) = self else {
             panic!("StrictVal expected to be a string but holds different value ({self})");
-        }
+        };
+        v.get::<FieldName>(&fname!(field))
+            .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
     }
 
     pub fn unwrap_enum_tag(&self) -> &EnumTag {
@@ -391,11 +386,10 @@ impl StrictVal {
     }
 
     pub fn unwrap_union(&self) -> (&EnumTag, &StrictVal) {
-        if let StrictVal::Union(tag, v) = self {
-            (tag, v.as_ref())
-        } else {
+        let StrictVal::Union(tag, v) = self  else {
             panic!("StrictVal expected to be an enum but holds different value ({self})");
-        }
+        };
+        (tag, v.as_ref())
     }
 
     pub fn unwrap_pos(&self, no: usize) -> &StrictVal {
@@ -408,15 +402,14 @@ impl StrictVal {
     }
 
     pub fn unwrap_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
-        if let StrictVal::Map(v) = self {
-            let key = key.into();
-            v.iter()
-                .find(|(k, _)| k == &key)
-                .map(|(_, v)| v)
-                .unwrap_or_else(|| panic!("StrictVal map doesn't have key {key}"))
-        } else {
+        let StrictVal::Map(v) = self else {
             panic!("StrictVal expected to be a map or a set but holds different value ({self})");
-        }
+        };
+        let key = key.into();
+        v.iter()
+            .find(|(k, _)| k == &key)
+            .map(|(_, v)| v)
+            .unwrap_or_else(|| panic!("StrictVal map doesn't have key {key}"))
     }
 }
 
