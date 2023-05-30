@@ -293,7 +293,7 @@ impl StrictVal {
         StrictVal::Map(items.into_iter().map(|(n, v)| (n.into(), v.into())).collect())
     }
 
-    pub fn as_num(&self) -> &StrictNum {
+    pub fn unwrap_num(&self) -> &StrictNum {
         if let StrictVal::Number(v) = self {
             v
         } else {
@@ -301,7 +301,7 @@ impl StrictVal {
         }
     }
 
-    pub fn to_string(&self) -> String {
+    pub fn unwrap_string(&self) -> String {
         match self {
             StrictVal::String(v) => v.clone(),
             StrictVal::Bytes(v) => {
@@ -310,15 +310,18 @@ impl StrictVal {
             StrictVal::List(v) if v.is_empty() => s!(""),
             // Here we process strings made of restricted character sets
             StrictVal::List(v) if v.iter().all(|c| matches!(c, StrictVal::Enum(_))) => {
-                let bytes =
-                    v.iter().map(StrictVal::as_enum).map(EnumTag::unwrap_ord).collect::<Vec<_>>();
+                let bytes = v
+                    .iter()
+                    .map(StrictVal::unwrap_enum)
+                    .map(EnumTag::unwrap_ord)
+                    .collect::<Vec<_>>();
                 String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
             }
             _ => panic!("StrictVal expected to be a string holds non-string value ({self})"),
         }
     }
 
-    pub fn as_bytes(&self) -> &[u8] {
+    pub fn unwrap_bytes(&self) -> &[u8] {
         if let StrictVal::Bytes(v) = self {
             v
         } else {
@@ -326,7 +329,7 @@ impl StrictVal {
         }
     }
 
-    pub fn tuple_field(&self, no: u16) -> &StrictVal {
+    pub fn unwrap_tuple(&self, no: u16) -> &StrictVal {
         if let StrictVal::Tuple(v) = self {
             v.get(no as usize)
                 .unwrap_or_else(|| panic!("StrictVal tuple doesn't have field at index {no}"))
@@ -335,7 +338,7 @@ impl StrictVal {
         }
     }
 
-    pub fn struct_field(&self, field: &'static str) -> &StrictVal {
+    pub fn unwrap_struct(&self, field: &'static str) -> &StrictVal {
         if let StrictVal::Struct(v) = self {
             v.get::<FieldName>(&fname!(field))
                 .unwrap_or_else(|| panic!("StrictVal struct doesn't have field named {field}"))
@@ -344,7 +347,7 @@ impl StrictVal {
         }
     }
 
-    pub fn as_enum(&self) -> &EnumTag {
+    pub fn unwrap_enum(&self) -> &EnumTag {
         if let StrictVal::Enum(tag) = self {
             tag
         } else {
@@ -352,7 +355,7 @@ impl StrictVal {
         }
     }
 
-    pub fn as_union(&self) -> (&EnumTag, &StrictVal) {
+    pub fn unwrap_union(&self) -> (&EnumTag, &StrictVal) {
         if let StrictVal::Union(tag, v) = self {
             (tag, v.as_ref())
         } else {
@@ -360,7 +363,7 @@ impl StrictVal {
         }
     }
 
-    pub fn get_at_pos(&self, no: usize) -> &StrictVal {
+    pub fn unwrap_pos(&self, no: usize) -> &StrictVal {
         if let StrictVal::Set(v) | StrictVal::List(v) = self {
             v.get(no)
                 .unwrap_or_else(|| panic!("StrictVal list or set doesn't have item at index {no}"))
@@ -369,7 +372,7 @@ impl StrictVal {
         }
     }
 
-    pub fn get_at_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
+    pub fn unwrap_key(&self, key: impl Into<StrictVal>) -> &StrictVal {
         if let StrictVal::Map(v) = self {
             let key = key.into();
             v.iter()
