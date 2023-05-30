@@ -301,11 +301,20 @@ impl StrictVal {
         }
     }
 
-    pub fn as_str(&self) -> &str {
-        if let StrictVal::String(v) = self {
-            v
-        } else {
-            panic!("StrictVal expected to be a string holds non-string value ({self})");
+    pub fn to_string(&self) -> String {
+        match self {
+            StrictVal::String(v) => v.clone(),
+            StrictVal::Bytes(v) => {
+                String::from_utf8(v.clone()).expect("non-Unicode and non-ASCII string")
+            }
+            StrictVal::List(v) if v.is_empty() => s!(""),
+            // Here we process strings made of restricted character sets
+            StrictVal::List(v) if v.iter().all(|c| matches!(c, StrictVal::Enum(_))) => {
+                let bytes =
+                    v.iter().map(StrictVal::as_enum).map(EnumTag::unwrap_ord).collect::<Vec<_>>();
+                String::from_utf8(bytes).expect("non-Unicode and non-ASCII string")
+            }
+            _ => panic!("StrictVal expected to be a string holds non-string value ({self})"),
         }
     }
 
