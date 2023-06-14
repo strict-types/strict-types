@@ -22,6 +22,8 @@
 
 //! Strict value core types.
 
+use std::fmt::Debug;
+
 // use amplify::num::apfloat::ieee;
 use amplify::num::{i1024, u1024};
 use encoding::{FieldName, StrictEnum, VariantName};
@@ -171,6 +173,16 @@ pub enum StrictNum {
 }
 
 // TODO: Do conversion of number types in to amplify_num
+
+impl StrictNum {
+    pub fn unwrap_uint<N: TryFrom<u128>>(self) -> N
+    where N::Error: Debug {
+        let StrictNum::Uint(v) = self else {
+            panic!("StrictNum expected to be an unsigned 128-bit integer");
+        };
+        v.try_into().expect("StrictNum is too large for the selected uint representation")
+    }
+}
 
 /// A tag specifying enum or union variant used in strict value representation.
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -325,6 +337,11 @@ impl StrictVal {
             panic!("StrictVal expected to be a number but holds non-numeric value `{self}`");
         };
         v
+    }
+
+    pub fn unwrap_uint<N: TryFrom<u128>>(&self) -> N
+    where N::Error: Debug {
+        self.unwrap_num().unwrap_uint()
     }
 
     pub fn unwrap_string(&self) -> String {
