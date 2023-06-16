@@ -26,16 +26,17 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
-use crate::typelib::{LibBuilder, TranslateError};
-use crate::typesys::{TypeFqid, TypeSysId};
-use crate::{TypeLib, TypeSystem};
+use crate::{
+    CompileError, LibBuilder, SymbolRef, SymbolicLib, SymbolicSys, TranspileError, TypeLib,
+    TypeSymbol, TypeSysId,
+};
 
-pub const LIB_ID_STD: &str = "quota_conan_fashion_3TZmAPf8EkQZnbGS1g8uMGes6jEWPqNkFB6pLUKeoefg";
+pub const LIB_ID_STD: &str = "left_pierre_food_5cmoZctpx98FbTzWTArm3G53pMzUXuRPXmMhuCd8zyXb";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29";
+    "figure_radical_liquid_8pj6Q4MDsaQW97omrv5DhAX1yid5Hjmbi8uoBzLQayMh";
 
-fn _std_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(LIB_NAME_STD))
+fn _std_sym() -> Result<SymbolicLib, TranspileError> {
+    LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
         .transpile::<AsciiPrintable>()
@@ -49,18 +50,28 @@ fn _std_stl() -> Result<TypeLib, TranslateError> {
         .transpile::<AlphaCapsNum>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
-        .compile(none!())
+        .compile_symbols()
 }
+
+fn _std_stl() -> Result<TypeLib, CompileError> { _std_sym()?.compile() }
+
+pub fn std_sym() -> SymbolicLib { _std_sym().expect("invalid strict type Std library") }
 
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
-fn _strict_types_stl() -> Result<TypeLib, TranslateError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB))
+fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
+        .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
-        .transpile::<TypeSystem>()
         .transpile::<TypeSysId>()
-        .transpile::<TypeFqid>()
-        .compile(none!())
+        .transpile::<TypeSymbol>()
+        .transpile::<SymbolicSys>()
+        .compile_symbols()
+}
+fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }
+
+pub fn strict_types_sym() -> SymbolicLib {
+    _strict_types_sym().expect("invalid strict type StrictTypes library")
 }
 
 pub fn strict_types_stl() -> TypeLib {

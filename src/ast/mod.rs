@@ -25,10 +25,13 @@ mod id;
 mod path;
 mod iter;
 mod encoding;
+mod translate;
 
-pub use id::{HashId, SemId};
+pub use id::{HashId, SemId, SEM_ID_TAG};
 pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
+pub use translate::Translate;
 pub use ty::{
-    Cls, EnumVariants, Field, KeyTy, NamedFields, Ty, TypeRef, UnionVariants, UnnamedFields,
+    Cls, EnumVariants, Field, KeyTy, NamedFields, PrimitiveRef, Ty, TypeRef, UnionVariants,
+    UnnamedFields,
 };

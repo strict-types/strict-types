@@ -22,280 +22,158 @@
 
 use std::collections::BTreeMap;
 
-use amplify::confinement;
-use amplify::confinement::{SmallOrdMap, TinyOrdMap};
-use encoding::LibName;
-use strict_encoding::{InvalidIdent, TypeName};
+use encoding::{LibName, TypeName};
 
-use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typelib::{
-    CompileRef, CompileType, Dependency, InlineRef, InlineRef1, InlineRef2, LibRef,
-};
-use crate::{KeyTy, SemId, Translate, Ty, TypeRef};
-
-pub type TypeIndex = BTreeMap<TypeName, SemId>;
+use crate::typelib::{ExternRef, ExternTypes, InlineRef, InlineRef1, InlineRef2};
+use crate::{KeyTy, LibRef, SemId, SymbolRef, Translate, TranspileRef, Ty, TypeLibId, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
-pub enum TranslateError {
-    /// invalid library name; {0}
-    InvalidLibName(InvalidIdent),
+pub enum SymbolError {
+    /// type with semantic id `{0}` is not known to the library
+    UnknownType(SemId),
 
-    /// a different type with name `{0}` is already present
-    DuplicateName(TypeName),
+    /// unknown library reference `{0}`
+    UnknownLib(TypeLibId),
 
-    /// a type with id {0} has at least two different names `{0}` and `{1}`
-    MultipleNames(SemId, TypeName, TypeName),
+    /// library `{0}` contains too many types.
+    LibTooLarge(LibName),
 
-    /// unknown type with id `{0}`
-    UnknownId(SemId),
-
-    /// type `{unknown}` referenced inside `{within}` is not known
-    UnknownType {
-        unknown: TypeName,
-        within: CompileType,
-    },
-
-    /// return type indicating continue operation
-    Continue,
-
-    /// dependency {0} is already present in the library
-    DuplicatedDependency(Dependency),
-
-    #[from]
-    #[display(inner)]
-    Confinement(confinement::Error),
-
-    /// too deep type nesting for type {2} inside {0}, path {1}
-    NestedInline(TypeName, String, String),
-
-    /// no type {1} in library {0}
-    UnknownExtern(LibName, TypeName),
-
-    /// unknown library {0}
-    UnknownLib(LibName),
+    /// too many dependencies.
+    TooManyDependencies,
 }
 
-impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>
-where Ref: Translate<ToRef>
-{
-    type Builder = <Ref as Translate<ToRef>>::Builder;
-    type Context = <Ref as Translate<ToRef>>::Context;
-    type Error = <Ref as Translate<ToRef>>::Error;
+pub struct SymbolContext {
+    pub(super) reverse_index: BTreeMap<SemId, TypeName>,
+    pub(super) lib_index: BTreeMap<TypeLibId, LibName>,
+}
 
-    fn translate(
-        self,
-        builder: &mut Self::Builder,
-        ctx: &Self::Context,
-    ) -> Result<Ty<ToRef>, Self::Error> {
-        Ok(match self {
-            Ty::Primitive(prim) => Ty::Primitive(prim),
-            Ty::Enum(vars) => Ty::Enum(vars),
-            Ty::Union(fields) => Ty::Union(fields.translate(builder, ctx)?),
-            Ty::Struct(fields) => Ty::Struct(fields.translate(builder, ctx)?),
-            Ty::Tuple(fields) => Ty::Tuple(fields.translate(builder, ctx)?),
-            Ty::Array(ty, len) => Ty::Array(ty.translate(builder, ctx)?, len),
-            Ty::UnicodeChar => Ty::UnicodeChar,
-            Ty::List(ty, sizing) => Ty::List(ty.translate(builder, ctx)?, sizing),
-            Ty::Set(ty, sizing) => Ty::Set(ty.translate(builder, ctx)?, sizing),
-            Ty::Map(key, ty, sizing) => Ty::Map(key, ty.translate(builder, ctx)?, sizing),
-        })
+impl SymbolContext {
+    fn embedded<Ref>(
+        &self,
+        builder: &mut ExternTypes,
+        ty: Ty<Ref>,
+    ) -> Result<TranspileRef, SymbolError>
+    where
+        Ref: TypeRef
+            + Translate<TranspileRef, Builder = ExternTypes, Context = Self, Error = SymbolError>,
+    {
+        ty.translate(builder, self).map(Box::new).map(TranspileRef::Embedded)
+    }
+
+    fn named(&self, id: SemId) -> Result<TranspileRef, SymbolError> {
+        self.reverse_index
+            .get(&id)
+            .ok_or(SymbolError::UnknownType(id))
+            .cloned()
+            .map(TranspileRef::Named)
+    }
+
+    fn external(
+        &self,
+        builder: &mut ExternTypes,
+        ext: ExternRef,
+    ) -> Result<TranspileRef, SymbolError> {
+        let lib_name =
+            self.lib_index.get(&ext.lib_id).ok_or(SymbolError::UnknownLib(ext.lib_id))?;
+        let ty_name = builder
+            .get(lib_name)
+            .ok_or(SymbolError::UnknownLib(ext.lib_id.clone()))?
+            .get(&ext.sem_id)
+            .ok_or(SymbolError::UnknownType(ext.sem_id))?
+            .clone();
+        let r = SymbolRef::with(lib_name.clone(), ty_name.clone(), ext.lib_id, ext.sem_id);
+        let mut index = builder.remove(&lib_name).ok().flatten().unwrap_or_default();
+        index
+            .insert(ext.sem_id, ty_name)
+            .map_err(|_| SymbolError::LibTooLarge(lib_name.clone()))?;
+        builder.insert(lib_name.clone(), index).map_err(|_| SymbolError::TooManyDependencies)?;
+        Ok(TranspileRef::Extern(r))
     }
 }
 
-impl<Ref: TypeRef, ToRef: TypeRef> Translate<UnionVariants<ToRef>> for UnionVariants<Ref>
-where Ref: Translate<ToRef>
-{
-    type Builder = <Ref as Translate<ToRef>>::Builder;
-    type Context = <Ref as Translate<ToRef>>::Context;
-    type Error = <Ref as Translate<ToRef>>::Error;
+impl Translate<TranspileRef> for LibRef {
+    type Context = SymbolContext;
+    type Builder = ExternTypes;
+    type Error = SymbolError;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<UnionVariants<ToRef>, Self::Error> {
-        let mut variants = BTreeMap::new();
-        for (variant, ty) in self {
-            variants.insert(variant, ty.translate(builder, ctx)?);
-        }
-        Ok(UnionVariants::try_from(variants).expect("re-packing existing fields structure"))
-    }
-}
-
-impl<Ref: TypeRef, ToRef: TypeRef> Translate<NamedFields<ToRef>> for NamedFields<Ref>
-where Ref: Translate<ToRef>
-{
-    type Builder = <Ref as Translate<ToRef>>::Builder;
-    type Context = <Ref as Translate<ToRef>>::Context;
-    type Error = <Ref as Translate<ToRef>>::Error;
-
-    fn translate(
-        self,
-        builder: &mut Self::Builder,
-        ctx: &Self::Context,
-    ) -> Result<NamedFields<ToRef>, Self::Error> {
-        let mut fields = Vec::with_capacity(self.len());
-        for field in self {
-            fields.push(Field {
-                name: field.name,
-                ty: field.ty.translate(builder, ctx)?,
-            });
-        }
-        Ok(NamedFields::try_from(fields).expect("re-packing existing fields structure"))
-    }
-}
-
-impl<Ref: TypeRef, ToRef: TypeRef> Translate<UnnamedFields<ToRef>> for UnnamedFields<Ref>
-where Ref: Translate<ToRef>
-{
-    type Builder = <Ref as Translate<ToRef>>::Builder;
-    type Context = <Ref as Translate<ToRef>>::Context;
-    type Error = <Ref as Translate<ToRef>>::Error;
-
-    fn translate(
-        self,
-        builder: &mut Self::Builder,
-        ctx: &Self::Context,
-    ) -> Result<UnnamedFields<ToRef>, Self::Error> {
-        let mut fields = Vec::with_capacity(self.len());
-        for ty in self {
-            fields.push(ty.translate(builder, ctx)?);
-        }
-        Ok(UnnamedFields::try_from(fields).expect("re-packing existing fields structure"))
-    }
-}
-
-pub struct NestedContext {
-    pub top_name: TypeName,
-    pub index: TypeIndex,
-    pub extern_types: TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>,
-    pub stack: Vec<String>,
-}
-
-impl Translate<LibRef> for CompileRef {
-    type Context = ();
-    type Builder = NestedContext;
-    type Error = TranslateError;
-
-    fn translate(
-        self,
-        builder: &mut Self::Builder,
-        ctx: &Self::Context,
-    ) -> Result<LibRef, Self::Error> {
+    ) -> Result<TranspileRef, Self::Error> {
         match self {
-            CompileRef::Embedded(ty) => {
-                builder.stack.push(ty.cls().to_string());
-                let res = ty.translate(builder, ctx).map(LibRef::Inline);
-                builder.stack.pop();
-                res
-            }
-            CompileRef::Named(name) => {
-                let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
-                Ok(LibRef::Named(name, *id))
-            }
-            CompileRef::Extern(ext) => Ok(LibRef::Extern(ext)),
+            LibRef::Inline(ty) => ctx.embedded(builder, ty),
+            LibRef::Named(id) => ctx.named(id),
+            LibRef::Extern(ext) => ctx.external(builder, ext),
         }
     }
 }
 
-impl Translate<InlineRef> for CompileRef {
-    type Context = ();
-    type Builder = NestedContext;
-    type Error = TranslateError;
+impl Translate<TranspileRef> for InlineRef {
+    type Context = SymbolContext;
+    type Builder = ExternTypes;
+    type Error = SymbolError;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<InlineRef, Self::Error> {
+    ) -> Result<TranspileRef, Self::Error> {
         match self {
-            CompileRef::Embedded(ty) => {
-                builder.stack.push(ty.cls().to_string());
-                let res = ty.translate(builder, ctx).map(InlineRef::Inline);
-                builder.stack.pop();
-                res
-            }
-            CompileRef::Named(name) => {
-                let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
-                Ok(InlineRef::Named(name, *id))
-            }
-            CompileRef::Extern(ext) => Ok(InlineRef::Extern(ext)),
+            InlineRef::Inline(ty) => ctx.embedded(builder, ty),
+            InlineRef::Named(id) => ctx.named(id),
+            InlineRef::Extern(ext) => ctx.external(builder, ext),
         }
     }
 }
 
-impl Translate<InlineRef1> for CompileRef {
-    type Context = ();
-    type Builder = NestedContext;
-    type Error = TranslateError;
+impl Translate<TranspileRef> for InlineRef1 {
+    type Context = SymbolContext;
+    type Builder = ExternTypes;
+    type Error = SymbolError;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<InlineRef1, Self::Error> {
+    ) -> Result<TranspileRef, Self::Error> {
         match self {
-            CompileRef::Embedded(ty) => {
-                builder.stack.push(ty.cls().to_string());
-                let res = ty.translate(builder, ctx).map(InlineRef1::Inline);
-                builder.stack.pop();
-                res
-            }
-            CompileRef::Named(name) => {
-                let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
-                Ok(InlineRef1::Named(name, *id))
-            }
-            CompileRef::Extern(ext) => Ok(InlineRef1::Extern(ext)),
+            InlineRef1::Inline(ty) => ctx.embedded(builder, ty),
+            InlineRef1::Named(id) => ctx.named(id),
+            InlineRef1::Extern(ext) => ctx.external(builder, ext),
         }
     }
 }
 
-impl Translate<InlineRef2> for CompileRef {
-    type Context = ();
-    type Builder = NestedContext;
-    type Error = TranslateError;
+impl Translate<TranspileRef> for InlineRef2 {
+    type Context = SymbolContext;
+    type Builder = ExternTypes;
+    type Error = SymbolError;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<InlineRef2, Self::Error> {
+    ) -> Result<TranspileRef, Self::Error> {
         match self {
-            CompileRef::Embedded(ty) => {
-                builder.stack.push(ty.cls().to_string());
-                let res = ty.translate(builder, ctx).map(InlineRef2::Inline);
-                builder.stack.pop();
-                res
-            }
-            CompileRef::Named(name) => {
-                let id = builder.index.get(&name).ok_or(TranslateError::Continue)?;
-                Ok(InlineRef2::Named(name, *id))
-            }
-            CompileRef::Extern(ext) => Ok(InlineRef2::Extern(ext)),
+            InlineRef2::Inline(ty) => ctx.embedded(builder, ty),
+            InlineRef2::Named(id) => ctx.named(id),
+            InlineRef2::Extern(ext) => ctx.external(builder, ext),
         }
     }
 }
 
-impl Translate<KeyTy> for CompileRef {
-    type Context = ();
-    type Builder = NestedContext;
-    type Error = TranslateError;
+impl Translate<TranspileRef> for KeyTy {
+    type Context = SymbolContext;
+    type Builder = ExternTypes;
+    type Error = SymbolError;
 
     fn translate(
         self,
-        builder: &mut Self::Builder,
+        _builder: &mut Self::Builder,
         _ctx: &Self::Context,
-    ) -> Result<KeyTy, Self::Error> {
-        let me = self.to_string();
-        match self {
-            CompileRef::Embedded(ty) => ty.try_to_key().ok(),
-            CompileRef::Named(_) | CompileRef::Extern(_) => None,
-        }
-        .ok_or(TranslateError::NestedInline(
-            builder.top_name.clone(),
-            builder.stack.join("/"),
-            me,
-        ))
+    ) -> Result<TranspileRef, Self::Error> {
+        Ok(TranspileRef::Embedded(Box::new(self.into_ty())))
     }
 }

@@ -21,19 +21,16 @@
 // limitations under the License.
 
 #[macro_use]
-extern crate amplify;
-#[macro_use]
 extern crate strict_encoding;
 
 use strict_encoding::STRICT_TYPES_LIB;
-use strict_types::typelib::LibBuilder;
 use strict_types::typesys::SystemBuilder;
-use strict_types::TypeLib;
+use strict_types::{LibBuilder, TypeLib};
 
 #[test]
 fn reflect() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB)).transpile::<TypeLib>();
-    let lib = builder.compile(none!()).unwrap();
+    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), None).transpile::<TypeLib>();
+    let lib = builder.compile().unwrap();
 
     let builder = SystemBuilder::new().import(lib).unwrap();
     match builder.finalize() {

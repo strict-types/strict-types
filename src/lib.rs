@@ -55,8 +55,11 @@ pub mod typesys;
 pub mod value;
 pub mod stl;
 
-pub use ast::{Cls, KeyTy, SemId, Ty, TypeRef};
-pub use typelib::{Dependency, LibAlias, LibRef, TypeLib, TypeLibId};
-pub use typesys::TypeSystem;
-pub use util::{BuildFragment, PreFragment, SemVer, Translate, Urn};
+pub use ast::{Cls, KeyTy, PrimitiveRef, SemId, Translate, Ty, TypeRef};
+pub use typelib::{
+    CompileError, Dependency, LibBuilder, LibRef, SymbolRef, SymbolicLib, TranspileError,
+    TranspileRef, TypeLib, TypeLibId,
+};
+pub use typesys::{SymbolicSys, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};
+pub use util::{parse_args, BuildFragment, PreFragment, SemVer, StlFormat, UnknownFormat, Urn};
 pub use value::{decode, ston, typify, KeyStep, Path, PathError, Step, StrictVal};

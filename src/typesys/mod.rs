@@ -20,10 +20,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-pub mod type_sys;
+mod type_sys;
 mod translate;
 mod id;
+mod symbols;
 
 pub use id::TypeSysId;
-pub use translate::{Error, SystemBuilder, TypeFqid};
-pub use type_sys::{TypeFqn, TypeInfo, TypeSystem};
+pub use symbols::{SymbolicSys, Symbols};
+pub use translate::{Error, SystemBuilder, TypeSymbol};
+pub use type_sys::{SymTy, TypeFqn, TypeSystem};

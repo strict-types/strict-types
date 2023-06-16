@@ -33,6 +33,7 @@ use encoding::constants::*;
 use encoding::{DecodeError, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
+use crate::typesys::{SymbolicSys, TypeSymbol};
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
@@ -51,6 +52,28 @@ pub enum Error {
 
     /// data provided to reify operation are not entirely consumed during deserialization.
     NotEntirelyConsumed,
+}
+
+impl SymbolicSys {
+    pub fn strict_deserialize_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        data: &[u8],
+    ) -> Result<TypedVal, Error> {
+        let spec = spec.into();
+        let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
+        self.as_types().strict_deserialize_type(sem_id, data)
+    }
+
+    pub fn strict_read_type(
+        &self,
+        spec: impl Into<TypeSpec>,
+        d: &mut impl io::Read,
+    ) -> Result<TypedVal, Error> {
+        let spec = spec.into();
+        let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
+        self.as_types().strict_read_type(sem_id, d)
+    }
 }
 
 impl TypeSystem {
@@ -84,13 +107,9 @@ impl TypeSystem {
         Ok(list)
     }
 
-    pub fn strict_deserialize_type(
-        &self,
-        spec: impl Into<TypeSpec>,
-        data: &[u8],
-    ) -> Result<TypedVal, Error> {
+    pub fn strict_deserialize_type(&self, sem_id: SemId, data: &[u8]) -> Result<TypedVal, Error> {
         let mut cursor = io::Cursor::new(data);
-        let ty = self.strict_read_type(spec, &mut cursor)?;
+        let ty = self.strict_read_type(sem_id, &mut cursor)?;
         if cursor.position() as usize != data.len() {
             return Err(Error::NotEntirelyConsumed);
         }
@@ -99,11 +118,11 @@ impl TypeSystem {
 
     pub fn strict_read_type(
         &self,
-        spec: impl Into<TypeSpec>,
+        sem_id: SemId,
         mut d: &mut impl io::Read,
     ) -> Result<TypedVal, Error> {
-        let spec = spec.into();
-        let ty = &self.find(&spec).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.ty;
+        let spec = TypeSpec::from(sem_id);
+        let ty = self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
 
         let mut reader = StrictReader::with(usize::MAX, d);
 
@@ -303,42 +322,45 @@ impl TypeSystem {
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u16::MAX as u64 => {
                 let len = u16::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u24::MAX.into_u64() => {
                 let len = u24::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len.into_usize(), key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, sizing) if sizing.max <= u32::MAX as u64 => {
                 let len = u32::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
             Ty::Map(key_ty, ty, _sizing) => {
                 let len = u64::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty().id(None);
+                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
                 let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
                 StrictVal::Map(list)
             }
         };
 
-        Ok(TypedVal { val, spec })
+        Ok(TypedVal {
+            val,
+            orig: TypeSymbol::unnamed(sem_id),
+        })
     }
 }
 

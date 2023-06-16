@@ -24,15 +24,14 @@
 //! dependencies
 
 use std::fmt::{self, Display, Formatter};
+use std::ops::Index;
 
-use amplify::confinement;
-use amplify::confinement::MediumOrdMap;
+use amplify::confinement::{self, MediumOrdMap};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::typesys::TypeFqid;
-use crate::{SemId, Translate, Ty};
+use crate::{SemId, Ty};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -60,17 +59,32 @@ impl From<&'static str> for TypeFqn {
     }
 }
 
+/// Type coupled with symbolic information.
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeInfo {
-    pub fqn: Option<TypeFqn>,
+pub struct SymTy {
+    /// Type origin providing information from which library and under which name the type is
+    /// originating from. The origin information may be empty for the unnamed types.
+    pub orig: Option<TypeFqn>,
+    /// Type definition, potentially referencing other types via semantic type id.
     pub ty: Ty<SemId>,
 }
 
-impl TypeInfo {
-    pub fn with(fqn: Option<TypeFqn>, ty: Ty<SemId>) -> TypeInfo { TypeInfo { fqn, ty } }
+impl SymTy {
+    pub fn named(lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> SymTy {
+        Self::with(Some(TypeFqn::with(lib_name, ty_name)), ty)
+    }
+
+    pub fn unnamed(ty: Ty<SemId>) -> SymTy { Self::with(None::<TypeFqn>, ty) }
+
+    pub fn with(orig: Option<impl Into<TypeFqn>>, ty: Ty<SemId>) -> SymTy {
+        SymTy {
+            orig: orig.map(|o| o.into()),
+            ty,
+        }
+    }
 }
 
 /// Type system represents a set of strict types assembled from multiple
@@ -81,13 +95,14 @@ impl TypeInfo {
 ///
 /// - Total number of types do not exceed 2^24-1;
 /// - Strict-serialized size is less than 2^24 bytes;
+/// - A type with the same semantic id can't appear in more than 256 libraries;
 /// - Type system is complete (i.e. no type references a type which is not a part of the system).
 #[derive(Wrapper, Clone, Eq, PartialEq, Debug, Default, From)]
 #[wrapper(Deref)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeSystem(MediumOrdMap<SemId, TypeInfo>);
+pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
 
 impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
@@ -99,16 +114,22 @@ impl TypeSystem {
 
     pub(super) fn insert_unchecked(
         &mut self,
-        fqid: TypeFqid,
+        sem_id: SemId,
         ty: Ty<SemId>,
     ) -> Result<bool, confinement::Error> {
-        self.0.insert(fqid.id, TypeInfo::with(fqid.fqn, ty)).map(|res| res.is_some())
+        self.0.insert(sem_id, ty).map(|r| r.is_some())
     }
 
-    pub fn id_by_name(&self, name: &str) -> Option<SemId> {
-        self.iter()
-            .find(|(_, ty)| ty.fqn.as_ref().map(|f| f.to_string() == name).unwrap_or_default())
-            .map(|(id, _)| *id)
+    pub fn get(&self, sem_id: SemId) -> Option<&Ty<SemId>> { self.0.get(&sem_id) }
+}
+
+impl Index<SemId> for TypeSystem {
+    type Output = Ty<SemId>;
+
+    fn index(&self, index: SemId) -> &Self::Output {
+        self.get(index).unwrap_or_else(|| {
+            panic!("type with semantic id {index} is not a part of the type system")
+        })
     }
 }
 
@@ -116,14 +137,8 @@ impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
-        for (id, info) in &self.0 {
-            let ty = info.ty.clone().translate(&mut (), self).expect("type system inconsistency");
-            if let Some(fqn) = &info.fqn {
-                writeln!(f, "-- {id:0}")?;
-                writeln!(f, "data {fqn} :: {:0}", ty)?;
-            } else {
-                writeln!(f, "data {id:0} :: {:0}", ty)?;
-            }
+        for (id, ty) in &self.0 {
+            writeln!(f, "data {id:0} :: {:0}", ty)?;
         }
         Ok(())
     }
@@ -132,6 +147,7 @@ impl Display for TypeSystem {
 #[cfg(feature = "base64")]
 impl fmt::UpperHex for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        use amplify::confinement::U32;
         use base64::Engine;
 
         let id = self.id();
@@ -140,7 +156,7 @@ impl fmt::UpperHex for TypeSystem {
         writeln!(f, "Id: {}", id)?;
         writeln!(f)?;
 
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
+        let data = self.to_strict_serialized::<U32>().expect("in-memory");
         let engine = base64::engine::general_purpose::STANDARD;
         let data = engine.encode(data);
         let mut data = data.as_str();

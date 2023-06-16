@@ -25,52 +25,30 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdSet};
-use amplify::Wrapper;
-use blake3::Hasher;
-use encoding::{Ident, InvalidIdent, StrictDeserialize, StrictDumb, StrictSerialize};
+use encoding::StrictDumb;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
+use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
-use crate::typelib::translate::TranslateError;
+use crate::typelib::ExternTypes;
 use crate::{KeyTy, SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
-#[derive(StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib}.{name}")]
+#[display("{lib_id}.{sem_id:0}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", rename_all = "camelCase")
 )]
 pub struct ExternRef {
-    pub name: TypeName,
-    pub lib: LibName,
-    pub id: SemId,
-}
-
-impl StrictDumb for ExternRef {
-    fn strict_dumb() -> Self {
-        ExternRef {
-            name: TypeName::strict_dumb(),
-            lib: LibName::strict_dumb(),
-            id: SemId::strict_dumb(),
-        }
-    }
-}
-
-impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        hasher.update(self.lib.as_bytes());
-        hasher.update(self.id.as_slice());
-    }
+    pub lib_id: TypeLibId,
+    pub sem_id: SemId,
 }
 
 impl ExternRef {
-    pub fn with(name: TypeName, lib: LibName, id: SemId) -> ExternRef {
-        ExternRef { name, lib, id }
-    }
+    pub fn with(lib_id: TypeLibId, sem_id: SemId) -> ExternRef { ExternRef { lib_id, sem_id } }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
@@ -84,18 +62,11 @@ impl ExternRef {
 pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef {
-    fn id(&self) -> SemId {
-        match self {
-            InlineRef::Named(_, id) => *id,
-            InlineRef::Extern(ext) => ext.id,
-            InlineRef::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             InlineRef::Inline(ty) => ty.is_compound(),
@@ -122,23 +93,10 @@ impl TypeRef for InlineRef {
     }
 }
 
-impl HashId for InlineRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        match self {
-            InlineRef::Inline(ty) => ty.hash_id(hasher),
-            InlineRef::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
-            InlineRef::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef::Named(name, _) => write!(f, "{name}"),
+            InlineRef::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef::Extern(ext) => Display::fmt(ext, f),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
@@ -156,18 +114,11 @@ impl Display for InlineRef {
 pub enum InlineRef1 {
     #[from]
     Inline(Ty<InlineRef2>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef1 {
-    fn id(&self) -> SemId {
-        match self {
-            InlineRef1::Named(_, id) => *id,
-            InlineRef1::Extern(ext) => ext.id,
-            InlineRef1::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             InlineRef1::Inline(ty) => ty.is_compound(),
@@ -194,23 +145,10 @@ impl TypeRef for InlineRef1 {
     }
 }
 
-impl HashId for InlineRef1 {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        match self {
-            InlineRef1::Inline(ty) => ty.hash_id(hasher),
-            InlineRef1::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
-            InlineRef1::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef1::Named(name, _) => write!(f, "{name}"),
+            InlineRef1::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef1::Extern(ext) => Display::fmt(ext, f),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
@@ -228,18 +166,11 @@ impl Display for InlineRef1 {
 pub enum InlineRef2 {
     #[from]
     Inline(Ty<KeyTy>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef2 {
-    fn id(&self) -> SemId {
-        match self {
-            InlineRef2::Named(_, id) => *id,
-            InlineRef2::Extern(ext) => ext.id,
-            InlineRef2::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             InlineRef2::Inline(ty) => ty.is_compound(),
@@ -266,23 +197,10 @@ impl TypeRef for InlineRef2 {
     }
 }
 
-impl HashId for InlineRef2 {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        match self {
-            InlineRef2::Inline(ty) => ty.hash_id(hasher),
-            InlineRef2::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
-            InlineRef2::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef2::Named(name, _) => write!(f, "{name}"),
+            InlineRef2::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef2::Extern(ext) => Display::fmt(ext, f),
             InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
@@ -300,18 +218,11 @@ impl Display for InlineRef2 {
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
-    Named(TypeName, SemId),
+    Named(SemId),
     Extern(ExternRef),
 }
 
 impl TypeRef for LibRef {
-    fn id(&self) -> SemId {
-        match self {
-            LibRef::Named(_, id) => *id,
-            LibRef::Extern(ext) => ext.id,
-            LibRef::Inline(ty) => ty.id(None),
-        }
-    }
     fn is_compound(&self) -> bool {
         match self {
             LibRef::Inline(ty) => ty.is_compound(),
@@ -338,52 +249,17 @@ impl TypeRef for LibRef {
     }
 }
 
-impl HashId for LibRef {
-    fn hash_id(&self, hasher: &mut Hasher) {
-        match self {
-            LibRef::Inline(ty) => ty.hash_id(hasher),
-            LibRef::Named(name, id) => {
-                hasher.update(name.as_bytes());
-                id.hash_id(hasher);
-            }
-            LibRef::Extern(ext) => ext.hash_id(hasher),
-        }
-    }
-}
-
 impl Display for LibRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            LibRef::Named(name, _) => Display::fmt(name, f),
+            LibRef::Named(sem_id) => Display::fmt(sem_id, f),
             LibRef::Inline(ty) => Display::fmt(ty, f),
             LibRef::Extern(ext) => Display::fmt(ext, f),
         }
     }
 }
 
-#[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
-#[wrapper(Deref, Display, FromStr)]
-#[wrapper_mut(DerefMut)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
-pub struct LibAlias(Ident);
-
-impl From<&'static str> for LibAlias {
-    fn from(ident: &'static str) -> Self { LibAlias(Ident::from(ident)) }
-}
-
-impl TryFrom<String> for LibAlias {
-    type Error = InvalidIdent;
-
-    fn try_from(s: String) -> Result<Self, Self::Error> { Ident::try_from(s).map(Self) }
-}
-
-#[derive(Clone, PartialEq, Eq, Debug, Display)]
+#[derive(Clone, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("import {id:+}")]
@@ -391,6 +267,10 @@ impl TryFrom<String> for LibAlias {
 pub struct Dependency {
     pub id: TypeLibId,
     pub name: LibName,
+}
+
+impl PartialEq for Dependency {
+    fn eq(&self, other: &Self) -> bool { self.id == other.id || self.name == other.name }
 }
 
 impl PartialOrd for Dependency {
@@ -405,6 +285,15 @@ impl Dependency {
     pub fn with(id: TypeLibId, name: LibName) -> Self { Dependency { id, name } }
 }
 
+impl From<&TypeLib> for Dependency {
+    fn from(lib: &TypeLib) -> Self {
+        Dependency {
+            id: lib.id(),
+            name: lib.name.clone(),
+        }
+    }
+}
+
 pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -414,6 +303,7 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
     dumb = { TypeLib {
         name: LibName::strict_dumb(),
         dependencies: default!(),
+        extern_types: default!(),
         types: confined_bmap!(tn!("DumbType") => Ty::strict_dumb())
     } }
 )]
@@ -421,90 +311,28 @@ pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usi
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdSet<Dependency>,
+    pub extern_types: ExternTypes,
     pub types: TypeMap,
 }
-
-impl StrictSerialize for TypeLib {}
-impl StrictDeserialize for TypeLib {}
 
 impl TypeLib {
     pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
 
-    pub fn import(&mut self, dependency: Dependency) -> Result<(), TranslateError> {
+    pub fn import(&mut self, dependency: Dependency) -> Result<(), CompileError> {
         if self.dependencies.contains(&dependency) {
-            return Err(TranslateError::DuplicatedDependency(dependency));
+            return Err(CompileError::DuplicatedDependency(dependency));
         }
-        self.dependencies.push(dependency)?;
+        self.dependencies.push(dependency).map_err(|_| CompileError::TooManyDependencies)?;
         Ok(())
     }
 
-    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), TranslateError> {
+    pub fn populate(&mut self, name: TypeName, ty: Ty<LibRef>) -> Result<(), CompileError> {
         if self.types.contains_key(&name) {
-            return Err(TranslateError::DuplicateName(name));
+            return Err(CompileError::DuplicateName(name));
         }
-        self.types.insert(name, ty)?;
+        self.types.insert(name, ty).map_err(|_| CompileError::TooManyTypes)?;
         Ok(())
     }
 
     // TODO: Check that all dependencies are used
-}
-
-impl Display for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
-        writeln!(f)?;
-        for dep in &self.dependencies {
-            writeln!(f, "{dep} as {}", dep.name)?;
-        }
-        if self.dependencies.is_empty() {
-            f.write_str("-- no dependencies")?;
-        }
-        writeln!(f)?;
-        writeln!(f)?;
-        for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} :: {ty}")?;
-        }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "base64")]
-impl fmt::UpperHex for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use base64::Engine;
-
-        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {}", self.id())?;
-        writeln!(f, "Name: {}", self.name)?;
-        write!(f, "Dependencies: ")?;
-        if self.dependencies.is_empty() {
-            writeln!(f, "~")?;
-        } else {
-            writeln!(f)?;
-        }
-        let mut iter = self.dependencies.iter();
-        while let Some(dep) = iter.next() {
-            write!(f, "  {}@{}", dep.name, dep.id)?;
-            if iter.len() > 0 {
-                writeln!(f, ",")?;
-            } else {
-                writeln!(f)?;
-            }
-        }
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
-        Ok(())
-    }
 }

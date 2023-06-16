@@ -25,11 +25,12 @@ use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
-use blake3::Hasher;
+use encoding::{FieldName, LibName};
+use sha2::Digest;
 use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
-use crate::ast::{EnumVariants, NamedFields};
+use crate::ast::{EnumVariants, NamedFields, PrimitiveRef};
 use crate::{Cls, KeyTy, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
@@ -65,36 +66,63 @@ impl FromStr for SemId {
 
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
-pub trait HashId {
-    fn hash_id(&self, hasher: &mut blake3::Hasher);
+impl TypeRef for SemId {
+    fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
+    fn is_ascii_char(&self) -> bool { Self::ascii_char() == *self }
+    fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.id(None) == *self }
 }
 
-impl TypeRef for SemId {
-    fn id(&self) -> SemId { *self }
-    fn is_unicode_char(&self) -> bool { Ty::<Self>::UNICODE.id(None) == *self }
-    fn is_ascii_char(&self) -> bool { Ty::<Self>::ascii_char().id(None) == *self }
-    fn is_byte(&self) -> bool {
-        Ty::<Self>::BYTE.id(None) == *self || Ty::<Self>::U8.id(None) == *self
-    }
+impl PrimitiveRef for SemId {
+    fn byte() -> Self { Ty::<Self>::BYTE.id(None) }
+    fn ascii_char() -> Self { Ty::<Self>::ascii_char().id(None) }
+    fn unicode_char() -> Self { Ty::<Self>::UNICODE.id(None) }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self, name: Option<&TypeName>) -> SemId {
-        let mut hasher = blake3::Hasher::new_keyed(&SEM_ID_TAG);
+        let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+        let mut hasher = sha2::Sha256::new();
+        hasher.update(tag);
+        hasher.update(tag);
         if let Some(name) = name {
-            hasher.update(name.as_bytes());
+            name.hash_id(&mut hasher);
         }
         self.hash_id(&mut hasher);
         SemId::from_raw_array(hasher.finalize())
     }
 }
 
+pub trait HashId {
+    fn hash_id(&self, hasher: &mut sha2::Sha256);
+}
+
+impl HashId for LibName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
+    }
+}
+
+impl HashId for TypeName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
+    }
+}
+
+impl HashId for FieldName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
+    }
+}
+
 impl HashId for SemId {
-    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.as_slice()); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(self.as_slice()); }
 }
 
 impl<Ref: TypeRef> HashId for Ty<Ref> {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         self.cls().hash_id(hasher);
         match self {
             Ty::Primitive(prim) => {
@@ -127,7 +155,7 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
 }
 
 impl HashId for KeyTy {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         self.cls().hash_id(hasher);
         match self {
             KeyTy::Primitive(prim) => {
@@ -145,18 +173,18 @@ impl HashId for KeyTy {
 }
 
 impl HashId for Cls {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) { hasher.update(&[*self as u8]); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(&[*self as u8]); }
 }
 
 impl<Ref: TypeRef> HashId for Field<Ref> {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
-        hasher.update(self.name.as_bytes());
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        self.name.hash_id(hasher);
         self.ty.hash_id(hasher);
     }
 }
 
 impl HashId for EnumVariants {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         for variant in self {
             variant.hash_id(hasher);
         }
@@ -164,7 +192,7 @@ impl HashId for EnumVariants {
 }
 
 impl<Ref: TypeRef> HashId for UnionVariants<Ref> {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         for (variant, ty) in self {
             variant.hash_id(hasher);
             ty.hash_id(hasher);
@@ -173,7 +201,7 @@ impl<Ref: TypeRef> HashId for UnionVariants<Ref> {
 }
 
 impl<Ref: TypeRef> HashId for NamedFields<Ref> {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         for field in self {
             field.hash_id(hasher);
         }
@@ -181,7 +209,7 @@ impl<Ref: TypeRef> HashId for NamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         for ty in self {
             ty.hash_id(hasher);
         }
@@ -189,14 +217,14 @@ impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
 }
 
 impl HashId for Variant {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
-        hasher.update(self.name.as_bytes());
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        self.name.hash_id(hasher);
         hasher.update(&[self.tag]);
     }
 }
 
 impl HashId for Sizing {
-    fn hash_id(&self, hasher: &mut blake3::Hasher) {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
         let mut data = self.min.to_le_bytes().to_vec();
         data.extend(self.max.to_le_bytes());
         hasher.update(&data);

@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap};
+use amplify::confinement::Confined;
 use amplify::Wrapper;
 use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
@@ -33,55 +33,51 @@ use strict_encoding::{
     UnionWriter, VariantName, WriteEnum, WriteStruct, WriteTuple, WriteUnion, LIB_EMBEDDED,
 };
 
-use super::compile::{CompileRef, CompileType};
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
-use crate::typelib::ExternRef;
-use crate::{SemId, Ty, TypeRef};
+use crate::{Dependency, SemId, SymbolRef, TranspileRef, Ty, TypeLibId};
 
 pub trait BuilderParent: StrictParent<Sink> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
     /// lib builder which does the TypedWrite implementation to call strict encode on the type
-    fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, CompileRef);
+    fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, TranspileRef);
     /// Notifies lib builder about complete type built, even for unnamed inline types, such that it
     /// can register last compiled type for the `compile_type` procedure.
-    fn report_compiled(self, lib: LibName, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self;
+    fn report_compiled(self, lib: LibName, name: Option<TypeName>, ty: Ty<TranspileRef>) -> Self;
 }
 
 #[derive(Debug)]
 pub struct LibBuilder {
-    lib: LibName,
-    extern_types: BTreeMap<LibName, SmallOrdMap<TypeName, SemId>>,
-    types: SmallOrdMap<TypeName, CompileType>,
-    last_compiled: Option<CompileRef>,
+    pub(super) lib_name: LibName,
+    pub(super) known_libs: BTreeSet<Dependency>,
+    pub(super) extern_types: BTreeMap<LibName, BTreeMap<SemId, TypeName>>,
+    pub(super) types: BTreeMap<TypeName, Ty<TranspileRef>>,
+    last_compiled: Option<TranspileRef>,
 }
 
 impl LibBuilder {
-    pub fn new(name: impl Into<LibName>) -> LibBuilder {
+    pub fn new(
+        name: impl Into<LibName>,
+        known_libs: impl IntoIterator<Item = Dependency>,
+    ) -> LibBuilder {
         LibBuilder {
-            lib: name.into(),
+            lib_name: name.into(),
+            known_libs: known_libs.into_iter().collect(),
             extern_types: empty!(),
             types: empty!(),
             last_compiled: None,
         }
     }
 
-    pub fn name(&self) -> LibName { self.lib.clone() }
-
-    #[deprecated(since = "1.2.1", note = "use LibBuilder::transpile")]
-    pub fn process<T: StrictEncode + StrictDumb>(self) -> io::Result<Self> {
-        T::strict_dumb().strict_encode(self)
-    }
-
     pub fn transpile<T: StrictEncode + StrictDumb>(self) -> Self {
         T::strict_dumb().strict_encode(self).expect("memory encoding doesn't error")
     }
 
-    pub fn into_types(
-        self,
-    ) -> (TinyOrdMap<LibName, SmallOrdMap<TypeName, SemId>>, SmallOrdMap<TypeName, CompileType>)
-    {
-        let extern_types = Confined::try_from(self.extern_types).expect("too many dependencies");
-        (extern_types, self.types)
+    fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
+        self.known_libs
+            .iter()
+            .find(|dep| &dep.name == lib_name)
+            .map(|dep| dep.id)
+            .unwrap_or_else(|| panic!("use of library '{lib_name}' which is not a dependency"))
     }
 }
 
@@ -178,16 +174,12 @@ impl TypedWrite for LibBuilder {
         let mut r = self.last_compiled.as_ref().expect("can't compile key type");
         let key_ty = loop {
             let ty = match r {
-                CompileRef::Embedded(ty) => ty.as_ref(),
-                CompileRef::Named(name) => {
-                    &self
-                        .types
-                        .get(name)
-                        .unwrap_or_else(|| panic!("unknown map key type '{name}'"))
-                        .ty
+                TranspileRef::Embedded(ty) => ty.as_ref(),
+                TranspileRef::Named(name) => {
+                    &self.types.get(name).unwrap_or_else(|| panic!("unknown map key type '{name}'"))
                 }
-                CompileRef::Extern(ext) => {
-                    self.last_compiled = Some(CompileRef::Extern(ext.clone()));
+                TranspileRef::Extern(ext) => {
+                    self.last_compiled = Some(TranspileRef::Extern(ext.clone()));
                     return self;
                 }
             };
@@ -223,8 +215,8 @@ impl StrictParent<Sink> for LibBuilder {
     }
 }
 impl BuilderParent for LibBuilder {
-    fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, CompileRef) {
-        let _compile = |mut me: Self| -> (Self, CompileRef) {
+    fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, TranspileRef) {
+        let _compile = |mut me: Self| -> (Self, TranspileRef) {
             me = value.strict_encode(me).expect("too many types in the library");
             let r =
                 me.last_compiled.clone().expect("no type found after strict encoding procedure");
@@ -232,39 +224,41 @@ impl BuilderParent for LibBuilder {
         };
         match (T::STRICT_LIB_NAME, T::strict_name()) {
             (LIB_EMBEDDED, _) | (_, None) => _compile(self),
-            (lib, Some(name)) if lib != self.lib.as_str() => {
-                let (me, ty) = _compile(self);
-                (me, CompileRef::Extern(ExternRef::with(name, libname!(lib), ty.id())))
+            (lib, Some(name)) if lib != self.lib_name.as_str() => {
+                let (me, r) = _compile(self);
+                let lib_name = libname!(lib);
+                let lib_id = me.dependency_id(&lib_name);
+                (me, TranspileRef::Extern(SymbolRef::with(lib_name, name, lib_id, r.id())))
             }
-            (_, Some(name)) if self.types.contains_key(&name) => (self, CompileRef::Named(name)),
+            (_, Some(name)) if self.types.contains_key(&name) => (self, TranspileRef::Named(name)),
             (_, Some(_)) => _compile(self),
         }
     }
 
-    fn report_compiled(mut self, lib: LibName, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
+    fn report_compiled(
+        mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        ty: Ty<TranspileRef>,
+    ) -> Self {
         let r = match (lib, name) {
-            (lib, Some(name)) if lib == self.lib => {
-                let new_ty = CompileType::new(name.clone(), ty);
+            (lib, Some(name)) if lib == self.lib_name => {
                 if let Some(old_ty) = self.types.get(&name) {
                     assert_eq!(
-                        old_ty, &new_ty,
-                        "repeated type name '{name}' for two different types '{old_ty}' and \
-                         '{new_ty}'",
+                        old_ty, &ty,
+                        "repeated type name '{name}' for two different types '{old_ty}' and '{ty}'",
                     );
                 }
-                self.types.insert(name.clone(), new_ty).expect("too many types");
-                CompileRef::Named(name)
+                self.types.insert(name.clone(), ty);
+                TranspileRef::Named(name)
             }
             (lib, Some(name)) => {
                 let id = ty.id(Some(&name));
-                self.extern_types
-                    .entry(lib.clone())
-                    .or_default()
-                    .insert(name.clone(), id)
-                    .expect("too many types");
-                CompileRef::Extern(ExternRef::with(name, lib, id))
+                self.extern_types.entry(lib.clone()).or_default().insert(id, name.clone());
+                let lib_id = self.dependency_id(&lib);
+                TranspileRef::Extern(SymbolRef::with(lib, name, lib_id, id))
             }
-            (_, None) => CompileRef::Embedded(Box::new(ty)),
+            (_, None) => TranspileRef::Embedded(Box::new(ty)),
         };
         self.last_compiled = Some(r);
         self
@@ -276,7 +270,7 @@ pub struct StructBuilder<P: BuilderParent> {
     lib: LibName,
     name: Option<TypeName>,
     writer: StructWriter<Sink, P>,
-    fields: Vec<(Option<FieldName>, CompileRef)>,
+    fields: Vec<(Option<FieldName>, TranspileRef)>,
     cursor: Option<u8>,
 }
 
@@ -325,7 +319,7 @@ impl<P: BuilderParent> StructBuilder<P> {
         Ok(self)
     }
 
-    fn _build_struct(&self) -> Ty<CompileRef> {
+    fn _build_struct(&self) -> Ty<TranspileRef> {
         if self.fields.is_empty() {
             Ty::UNIT
         } else if self.writer.is_tuple() {
@@ -430,7 +424,7 @@ impl<P: BuilderParent> WriteTuple for StructBuilder<P> {
 pub struct UnionBuilder {
     lib: LibName,
     name: Option<TypeName>,
-    variants: BTreeMap<u8, CompileRef>,
+    variants: BTreeMap<u8, TranspileRef>,
     parent: LibBuilder,
     writer: UnionWriter<Sink>,
 }
@@ -451,7 +445,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: LibBuilder::new(self.lib.clone()),
+            parent: LibBuilder::new(self.lib.clone(), None),
             writer: UnionWriter::sink(),
         }
     }
@@ -464,7 +458,7 @@ impl UnionBuilder {
         self.variants.insert(tag, ty);
     }
 
-    fn _build_union(&self) -> Ty<CompileRef> {
+    fn _build_union(&self) -> Ty<TranspileRef> {
         let variants = self
             .writer
             .variants()
@@ -479,20 +473,20 @@ impl UnionBuilder {
         Ty::Union(variants)
     }
 
-    fn _build_enum(&self) -> Ty<CompileRef> {
+    fn _build_enum(&self) -> Ty<TranspileRef> {
         let variants = self.writer.variants().keys().cloned().collect::<BTreeSet<_>>();
         let variants = EnumVariants::try_from(variants)
             .unwrap_or_else(|_| panic!("enum '{}' has invalid number of variants", self.name()));
         Ty::Enum(variants)
     }
 
-    fn _complete_definition(mut self, ty: Ty<CompileRef>) -> UnionBuilder {
+    fn _complete_definition(mut self, ty: Ty<TranspileRef>) -> UnionBuilder {
         self.writer = DefineUnion::complete(self.writer);
         self.parent = self.parent.report_compiled(self.lib.clone(), self.name.clone(), ty);
         self
     }
 
-    fn _complete_write(self, ty: Ty<CompileRef>) -> LibBuilder {
+    fn _complete_write(self, ty: Ty<TranspileRef>) -> LibBuilder {
         let _ = WriteUnion::complete(self.writer);
         self.parent.report_compiled(self.lib, self.name, ty)
     }
@@ -524,12 +518,17 @@ impl StrictParent<Sink> for UnionBuilder {
     }
 }
 impl BuilderParent for UnionBuilder {
-    fn compile_type<T: StrictEncode>(mut self, value: &T) -> (Self, CompileRef) {
+    fn compile_type<T: StrictEncode>(mut self, value: &T) -> (Self, TranspileRef) {
         let (parent, r) = self.parent.compile_type(value);
         self.parent = parent;
         (self, r)
     }
-    fn report_compiled(mut self, lib: LibName, name: Option<TypeName>, ty: Ty<CompileRef>) -> Self {
+    fn report_compiled(
+        mut self,
+        lib: LibName,
+        name: Option<TypeName>,
+        ty: Ty<TranspileRef>,
+    ) -> Self {
         self.parent = self.parent.report_compiled(lib, name, ty);
         self
     }

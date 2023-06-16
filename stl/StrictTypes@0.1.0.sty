@@ -1,5 +1,5 @@
 {-
-  Id: classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29
+  Id: figure_radical_liquid_8pj6Q4MDsaQW97omrv5DhAX1yid5Hjmbi8uoBzLQayMh
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -8,51 +8,85 @@
   License: Apache-2.0
 -}
 
-typelib StrictTypes -- classic_vitamin_turtle_GWq5E83fACXwLpRjdGWCAH1iLA5BvCg3cUWXGD6Uzw29
+typelib StrictTypes
 
 -- no dependencies
 
+-- NeverBrokenSaturn0FV6aCKqTnAc6kavvC48U6WEjAqc4H6UTi2iRTxFrhqPY
 data Dependency       :: id TypeLibId, name LibName
+-- VeronaDieselMango051iuuNfXdzE8dx9Y9QEaiGP2cc7yJzirY4abawBKNGE6
 data EnumVariants     :: {Variant ^ 1..0xff}
-data ExternRef        :: name TypeName
-                       , lib LibName
-                       , id SemId
+-- LeonidMarvinSilence029hz6aMnfcGz3SEVoUv6k5PfZjSPJX7bJpiQj3EKkGwx
+data ExternRef        :: libId TypeLibId, semId SemId
+-- MedusaAdmiralUnique02GJ4sjfUm59XEr5Hrcn9hdA9zD9VhHuyjtErnrpH6vEs
 data FieldInlineRef   :: name FieldName, ty InlineRef
+-- TogaAdmiralAcid04cYyU4JWGoY76byD4PYLwNsHTrbRiic5PbUDpSQMFYih
 data FieldInlineRef1  :: name FieldName, ty InlineRef1
+-- EuropeIrisAmber05tdhprRvkZVPGAqkYuZT1RmsccSgfg5mz1ohgXH32PLy
 data FieldInlineRef2  :: name FieldName, ty InlineRef2
+-- ConvertBeatlesOrigin03LqwzdhmcVymmJvYZ8YtWWmazfNFHXCSPynQgaYoMZa5
 data FieldKeyTy       :: name FieldName, ty KeyTy
+-- MedusaFluidJazz04NgjiSuLr3txVBAtRWe9t68GiwigifkCB5hzTqo7fQSj
 data FieldLibRef      :: name FieldName, ty LibRef
+-- HistorySponsorJimmy0EXf9yMeW9dZv4Aq4kPcWAgG1pmBDaLKzV6fMqMxckeWK
 data FieldName        :: Ident
+-- TouristTommyElectra08yQQNsKP7MtL4dVP7dJNXnGutLdhs5xdmx369dp18pea
 data FieldSemId       :: name FieldName, ty SemId
-data Ident            :: [Ascii ^ 1..0x40]
+-- DilemmaGreekTibet0Ex6c7e51JEHBavK6CfQmjZoYr6SgPAEKzSxScAFi4epm
+data Ident            :: [Ascii ^ 1..0x64]
+-- BruceStingCantina0ACXJeMFxSCfKaDXpGZzzDJ9PZrnWERenBSkaVgmqztT9
 data InlineRef        :: inline TyInlineRef1
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
+-- RalphJosephPackage0GuvQNNvNkmUT8fJYCXuucUCFSRqoHoy4g2wB54PgnP5D
 data InlineRef1       :: inline TyInlineRef2
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
+-- AmadeusAmandaSerial08oFEvJU6r95LpcTAgiW8coZEnDixtSou1WYWcw2vKe7T
 data InlineRef2       :: inline TyKeyTy
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
+-- LlamaPressSweet0u9rSAK7pp9kvBBLrYY668fcQroA7E6EHLqJsRLaMX9h
 data KeyTy            :: primitive Primitive
                        | enum:3 EnumVariants
                        | array:7 U16
                        | unicode:16 Sizing
                        | ascii Sizing
                        | bytes Sizing
+-- ChickenSundayVanilla0CfGN6VgrTXVEvMF4TVu9vihmn9YEwHFck9GM26Gwfn7k
 data LibName          :: Ident
+-- NorwayEngineApple0HKxXPz1j5bUNYzAyyHE5qghcffX5nUEfJWDP2hSdWyGC
 data LibRef           :: inline TyInlineRef
-                       | named (TypeName, SemId)
+                       | named SemId
                        | extern ExternRef
+-- BottleBenefitSweden094DUadJMLRjBzGtu4sbzw4m1515nWSZSoRBRX6zx94RT
 data NamedFieldsInlineRef :: [FieldInlineRef ^ 1..0xff]
+-- EarthNuclearTobacco0FTnqX46y9MLGSmSBaVTYWr5KNB43SiJDgM98eeyE1uEf
 data NamedFieldsInlineRef1 :: [FieldInlineRef1 ^ 1..0xff]
+-- OthelloInsidePhantom0A56U8yCFhAKvocfRD2mbE9YemfE5iDQVwygBXeWgA1Hx
 data NamedFieldsInlineRef2 :: [FieldInlineRef2 ^ 1..0xff]
+-- MediaSystemSilk07CcoaKFFY6BBmGoAM8QKAfYtF9zk2pNbipMLfYeH73xa
 data NamedFieldsKeyTy :: [FieldKeyTy ^ 1..0xff]
+-- KiloOlympicIsabel0EDuAn1A4guy6TkgtgKcLksuHPz1AWNxYQRyw1bkXrpGv
 data NamedFieldsLibRef :: [FieldLibRef ^ 1..0xff]
+-- FlexVocalDenver07MoLEA46Roi1ELw5DcLEqNhxVJYJ4z2hN1yQHX4RVMFa
 data NamedFieldsSemId :: [FieldSemId ^ 1..0xff]
+-- NoisePierreFrance03T3zMmQxuir7TsdjhBLaETJfLH4mr5amAseXDePnzhMT
 data Primitive        :: U8
+-- StandMailboxBaboon08Ckj2p3GLKina636pSKJkj7GB6ft8XeoP4jfGkRUNwtp
 data SemId            :: [Byte ^ 32]
+-- CairoEverestScreen09jnMbAs5A91zjK9KDrLuFH42WtinmB8GY6JE6BMY31hw
 data Sizing           :: min U64, max U64
+-- XrayDialogTopic0HTSFwsgZjYXJRLbgpT4NXrqn81U1epqjZAJf7Lf4XLT1
+data SymbolRef        :: libName LibName
+                       , tyName TypeName
+                       , libId TypeLibId
+                       , semId SemId
+-- UrgentGateAnalyze0CatmbYRFh9sq96VaCNZDoxwPSs3QA6U9z8g5mXy5JyeD
+data SymbolicSys      :: symbols Symbols, types TypeSystem
+-- EternalRichardCopy03YfnJ7fXxmtKqtNg6bUGo9ac8vdwUpqib8R6nGPiJJLF
+data Symbols          :: libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
+-- WonderSubwaySparta0DiHcVJhSuP3iKXn17GG37RDp3DxpR1hVsy8WbFX3P3tB
 data TyInlineRef      :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -63,6 +97,7 @@ data TyInlineRef      :: primitive Primitive
                        | list (InlineRef, Sizing)
                        | set (InlineRef, Sizing)
                        | map (KeyTy, InlineRef, Sizing)
+-- TelexAlaskaSize0AGXuUXK1a9uHGCVMZKESw4W3tWHpBtCjaSF24MbMHf85
 data TyInlineRef1     :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -73,6 +108,7 @@ data TyInlineRef1     :: primitive Primitive
                        | list (InlineRef1, Sizing)
                        | set (InlineRef1, Sizing)
                        | map (KeyTy, InlineRef1, Sizing)
+-- SphereCivilPrice05FXwKmmMHT3kuWvEJmybCQqCzHa7GS4GYgrpLdswivev
 data TyInlineRef2     :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -83,6 +119,7 @@ data TyInlineRef2     :: primitive Primitive
                        | list (InlineRef2, Sizing)
                        | set (InlineRef2, Sizing)
                        | map (KeyTy, InlineRef2, Sizing)
+-- ApolloSambaNelson02zDMhJhy3YfpT91wtLPCzGHUr8nR6nQY6k41x99wFLBo
 data TyKeyTy          :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -93,6 +130,7 @@ data TyKeyTy          :: primitive Primitive
                        | list (KeyTy, Sizing)
                        | set (KeyTy, Sizing)
                        | map (KeyTy, KeyTy, Sizing)
+-- FrankOzoneShannon09QxbD4rk94bWHkoXmgNzLRNVB3YXaxQdvm5S3W5zj6bh
 data TyLibRef         :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -103,6 +141,7 @@ data TyLibRef         :: primitive Primitive
                        | list (LibRef, Sizing)
                        | set (LibRef, Sizing)
                        | map (KeyTy, LibRef, Sizing)
+-- KoalaImmuneTransit08W43w8pdUZB3mwwqpnusmFTAAhkhNQHvoaX4EKRjCf7v
 data TySemId          :: primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
@@ -113,33 +152,59 @@ data TySemId          :: primitive Primitive
                        | list (SemId, Sizing)
                        | set (SemId, Sizing)
                        | map (KeyTy, SemId, Sizing)
-data TypeFqid         :: id SemId, fqn TypeFqn?
+-- ServiceDemoMission0AbBubPzzwg8DYXHoASLchKS9KLUQmnX15TPHzuSTenxF
 data TypeFqn          :: lib LibName, name TypeName
-data TypeInfo         :: fqn TypeFqn?, ty TySemId
+-- CleverChickenPencil06YAwr7FqZcVLZqrR8gJcNyMp6iyTcmyY4fctLpA5VwG9
 data TypeLib          :: name LibName
                        , dependencies {Dependency ^ ..0xff}
-                       , types {[Ascii ^ 1..0x40] -> ^ 1.. TyLibRef}
+                       , externTypes {[Ascii ^ 1..0x64] -> ^ ..0xff {[Byte ^ 32] -> TypeName}}
+                       , types {[Ascii ^ 1..0x64] -> ^ 1.. TyLibRef}
+-- IronSpainMulti0DENrVJmXwRSwiZez8ZgUBsvQkTBTKy86zADExJ68bcaq
 data TypeLibId        :: [Byte ^ 32]
+-- OwnerMemphisToronto0BeAZU9i8ViQp3kbm2kXTVTchqzybypmhcFNG7yr1mi39
 data TypeName         :: Ident
+-- BritishEternalGraph02mWV4gJf12MJKJ93AsXmXqocLkwndHW79NS1G2xoZrpy
+data TypeSymbol       :: id SemId, fqn TypeFqn?
+-- ScrollTelecomMedia046cvynAxpvUUTPvrCDQARcmwHHETLhkcgy8345mN1LLq
 data TypeSysId        :: [Byte ^ 32]
-data TypeSystem       :: {[Byte ^ 32] -> ^ ..0xffffff TypeInfo}
+-- MargoAthenaJump05n5HKerGjHTkhhBdfJVoQzG3rNHGShW4p5HLhgdx4syn
+data TypeSystem       :: {[Byte ^ 32] -> ^ ..0xffffff TySemId}
+-- NixonEnigmaClark06AWJKZiwinJPiiidywfDKCLnkYMzy1mQNU46q9AqLrRj
 data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}
+-- PatternSonarAlbert0B38wGtyv8gja4Z1RgX4BYSkwLg2SWNfWoHy6Lm74ZFGA
 data UnionVariantsInlineRef1 :: {U8 -> ^ ..0xff VariantInfoInlineRef1}
+-- JuliusPercentCharlie07wf6GJPBgC6NKeB1JfK9W72ZDNkPFfd6C2R19FiL5Yn8
 data UnionVariantsInlineRef2 :: {U8 -> ^ ..0xff VariantInfoInlineRef2}
+-- NovelDramaAriel0A5czQpQKLhJDnsqkXPTrL683xrnPH3g9LnFnSoGpCVry
 data UnionVariantsKeyTy :: {U8 -> ^ ..0xff VariantInfoKeyTy}
+-- CakeCitrusNumber0zPC3EHHjZnDwJGNih8rYV52sjgfpNrpZz2eZey47d28
 data UnionVariantsLibRef :: {U8 -> ^ ..0xff VariantInfoLibRef}
+-- EclipseRobotPrepare0DkkFcBhrhogm6ACVw48aLr9FJ2mMy5Pi6nySsobbrBb5
 data UnionVariantsSemId :: {U8 -> ^ ..0xff VariantInfoSemId}
+-- SwingForestJazz079HiyC2Lm1dFG4ZcaeyfLT94RjnteSmkRkcReVdMzTM4
 data UnnamedFieldsInlineRef :: [InlineRef ^ 1..0xff]
+-- BurmaHeliumHeart0udGXz59QaShngQ467mwGx42uto92AQbvR2gQyZM3ihb
 data UnnamedFieldsInlineRef1 :: [InlineRef1 ^ 1..0xff]
+-- SegmentShallowJoker04P9ySyD5yTC9pVRkiRENje4ub4E2avLiQuB1hbUNWgYx
 data UnnamedFieldsInlineRef2 :: [InlineRef2 ^ 1..0xff]
+-- PandoraEveningRider0967CxeqxWWf5GSz9uN7uRKpUcrwANHqgDi34udFRtCmu
 data UnnamedFieldsKeyTy :: [KeyTy ^ 1..0xff]
+-- RobinLakeDriver04CvGjQBATcDfDMPF2QNu8vej45ehRatkwRm7LK5MZ7MK
 data UnnamedFieldsLibRef :: [LibRef ^ 1..0xff]
+-- OfficeSleepResult0AHCYFYAtpW2kxJpVpmD6suNB9epMm6zffaDMtotKcXvh
 data UnnamedFieldsSemId :: [SemId ^ 1..0xff]
+-- WeatherHistoryKinetic0BPoLofDtYzh8rRxa2ss4SxWc9VsuF6wtfVNqbdstcrXf
 data Variant          :: name FieldName, tag U8
+-- BambinoCarpetPoetic0Cy1X8nRdwM4yHmaSZ3ahiuBdsAe3RbNp6oR56LCzagx9
 data VariantInfoInlineRef :: name FieldName, ty InlineRef
+-- BonjourStatusMango0FQoVf49AYi7SWk5zAKMA6tttgCDPBzRTcdmBogEdUkz9
 data VariantInfoInlineRef1 :: name FieldName, ty InlineRef1
+-- StreetTigerTibet08y3bWbWqemKa5z8AQ6yUFizMuZ9FQbtZjXw5LeKsipvq
 data VariantInfoInlineRef2 :: name FieldName, ty InlineRef2
+-- KiloFreedomGorilla091yk8cXrZfbdCBuvqQZ6rmTNrptHtYrZpRUhQNDjTAng
 data VariantInfoKeyTy :: name FieldName, ty KeyTy
+-- VocalDiagramGround0ByNU4fSLr6cr9YYjyNf6ja3ErMnKeQYPtWmyZy1YHCq8
 data VariantInfoLibRef :: name FieldName, ty LibRef
+-- FerrariRoverSection08QSJ14SZzimY7RGYUaH9w71kAgxLjECPAs9x84sk28uu
 data VariantInfoSemId :: name FieldName, ty SemId
 

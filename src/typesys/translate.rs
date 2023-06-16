@@ -24,42 +24,44 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement;
-use blake3::Hasher;
 use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
 use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
-use crate::typesys::TypeFqn;
-use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef, TypeSystem};
+use crate::typesys::symbols::SymbolicSys;
+use crate::typesys::{SymTy, TypeFqn};
+use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
+/// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-pub struct TypeFqid {
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+pub struct TypeSymbol {
     pub id: SemId,
     pub fqn: Option<TypeFqn>,
 }
 
-impl TypeFqid {
-    pub fn unnamed(id: SemId) -> TypeFqid { TypeFqid { id, fqn: None } }
+impl TypeSymbol {
+    pub fn with(id: SemId, fqn: TypeFqn) -> TypeSymbol { TypeSymbol { id, fqn: Some(fqn) } }
 
-    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeFqid {
-        TypeFqid {
+    pub fn unnamed(id: SemId) -> TypeSymbol { TypeSymbol { id, fqn: None } }
+
+    pub fn named(id: SemId, lib: LibName, name: TypeName) -> TypeSymbol {
+        TypeSymbol {
             id,
             fqn: Some(TypeFqn::with(lib, name)),
         }
     }
 }
 
-impl HashId for TypeFqid {
-    fn hash_id(&self, hasher: &mut Hasher) { hasher.update(self.id.as_slice()); }
+impl HashId for TypeSymbol {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.id.hash_id(hasher); }
 }
 
-impl TypeRef for TypeFqid {
-    fn id(&self) -> SemId { self.id }
-}
+impl TypeRef for TypeSymbol {}
 
-impl Display for TypeFqid {
+impl Display for TypeSymbol {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match &self.fqn {
             Some(fqn) => Display::fmt(fqn, f),
@@ -68,66 +70,63 @@ impl Display for TypeFqid {
     }
 }
 
-impl Translate<TypeFqid> for SemId {
+impl Translate<TypeSymbol> for SemId {
     type Builder = ();
-    type Context = TypeSystem;
+    type Context = SymbolicSys;
     type Error = Error;
 
     fn translate(
         self,
         _builder: &mut Self::Builder,
         ctx: &Self::Context,
-    ) -> Result<TypeFqid, Self::Error> {
-        ctx.iter()
-            .find(|(id, _)| **id == self)
-            .map(|(id, info)| TypeFqid {
-                id: *id,
-                fqn: info.fqn.clone(),
-            })
-            .ok_or(Error::UnknownType(self))
+    ) -> Result<TypeSymbol, Self::Error> {
+        match ctx.lookup(self) {
+            None => Ok(TypeSymbol::unnamed(self)),
+            Some(fqn) => Ok(TypeSymbol::with(self, fqn.clone())),
+        }
     }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Default)]
 pub struct SystemBuilder {
     pending_deps: BTreeSet<Dependency>,
-    imported_deps: BTreeSet<LibName>,
-    types: BTreeMap<TypeFqid, Ty<SemId>>,
+    imported_deps: BTreeSet<Dependency>,
+    types: BTreeMap<SemId, SymTy>,
 }
 
 impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
-        self.imported_deps.insert(lib.name.clone());
-        self.pending_deps.extend(
-            lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(&dep.name)),
-        );
-        self.pending_deps.retain(|dep| dep.name != lib.name);
+        let dependency = Dependency::from(&lib);
+        self.pending_deps.remove(&dependency);
+        self.imported_deps.insert(dependency);
+        self.pending_deps
+            .extend(lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(dep)));
 
         for (ty_name, ty) in lib.types {
             let id = ty.id(Some(&ty_name));
             let ty = ty.translate(&mut self, &())?;
-            let fqid = TypeFqid::named(id, lib.name.clone(), ty_name.clone());
-            self.types.insert(fqid, ty);
+            let info = SymTy::named(lib.name.clone(), ty_name.clone(), ty);
+            self.types.insert(id, info);
         }
 
         Ok(self)
     }
 
-    pub fn finalize(self) -> Result<TypeSystem, Vec<Error>> {
+    pub fn finalize(self) -> Result<SymbolicSys, Vec<Error>> {
         let mut errors = vec![];
 
         for dep in self.pending_deps {
             errors.push(Error::AbsentImport(dep));
         }
 
-        for (fqid, ty) in &self.types {
-            for inner_id in ty.type_refs() {
-                if !self.types.contains_key(&fqid) {
+        for (sem_id, info) in &self.types {
+            for inner_id in info.ty.type_refs() {
+                if !self.types.contains_key(sem_id) {
                     errors.push(Error::InnerTypeAbsent {
                         unknown: *inner_id,
-                        known: fqid.id,
+                        known: *sem_id,
                     });
                 }
             }
@@ -136,23 +135,7 @@ impl SystemBuilder {
             return Err(errors);
         }
 
-        let mut sys = TypeSystem::new();
-        for (fqid, ty) in self.types {
-            match sys.insert_unchecked(fqid, ty) {
-                Err(err) => {
-                    errors.push(err.into());
-                    return Err(errors);
-                }
-                Ok(true) => unreachable!("repeated type"),
-                Ok(false) => {}
-            }
-        }
-
-        if errors.is_empty() {
-            Ok(sys)
-        } else {
-            Err(errors)
-        }
+        SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err.into()])
     }
 
     fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
@@ -162,7 +145,7 @@ impl SystemBuilder {
         // run for nested types
         let ty = inline_ty.translate(self, &())?;
         // add to system
-        self.types.insert(TypeFqid::unnamed(id), ty);
+        self.types.insert(id, SymTy::unnamed(ty));
         Ok(id)
     }
 }
@@ -178,9 +161,9 @@ impl Translate<SemId> for LibRef {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            LibRef::Named(_, id) => Ok(id),
+            LibRef::Named(sem_id) => Ok(sem_id),
             LibRef::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            LibRef::Extern(ExternRef { id, .. }) => Ok(id),
+            LibRef::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -196,9 +179,9 @@ impl Translate<SemId> for InlineRef {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            InlineRef::Named(_, id) => Ok(id),
+            InlineRef::Named(sem_id) => Ok(sem_id),
             InlineRef::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            InlineRef::Extern(ExternRef { id, .. }) => Ok(id),
+            InlineRef::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -214,9 +197,9 @@ impl Translate<SemId> for InlineRef1 {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            InlineRef1::Named(_, id) => Ok(id),
+            InlineRef1::Named(sem_id) => Ok(sem_id),
             InlineRef1::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            InlineRef1::Extern(ExternRef { id, .. }) => Ok(id),
+            InlineRef1::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -232,9 +215,9 @@ impl Translate<SemId> for InlineRef2 {
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
-            InlineRef2::Named(_, id) => Ok(id),
+            InlineRef2::Named(sem_id) => Ok(sem_id),
             InlineRef2::Inline(inline_ty) => builder.translate_inline(inline_ty),
-            InlineRef2::Extern(ExternRef { id, .. }) => Ok(id),
+            InlineRef2::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
@@ -258,6 +241,12 @@ impl Translate<SemId> for KeyTy {
 pub enum Error {
     /// required dependency `{0}` was not imported into the builder.
     AbsentImport(Dependency),
+
+    /// type `{new}` is already exists in the type system as `{present}`.
+    RepeatedType {
+        new: TypeSymbol,
+        present: TypeSymbol,
+    },
 
     /// type with id `{0}` is not a part of the type system.
     UnknownType(SemId),
