@@ -193,7 +193,9 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(32..=127)) }
     pub fn is_ascii_subset(&self) -> bool {
-        if let Ty::Enum(variants) = self {
+        if let Ty::Tuple(fields) = self {
+            fields.first().and_then(Ref::as_ty).map(Self::is_ascii_subset).unwrap_or_default()
+        } else if let Ty::Enum(variants) = self {
             variants.iter().all(|variant| (32..=127).contains(&variant.tag))
         } else {
             false
