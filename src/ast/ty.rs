@@ -191,8 +191,6 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn set(ty: Ref, sizing: Sizing) -> Self { Ty::Set(ty, sizing) }
     pub fn map(key: Ref, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
 
-    pub fn ascii_char() -> Self { Ty::Enum(variants!(32..=127)) }
-
     pub fn is_char_enum(&self) -> bool {
         if let Ty::Tuple(fields) = self {
             fields.first().and_then(Ref::as_ty).map(Self::is_char_enum).unwrap_or_default()
