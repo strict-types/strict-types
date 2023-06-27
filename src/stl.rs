@@ -22,7 +22,7 @@
 
 use encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
-    AsciiPrintable, Bool, Dec, HexDecCaps, HexDecSmall, U4,
+    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U4,
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
@@ -39,6 +39,7 @@ fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
+        .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()
         .transpile::<AlphaCaps>()

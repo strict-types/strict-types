@@ -47,6 +47,7 @@ pub(self) mod test_helpers {
     use amplify::confinement::{Confined, TinyAscii};
     use encoding::{StrictDeserialize, StrictSerialize};
 
+    use crate::stl::std_stl;
     use crate::typesys::{SymbolicSys, SystemBuilder};
     use crate::LibBuilder;
 
@@ -84,7 +85,11 @@ pub(self) mod test_helpers {
     }
 
     pub fn test_system() -> SymbolicSys {
-        let lib = LibBuilder::new("TestLib", None).transpile::<Nominal>().compile().unwrap();
-        SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
+        let std = std_stl();
+        let lib = LibBuilder::new("TestLib", [std.to_dependency()])
+            .transpile::<Nominal>()
+            .compile()
+            .unwrap();
+        SystemBuilder::new().import(lib).unwrap().import(std).unwrap().finalize().unwrap()
     }
 }

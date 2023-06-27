@@ -564,9 +564,8 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding"
-version = "2.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0be9dd3df80dc083d4e20ac87246a67f42b3a5016375ae5a48f292e85ccfb1bd"
+version = "2.3.1"
+source = "git+https://github.com/strict-types/strict-encoding?branch=ascii-char#3cf0d971c9475572d803e240aa891fce3a70e647"
 dependencies = [
  "amplify",
  "half",
@@ -577,8 +576,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding_derive"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f5adae55367464f5a229bfd539682c94f870b98a220be6e61dc43f85d612e7e"
+source = "git+https://github.com/strict-types/strict-encoding?branch=ascii-char#3cf0d971c9475572d803e240aa891fce3a70e647"
 dependencies = [
  "amplify_syn",
  "heck",
