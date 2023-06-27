@@ -85,12 +85,6 @@ impl TypeRef for InlineRef {
             _ => false,
         }
     }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            InlineRef::Inline(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
 }
 
 impl Display for InlineRef {
@@ -134,12 +128,6 @@ impl TypeRef for InlineRef1 {
     fn is_unicode_char(&self) -> bool {
         match self {
             InlineRef1::Inline(ty) => ty.is_unicode_char(),
-            _ => false,
-        }
-    }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            InlineRef1::Inline(ty) => ty.is_ascii_char(),
             _ => false,
         }
     }
@@ -189,12 +177,6 @@ impl TypeRef for InlineRef2 {
             _ => false,
         }
     }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            InlineRef2::Inline(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
 }
 
 impl Display for InlineRef2 {
@@ -238,12 +220,6 @@ impl TypeRef for LibRef {
     fn is_unicode_char(&self) -> bool {
         match self {
             LibRef::Inline(ty) => ty.is_unicode_char(),
-            _ => false,
-        }
-    }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            LibRef::Inline(ty) => ty.is_ascii_char(),
             _ => false,
         }
     }

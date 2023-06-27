@@ -24,9 +24,10 @@
 
 use std::io;
 
+use amplify::ascii::AsciiString;
 use amplify::confinement::{
-    LargeAscii, LargeBlob, LargeString, MediumAscii, MediumBlob, MediumString, SmallAscii,
-    SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString,
+    Confined, LargeAscii, LargeBlob, LargeString, MediumAscii, MediumBlob, MediumString,
+    SmallAscii, SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString,
 };
 use amplify::num::u24;
 use encoding::constants::*;
@@ -241,21 +242,28 @@ impl TypeSystem {
             }
 
             // ASCII strings:
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u8::MAX as u64 => {
-                let string = TinyAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
-            }
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u16::MAX as u64 => {
-                let string = SmallAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
-            }
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u24::MAX.into_u64() => {
-                let string = MediumAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
-            }
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u32::MAX as u64 => {
-                let string = LargeAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
+            Ty::List(sem_id, sizing)
+                if self
+                    .find(*sem_id)
+                    .ok_or_else(|| Error::TypeAbsent(spec.clone()))?
+                    .is_ascii_subset() =>
+            {
+                if sizing.max <= u8::MAX as u64 {
+                    StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u16::MAX as u64 {
+                    StrictVal::String(SmallAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u24::MAX.into_u64() {
+                    StrictVal::String(MediumAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u32::MAX as u64 {
+                    StrictVal::String(LargeAscii::strict_decode(&mut reader)?.to_string())
+                } else {
+                    StrictVal::String(
+                        Confined::<AsciiString, 0, { u64::MAX as usize }>::strict_decode(
+                            &mut reader,
+                        )?
+                        .to_string(),
+                    )
+                }
             }
 
             // Other lists:

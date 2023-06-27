@@ -146,12 +146,6 @@ impl TypeRef for TranspileRef {
             _ => false,
         }
     }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            TranspileRef::Embedded(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
 }
 
 impl PrimitiveRef for TranspileRef {

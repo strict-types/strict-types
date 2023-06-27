@@ -44,7 +44,6 @@ pub trait TypeRef:
     fn is_compound(&self) -> bool { false }
     fn is_byte(&self) -> bool { false }
     fn is_unicode_char(&self) -> bool { false }
-    fn is_ascii_char(&self) -> bool { false }
 }
 
 pub trait PrimitiveRef: TypeRef {
@@ -209,6 +208,13 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(32..=127)) }
+    pub fn is_ascii_subset(&self) -> bool {
+        if let Ty::Enum(variants) = self {
+            variants.iter().all(|variant| (32..=127).contains(&variant.tag))
+        } else {
+            false
+        }
+    }
 
     pub fn is_compound(&self) -> bool {
         match self {
@@ -237,7 +243,6 @@ where Ref: Display
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             Ty::Primitive(prim) => Display::fmt(prim, f),
-            Ty::Enum(_) if self.is_ascii_char() => f.write_str("Ascii"),
             Ty::Enum(vars) => Display::fmt(vars, f),
             Ty::Union(fields) if self.is_option() => {
                 let variant = fields.get(&Variant::some()).expect("optional");
@@ -287,7 +292,6 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn is_byte(&self) -> bool { matches!(self, x if x == &Ty::BYTE || x == &Ty::U8) }
     pub fn is_unicode_char(&self) -> bool { matches!(self, x if x == &Ty::UNICODE) }
-    pub fn is_ascii_char(&self) -> bool { matches!(self, x if x == &Ty::ascii_char()) }
 
     pub fn try_to_key(&self) -> Result<KeyTy, &Ty<Ref>> {
         Ok(match self {
@@ -300,7 +304,6 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::List(ty, sizing) if ty.is_byte() => KeyTy::Bytes(*sizing),
             Ty::List(ty, sizing) if ty.is_ascii_subset() => KeyTy::Bytes(*sizing),
             Ty::List(ty, sizing) if ty.is_unicode_char() => KeyTy::UnicodeStr(*sizing),
-            Ty::List(ty, sizing) if ty.is_ascii_char() => KeyTy::AsciiStr(*sizing),
             Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
             Ty::Union(_)
             | Ty::Struct(_)

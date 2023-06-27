@@ -68,7 +68,6 @@ pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
 impl TypeRef for SemId {
     fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
-    fn is_ascii_char(&self) -> bool { Self::ascii_char() == *self }
     fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.id(None) == *self }
 }
 
