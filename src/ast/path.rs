@@ -50,8 +50,11 @@ pub enum Step {
     #[display("{}")]
     Set,
 
-    #[display("->")]
-    Map,
+    #[display("[key]")]
+    MapKey,
+
+    #[display("[value]")]
+    MapValue,
 }
 
 #[derive(Wrapper, WrapperMut, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default, From)]
@@ -108,7 +111,8 @@ impl<Ref: TypeRef> Ty<Ref> {
                 (Ty::Array(ty, _), Step::Index) => Some(ty),
                 (Ty::List(ty, _), Step::List) => Some(ty),
                 (Ty::Set(ty, _), Step::Set) => Some(ty),
-                (Ty::Map(_, ty, _), Step::Map) => Some(ty),
+                (Ty::Map(ty, _, _), Step::MapKey) => Some(ty),
+                (Ty::Map(_, ty, _), Step::MapValue) => Some(ty),
                 (_, _) => None,
             };
             path_so_far.push(step).expect("confinement collection guarantees");
@@ -128,7 +132,8 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::Tuple(fields) => fields.len_u8(),
             Ty::Array(_, _) => 1,
             Ty::UnicodeChar => 0,
-            Ty::List(_, _) | Ty::Set(_, _) | Ty::Map(_, _, _) => 1,
+            Ty::List(_, _) | Ty::Set(_, _) => 1,
+            Ty::Map(_, _, _) => 2,
         }
     }
 }
