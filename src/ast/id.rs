@@ -73,7 +73,6 @@ impl TypeRef for SemId {
 
 impl PrimitiveRef for SemId {
     fn byte() -> Self { Ty::<Self>::BYTE.id(None) }
-    fn ascii_char() -> Self { Ty::<Self>::ascii_char().id(None) }
     fn unicode_char() -> Self { Ty::<Self>::UNICODE.id(None) }
 }
 

@@ -48,7 +48,6 @@ pub trait TypeRef:
 
 pub trait PrimitiveRef: TypeRef {
     fn byte() -> Self;
-    fn ascii_char() -> Self;
     fn unicode_char() -> Self;
 }
 

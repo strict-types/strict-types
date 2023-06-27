@@ -150,7 +150,6 @@ impl TypeRef for TranspileRef {
 
 impl PrimitiveRef for TranspileRef {
     fn byte() -> Self { TranspileRef::Embedded(Box::new(Ty::BYTE)) }
-    fn ascii_char() -> Self { TranspileRef::Embedded(Box::new(Ty::ascii_char())) }
     fn unicode_char() -> Self { TranspileRef::Embedded(Box::new(Ty::UNICODE)) }
 }
 
