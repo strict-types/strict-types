@@ -246,7 +246,7 @@ impl TypeSystem {
                 if self
                     .find(*sem_id)
                     .ok_or_else(|| Error::TypeAbsent(spec.clone()))?
-                    .is_ascii_subset() =>
+                    .is_char_enum() =>
             {
                 if sizing.max <= u8::MAX as u64 {
                     StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())

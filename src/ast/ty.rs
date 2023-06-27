@@ -192,16 +192,16 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn map(key: Ref, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(32..=127)) }
-    pub fn is_ascii_subset(&self) -> bool {
+
+    pub fn is_char_enum(&self) -> bool {
         if let Ty::Tuple(fields) = self {
-            fields.first().and_then(Ref::as_ty).map(Self::is_ascii_subset).unwrap_or_default()
+            fields.first().and_then(Ref::as_ty).map(Self::is_char_enum).unwrap_or_default()
         } else if let Ty::Enum(variants) = self {
             variants.iter().all(|variant| (32..=127).contains(&variant.tag))
         } else {
             false
         }
     }
-
     pub fn is_compound(&self) -> bool {
         match self {
             Ty::Tuple(fields) if fields.len() > 1 => true,
