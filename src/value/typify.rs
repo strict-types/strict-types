@@ -399,7 +399,8 @@ mod test {
     fn load() {
         let sys = test_system();
         let nominal = Nominal::with("TICK", "Some name", 2);
-        let value = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(2));
+        let value =
+            svstruct!(name => "Some name", ticker => svnewtype!("TICK"), precision => svenum!(2));
 
         let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
         let mut reader = io::Cursor::new(data);

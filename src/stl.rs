@@ -33,7 +33,7 @@ use crate::{
 
 pub const LIB_ID_STD: &str = "siren_reward_number_C2hHN1Y5VwxxNrrLBBnuTQBgB19WN4HzKD8tZ2YFkeCr";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "sonic_story_tunnel_Dn9nzsMMopPMLNwzejdt1ZPiBcnCzfDPRJrwNYRajD6n";
+    "kiwi_rachel_smart_7JMa1g7puQEw1zGtJK2zshmB7si6wd4sqvwajrw8JDFD";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
