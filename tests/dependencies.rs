@@ -31,7 +31,7 @@ use strict_encoding::{
     DecodeError, StrictDecode, StrictEncode, StrictType, TypedRead, TypedWrite, STRICT_TYPES_LIB,
 };
 use strict_types::stl::std_stl;
-use strict_types::{Dependency, KeyTy, LibBuilder, TypeLib};
+use strict_types::{Dependency, LibBuilder, TypeLib};
 
 const LIB: &str = "Test";
 
@@ -66,7 +66,6 @@ pub enum Message {
     Ping,
     Pong { len: u8, nonce: Void },
     Connect { host: Option<u8>, port: u16 },
-    Dependency(KeyTy),
 }
 
 impl Default for Message {

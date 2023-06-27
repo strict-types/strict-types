@@ -26,7 +26,7 @@ use encoding::LibName;
 use strict_encoding::TypeName;
 
 use crate::typelib::{Dependency, ExternTypes, InlineRef, InlineRef1, InlineRef2, LibRef};
-use crate::{KeyTy, SemId, Translate, TranspileError, TranspileRef, Ty};
+use crate::{SemId, Translate, TranspileError, TranspileRef, Ty};
 
 pub type TypeIndex = BTreeMap<TypeName, SemId>;
 
@@ -174,14 +174,13 @@ impl Translate<InlineRef2> for TranspileRef {
     fn translate(
         self,
         builder: &mut Self::Builder,
-        ctx: &Self::Context,
+        _ctx: &Self::Context,
     ) -> Result<InlineRef2, Self::Error> {
         match self {
-            TranspileRef::Embedded(ty) => {
-                builder.stack.push(ty.cls().to_string());
-                let res = ty.translate(builder, ctx).map(InlineRef2::Inline);
-                builder.stack.pop();
-                res
+            TranspileRef::Embedded(_ty) => {
+                let mut path = builder.stack.clone();
+                let name = path.pop().unwrap_or_else(|| s!("<unnamed>"));
+                Err(CompileError::NestedInline(builder.top_name.clone(), path.join("."), name))
             }
             TranspileRef::Named(name) => {
                 let id = builder.index.get(&name).ok_or(CompileError::Continue)?;
@@ -189,28 +188,5 @@ impl Translate<InlineRef2> for TranspileRef {
             }
             TranspileRef::Extern(ext) => Ok(InlineRef2::Extern(ext.into())),
         }
-    }
-}
-
-impl Translate<KeyTy> for TranspileRef {
-    type Context = ();
-    type Builder = NestedContext;
-    type Error = CompileError;
-
-    fn translate(
-        self,
-        builder: &mut Self::Builder,
-        _ctx: &Self::Context,
-    ) -> Result<KeyTy, Self::Error> {
-        let me = self.to_string();
-        match self {
-            TranspileRef::Embedded(ty) => ty.try_to_key().ok(),
-            TranspileRef::Named(_) | TranspileRef::Extern(_) => None,
-        }
-        .ok_or(CompileError::NestedInline(
-            builder.top_name.clone(),
-            builder.stack.join("/"),
-            me,
-        ))
     }
 }

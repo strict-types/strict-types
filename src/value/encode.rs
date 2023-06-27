@@ -180,7 +180,7 @@ impl TypeSystem {
                 let le_bytes = &list.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 for (key, val) in list {
-                    self.strict_write_ty(key, &key_id.to_ty(), writer)?;
+                    self.strict_write_value(key, *key_id, writer)?;
                     self.strict_write_value(val, *sem_id, writer)?;
                 }
             }

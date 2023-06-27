@@ -162,36 +162,13 @@ impl TypedWrite for LibBuilder {
         ty: &impl StrictEncode,
         sizing: Sizing,
     ) -> Self {
-        self = ty.strict_encode(self).expect("in-memory encoding");
-        let ty = self.last_compiled.clone().expect("can't compile type");
         self = key.strict_encode(self).expect("in-memory encoding");
+        let key_ref = self.last_compiled.clone().expect("can't compile key type");
 
-        let mut r = self.last_compiled.as_ref().expect("can't compile key type");
-        let key_ty = loop {
-            let ty = match r {
-                TranspileRef::Embedded(ty) => ty.as_ref(),
-                TranspileRef::Named(name) => {
-                    &self.types.get(name).unwrap_or_else(|| panic!("unknown map key type '{name}'"))
-                }
-                TranspileRef::Extern(ext) => {
-                    self.last_compiled = Some(TranspileRef::Extern(ext.clone()));
-                    return self;
-                }
-            };
-            if let Ty::Tuple(fields) = ty {
-                if fields.len() == 1 {
-                    r = &fields[0];
-                } else {
-                    panic!("not supported map key type '{ty}'")
-                }
-            } else {
-                break ty
-                    .try_to_key()
-                    .unwrap_or_else(|_| panic!("not supported map key type '{ty}'"));
-            };
-        };
+        self = ty.strict_encode(self).expect("in-memory encoding");
+        let val_ref = self.last_compiled.clone().expect("can't compile value type");
 
-        self.last_compiled = Some(Ty::Map(key_ty, ty, sizing).into());
+        self.last_compiled = Some(Ty::Map(key_ref, val_ref, sizing).into());
         self
     }
 

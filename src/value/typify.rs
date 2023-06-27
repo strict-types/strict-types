@@ -239,11 +239,10 @@ impl TypeSystem {
                 }
                 StrictVal::Set(new)
             }
-            (StrictVal::Map(s), Ty::Map(key_ty, id, _)) => {
+            (StrictVal::Map(s), Ty::Map(key_id, id, _)) => {
                 let mut new = Vec::<(StrictVal, StrictVal)>::with_capacity(s.len());
-                let key_id = key_ty.to_ty::<SemId>().id(None);
                 for (key, item) in s {
-                    let checked_key = self.typify(key, key_id)?;
+                    let checked_key = self.typify(key, *key_id)?;
                     let checked_val = self.typify(item, *id)?;
                     if new.iter().find(|(k, _)| k == &checked_key.val).is_some() {
                         return Err(Error::RepeatedKeyValue(spec, checked_key.val));

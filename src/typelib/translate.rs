@@ -25,7 +25,7 @@ use std::collections::BTreeMap;
 use encoding::{LibName, TypeName};
 
 use crate::typelib::{ExternRef, ExternTypes, InlineRef, InlineRef1, InlineRef2};
-use crate::{KeyTy, LibRef, SemId, SymbolRef, Translate, TranspileRef, Ty, TypeLibId, TypeRef};
+use crate::{LibRef, SemId, SymbolRef, Translate, TranspileRef, Ty, TypeLibId, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
 #[display(doc_comments)]
@@ -157,23 +157,8 @@ impl Translate<TranspileRef> for InlineRef2 {
         ctx: &Self::Context,
     ) -> Result<TranspileRef, Self::Error> {
         match self {
-            InlineRef2::Inline(ty) => ctx.embedded(builder, ty),
             InlineRef2::Named(id) => ctx.named(id),
             InlineRef2::Extern(ext) => ctx.external(builder, ext),
         }
-    }
-}
-
-impl Translate<TranspileRef> for KeyTy {
-    type Context = SymbolContext;
-    type Builder = ExternTypes;
-    type Error = SymbolError;
-
-    fn translate(
-        self,
-        _builder: &mut Self::Builder,
-        _ctx: &Self::Context,
-    ) -> Result<TranspileRef, Self::Error> {
-        Ok(TranspileRef::Embedded(Box::new(self.into_ty())))
     }
 }

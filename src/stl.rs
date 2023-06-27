@@ -31,9 +31,9 @@ use crate::{
     TypeSymbol, TypeSysId,
 };
 
-pub const LIB_ID_STD: &str = "left_pierre_food_5cmoZctpx98FbTzWTArm3G53pMzUXuRPXmMhuCd8zyXb";
+pub const LIB_ID_STD: &str = "siren_reward_number_C2hHN1Y5VwxxNrrLBBnuTQBgB19WN4HzKD8tZ2YFkeCr";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "figure_radical_liquid_8pj6Q4MDsaQW97omrv5DhAX1yid5Hjmbi8uoBzLQayMh";
+    "sonic_story_tunnel_Dn9nzsMMopPMLNwzejdt1ZPiBcnCzfDPRJrwNYRajD6n";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
@@ -61,7 +61,7 @@ pub fn std_sym() -> SymbolicLib { _std_sym().expect("invalid strict type Std lib
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), [std_stl().to_dependency()])
         .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
         .transpile::<TypeSysId>()

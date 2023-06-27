@@ -52,8 +52,6 @@ pub trait PrimitiveRef: TypeRef {
     fn unicode_char() -> Self;
 }
 
-impl TypeRef for KeyTy {}
-
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = repr, into_u8, try_from_u8)]
@@ -107,19 +105,6 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 }
 
-impl KeyTy {
-    pub const fn cls(&self) -> Cls {
-        match self {
-            KeyTy::Primitive(_) => Cls::Primitive,
-            KeyTy::Enum(_) => Cls::Enum,
-            KeyTy::Array(_) => Cls::Array,
-            KeyTy::UnicodeStr(_) => Cls::Unicode,
-            KeyTy::AsciiStr(_) => Cls::AsciiStr,
-            KeyTy::Bytes(_) => Cls::List,
-        }
-    }
-}
-
 #[derive(Clone, PartialEq, Eq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = custom)]
@@ -161,7 +146,7 @@ pub enum Ty<Ref: TypeRef> {
     Set(Ref, Sizing),
 
     #[strict_type(tag = 10)]
-    Map(KeyTy, Ref, Sizing),
+    Map(Ref, Ref, Sizing),
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -205,7 +190,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn list(ty: Ref, sizing: Sizing) -> Self { Ty::List(ty, sizing) }
     pub fn set(ty: Ref, sizing: Sizing) -> Self { Ty::Set(ty, sizing) }
-    pub fn map(key: KeyTy, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
+    pub fn map(key: Ref, val: Ref, sizing: Sizing) -> Self { Ty::Map(key, val, sizing) }
 
     pub fn ascii_char() -> Self { Ty::Enum(variants!(32..=127)) }
     pub fn is_ascii_subset(&self) -> bool {
@@ -283,6 +268,7 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::Union(fields) => fields.ty_by_tag(pos),
             Ty::Struct(fields) => fields.ty_by_pos(pos),
             Ty::Tuple(fields) => fields.ty_by_pos(pos),
+            // TODO: Handle map type
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
                 Some(ty)
             }
@@ -292,96 +278,6 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn is_byte(&self) -> bool { matches!(self, x if x == &Ty::BYTE || x == &Ty::U8) }
     pub fn is_unicode_char(&self) -> bool { matches!(self, x if x == &Ty::UNICODE) }
-
-    pub fn try_to_key(&self) -> Result<KeyTy, &Ty<Ref>> {
-        Ok(match self {
-            Ty::Primitive(code) => KeyTy::Primitive(*code),
-            Ty::Enum(vars) => KeyTy::Enum(vars.clone()),
-            Ty::Array(ty, len) if ty.is_byte() => KeyTy::Array(*len),
-            Ty::Array(ty, len) if ty.is_unicode_char() => {
-                KeyTy::UnicodeStr(Sizing::fixed(*len as u64))
-            }
-            Ty::List(ty, sizing) if ty.is_byte() => KeyTy::Bytes(*sizing),
-            Ty::List(ty, sizing) if ty.is_ascii_subset() => KeyTy::Bytes(*sizing),
-            Ty::List(ty, sizing) if ty.is_unicode_char() => KeyTy::UnicodeStr(*sizing),
-            Ty::UnicodeChar => KeyTy::UnicodeStr(Sizing::ONE),
-            Ty::Union(_)
-            | Ty::Struct(_)
-            | Ty::Tuple(_)
-            | Ty::Array(_, _)
-            | Ty::List(_, _)
-            | Ty::Set(_, _)
-            | Ty::Map(_, _, _) => return Err(self),
-        })
-    }
-}
-
-/// Lexicographically sortable types which may serve as map keys.
-///
-/// The type is always guaranteed to fit strict encoding AST serialization
-/// bounds since it doesn't has a dynamically-sized types.
-#[derive(Clone, PartialEq, Eq, Debug, Display, From)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STRICT_TYPES_LIB, tags = custom, dumb = { KeyTy::Array(1) })]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-#[display(inner)]
-pub enum KeyTy {
-    #[strict_type(tag = 0)]
-    #[from]
-    Primitive(Primitive),
-
-    #[strict_type(tag = 3)]
-    #[display("({0})")]
-    #[from]
-    Enum(EnumVariants),
-
-    /// Fixed-size byte array
-    #[strict_type(tag = 7)]
-    #[display("[Byte ^ {0}]")]
-    #[from]
-    Array(u16),
-
-    #[strict_type(tag = 0x10, rename = "unicode")]
-    #[display("[Unicode{0}]")]
-    UnicodeStr(Sizing),
-
-    #[strict_type(tag = 0x11, rename = "ascii")]
-    #[display("[Std.Ascii{0}]")]
-    AsciiStr(Sizing),
-
-    #[strict_type(tag = 0x12)]
-    #[display("[Byte{0}]")]
-    Bytes(Sizing),
-}
-
-impl KeyTy {
-    pub const U8: KeyTy = KeyTy::Primitive(U8);
-    pub const BYTE: KeyTy = KeyTy::Primitive(BYTE);
-
-    pub fn to_ty<Ref: PrimitiveRef>(&self) -> Ty<Ref> { self.clone().into_ty() }
-
-    pub fn into_ty<Ref: PrimitiveRef>(self) -> Ty<Ref> {
-        match self {
-            KeyTy::Primitive(prim) => Ty::<Ref>::Primitive(prim),
-            KeyTy::Enum(variants) => Ty::<Ref>::Enum(variants),
-            KeyTy::Array(len) => Ty::<Ref>::Array(Ref::byte(), len),
-            KeyTy::UnicodeStr(sizing) if sizing == Sizing::ONE => Ty::<Ref>::UnicodeChar,
-            KeyTy::UnicodeStr(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
-                Ty::<Ref>::Array(Ref::unicode_char(), sizing.min as u16)
-            }
-            KeyTy::UnicodeStr(sizing) => Ty::<Ref>::List(Ref::unicode_char(), sizing),
-            KeyTy::AsciiStr(sizing) if sizing == Sizing::ONE => Ty::ascii_char(),
-            KeyTy::AsciiStr(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
-                Ty::<Ref>::Array(Ref::ascii_char(), sizing.min as u16)
-            }
-            KeyTy::AsciiStr(sizing) => Ty::<Ref>::List(Ref::ascii_char(), sizing),
-            KeyTy::Bytes(sizing) if sizing == Sizing::ONE => Ty::BYTE,
-            KeyTy::Bytes(sizing) if sizing.is_fixed() && sizing.min <= u16::MAX as u64 => {
-                Ty::<Ref>::Array(Ref::byte(), sizing.min as u16)
-            }
-            KeyTy::Bytes(sizing) => Ty::<Ref>::List(Ref::byte(), sizing),
-        }
-    }
 }
 
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
