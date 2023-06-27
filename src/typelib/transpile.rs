@@ -142,11 +142,6 @@ impl TypedWrite for LibBuilder {
         self
     }
 
-    unsafe fn register_ascii(mut self, sizing: Sizing) -> Self {
-        self.last_compiled = Some(Ty::List(Ty::ascii_char().into(), sizing).into());
-        self
-    }
-
     unsafe fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
         self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
