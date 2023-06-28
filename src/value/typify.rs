@@ -148,6 +148,11 @@ impl TypeSystem {
             {
                 val
             }
+            (StrictVal::Number(StrictNum::Uint(val)), Ty::Primitive(prim))
+                if prim.is_small_signed() && (val & 0x8000_0000_0000_0000) == 0 =>
+            {
+                StrictVal::Number(StrictNum::Int(val as i128))
+            }
             (val @ StrictVal::Number(StrictNum::BigUint(_)), Ty::Primitive(prim))
                 if prim.is_large_unsigned() =>
             {
