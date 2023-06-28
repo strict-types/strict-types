@@ -30,7 +30,7 @@ use crate::ast::HashId;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
 use crate::typesys::symbols::SymbolicSys;
 use crate::typesys::{SymTy, TypeFqn};
-use crate::{Dependency, KeyTy, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
+use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
 /// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -211,28 +211,13 @@ impl Translate<SemId> for InlineRef2 {
 
     fn translate(
         self,
-        builder: &mut Self::Builder,
+        _builder: &mut Self::Builder,
         _ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
             InlineRef2::Named(sem_id) => Ok(sem_id),
-            InlineRef2::Inline(inline_ty) => builder.translate_inline(inline_ty),
             InlineRef2::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
-    }
-}
-
-impl Translate<SemId> for KeyTy {
-    type Context = ();
-    type Builder = SystemBuilder;
-    type Error = Error;
-
-    fn translate(
-        self,
-        _builder: &mut Self::Builder,
-        _ctx: &Self::Context,
-    ) -> Result<SemId, Self::Error> {
-        Err(Error::TooDeep)
     }
 }
 

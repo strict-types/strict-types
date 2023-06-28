@@ -58,6 +58,13 @@ macro_rules! svbytes {
 }
 
 #[macro_export]
+macro_rules! svnewtype {
+    ($val:expr) => {
+        $crate::StrictVal::newtype($val)
+    };
+}
+
+#[macro_export]
 macro_rules! svtuple {
     ($val:expr) => {
         $crate::StrictVal::tuple($val)
@@ -280,6 +287,7 @@ impl StrictVal {
     pub fn num(n: impl Into<StrictNum>) -> Self { StrictVal::Number(n.into()) }
     pub fn str(s: impl ToString) -> Self { StrictVal::String(s.to_string()) }
     pub fn bytes(s: impl AsRef<[u8]>) -> Self { StrictVal::Bytes(s.as_ref().to_vec()) }
+    pub fn newtype(inner: impl Into<StrictVal>) -> Self { StrictVal::Tuple(vec![inner.into()]) }
     pub fn tuple(fields: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
         StrictVal::Tuple(fields.into_iter().map(|v| v.into()).collect())
     }

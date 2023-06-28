@@ -56,7 +56,9 @@ where Ref: Translate<ToRef>
             Ty::UnicodeChar => Ty::UnicodeChar,
             Ty::List(ty, sizing) => Ty::List(ty.translate(builder, ctx)?, sizing),
             Ty::Set(ty, sizing) => Ty::Set(ty.translate(builder, ctx)?, sizing),
-            Ty::Map(key, ty, sizing) => Ty::Map(key, ty.translate(builder, ctx)?, sizing),
+            Ty::Map(key, ty, sizing) => {
+                Ty::Map(key.translate(builder, ctx)?, ty.translate(builder, ctx)?, sizing)
+            }
         })
     }
 }

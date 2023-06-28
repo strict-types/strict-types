@@ -146,17 +146,10 @@ impl TypeRef for TranspileRef {
             _ => false,
         }
     }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            TranspileRef::Embedded(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
 }
 
 impl PrimitiveRef for TranspileRef {
     fn byte() -> Self { TranspileRef::Embedded(Box::new(Ty::BYTE)) }
-    fn ascii_char() -> Self { TranspileRef::Embedded(Box::new(Ty::ascii_char())) }
     fn unicode_char() -> Self { TranspileRef::Embedded(Box::new(Ty::UNICODE)) }
 }
 

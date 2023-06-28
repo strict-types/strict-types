@@ -24,15 +24,18 @@
 extern crate strict_encoding;
 
 use strict_encoding::STRICT_TYPES_LIB;
+use strict_types::stl::std_stl;
 use strict_types::typesys::SystemBuilder;
 use strict_types::{LibBuilder, TypeLib};
 
 #[test]
 fn reflect() {
-    let builder = LibBuilder::new(libname!(STRICT_TYPES_LIB), None).transpile::<TypeLib>();
+    let std = std_stl();
+    let builder =
+        LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
     let lib = builder.compile().unwrap();
 
-    let builder = SystemBuilder::new().import(lib).unwrap();
+    let builder = SystemBuilder::new().import(lib).unwrap().import(std).unwrap();
     match builder.finalize() {
         Ok(sys) => {
             println!("{sys}");

@@ -148,6 +148,11 @@ impl TypeSystem {
             {
                 val
             }
+            (StrictVal::Number(StrictNum::Uint(val)), Ty::Primitive(prim))
+                if prim.is_small_signed() && (val & 0x8000_0000_0000_0000) == 0 =>
+            {
+                StrictVal::Number(StrictNum::Int(val as i128))
+            }
             (val @ StrictVal::Number(StrictNum::BigUint(_)), Ty::Primitive(prim))
                 if prim.is_large_unsigned() =>
             {
@@ -175,9 +180,7 @@ impl TypeSystem {
             {
                 return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
             }
-            (StrictVal::String(s), Ty::Array(id, len))
-                if id.is_ascii_char() && s.len() > *len as usize =>
-            {
+            (StrictVal::String(s), Ty::Array(_, len)) if s.len() > *len as usize => {
                 return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
             }
             (StrictVal::List(s), Ty::Array(_, len)) if s.len() > *len as usize => {
@@ -210,17 +213,15 @@ impl TypeSystem {
             }
 
             (val @ StrictVal::Bytes(_), Ty::Array(id, _)) if id.is_byte() => val,
-            (val @ StrictVal::String(_), Ty::Array(id, _))
-                if id.is_ascii_char() || id.is_unicode_char() =>
-            {
-                val
+            (StrictVal::String(s), Ty::Array(id, _)) if s.is_ascii() || id.is_unicode_char() => {
+                StrictVal::String(s)
             }
             (val @ StrictVal::List(_), Ty::Array(_, _)) => val,
 
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
             (val @ StrictVal::String(_), Ty::List(id, _)) if id.is_unicode_char() => val,
-            (StrictVal::String(s), Ty::List(id, _)) if id.is_ascii_char() => {
+            (StrictVal::String(s), Ty::List(_, _)) if s.is_ascii() => {
                 AsciiString::from_ascii(s.as_bytes()).map_err(|err| err.ascii_error())?;
                 StrictVal::String(s)
             }
@@ -243,11 +244,10 @@ impl TypeSystem {
                 }
                 StrictVal::Set(new)
             }
-            (StrictVal::Map(s), Ty::Map(key_ty, id, _)) => {
+            (StrictVal::Map(s), Ty::Map(key_id, id, _)) => {
                 let mut new = Vec::<(StrictVal, StrictVal)>::with_capacity(s.len());
-                let key_id = key_ty.to_ty::<SemId>().id(None);
                 for (key, item) in s {
-                    let checked_key = self.typify(key, key_id)?;
+                    let checked_key = self.typify(key, *key_id)?;
                     let checked_val = self.typify(item, *id)?;
                     if new.iter().find(|(k, _)| k == &checked_key.val).is_some() {
                         return Err(Error::RepeatedKeyValue(spec, checked_key.val));
@@ -404,7 +404,8 @@ mod test {
     fn load() {
         let sys = test_system();
         let nominal = Nominal::with("TICK", "Some name", 2);
-        let value = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(2));
+        let value =
+            svstruct!(name => "Some name", ticker => svnewtype!("TICK"), precision => svenum!(2));
 
         let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
         let mut reader = io::Cursor::new(data);

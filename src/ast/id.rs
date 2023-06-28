@@ -31,7 +31,7 @@ use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
 use crate::ast::{EnumVariants, NamedFields, PrimitiveRef};
-use crate::{Cls, KeyTy, Ty, TypeRef};
+use crate::{Cls, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
@@ -68,13 +68,11 @@ pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
 impl TypeRef for SemId {
     fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
-    fn is_ascii_char(&self) -> bool { Self::ascii_char() == *self }
     fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.id(None) == *self }
 }
 
 impl PrimitiveRef for SemId {
     fn byte() -> Self { Ty::<Self>::BYTE.id(None) }
-    fn ascii_char() -> Self { Ty::<Self>::ascii_char().id(None) }
     fn unicode_char() -> Self { Ty::<Self>::UNICODE.id(None) }
 }
 
@@ -149,24 +147,6 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
                 key.hash_id(hasher);
                 ty.hash_id(hasher);
                 sizing.hash_id(hasher);
-            }
-        };
-    }
-}
-
-impl HashId for KeyTy {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
-        self.cls().hash_id(hasher);
-        match self {
-            KeyTy::Primitive(prim) => {
-                hasher.update(&[prim.into_code()]);
-            }
-            KeyTy::Enum(vars) => vars.hash_id(hasher),
-            KeyTy::Array(len) => {
-                hasher.update(&len.to_le_bytes());
-            }
-            KeyTy::AsciiStr(sizing) | KeyTy::UnicodeStr(sizing) | KeyTy::Bytes(sizing) => {
-                sizing.hash_id(hasher)
             }
         };
     }
