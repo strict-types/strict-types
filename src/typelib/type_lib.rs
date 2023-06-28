@@ -31,7 +31,7 @@ use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 use crate::typelib::compile::CompileError;
 use crate::typelib::id::TypeLibId;
 use crate::typelib::ExternTypes;
-use crate::{KeyTy, SemId, Ty, TypeRef};
+use crate::{SemId, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
@@ -85,12 +85,6 @@ impl TypeRef for InlineRef {
             _ => false,
         }
     }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            InlineRef::Inline(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
 }
 
 impl Display for InlineRef {
@@ -137,12 +131,6 @@ impl TypeRef for InlineRef1 {
             _ => false,
         }
     }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            InlineRef1::Inline(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
 }
 
 impl Display for InlineRef1 {
@@ -157,44 +145,21 @@ impl Display for InlineRef1 {
 
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef2::Inline(Ty::strict_dumb()) })]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef2::Named(SemId::strict_dumb()) })]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", rename_all = "camelCase")
 )]
 pub enum InlineRef2 {
-    #[from]
-    Inline(Ty<KeyTy>),
     Named(SemId),
     Extern(ExternRef),
 }
 
 impl TypeRef for InlineRef2 {
-    fn is_compound(&self) -> bool {
-        match self {
-            InlineRef2::Inline(ty) => ty.is_compound(),
-            _ => false,
-        }
-    }
-    fn is_byte(&self) -> bool {
-        match self {
-            InlineRef2::Inline(ty) => ty.is_byte(),
-            _ => false,
-        }
-    }
-    fn is_unicode_char(&self) -> bool {
-        match self {
-            InlineRef2::Inline(ty) => ty.is_unicode_char(),
-            _ => false,
-        }
-    }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            InlineRef2::Inline(ty) => ty.is_ascii_char(),
-            _ => false,
-        }
-    }
+    fn is_compound(&self) -> bool { false }
+    fn is_byte(&self) -> bool { false }
+    fn is_unicode_char(&self) -> bool { false }
 }
 
 impl Display for InlineRef2 {
@@ -202,7 +167,6 @@ impl Display for InlineRef2 {
         match self {
             InlineRef2::Named(sem_id) => write!(f, "{sem_id:0}"),
             InlineRef2::Extern(ext) => Display::fmt(ext, f),
-            InlineRef2::Inline(ty) => Display::fmt(ty, f),
         }
     }
 }
@@ -238,12 +202,6 @@ impl TypeRef for LibRef {
     fn is_unicode_char(&self) -> bool {
         match self {
             LibRef::Inline(ty) => ty.is_unicode_char(),
-            _ => false,
-        }
-    }
-    fn is_ascii_char(&self) -> bool {
-        match self {
-            LibRef::Inline(ty) => ty.is_ascii_char(),
             _ => false,
         }
     }

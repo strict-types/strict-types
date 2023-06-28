@@ -43,10 +43,10 @@ pub use val::{EnumTag, StrictNum, StrictVal};
 
 #[cfg(test)]
 pub(self) mod test_helpers {
-    use amplify::ascii::AsciiString;
-    use amplify::confinement::{Confined, TinyAscii};
-    use encoding::{StrictDeserialize, StrictSerialize};
+    use amplify::confinement::Confined;
+    use encoding::{Ident, StrictDeserialize, StrictSerialize};
 
+    use crate::stl::{std_stl, strict_types_stl};
     use crate::typesys::{SymbolicSys, SystemBuilder};
     use crate::LibBuilder;
 
@@ -65,8 +65,8 @@ pub(self) mod test_helpers {
     #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
     #[strict_type(lib = "TestLib", dumb = { Nominal::with("DUMB", "Dumb", strict_dumb!()) })]
     pub struct Nominal {
-        pub ticker: Confined<String, 1, 8>,
-        pub name: TinyAscii,
+        pub ticker: Ident,
+        pub name: Confined<String, 1, 32>,
         pub precision: Precision,
     }
 
@@ -76,15 +76,28 @@ pub(self) mod test_helpers {
     impl Nominal {
         pub fn with(ticker: &'static str, name: &'static str, precision: u8) -> Self {
             Nominal {
-                ticker: Confined::try_from(ticker.to_owned()).unwrap(),
-                name: Confined::try_from(AsciiString::from_ascii(name).unwrap()).unwrap(),
+                ticker: Ident::try_from(ticker.to_owned()).unwrap(),
+                name: Confined::try_from(name.to_owned()).unwrap(),
                 precision: Precision::try_from(precision).unwrap(),
             }
         }
     }
 
     pub fn test_system() -> SymbolicSys {
-        let lib = LibBuilder::new("TestLib", None).transpile::<Nominal>().compile().unwrap();
-        SystemBuilder::new().import(lib).unwrap().finalize().unwrap()
+        let std = std_stl();
+        let st = strict_types_stl();
+        let lib = LibBuilder::new("TestLib", [std.to_dependency(), st.to_dependency()])
+            .transpile::<Nominal>()
+            .compile()
+            .unwrap();
+        SystemBuilder::new()
+            .import(lib)
+            .unwrap()
+            .import(std)
+            .unwrap()
+            .import(st)
+            .unwrap()
+            .finalize()
+            .unwrap()
     }
 }

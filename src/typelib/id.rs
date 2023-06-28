@@ -121,7 +121,6 @@ impl HashId for LibRef {
 impl HashId for InlineRef2 {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
         match self {
-            InlineRef2::Inline(ty) => ty.hash_id(hasher),
             InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
             InlineRef2::Extern(ext) => ext.hash_id(hasher),
         }

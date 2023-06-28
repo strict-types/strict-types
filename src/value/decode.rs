@@ -24,9 +24,10 @@
 
 use std::io;
 
+use amplify::ascii::AsciiString;
 use amplify::confinement::{
-    LargeAscii, LargeBlob, LargeString, MediumAscii, MediumBlob, MediumString, SmallAscii,
-    SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString,
+    Confined, LargeAscii, LargeBlob, LargeString, MediumAscii, MediumBlob, MediumString,
+    SmallAscii, SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString,
 };
 use amplify::num::u24;
 use encoding::constants::*;
@@ -241,21 +242,28 @@ impl TypeSystem {
             }
 
             // ASCII strings:
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u8::MAX as u64 => {
-                let string = TinyAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
-            }
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u16::MAX as u64 => {
-                let string = SmallAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
-            }
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u24::MAX.into_u64() => {
-                let string = MediumAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
-            }
-            Ty::List(ty, sizing) if ty.is_ascii_char() && sizing.max <= u32::MAX as u64 => {
-                let string = LargeAscii::strict_decode(&mut reader)?;
-                StrictVal::String(string.to_string())
+            Ty::List(sem_id, sizing)
+                if self
+                    .find(*sem_id)
+                    .ok_or_else(|| Error::TypeAbsent(spec.clone()))?
+                    .is_char_enum() =>
+            {
+                if sizing.max <= u8::MAX as u64 {
+                    StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u16::MAX as u64 {
+                    StrictVal::String(SmallAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u24::MAX.into_u64() {
+                    StrictVal::String(MediumAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u32::MAX as u64 {
+                    StrictVal::String(LargeAscii::strict_decode(&mut reader)?.to_string())
+                } else {
+                    StrictVal::String(
+                        Confined::<AsciiString, 0, { u64::MAX as usize }>::strict_decode(
+                            &mut reader,
+                        )?
+                        .to_string(),
+                    )
+                }
             }
 
             // Other lists:
@@ -320,39 +328,34 @@ impl TypeSystem {
                 let list = self.strict_read_list(len as usize, *ty, d)?;
                 StrictVal::Set(list)
             }
-            Ty::Map(key_ty, ty, sizing) if sizing.max <= u8::MAX as u64 => {
+            Ty::Map(key_id, id, sizing) if sizing.max <= u8::MAX as u64 => {
                 let len = u8::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
-                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, *key_id, *id, d)?;
                 StrictVal::Map(list)
             }
-            Ty::Map(key_ty, ty, sizing) if sizing.max <= u16::MAX as u64 => {
+            Ty::Map(key_id, id, sizing) if sizing.max <= u16::MAX as u64 => {
                 let len = u16::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
-                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, *key_id, *id, d)?;
                 StrictVal::Map(list)
             }
-            Ty::Map(key_ty, ty, sizing) if sizing.max <= u24::MAX.into_u64() => {
+            Ty::Map(key_id, id, sizing) if sizing.max <= u24::MAX.into_u64() => {
                 let len = u24::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
-                let list = self.strict_read_map(len.into_usize(), key_ty, *ty, d)?;
+                let list = self.strict_read_map(len.into_usize(), *key_id, *id, d)?;
                 StrictVal::Map(list)
             }
-            Ty::Map(key_ty, ty, sizing) if sizing.max <= u32::MAX as u64 => {
+            Ty::Map(key_id, id, sizing) if sizing.max <= u32::MAX as u64 => {
                 let len = u32::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
-                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, *key_id, *id, d)?;
                 StrictVal::Map(list)
             }
-            Ty::Map(key_ty, ty, _sizing) => {
+            Ty::Map(key_id, id, _sizing) => {
                 let len = u64::strict_decode(&mut reader)?;
-                let key_ty = key_ty.to_ty::<SemId>().id(None);
                 d = reader.unbox();
-                let list = self.strict_read_map(len as usize, key_ty, *ty, d)?;
+                let list = self.strict_read_map(len as usize, *key_id, *id, d)?;
                 StrictVal::Map(list)
             }
         };
@@ -377,7 +380,7 @@ mod test {
         let checked = sys.typify(value, "TestLib.Nominal").unwrap();
         assert_eq!(
             format!("{}", checked.val),
-            r#"(name="Some name", ticker="TICK", precision=twoDecimals)"#
+            r#"(name="Some name", ticker=("TICK"), precision=twoDecimals)"#
         );
     }
 }

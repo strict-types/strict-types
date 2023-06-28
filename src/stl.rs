@@ -22,7 +22,7 @@
 
 use encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
-    AsciiPrintable, Bool, Dec, HexDecCaps, HexDecSmall, U4,
+    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U4,
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
 
@@ -31,14 +31,15 @@ use crate::{
     TypeSymbol, TypeSysId,
 };
 
-pub const LIB_ID_STD: &str = "left_pierre_food_5cmoZctpx98FbTzWTArm3G53pMzUXuRPXmMhuCd8zyXb";
+pub const LIB_ID_STD: &str = "siren_reward_number_C2hHN1Y5VwxxNrrLBBnuTQBgB19WN4HzKD8tZ2YFkeCr";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "figure_radical_liquid_8pj6Q4MDsaQW97omrv5DhAX1yid5Hjmbi8uoBzLQayMh";
+    "kiwi_rachel_smart_7JMa1g7puQEw1zGtJK2zshmB7si6wd4sqvwajrw8JDFD";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
+        .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()
         .transpile::<AlphaCaps>()
@@ -60,7 +61,7 @@ pub fn std_sym() -> SymbolicLib { _std_sym().expect("invalid strict type Std lib
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB), None)
+    LibBuilder::new(libname!(STRICT_TYPES_LIB), [std_stl().to_dependency()])
         .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
         .transpile::<TypeSysId>()
