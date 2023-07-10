@@ -299,7 +299,7 @@ impl TypeSystem {
                         tag,
                         EnumVariants::try_from(vars_req.keys().cloned().collect::<BTreeSet<_>>())
                             .expect("same collection size"),
-                    ))
+                    ));
                 };
                 let checked = self.typify(*val, *id)?;
                 StrictVal::Union(tag, Box::new(checked.val))
@@ -349,7 +349,7 @@ impl TypeSystem {
                 let mut new = IndexMap::with_capacity(s.len());
                 for (fname, item) in s.into_iter() {
                     let StrictVal::String(fname) = fname else {
-                        return Err(Error::MapNotStructure)
+                        return Err(Error::MapNotStructure);
                     };
                     let fname = FieldName::try_from(fname)?;
                     let Some(field) = fields_req.ty_by_name(&fname) else {
