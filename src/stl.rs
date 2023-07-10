@@ -24,21 +24,22 @@ use encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
     AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U4,
 };
-use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB};
+use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U5};
 
 use crate::{
     CompileError, LibBuilder, SymbolRef, SymbolicLib, SymbolicSys, TranspileError, TypeLib,
     TypeSymbol, TypeSysId,
 };
 
-pub const LIB_ID_STD: &str = "siren_reward_number_C2hHN1Y5VwxxNrrLBBnuTQBgB19WN4HzKD8tZ2YFkeCr";
+pub const LIB_ID_STD: &str = "lagoon_rodent_option_9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "kiwi_rachel_smart_7JMa1g7puQEw1zGtJK2zshmB7si6wd4sqvwajrw8JDFD";
+    "canoe_safari_scholar_5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U4>()
+        .transpile::<U5>()
         .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()
