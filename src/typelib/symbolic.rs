@@ -258,7 +258,7 @@ impl SymbolicLib {
             let mut found = false;
             for name in &names {
                 let Some(ty) = old_types.get(name) else {
-                    continue
+                    continue;
                 };
                 let mut ctx = NestedContext {
                     top_name: name.clone(),
