@@ -44,10 +44,10 @@ The library is able to reflect on itself, producing replica of its rust data
 types in strict types system.
 
 Strict types library id:
-`stl:DYTdc4m4C6HLfM9hQCoavFHbdnwVuFQkWStTHDeHfDZ1#final-olivia-segment`
+`stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#lagoon-rodent-option`
 
 Import this lib by putting in the file header
-`import final_olivia_segment_DYTdc4m4C6HLfM9hQCoavFHbdnwVuFQkWStTHDeHfDZ1 as StrictTypes`
+`import lagoon_rodent_option_9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ as StrictTypes`
 
 Source code can be found in [`stl/StrictTypes.sty`] file.
 
