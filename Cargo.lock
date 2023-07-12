@@ -564,9 +564,9 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding"
-version = "2.4.2"
+version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "127000718020d3da8bb1a0b64854e49107607463cb0fd6df9960e0642ef53095"
+checksum = "23b1c91b79e62afc09025d828fa0b8dbf4105513de38f126a017919c09bca472"
 dependencies = [
  "amplify",
  "half",
@@ -589,7 +589,7 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "1.4.2"
+version = "1.5.0"
 dependencies = [
  "amplify",
  "baid58",
