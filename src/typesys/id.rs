@@ -20,6 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
@@ -33,9 +34,8 @@ use crate::TypeSystem;
 
 pub const TYPESYS_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:sys:v01";
 
-#[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
+#[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
-#[display(Self::to_baid58_string)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(
@@ -57,16 +57,17 @@ impl FromBaid58<32> for TypeSysId {}
 impl FromStr for TypeSysId {
     type Err = Baid58ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("sts") {
-            Self::from_baid58_str(s)
-        } else {
-            Self::from_baid58_str(&format!("sts:{s}"))
-        }
+        Self::from_baid58_str(s.trim_start_matches("urn:ubideco:"))
     }
 }
-
-impl TypeSysId {
-    fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
+impl Display for TypeSysId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if f.sign_minus() {
+            write!(f, "urn:ubideco:{::<}", self.to_baid58())
+        } else {
+            write!(f, "urn:ubideco:{::<#}", self.to_baid58())
+        }
+    }
 }
 
 impl HashId for TypeSystem {
