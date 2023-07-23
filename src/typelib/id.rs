@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::{Display, Formatter};
+use std::fmt::{Display, self, Formatter};
 use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
@@ -67,7 +67,7 @@ impl FromStr for TypeLibId {
     }
 }
 impl Display for TypeLibId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.sign_minus() {
             write!(f, "urn:ubideco:{::<}", self.to_baid58())
         } else {
