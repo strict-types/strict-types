@@ -36,7 +36,7 @@ use crate::{Cls, Ty, TypeRef};
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
-#[display(Self::to_baid58)]
+#[display(Self::to_baid58_string)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(
@@ -55,13 +55,16 @@ impl Default for SemId {
 }
 
 impl ToBaid58<32> for SemId {
-    const HRI: &'static str = "sty";
+    const HRI: &'static str = "semid";
     fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
 }
 impl FromBaid58<32> for SemId {}
 impl FromStr for SemId {
     type Err = Baid58ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid58_str(s) }
+}
+impl SemId {
+    fn to_baid58_string(&self) -> String { format!("urn:ubideco:{::<#0}", self.to_baid58()) }
 }
 
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
