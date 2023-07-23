@@ -1,8 +1,8 @@
 -----BEGIN STRICT TYPE LIB-----
-Id: south_strong_welcome_5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby
+Id: urn:ubideco:stl:5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby#south-strong-welcome
 Name: StrictTypes
 Dependencies: 
-  Std@justice_rocket_type_9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ
+  Std@urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type
 
 C1N0cmljdFR5cGVzAXuEgDye+uIRJad8LDm8cNL96PlDrg39nPTmgu3HZspwA1N0
 ZAEDU3RkAQByjqaKl950IPYqWWmwS4cmBL9F1t84lZx+JuenJJDkrQ5BbHBoYU51

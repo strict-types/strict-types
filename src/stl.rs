@@ -31,9 +31,9 @@ use crate::{
     TypeSymbol, TypeSysId,
 };
 
-pub const LIB_ID_STD: &str = "justice_rocket_type_9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ";
+pub const LIB_ID_STD: &str = "urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "south_strong_welcome_5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby";
+    "urn:ubideco:stl:5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby#south-strong-welcome";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)

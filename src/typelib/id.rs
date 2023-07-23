@@ -66,9 +66,8 @@ impl FromStr for TypeLibId {
         }
     }
 }
-
 impl TypeLibId {
-    fn to_baid58_string(&self) -> String { format!("{:+}", self.to_baid58()) }
+    fn to_baid58_string(&self) -> String { format!("urn:ubideco:{::<#0}", self.to_baid58()) }
 }
 
 impl HashId for TypeLibId {
