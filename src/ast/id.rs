@@ -61,7 +61,9 @@ impl ToBaid58<32> for SemId {
 impl FromBaid58<32> for SemId {}
 impl FromStr for SemId {
     type Err = Baid58ParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid58_str(s) }
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::from_baid58_str(s.trim_start_matches("urn:ubideco:"))
+    }
 }
 impl SemId {
     fn to_baid58_string(&self) -> String { format!("urn:ubideco:{::<#0}", self.to_baid58()) }

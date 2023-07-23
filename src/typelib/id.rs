@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::fmt::{Display, self, Formatter};
+use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 use amplify::{Bytes32, RawArray};
@@ -59,11 +59,7 @@ impl FromBaid58<32> for TypeLibId {}
 impl FromStr for TypeLibId {
     type Err = Baid58ParseError;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        if s.starts_with("stl") {
-            Self::from_baid58_str(s)
-        } else {
-            Self::from_baid58_str(&format!("stl:{s}"))
-        }
+        Self::from_baid58_str(s.trim_start_matches("urn:ubideco:"))
     }
 }
 impl Display for TypeLibId {
