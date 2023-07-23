@@ -145,7 +145,7 @@ impl Display for SymbolicLib {
 
 impl Display for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typelib {} -- {:+}", self.name, self.id())?;
+        writeln!(f, "typelib {} -- {}", self.name, self.id())?;
         writeln!(f)?;
         for dep in &self.dependencies {
             writeln!(f, "{dep} as {}", dep.name)?;
@@ -168,7 +168,7 @@ impl fmt::UpperHex for TypeLib {
         use base64::Engine;
 
         writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {}", self.id())?;
+        writeln!(f, "Id: {:-}", self.id())?;
         writeln!(f, "Name: {}", self.name)?;
         write!(f, "Dependencies: ")?;
         if self.dependencies.is_empty() {
@@ -178,7 +178,7 @@ impl fmt::UpperHex for TypeLib {
         }
         let mut iter = self.dependencies.iter();
         while let Some(dep) = iter.next() {
-            write!(f, "  {}@{}", dep.name, dep.id)?;
+            write!(f, "  {:-}", dep.id)?;
             if iter.len() > 0 {
                 writeln!(f, ",")?;
             } else {

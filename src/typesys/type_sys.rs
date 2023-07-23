@@ -135,10 +135,10 @@ impl Index<SemId> for TypeSystem {
 
 impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "typesys -- {:+}", self.id())?;
+        writeln!(f, "typesys -- {}", self.id())?;
         writeln!(f)?;
         for (id, ty) in &self.0 {
-            writeln!(f, "data {id:0} :: {:0}", ty)?;
+            writeln!(f, "data {id:-} :: {:-}", ty)?;
         }
         Ok(())
     }
@@ -153,7 +153,7 @@ impl fmt::UpperHex for TypeSystem {
         let id = self.id();
 
         writeln!(f, "-----BEGIN STRICT TYPE SYSTEM-----")?;
-        writeln!(f, "Id: {}", id)?;
+        writeln!(f, "Id: {:-}", id)?;
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<U32>().expect("in-memory");
