@@ -368,7 +368,10 @@ impl TypeSystem {
             }
             (val, ty @ Ty::Union(fields)) if ty.is_option() => {
                 // this is `Some`
-                self.typify(val, *fields.ty_by_tag(1).expect("optional always have `Some`"))?.val
+                let inner = self
+                    .typify(val, *fields.ty_by_tag(1).expect("optional always have `Some`"))?
+                    .val;
+                StrictVal::union(1, inner)
             }
 
             // Newtype wrapper
