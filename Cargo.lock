@@ -428,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "1.6.2"
+version = "1.6.3"
 dependencies = [
  "amplify",
  "baid58",
