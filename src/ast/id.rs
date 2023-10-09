@@ -24,7 +24,7 @@ use std::fmt::{self, Display, Formatter};
 use std::hash::Hash;
 use std::str::FromStr;
 
-use amplify::{Bytes32, RawArray, Wrapper};
+use amplify::{ByteArray, Bytes32, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use encoding::{FieldName, LibName};
 use sha2::Digest;
@@ -56,7 +56,7 @@ impl Default for SemId {
 
 impl ToBaid58<32> for SemId {
     const HRI: &'static str = "semid";
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
 impl FromBaid58<32> for SemId {}
 impl FromStr for SemId {
@@ -89,7 +89,7 @@ impl PrimitiveRef for SemId {
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn id(&self, name: Option<&TypeName>) -> SemId {
-        let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+        let tag = sha2::Sha256::new_with_prefix(SEM_ID_TAG).finalize();
         let mut hasher = sha2::Sha256::new();
         hasher.update(tag);
         hasher.update(tag);
@@ -97,7 +97,7 @@ impl<Ref: TypeRef> Ty<Ref> {
             name.hash_id(&mut hasher);
         }
         self.hash_id(&mut hasher);
-        SemId::from_raw_array(hasher.finalize())
+        SemId::from_byte_array(hasher.finalize())
     }
 }
 
@@ -135,7 +135,7 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
         self.cls().hash_id(hasher);
         match self {
             Ty::Primitive(prim) => {
-                hasher.update(&[prim.into_code()]);
+                hasher.update([prim.into_code()]);
             }
             Ty::Enum(vars) => vars.hash_id(hasher),
             Ty::Union(fields) => fields.hash_id(hasher),
@@ -143,7 +143,7 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
             Ty::Struct(fields) => fields.hash_id(hasher),
             Ty::Array(ty, len) => {
                 ty.hash_id(hasher);
-                hasher.update(&len.to_le_bytes());
+                hasher.update(len.to_le_bytes());
             }
             Ty::UnicodeChar => {}
             Ty::List(ty, sizing) => {
@@ -164,7 +164,7 @@ impl<Ref: TypeRef> HashId for Ty<Ref> {
 }
 
 impl HashId for Cls {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update(&[*self as u8]); }
+    fn hash_id(&self, hasher: &mut sha2::Sha256) { hasher.update([*self as u8]); }
 }
 
 impl<Ref: TypeRef> HashId for Field<Ref> {
@@ -210,7 +210,7 @@ impl<Ref: TypeRef> HashId for UnnamedFields<Ref> {
 impl HashId for Variant {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
         self.name.hash_id(hasher);
-        hasher.update(&[self.tag]);
+        hasher.update([self.tag]);
     }
 }
 

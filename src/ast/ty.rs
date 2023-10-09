@@ -507,7 +507,7 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
         self.0.into_inner().into_values()
     }
 
-    pub fn has_tag(&self, tag: u8) -> bool { self.0.keys().find(|v| v.tag == tag).is_some() }
+    pub fn has_tag(&self, tag: u8) -> bool { self.0.keys().any(|v| v.tag == tag) }
     pub fn by_name(&self, name: &FieldName) -> Option<(&Variant, &Ref)> {
         self.0.iter().find(|(v, _)| &v.name == name)
     }
@@ -612,7 +612,7 @@ impl EnumVariants {
     pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
         self.0.iter().find(|v| v.tag == tag).map(|v| &v.name)
     }
-    pub fn has_tag(&self, tag: u8) -> bool { self.0.iter().find(|v| v.tag == tag).is_some() }
+    pub fn has_tag(&self, tag: u8) -> bool { self.0.iter().any(|v| v.tag == tag) }
 }
 
 impl Display for EnumVariants {

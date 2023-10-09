@@ -78,12 +78,12 @@ impl SymbolContext {
             self.lib_index.get(&ext.lib_id).ok_or(SymbolError::UnknownLib(ext.lib_id))?;
         let ty_name = builder
             .get(lib_name)
-            .ok_or(SymbolError::UnknownLib(ext.lib_id.clone()))?
+            .ok_or(SymbolError::UnknownLib(ext.lib_id))?
             .get(&ext.sem_id)
             .ok_or(SymbolError::UnknownType(ext.sem_id))?
             .clone();
         let r = SymbolRef::with(lib_name.clone(), ty_name.clone(), ext.lib_id, ext.sem_id);
-        let mut index = builder.remove(&lib_name).ok().flatten().unwrap_or_default();
+        let mut index = builder.remove(lib_name).ok().flatten().unwrap_or_default();
         index
             .insert(ext.sem_id, ty_name)
             .map_err(|_| SymbolError::LibTooLarge(lib_name.clone()))?;

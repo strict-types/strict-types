@@ -23,7 +23,7 @@
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
-use amplify::{Bytes32, RawArray};
+use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use encoding::StrictEncode;
 use sha2::{Digest, Sha256};
@@ -53,7 +53,7 @@ pub struct TypeLibId(
 
 impl ToBaid58<32> for TypeLibId {
     const HRI: &'static str = "stl";
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
 impl FromBaid58<32> for TypeLibId {}
 impl FromStr for TypeLibId {
@@ -154,11 +154,11 @@ impl HashId for ExternRef {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        let tag = Sha256::new_with_prefix(&LIB_ID_TAG).finalize();
+        let tag = Sha256::new_with_prefix(LIB_ID_TAG).finalize();
         let mut hasher = Sha256::new();
         hasher.update(tag);
         hasher.update(tag);
         self.hash_id(&mut hasher);
-        TypeLibId::from_raw_array(hasher.finalize())
+        TypeLibId::from_byte_array(hasher.finalize())
     }
 }

@@ -30,6 +30,7 @@
     //missing_docs
 )]
 #![allow(unused_braces)] // Due to rust compiler bug not understanding proc macro expressions
+#![allow(clippy::result_large_err)]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
 #[macro_use]

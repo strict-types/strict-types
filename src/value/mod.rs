@@ -42,7 +42,7 @@ pub use path::{KeyStep, Path, PathError, Step};
 pub use val::{EnumTag, StrictNum, StrictVal};
 
 #[cfg(test)]
-pub(self) mod test_helpers {
+mod test_helpers {
     use amplify::confinement::Confined;
     use encoding::{Ident, StrictDeserialize, StrictSerialize};
 

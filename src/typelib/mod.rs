@@ -34,7 +34,7 @@ pub use compile::TranslateError;
 pub use compile::{CompileError, TypeIndex};
 pub use id::TypeLibId;
 pub use symbolic::{ExternTypes, SymbolRef, SymbolicLib, TranspileError, TranspileRef};
-pub(self) use translate::SymbolContext;
+use translate::SymbolContext;
 pub use translate::SymbolError;
 pub use transpile::LibBuilder;
 pub(crate) use type_lib::TypeMap;
