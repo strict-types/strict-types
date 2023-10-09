@@ -135,7 +135,7 @@ impl SystemBuilder {
             return Err(errors);
         }
 
-        SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err.into()])
+        SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err])
     }
 
     fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>

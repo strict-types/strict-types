@@ -83,7 +83,7 @@ impl Display for KeyStep {
                 Ok(())
             }
             KeyStep::TinyString(s) => {
-                let s = s.replace("\"", "\\\"");
+                let s = s.replace('"', "\\\"");
                 f.write_str(&s)
             }
         }

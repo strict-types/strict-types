@@ -110,7 +110,7 @@ impl TranspileRef {
         if let TranspileRef::Extern(r) = self {
             r.sem_id
         } else {
-            let tag = sha2::Sha256::new_with_prefix(&SEM_ID_TAG).finalize();
+            let tag = sha2::Sha256::new_with_prefix(SEM_ID_TAG).finalize();
             let mut hasher = sha2::Sha256::new();
             hasher.update(tag);
             hasher.update(tag);

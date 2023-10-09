@@ -249,7 +249,7 @@ impl TypeSystem {
                 for (key, item) in s {
                     let checked_key = self.typify(key, *key_id)?;
                     let checked_val = self.typify(item, *id)?;
-                    if new.iter().find(|(k, _)| k == &checked_key.val).is_some() {
+                    if new.iter().any(|(k, _)| k == &checked_key.val) {
                         return Err(Error::RepeatedKeyValue(spec, checked_key.val));
                     }
                     new.push((checked_key.val, checked_val.val));
@@ -273,7 +273,7 @@ impl TypeSystem {
                     let tag = variants.tag_by_name(&vname);
                     match tag {
                         None => return Err(Error::EnumTagInvalid(vname.into(), variants.clone())),
-                        Some(name) => StrictVal::enumer(name.clone()),
+                        Some(name) => StrictVal::enumer(name),
                     }
                 } else {
                     return Err(Error::TypeMismatch {

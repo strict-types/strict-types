@@ -154,7 +154,7 @@ impl HashId for ExternRef {
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
-        let tag = Sha256::new_with_prefix(&LIB_ID_TAG).finalize();
+        let tag = Sha256::new_with_prefix(LIB_ID_TAG).finalize();
         let mut hasher = Sha256::new();
         hasher.update(tag);
         hasher.update(tag);

@@ -81,7 +81,7 @@ impl HashId for TypeSystem {
 
 impl TypeSystem {
     pub fn id(&self) -> TypeSysId {
-        let tag = Sha256::new_with_prefix(&TYPESYS_ID_TAG).finalize();
+        let tag = Sha256::new_with_prefix(TYPESYS_ID_TAG).finalize();
         let mut hasher = Sha256::new();
         hasher.update(tag);
         hasher.update(tag);

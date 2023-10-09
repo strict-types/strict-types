@@ -115,7 +115,7 @@ impl TypeSystem {
             }
             (StrictVal::Bytes(vec), Ty::Array(_, len)) => {
                 debug_assert_eq!(vec.len(), *len as usize);
-                writer.write_all(&vec)?;
+                writer.write_all(vec)?;
             }
             (StrictVal::String(s), Ty::Array(_, len)) => {
                 debug_assert_eq!(s.len(), *len as usize);
@@ -155,20 +155,20 @@ impl TypeSystem {
             }
 
             (StrictVal::String(s), Ty::List(_, sizing)) => {
-                let bytes_count = sizing.byte_size() as usize;
+                let bytes_count = sizing.byte_size();
                 let le_bytes = &s.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 writer.write_all(s.as_bytes())?;
             }
             (StrictVal::Bytes(s), Ty::List(_, sizing)) => {
-                let bytes_count = sizing.byte_size() as usize;
+                let bytes_count = sizing.byte_size();
                 let le_bytes = &s.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 writer.write_all(s)?;
             }
             (StrictVal::List(list), Ty::List(sem_id, sizing))
             | (StrictVal::Set(list), Ty::Set(sem_id, sizing)) => {
-                let bytes_count = sizing.byte_size() as usize;
+                let bytes_count = sizing.byte_size();
                 let le_bytes = &list.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 for val in list {
@@ -176,7 +176,7 @@ impl TypeSystem {
                 }
             }
             (StrictVal::Map(list), Ty::Map(key_id, sem_id, sizing)) => {
-                let bytes_count = sizing.byte_size() as usize;
+                let bytes_count = sizing.byte_size();
                 let le_bytes = &list.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 for (key, val) in list {
@@ -203,8 +203,7 @@ impl SizingExt for Sizing {
             two if two <= u16::MAX as u64 => 2,
             three if three <= u24::MAX.into_u64() => 3,
             four if four <= u32::MAX as u64 => 4,
-            eight if eight <= u64::MAX as u64 => 8,
-            _ => unreachable!(),
+            _ => 8,
         }
     }
 }
