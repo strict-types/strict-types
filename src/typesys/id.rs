@@ -23,7 +23,7 @@
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
-use amplify::{Bytes32, RawArray};
+use amplify::{ByteArray, Bytes32};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use encoding::StrictEncode;
 use sha2::{Digest, Sha256};
@@ -51,7 +51,7 @@ pub struct TypeSysId(
 
 impl ToBaid58<32> for TypeSysId {
     const HRI: &'static str = "sts";
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
 impl FromBaid58<32> for TypeSysId {}
 impl FromStr for TypeSysId {
@@ -86,6 +86,6 @@ impl TypeSystem {
         hasher.update(tag);
         hasher.update(tag);
         self.hash_id(&mut hasher);
-        TypeSysId::from_raw_array(hasher.finalize())
+        TypeSysId::from_byte_array(hasher.finalize())
     }
 }

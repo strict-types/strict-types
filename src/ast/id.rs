@@ -24,7 +24,7 @@ use std::fmt::{self, Display, Formatter};
 use std::hash::Hash;
 use std::str::FromStr;
 
-use amplify::{Bytes32, RawArray, Wrapper};
+use amplify::{ByteArray, Bytes32, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
 use encoding::{FieldName, LibName};
 use sha2::Digest;
@@ -56,7 +56,7 @@ impl Default for SemId {
 
 impl ToBaid58<32> for SemId {
     const HRI: &'static str = "semid";
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_raw_array() }
+    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
 impl FromBaid58<32> for SemId {}
 impl FromStr for SemId {
@@ -97,7 +97,7 @@ impl<Ref: TypeRef> Ty<Ref> {
             name.hash_id(&mut hasher);
         }
         self.hash_id(&mut hasher);
-        SemId::from_raw_array(hasher.finalize())
+        SemId::from_byte_array(hasher.finalize())
     }
 }
 

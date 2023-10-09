@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap, TinyOrdSet};
-use amplify::RawArray;
+use amplify::ByteArray;
 use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
@@ -115,7 +115,7 @@ impl TranspileRef {
             hasher.update(tag);
             hasher.update(tag);
             self.hash_id(&mut hasher);
-            SemId::from_raw_array(hasher.finalize())
+            SemId::from_byte_array(hasher.finalize())
         }
     }
 }
