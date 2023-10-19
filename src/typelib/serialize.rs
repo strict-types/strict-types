@@ -28,7 +28,7 @@ use amplify::confinement::U24 as U24MAX;
 use baid58::ToBaid58;
 use encoding::{StreamWriter, StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
-use crate::{StlFormat, SymbolicLib, TypeLib};
+use crate::{Bindle, StlFormat, SymbolicLib, TypeLib};
 
 impl StrictSerialize for TypeLib {}
 impl StrictDeserialize for TypeLib {}
@@ -60,7 +60,8 @@ impl TypeLib {
             }
             #[cfg(feature = "base85")]
             StlFormat::Armored => {
-                writeln!(file, "{self:X}")?;
+                let bindle = Bindle::new(self.clone());
+                writeln!(file, "{bindle}")?;
             }
             StlFormat::Source => {
                 writeln!(
@@ -160,44 +161,6 @@ impl Display for TypeLib {
         for (name, ty) in &self.types {
             writeln!(f, "data {name:0$} : {ty}\n", width)?;
         }
-        Ok(())
-    }
-}
-
-#[cfg(feature = "base85")]
-impl fmt::UpperHex for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {:-}", self.id())?;
-        writeln!(f, "Name: {}", self.name)?;
-        write!(f, "Dependencies: ")?;
-        if self.dependencies.is_empty() {
-            writeln!(f, "~")?;
-        } else {
-            writeln!(f)?;
-        }
-        let mut iter = self.dependencies.iter();
-        while let Some(dep) = iter.next() {
-            write!(f, "  {:-}", dep.id)?;
-            if iter.len() > 0 {
-                writeln!(f, ",")?;
-            } else {
-                writeln!(f)?;
-            }
-        }
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let data = base85::encode(&data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
         Ok(())
     }
 }

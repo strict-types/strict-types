@@ -26,7 +26,7 @@ extern crate strict_encoding;
 use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::stl::std_stl;
 use strict_types::typesys::SystemBuilder;
-use strict_types::{LibBuilder, SymbolicSys, TypeLib};
+use strict_types::{BindleContent, LibBuilder, SymbolicSys, TypeLib};
 
 fn lib() -> TypeLib {
     let std = std_stl();
@@ -43,7 +43,7 @@ fn sys() -> SymbolicSys {
         for err in errors {
             eprintln!("Error: {err}");
         }
-        panic!()
+        panic!();
     })
 }
 
@@ -51,14 +51,14 @@ fn sys() -> SymbolicSys {
 fn library() {
     let lib = lib();
     println!("{lib}");
-    println!("{lib:X}");
+    println!("{}", lib.bindle());
 }
 
 #[test]
 fn symbols() {
     let sys = sys();
     println!("{sys}");
-    println!("{sys:X}");
+    println!("{}", sys.bindle());
 }
 
 #[test]

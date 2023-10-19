@@ -57,8 +57,12 @@ pub mod typesys;
 pub mod value;
 pub mod stl;
 pub mod layout;
+mod bindle;
 
 pub use ast::{Cls, PrimitiveRef, SemId, Translate, Ty, TypeRef};
+pub use bindle::{
+    Bindle, BindleContent, BindleParseError, Cert, ContentSigs, IdSuite, Identity, LoadError,
+};
 pub use typelib::{
     CompileError, Dependency, LibBuilder, LibRef, SymbolRef, SymbolicLib, TranspileError,
     TranspileRef, TypeLib, TypeLibId,
