@@ -32,9 +32,9 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type";
+    "urn:ubideco:stl:DvfhVzvEhGDRH4SqHeHCZazYtga1iTd5gMRjeKcREqyy#evident-solo-master";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby#south-strong-welcome";
+    "urn:ubideco:stl:E2crdJVDeAf23qaEsg3U36m1b6ScRwJAVLaMkh3Pzik9#serial-linda-extend";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)

@@ -105,9 +105,9 @@ impl SystemBuilder {
             .extend(lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(dep)));
 
         for (ty_name, ty) in lib.types {
-            let id = ty.sem_id_named(&ty_name);
+            let id = ty.id(true);
             let ty = ty.translate(&mut self, &())?;
-            let info = SymTy::named(lib.name.clone(), ty_name.clone(), ty);
+            let info = SymTy::named(lib.name.clone(), ty_name, ty);
             self.types.insert(id, info);
         }
 
@@ -141,7 +141,7 @@ impl SystemBuilder {
     fn translate_inline<Ref: LibSubref>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
     where Ref: Translate<SemId, Context = (), Builder = SystemBuilder, Error = Error> {
         // compute id
-        let id = inline_ty.sem_id_unnamed();
+        let id = inline_ty.id(false);
         // run for nested types
         let ty = inline_ty.translate(self, &())?;
         // add to system
