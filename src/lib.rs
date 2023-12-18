@@ -60,8 +60,10 @@ pub mod layout;
 mod bindle;
 
 pub use ast::{Cls, PrimitiveRef, SemId, Translate, Ty, TypeRef};
+#[cfg(feature = "fs")]
+pub use bindle::LoadError;
 pub use bindle::{
-    Bindle, BindleContent, BindleParseError, Cert, ContentSigs, IdSuite, Identity, LoadError,
+    Bindle, BindleContent, BindleParseError, ContentSigs, IdSuite, IdentityCert, Sig,
 };
 pub use typelib::{
     CompileError, Dependency, LibBuilder, LibRef, SymbolRef, SymbolicLib, TranspileError,
