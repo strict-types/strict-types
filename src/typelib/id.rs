@@ -164,3 +164,49 @@ impl TypeLib {
         TypeLibId::from_byte_array(hasher.finalize())
     }
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::LibBuilder;
+
+    #[test]
+    fn invariance() {
+        const LIB_A: &str = "InvarianceA";
+        #[derive(StrictType, StrictEncode, Default)]
+        #[strict_type(lib = LIB_A)]
+        struct TypeA(u8);
+
+        const LIB_AA: &str = "InvarianceAA";
+        #[derive(StrictType, StrictEncode, Default)]
+        #[strict_type(lib = LIB_AA)]
+        struct TypeAA(u8);
+
+        const LIB_B: &str = "InvarianceB";
+        #[derive(StrictType, StrictEncode, Default)]
+        #[strict_type(lib = LIB_B)]
+        struct TypeB(TypeA);
+
+        const LIB_BB: &str = "InvarianceBB";
+        #[derive(StrictType, StrictEncode, Default)]
+        #[strict_type(lib = LIB_BB)]
+        struct TypeBB(TypeAA);
+
+        let lib_a = LibBuilder::new(libname!(LIB_A), []).transpile::<TypeA>().compile().unwrap();
+        let lib_aa = LibBuilder::new(libname!(LIB_AA), []).transpile::<TypeAA>().compile().unwrap();
+        let lib_b =
+            LibBuilder::new(libname!(LIB_B), [Dependency::with(lib_a.id(), libname!(LIB_A))])
+                .transpile::<TypeB>()
+                .compile()
+                .unwrap();
+        let lib_bb =
+            LibBuilder::new(libname!(LIB_BB), [Dependency::with(lib_aa.id(), libname!(LIB_AA))])
+                .transpile::<TypeBB>()
+                .compile()
+                .unwrap();
+        assert_eq!(
+            lib_b.types.first_key_value().unwrap().1.id(true),
+            lib_bb.types.first_key_value().unwrap().1.id(true)
+        );
+    }
+}
