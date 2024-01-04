@@ -89,6 +89,13 @@ impl PrimitiveRef for SemId {
 
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn sem_id(&self, name: Option<&TypeName>) -> SemId {
+        // For unnamed 1-tuples we must not produce a new sem id
+        if name.is_none() {
+            if let Some(inner) = self.as_wrapped_ty() {
+                return inner.sem_id(None);
+            }
+        }
+
         let tag = sha2::Sha256::new_with_prefix(SEM_ID_TAG).finalize();
         let mut hasher = sha2::Sha256::new();
         hasher.commit_consume(tag);
