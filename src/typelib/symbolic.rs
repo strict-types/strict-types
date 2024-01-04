@@ -278,7 +278,7 @@ impl SymbolicLib {
                 index = ctx.index;
                 extern_types = ctx.extern_types;
                 found = true;
-                let id = ty.id(Some(name));
+                let id = ty.sem_id(Some(name));
                 index.insert(name.clone(), id);
                 new_types.insert(name.clone(), ty);
                 old_types.remove(name);
@@ -318,7 +318,7 @@ impl TypeLib {
     pub fn to_symbolic(&self) -> Result<SymbolicLib, SymbolError> {
         let lib_index = self.dependencies.iter().map(|dep| (dep.id, dep.name.clone())).collect();
         let reverse_index =
-            self.types.iter().map(|(name, ty)| (ty.id(Some(name)), name.clone())).collect();
+            self.types.iter().map(|(name, ty)| (ty.sem_id(Some(name)), name.clone())).collect();
         let ctx = SymbolContext {
             reverse_index,
             lib_index,

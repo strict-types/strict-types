@@ -63,7 +63,7 @@ impl CommitConsume for SemId {
 }
 
 impl Default for SemId {
-    fn default() -> Self { Ty::<SemId>::UNIT.id(None) }
+    fn default() -> Self { Ty::<SemId>::UNIT.sem_id(None) }
 }
 
 impl ToBaid58<32> for SemId {
@@ -91,16 +91,16 @@ pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
 impl TypeRef for SemId {
     fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
-    fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.id(None) == *self }
+    fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.sem_id(None) == *self }
 }
 
 impl PrimitiveRef for SemId {
-    fn byte() -> Self { Ty::<Self>::BYTE.id(None) }
-    fn unicode_char() -> Self { Ty::<Self>::UNICODE.id(None) }
+    fn byte() -> Self { Ty::<Self>::BYTE.sem_id(None) }
+    fn unicode_char() -> Self { Ty::<Self>::UNICODE.sem_id(None) }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub fn id(&self, name: Option<&TypeName>) -> SemId {
+    pub fn sem_id(&self, name: Option<&TypeName>) -> SemId {
         let tag = sha2::Sha256::new_with_prefix(SEM_ID_TAG).finalize();
         let mut hasher = sha2::Sha256::new();
         hasher.commit_consume(tag);
