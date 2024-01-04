@@ -50,18 +50,6 @@ pub struct SemId(
     Bytes32,
 );
 
-#[doc(hidden)]
-impl CommitConsume for SemId {
-    /// Should be used only for consuming other SemId without hashing.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the length of the data is not exactly 32 bytes.
-    fn commit_consume(&mut self, data: impl AsRef<[u8]>) {
-        *self = Self(Bytes32::from_slice_unsafe(data))
-    }
-}
-
 impl Default for SemId {
     fn default() -> Self { Ty::<SemId>::UNIT.sem_id(None) }
 }
