@@ -219,6 +219,17 @@ impl<Ref: TypeRef> Ty<Ref> {
             && variants.last_key_value().unwrap().0 == &Variant { name: fname!("some"), tag: 1 }
         )
     }
+
+    pub fn as_wrapped_ty(&self) -> Option<&Ty<Ref>> {
+        if let Ty::Tuple(fields) = self {
+            if fields.len() == 1 {
+                if let Some(inner) = fields.first() {
+                    return inner.as_ty();
+                }
+            }
+        }
+        return None;
+    }
 }
 
 impl<Ref: TypeRef> Display for Ty<Ref>
