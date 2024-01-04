@@ -27,7 +27,7 @@ mod iter;
 mod encoding;
 mod translate;
 
-pub use id::{HashId, SemId, SEM_ID_TAG};
+pub use id::{SemCommit, SemId, SEM_ID_TAG};
 pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use translate::Translate;

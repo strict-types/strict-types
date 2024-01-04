@@ -30,7 +30,7 @@ use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use super::{LibBuilder, SymbolContext};
-use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
+use crate::ast::{PrimitiveRef, SemCommit, SEM_ID_TAG};
 use crate::typelib::{CompileError, ExternRef, NestedContext, SymbolError, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
@@ -114,7 +114,7 @@ impl TranspileRef {
             let mut hasher = sha2::Sha256::new();
             hasher.update(tag);
             hasher.update(tag);
-            self.hash_id(&mut hasher);
+            self.sem_commit(&mut hasher);
             SemId::from_byte_array(hasher.finalize())
         }
     }

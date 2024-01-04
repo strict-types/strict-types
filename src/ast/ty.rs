@@ -31,12 +31,12 @@ use strict_encoding::{
     FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
 };
 
-use super::id::HashId;
+use super::id::SemCommit;
 use crate::ast::Iter;
 
 /// Glue for constructing ASTs.
 pub trait TypeRef:
-    HashId + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
+    SemCommit + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
 {
     fn as_ty(&self) -> Option<&Ty<Self>> { None }
     fn type_refs(&self) -> Iter<Self> { Iter::from(self) }

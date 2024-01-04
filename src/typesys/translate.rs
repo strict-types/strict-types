@@ -26,11 +26,11 @@ use std::fmt::{self, Display, Formatter};
 use amplify::confinement;
 use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
+use crate::ast::SemCommit;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
 use crate::typesys::symbols::SymbolicSys;
 use crate::typesys::{SymTy, TypeFqn};
-use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
+use crate::{CommitConsume, Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
 /// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -55,8 +55,8 @@ impl TypeSymbol {
     }
 }
 
-impl HashId for TypeSymbol {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.id.hash_id(hasher); }
+impl SemCommit for TypeSymbol {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) { self.id.sem_commit(hasher); }
 }
 
 impl TypeRef for TypeSymbol {}
