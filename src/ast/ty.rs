@@ -228,7 +228,7 @@ impl<Ref: TypeRef> Ty<Ref> {
                 }
             }
         }
-        return None;
+        None
     }
 }
 

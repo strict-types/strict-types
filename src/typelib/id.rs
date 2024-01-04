@@ -87,7 +87,7 @@ impl SemCommit for TypeLib {
         }
         hasher.commit_consume(self.types.len_u16().to_le_bytes());
         for (name, ty) in &self.types {
-            let sem_id = ty.sem_id(Some(name));
+            let sem_id = ty.sem_id_named(name);
             sem_id.sem_commit(hasher);
         }
     }

@@ -225,7 +225,7 @@ impl BuilderParent for LibBuilder {
                 TranspileRef::Named(name)
             }
             (lib, Some(name)) => {
-                let id = ty.sem_id(Some(&name));
+                let id = ty.sem_id_named(&name);
                 self.extern_types.entry(lib.clone()).or_default().insert(id, name.clone());
                 let lib_id = self.dependency_id(&lib);
                 TranspileRef::Extern(SymbolRef::with(lib, name, lib_id, id))

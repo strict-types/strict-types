@@ -32,7 +32,8 @@ use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
 use crate::ast::ty::{Field, UnionVariants, UnnamedFields};
 use crate::ast::{EnumVariants, NamedFields, PrimitiveRef};
-use crate::{Cls, CommitConsume, Ty, TypeRef};
+use crate::typelib::LibSubref;
+use crate::{Cls, CommitConsume, TranspileRef, Ty, TypeRef};
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
@@ -51,7 +52,7 @@ pub struct SemId(
 );
 
 impl Default for SemId {
-    fn default() -> Self { Ty::<SemId>::UNIT.sem_id(None) }
+    fn default() -> Self { Ty::<SemId>::UNIT.sem_id_unnamed() }
 }
 
 impl ToBaid58<32> for SemId {
@@ -79,23 +80,16 @@ pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
 
 impl TypeRef for SemId {
     fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
-    fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.sem_id(None) == *self }
+    fn is_byte(&self) -> bool { Self::byte() == *self || Ty::<Self>::U8.sem_id_unnamed() == *self }
 }
 
 impl PrimitiveRef for SemId {
-    fn byte() -> Self { Ty::<Self>::BYTE.sem_id(None) }
-    fn unicode_char() -> Self { Ty::<Self>::UNICODE.sem_id(None) }
+    fn byte() -> Self { Ty::<Self>::BYTE.sem_id_unnamed() }
+    fn unicode_char() -> Self { Ty::<Self>::UNICODE.sem_id_unnamed() }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub fn sem_id(&self, name: Option<&TypeName>) -> SemId {
-        // For unnamed 1-tuples we must not produce a new sem id
-        if name.is_none() {
-            if let Some(inner) = self.as_wrapped_ty() {
-                return inner.sem_id(None);
-            }
-        }
-
+    fn sem_id_inner(&self, name: Option<&TypeName>) -> SemId {
         let tag = sha2::Sha256::new_with_prefix(SEM_ID_TAG).finalize();
         let mut hasher = sha2::Sha256::new();
         hasher.commit_consume(tag);
@@ -106,6 +100,33 @@ impl<Ref: TypeRef> Ty<Ref> {
         self.sem_commit(&mut hasher);
         SemId::from_byte_array(hasher.finalize())
     }
+}
+
+impl Ty<SemId> {
+    pub fn sem_id_unnamed(&self) -> SemId {
+        // For unnamed 1-tuples we must not produce a new sem id
+        if let Some(inner) = self.as_wrapped_ty() {
+            return inner.sem_id_unnamed();
+        }
+
+        self.sem_id_inner(None)
+    }
+}
+
+impl<Ref: LibSubref> Ty<Ref> {
+    pub fn sem_id_named(&self, name: &TypeName) -> SemId { self.sem_id_inner(Some(name)) }
+    pub fn sem_id_unnamed(&self) -> SemId {
+        // For unnamed 1-tuples we must not produce a new sem id
+        if let Some(inner) = self.as_wrapped_ty() {
+            return inner.sem_id_unnamed();
+        }
+        self.sem_id_inner(None)
+    }
+}
+
+// TODO: Make sure we do a right thing here - a valid sem id can be produced from the TranspileRef
+impl Ty<TranspileRef> {
+    pub fn sem_id_named(&self, name: &TypeName) -> SemId { self.sem_id_inner(Some(name)) }
 }
 
 pub trait SemCommit {
