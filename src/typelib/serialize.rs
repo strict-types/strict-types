@@ -112,6 +112,7 @@ impl SymbolicLib {
 
 impl Display for SymbolicLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writeln!(f, "@context")?;
         writeln!(f, "typelib {}", self.name())?;
         writeln!(f)?;
         for dep in self.dependencies() {
