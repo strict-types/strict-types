@@ -14,15 +14,15 @@ exclude = [".github"]
 
 [[bin]]
 name = "std-stl"
-required-features = ["base64"]
+required-features = ["base85"]
 
 [[bin]]
 name = "strict-stl"
-required-features = ["base64"]
+required-features = ["base85"]
 
 [[test]]
 name = "reflect"
-required-features = ["base64"]
+required-features = ["base85"]
 
 [dependencies]
 amplify = { version = "4.5.0", features = ["apfloat"] }
@@ -31,7 +31,7 @@ indexmap = "2.0.2"
 baid58 = "0.4.4"
 half = "2.2.0"
 sha2 = "0.10.8"
-base64 = { version = "0.21.4", optional = true }
+base85 = { version = "2.0.0", optional = true }
 serde_crate = { package = "serde", version = "1", optional = true }
 serde_json = { version = "1.0", optional = true }
 serde_yaml = { version = "0.9", optional = true }
@@ -39,7 +39,7 @@ toml = { version = "0.8.2", optional = true }
 
 [features]
 default = []
-all = ["serde", "base64"]
+all = ["serde", "base85"]
 serde = [
     "serde_crate",
     "serde_json", "serde_yaml", "toml",

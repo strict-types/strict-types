@@ -57,7 +57,7 @@ impl TypeLib {
             StlFormat::Binary => {
                 self.strict_encode(StrictWriter::with(u24::MAX.into_usize(), file))?;
             }
-            #[cfg(feature = "base64")]
+            #[cfg(feature = "base85")]
             StlFormat::Armored => {
                 writeln!(file, "{self:X}")?;
             }
@@ -162,11 +162,9 @@ impl Display for TypeLib {
     }
 }
 
-#[cfg(feature = "base64")]
+#[cfg(feature = "base85")]
 impl fmt::UpperHex for TypeLib {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use base64::Engine;
-
         writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
         writeln!(f, "Id: {:-}", self.id())?;
         writeln!(f, "Name: {}", self.name)?;
@@ -188,8 +186,7 @@ impl fmt::UpperHex for TypeLib {
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
+        let data = base85::encode(&data);
         let mut data = data.as_str();
         while data.len() >= 64 {
             let (line, rest) = data.split_at(64);

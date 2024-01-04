@@ -144,11 +144,10 @@ impl Display for TypeSystem {
     }
 }
 
-#[cfg(feature = "base64")]
+#[cfg(feature = "base85")]
 impl fmt::UpperHex for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::confinement::U32;
-        use base64::Engine;
 
         let id = self.id();
 
@@ -157,8 +156,7 @@ impl fmt::UpperHex for TypeSystem {
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<U32>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
+        let data = base85::encode(&data);
         let mut data = data.as_str();
         while data.len() >= 64 {
             let (line, rest) = data.split_at(64);
