@@ -536,7 +536,7 @@ where Ref: Display
             write!(f, "{variant}")?;
             if last_tag != variant.tag {
                 last_tag = variant.tag;
-                write!(f, ":{last_tag} ")?;
+                write!(f, "={last_tag} ")?;
             } else {
                 f.write_str(" ")?;
             }
@@ -554,7 +554,7 @@ where Ref: Display
             write!(f, "{variant}")?;
             if last_tag != variant.tag {
                 last_tag = variant.tag;
-                write!(f, ":{last_tag} ")?;
+                write!(f, "={last_tag} ")?;
             } else {
                 f.write_str(" ")?;
             }
@@ -618,13 +618,24 @@ impl EnumVariants {
 impl Display for EnumVariants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         let mut iter = self.iter();
+        let mut last_tag = 0;
         if let Some(variant) = iter.next() {
-            write!(f, "{variant:#}")?;
+            write!(f, "{variant}")?;
+            if variant.tag != last_tag {
+                last_tag = variant.tag;
+                write!(f, "={last_tag}")?;
+            }
+            last_tag += 1;
         }
         let mut chunk_size = None;
         loop {
             for variant in iter.by_ref().take(chunk_size.unwrap_or(3)) {
-                write!(f, " | {variant:#}")?;
+                write!(f, " | {variant}")?;
+                if variant.tag != last_tag {
+                    last_tag = variant.tag;
+                    write!(f, "={last_tag}")?;
+                }
+                last_tag += 1;
             }
             chunk_size = Some(4);
             if iter.len() == 0 {
