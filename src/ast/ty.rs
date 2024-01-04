@@ -365,7 +365,7 @@ where Ref: Display
         for field in iter {
             Display::fmt(field, f)?;
             if len >= 3 {
-                f.write_str("\n                       , ")?;
+                f.write_str("\n                      , ")?;
             } else {
                 f.write_str(", ")?;
             }
@@ -548,7 +548,7 @@ where Ref: Display
             } else {
                 Display::fmt(ty, f)?;
             }
-            write!(f, "\n                       | ")?;
+            write!(f, "\n                      | ")?;
         }
         if let Some((variant, ty)) = last {
             write!(f, "{variant}")?;
@@ -630,7 +630,7 @@ impl Display for EnumVariants {
             if iter.len() == 0 {
                 break;
             }
-            write!(f, "\n                      ")?;
+            write!(f, "\n                     ")?;
         }
         writeln!(f)
     }

@@ -138,7 +138,7 @@ impl Display for TypeSystem {
         writeln!(f, "typesys -- {}", self.id())?;
         writeln!(f)?;
         for (id, ty) in &self.0 {
-            writeln!(f, "data {id:-} :: {:-}", ty)?;
+            writeln!(f, "data {id:-} : {:-}", ty)?;
         }
         Ok(())
     }

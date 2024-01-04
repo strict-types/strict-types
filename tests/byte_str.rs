@@ -42,7 +42,7 @@ fn reflect() {
 
 -- no dependencies
 
-data ByteStr          :: [Byte]
+data ByteStr          : [Byte]
 "
     );
 }

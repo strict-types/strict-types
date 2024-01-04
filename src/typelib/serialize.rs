@@ -135,7 +135,7 @@ impl Display for SymbolicLib {
             if f.alternate() {
                 writeln!(f, "-- {:0}", ty.id(Some(name)))?;
             }
-            write!(f, "data {name:0$} :: ", f.width().unwrap_or(16))?;
+            write!(f, "data {name:0$} : ", f.width().unwrap_or(16))?;
             Display::fmt(ty, f)?;
             writeln!(f)?;
         }
@@ -156,7 +156,7 @@ impl Display for TypeLib {
         writeln!(f)?;
         writeln!(f)?;
         for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} :: {ty}")?;
+            writeln!(f, "data {name:16} : {ty}")?;
         }
         Ok(())
     }
