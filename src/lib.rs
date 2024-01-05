@@ -55,6 +55,7 @@ pub mod typelib;
 pub mod typesys;
 pub mod value;
 pub mod stl;
+pub mod typetree;
 
 pub use ast::{Cls, PrimitiveRef, SemId, Translate, Ty, TypeRef};
 pub use typelib::{
@@ -62,6 +63,7 @@ pub use typelib::{
     TranspileRef, TypeLib, TypeLibId,
 };
 pub use typesys::{SymbolicSys, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};
+pub use typetree::TypeTree;
 pub use util::{parse_args, BuildFragment, PreFragment, SemVer, StlFormat, UnknownFormat, Urn};
 pub use value::{decode, ston, typify, KeyStep, Path, PathError, Step, StrictVal};
 

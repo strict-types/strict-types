@@ -20,27 +20,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-mod id;
-mod type_lib;
-mod compile;
-mod serialize;
 mod builder;
-mod symbolic;
-mod translate;
+mod tree;
 
-pub use builder::LibBuilder;
-pub(crate) use compile::NestedContext;
-#[allow(deprecated)]
-pub use compile::TranslateError;
-pub use compile::{CompileError, TypeIndex};
-pub use id::TypeLibId;
-pub use symbolic::{ExternTypes, SymbolRef, SymbolicLib, TranspileError, TranspileRef};
-use translate::SymbolContext;
-pub use translate::SymbolError;
-pub(crate) use type_lib::TypeMap;
-pub use type_lib::{
-    Dependency, ExternRef, InlineRef, InlineRef1, InlineRef2, LibRef, LibSubref, TypeLib,
-};
-
-#[deprecated(since = "1.3.0", note = "import from the crate root")]
-pub use super::parse_args;
+pub use builder::TreeBuilder;
+pub use tree::{TyInner, TypeTree};

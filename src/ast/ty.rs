@@ -22,7 +22,7 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
-use std::ops::Deref;
+use std::ops::{Deref, DerefMut};
 
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
@@ -146,6 +146,10 @@ pub enum Ty<Ref: TypeRef> {
 
     #[strict_type(tag = 10)]
     Map(Ref, Ref, Sizing),
+}
+
+impl<Ref: TypeRef> StrictDumb for Box<Ty<Ref>> {
+    fn strict_dumb() -> Self { Box::new(Ty::UNIT) }
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
@@ -299,6 +303,15 @@ pub struct Field<Ref: TypeRef> {
     pub ty: Ref,
 }
 
+impl<Ref: TypeRef> Field<Ref> {
+    pub fn new(name: impl Into<FieldName>, ty: impl Into<Ref>) -> Self {
+        Field {
+            name: name.into(),
+            ty: ty.into(),
+        }
+    }
+}
+
 impl<Ref: TypeRef> Display for Field<Ref>
 where Ref: Display
 {
@@ -335,6 +348,10 @@ impl<Ref: TypeRef> Deref for NamedFields<Ref> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<Ref: TypeRef> DerefMut for NamedFields<Ref> {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
 impl<Ref: TypeRef> TryFrom<Vec<Field<Ref>>> for NamedFields<Ref> {
     type Error = confinement::Error;
 
@@ -358,6 +375,8 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a NamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> NamedFields<Ref> {
+    pub fn with(field: Field<Ref>) -> Self { Self(Confined::with(field)) }
+
     pub fn into_inner(self) -> Vec<Field<Ref>> { self.0.into_inner() }
 
     pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.get(pos as usize).map(|f| &f.ty) }
@@ -414,6 +433,10 @@ impl<Ref: TypeRef> Deref for UnnamedFields<Ref> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<Ref: TypeRef> DerefMut for UnnamedFields<Ref> {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
 impl<Ref: TypeRef> TryFrom<Vec<Ref>> for UnnamedFields<Ref> {
     type Error = confinement::Error;
 
@@ -437,6 +460,8 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a UnnamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> UnnamedFields<Ref> {
+    pub fn with(ty: Ref) -> Self { Self(Confined::with(ty)) }
+
     pub fn into_inner(self) -> Vec<Ref> { self.0.into_inner() }
 
     pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.get(pos as usize) }
@@ -485,6 +510,10 @@ impl<Ref: TypeRef> Deref for UnionVariants<Ref> {
     fn deref(&self) -> &Self::Target { &self.0 }
 }
 
+impl<Ref: TypeRef> DerefMut for UnionVariants<Ref> {
+    fn deref_mut(&mut self) -> &mut Self::Target { &mut self.0 }
+}
+
 impl<Ref: TypeRef> TryFrom<BTreeMap<Variant, Ref>> for UnionVariants<Ref> {
     type Error = confinement::Error;
 
@@ -508,6 +537,8 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a UnionVariants<Ref> {
 }
 
 impl<Ref: TypeRef> UnionVariants<Ref> {
+    pub fn with(variant: Variant, ty: Ref) -> Self { Self(Confined::with_key_value(variant, ty)) }
+
     pub fn into_inner(self) -> BTreeMap<Variant, Ref> { self.0.into_inner() }
 
     pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Variant, Ref> {
@@ -581,8 +612,9 @@ where Ref: Display
     }
 }
 
-#[derive(Wrapper, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
+#[derive(Wrapper, WrapperMut, Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[wrapper(Deref)]
+#[wrapper_mut(DerefMut)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, dumb = variants!("dumb"))]
 #[cfg_attr(
@@ -615,6 +647,8 @@ impl<'a> IntoIterator for &'a EnumVariants {
 }
 
 impl EnumVariants {
+    pub fn with(variant: Variant) -> Self { Self(Confined::with(variant)) }
+
     pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
 
     pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {

@@ -99,10 +99,6 @@ pub enum TranspileRef {
     Extern(SymbolRef),
 }
 
-impl StrictDumb for Box<Ty<TranspileRef>> {
-    fn strict_dumb() -> Self { Box::new(Ty::UNIT) }
-}
-
 impl TranspileRef {
     pub fn unit() -> Self { Ty::UNIT.into() }
 

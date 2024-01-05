@@ -26,7 +26,7 @@ extern crate strict_encoding;
 use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::stl::std_stl;
 use strict_types::typesys::SystemBuilder;
-use strict_types::{LibBuilder, TypeLib};
+use strict_types::{LibBuilder, TypeLib, TypeTree};
 
 #[test]
 fn reflect() {
@@ -49,3 +49,6 @@ fn reflect() {
         }
     }
 }
+
+#[test]
+fn reflect_lib() { let _tt = TypeTree::transpile::<TypeLib>(); }

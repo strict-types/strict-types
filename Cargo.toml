@@ -26,7 +26,7 @@ required-features = ["base64"]
 
 [dependencies]
 amplify = { version = "4.5.0", features = ["apfloat"] }
-strict_encoding = { version = "2.6.1", features = ["derive", "float"] }
+strict_encoding = { version = "2.6.2", features = ["derive", "float"] }
 indexmap = "2.0.2"
 baid58 = "0.4.4"
 half = "2.2.0"
@@ -49,3 +49,6 @@ serde = [
 [package.metadata.docs.rs]
 all-features = true
 rustc-args = ["--cfg", "docsrs"]
+
+[patch.crates-io]
+strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "display" }

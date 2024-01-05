@@ -270,7 +270,7 @@ pub enum StrictVal {
     Set(Vec<StrictVal>),
 
     // May be used to represent structures.
-    // it is not a hash/tree map since StrictVal doesn't implement Hash
+    // it is not a hash/typetree map since StrictVal doesn't implement Hash
     // TODO: Create dedicated key type and convert to a HashMap
     Map(Vec<(StrictVal, StrictVal)>),
 }
