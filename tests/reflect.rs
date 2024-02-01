@@ -26,26 +26,64 @@ extern crate strict_encoding;
 use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::stl::std_stl;
 use strict_types::typesys::SystemBuilder;
-use strict_types::{LibBuilder, TypeLib};
+use strict_types::{LibBuilder, SymbolicSys, TypeLib};
 
-#[test]
-fn reflect() {
+fn lib() -> TypeLib {
     let std = std_stl();
     let builder =
         LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
-    let lib = builder.compile().unwrap();
+    builder.compile().unwrap()
+}
 
+fn sys() -> SymbolicSys {
+    let std = std_stl();
+    let lib = lib();
     let builder = SystemBuilder::new().import(lib).unwrap().import(std).unwrap();
     match builder.finalize() {
-        Ok(sys) => {
-            println!("{sys}");
-            println!("{sys:X}");
-        }
+        Ok(sys) => sys,
         Err(errors) => {
             for err in errors {
                 eprintln!("Error: {err}");
             }
             panic!()
+        }
+    }
+}
+
+#[test]
+fn library() {
+    let lib = lib();
+    println!("{lib}");
+    println!("{lib:X}");
+}
+
+#[test]
+fn symbols() {
+    let sys = sys();
+    println!("{sys}");
+    println!("{sys:X}");
+}
+
+#[test]
+fn type_tree() {
+    use std::io::{stdout, Write};
+
+    let sys = sys();
+    let tt = sys.type_tree("StrictTypes.TypeLib").unwrap();
+    let mut f = stdout();
+    let mut counter = 0;
+    for (depth, ty, fqn) in tt {
+        write!(f, "{: ^1$}", "", depth * 2).ok();
+        if let Some(fqn) = fqn {
+            write!(f, "{fqn: <22}: ").ok();
+        } else {
+            write!(f, "{: >22}: ", "_").ok();
+        }
+        writeln!(f, "{ty}").ok();
+
+        counter += 1;
+        if counter > 10 {
+            break;
         }
     }
 }

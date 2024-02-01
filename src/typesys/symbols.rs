@@ -29,7 +29,7 @@ use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
 use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol, TypeSysId};
 use crate::typify::TypeSpec;
-use crate::{Dependency, SemId, Translate, Ty, TypeSystem};
+use crate::{ast, Dependency, SemId, Translate, Ty, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
@@ -172,6 +172,12 @@ impl SymbolicSys {
         self.types.get(sem_id)
     }
 
+    pub fn type_tree(&self, spec: impl Into<TypeSpec>) -> Option<TypeTree<'_>> {
+        let sem_id = self.to_sem_id(spec)?;
+        let _ = self.types.get(sem_id)?;
+        Some(TypeTree { sem_id, sys: self })
+    }
+
     pub fn resolve(&self, fqn: impl Into<TypeFqn>) -> Option<&SemId> { self.symbols.get(fqn) }
 
     pub fn lookup(&self, sem_id: SemId) -> Option<&TypeFqn> { self.symbols.lookup(sem_id) }
@@ -229,5 +235,99 @@ impl fmt::UpperHex for SymbolicSys {
 
         writeln!(f, "\n-----END STRICT SYMBOLIC TYPES-----")?;
         Ok(())
+    }
+}
+
+#[derive(Copy, Clone, Eq, PartialEq, Debug)]
+pub struct TypeTree<'sys> {
+    sem_id: SemId,
+    sys: &'sys SymbolicSys,
+}
+
+impl<'sys> TypeTree<'sys> {
+    pub fn get(&self) -> &Ty<SemId> { self.sys.get(self.sem_id).expect("inconsistent type tree") }
+
+    pub fn iter(&self) -> TypeTreeIter<'sys> {
+        TypeTreeIter {
+            depth: 0,
+            path: vec![],
+            last: Some(self.sem_id),
+            sys: &self.sys,
+            iter: None,
+        }
+    }
+}
+
+impl<'sys> IntoIterator for TypeTree<'sys> {
+    type Item = (usize, &'sys Ty<SemId>, Option<&'sys TypeFqn>);
+    type IntoIter = TypeTreeIter<'sys>;
+
+    fn into_iter(self) -> Self::IntoIter { self.iter() }
+}
+
+impl<'tree, 'sys> IntoIterator for &'tree TypeTree<'sys> {
+    type Item = (usize, &'sys Ty<SemId>, Option<&'sys TypeFqn>);
+    type IntoIter = TypeTreeIter<'sys>;
+
+    fn into_iter(self) -> Self::IntoIter { self.iter() }
+}
+
+impl<'sys> Display for TypeTree<'sys> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        for (depth, ty, fqn) in self {
+            write!(f, "{: ^0$}", depth * 2)?;
+            if let Some(fqn) = fqn {
+                write!(f, "{fqn}:")?;
+            }
+            writeln!(f, "{ty}")?;
+        }
+        Ok(())
+    }
+}
+
+pub struct TypeTreeIter<'sys> {
+    depth: usize,
+    path: Vec<SemId>,
+    last: Option<SemId>,
+    sys: &'sys SymbolicSys,
+    iter: Option<ast::IntoIter<SemId>>,
+}
+
+impl<'sys> TypeTreeIter<'sys> {
+    fn get(&self) -> Option<&Ty<SemId>> {
+        Some(self.sys.get(self.last?).expect("inconsistent type tree"))
+    }
+}
+
+impl<'sys> Iterator for TypeTreeIter<'sys> {
+    type Item = (usize, &'sys Ty<SemId>, Option<&'sys TypeFqn>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let id = if self.iter.is_none() {
+            let iter = self.get()?.clone().into_iter();
+            self.iter = Some(iter);
+            self.last?
+        } else {
+            let Some(iter) = &mut self.iter else {
+                unreachable!()
+            };
+            match iter.next() {
+                None => {
+                    self.iter = None;
+                    self.depth -= 1;
+                    self.last = self.path.pop();
+                    self.last?
+                }
+                Some(id) => {
+                    self.path.push(self.last?);
+                    self.last = Some(id);
+                    self.depth += 1;
+                    id
+                }
+            }
+        };
+        let ty = self.sys.get(id).expect("inconsistent type system");
+        let fqn = self.sys.symbols.lookup(id);
+        return Some((self.depth, ty, fqn));
     }
 }

@@ -44,7 +44,12 @@ pub struct TypeFqn {
 }
 
 impl TypeFqn {
-    pub fn with(lib: LibName, name: TypeName) -> TypeFqn { TypeFqn { lib, name } }
+    pub fn with(lib: impl Into<LibName>, name: impl Into<TypeName>) -> TypeFqn {
+        TypeFqn {
+            lib: lib.into(),
+            name: name.into(),
+        }
+    }
 }
 
 impl From<&'static str> for TypeFqn {
