@@ -26,21 +26,21 @@ extern crate strict_encoding;
 use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::stl::std_stl;
 use strict_types::typesys::SystemBuilder;
-use strict_types::{LibBuilder, TypeLib};
+use strict_types::{LibBuilder, SymbolicSys, TypeLib};
 
-#[test]
-fn reflect() {
+fn lib() -> TypeLib {
     let std = std_stl();
     let builder =
         LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
-    let lib = builder.compile().unwrap();
+    builder.compile().unwrap()
+}
 
+fn sys() -> SymbolicSys {
+    let std = std_stl();
+    let lib = lib();
     let builder = SystemBuilder::new().import(lib).unwrap().import(std).unwrap();
     match builder.finalize() {
-        Ok(sys) => {
-            println!("{sys}");
-            println!("{sys:X}");
-        }
+        Ok(sys) => sys,
         Err(errors) => {
             for err in errors {
                 eprintln!("Error: {err}");
@@ -48,4 +48,25 @@ fn reflect() {
             panic!()
         }
     }
+}
+
+#[test]
+fn library() {
+    let lib = lib();
+    println!("{lib}");
+    println!("{lib:X}");
+}
+
+#[test]
+fn symbols() {
+    let sys = sys();
+    println!("{sys}");
+    println!("{sys:X}");
+}
+
+#[test]
+fn type_tree() {
+    let sys = sys();
+    let tt = sys.type_tree("StrictTypes.TypeLib").unwrap();
+    println!("{tt}");
 }

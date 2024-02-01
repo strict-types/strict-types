@@ -200,6 +200,7 @@ impl<Ref: TypeRef> Ty<Ref> {
             false
         }
     }
+    pub fn is_newtype(&self) -> bool { matches!(self, Ty::Tuple(fields) if fields.len() == 1) }
     pub fn is_compound(&self) -> bool {
         match self {
             Ty::Tuple(fields) if fields.len() > 1 => true,
@@ -268,9 +269,10 @@ impl<Ref: TypeRef> Ty<Ref> {
             Ty::Struct(fields) => fields.ty_by_pos(pos),
             Ty::Tuple(fields) => fields.ty_by_pos(pos),
             // TODO: Handle map type
-            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
+            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(ty, _, _) if pos == 0 => {
                 Some(ty)
             }
+            Ty::Map(_, ty, _) if pos == 1 => Some(ty),
             _ => None,
         }
     }

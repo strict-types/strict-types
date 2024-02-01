@@ -74,6 +74,10 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn type_refs(&self) -> Iter<Ref> { Iter::from(self) }
 }
 
+impl<Ref: TypeRef> Ty<Ref> {
+    pub fn iter(&self) -> Iter<'_, Ref> { self.into_iter() }
+}
+
 impl<'ty, Ref: TypeRef> From<&'ty Ty<Ref>> for Iter<'ty, Ref> {
     fn from(ty: &'ty Ty<Ref>) -> Self { Iter { ty, pos: 0 } }
 }
