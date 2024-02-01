@@ -28,6 +28,33 @@ use amplify::num::u24;
 use encoding::Ident;
 use vesper::{AttributeValue, Predicate};
 
+use crate::typesys::{TypeInfo, TypeTree};
+
+#[derive(Clone, Eq, PartialEq, Debug)]
+pub struct TypeLayout {
+    items: Vec<TypeInfo>,
+}
+
+impl From<TypeTree<'_>> for TypeLayout {
+    fn from(tree: TypeTree) -> Self {
+        let mut layout = TypeLayout::new();
+        layout.items.extend(&tree);
+        layout
+    }
+}
+
+impl<'a> From<&'a TypeTree<'_>> for TypeLayout {
+    fn from(tree: &'a TypeTree) -> Self {
+        let mut layout = TypeLayout::new();
+        layout.items.extend(tree);
+        layout
+    }
+}
+
+impl TypeLayout {
+    fn new() -> Self { Self { items: vec![] } }
+}
+
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display(lowercase)]
 pub enum Pred {
