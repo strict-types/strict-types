@@ -24,8 +24,10 @@ mod type_sys;
 mod translate;
 mod id;
 mod symbols;
+mod iter;
 
 pub use id::TypeSysId;
-pub use symbols::{SymbolicSys, Symbols, TypeInfo, TypeTree, TypeTreeIter};
+pub use iter::{TypeInfo, TypeTree, TypeTreeIter};
+pub use symbols::{SymbolicSys, Symbols};
 pub use translate::{Error, SystemBuilder, TypeSymbol};
 pub use type_sys::{SymTy, TypeFqn, TypeSystem};
