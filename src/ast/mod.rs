@@ -32,5 +32,6 @@ pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use translate::Translate;
 pub use ty::{
-    Cls, EnumVariants, Field, NamedFields, PrimitiveRef, Ty, TypeRef, UnionVariants, UnnamedFields,
+    Cls, EnumVariants, Field, ItemCase, NamedFields, PrimitiveRef, Ty, TypeRef, UnionVariants,
+    UnnamedFields,
 };

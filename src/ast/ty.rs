@@ -26,6 +26,7 @@ use std::ops::Deref;
 
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
+use encoding::VariantName;
 use strict_encoding::constants::*;
 use strict_encoding::{
     FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
@@ -200,7 +201,6 @@ impl<Ref: TypeRef> Ty<Ref> {
             false
         }
     }
-    pub fn is_newtype(&self) -> bool { matches!(self, Ty::Tuple(fields) if fields.len() == 1) }
     pub fn is_compound(&self) -> bool {
         match self {
             Ty::Tuple(fields) if fields.len() > 1 => true,
@@ -213,6 +213,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_collection(&self) -> bool {
         matches!(self, Ty::Array(..) | Ty::List(..) | Ty::Set(..) | Ty::Map(..))
     }
+
+    pub fn is_newtype(&self) -> bool { matches!(self, Ty::Tuple(fields) if fields.len() == 1) }
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
@@ -262,17 +264,45 @@ where Ref: Display
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub enum ItemCase {
+    UnnamedField(u8),
+    NamedField(u8, FieldName),
+    UnionVariant(u8, VariantName),
+    ArrayItem,
+    ListItem,
+    SetItem,
+    MapKey,
+    MapValue,
+}
+
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
             Ty::Union(fields) => fields.ty_by_tag(pos),
             Ty::Struct(fields) => fields.ty_by_pos(pos),
             Ty::Tuple(fields) => fields.ty_by_pos(pos),
-            // TODO: Handle map type
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(ty, _, _) if pos == 0 => {
                 Some(ty)
             }
             Ty::Map(_, ty, _) if pos == 1 => Some(ty),
+            _ => None,
+        }
+    }
+    pub fn case_at(&self, pos: u8) -> Option<ItemCase> {
+        match self {
+            Ty::Union(fields) => {
+                fields.name_by_tag(pos).map(|name| ItemCase::UnionVariant(pos, name.clone()))
+            }
+            Ty::Struct(fields) => {
+                fields.get(pos as usize).map(|field| ItemCase::NamedField(pos, field.name.clone()))
+            }
+            Ty::Tuple(fields) if fields.len_u8() == pos => Some(ItemCase::UnnamedField(pos)),
+            Ty::Array(_, _) if pos == 0 => Some(ItemCase::ArrayItem),
+            Ty::List(_, _) if pos == 0 => Some(ItemCase::ListItem),
+            Ty::Set(_, _) if pos == 0 => Some(ItemCase::SetItem),
+            Ty::Map(_, _, _) if pos == 0 => Some(ItemCase::MapKey),
+            Ty::Map(_, _, _) if pos == 1 => Some(ItemCase::MapValue),
             _ => None,
         }
     }

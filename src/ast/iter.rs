@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use crate::ast::Path;
+use crate::ast::{ItemCase, Path};
 use crate::{Cls, Ty, TypeRef};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error)]
@@ -87,18 +87,19 @@ impl<'ty, Ref: TypeRef> From<&'ty Ref> for Iter<'ty, Ref> {
 }
 
 impl<'ty, Ref: TypeRef> IntoIterator for &'ty Ty<Ref> {
-    type Item = &'ty Ref;
+    type Item = (&'ty Ref, Option<ItemCase>);
     type IntoIter = Iter<'ty, Ref>;
 
     fn into_iter(self) -> Self::IntoIter { Iter::from(self) }
 }
 
 impl<'ty, Ref: TypeRef + 'ty> Iterator for Iter<'ty, Ref> {
-    type Item = &'ty Ref;
+    type Item = (&'ty Ref, Option<ItemCase>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let ret = self.ty.ty_at(self.pos);
+        let r = self.ty.ty_at(self.pos);
+        let item = self.ty.case_at(self.pos);
         self.pos += 1;
-        ret
+        r.map(|r| (r, item))
     }
 }

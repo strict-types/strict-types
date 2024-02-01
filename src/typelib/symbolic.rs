@@ -191,7 +191,7 @@ impl LibBuilder {
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
         for ty in types.values() {
-            for subty in ty.type_refs() {
+            for (subty, _) in ty.type_refs() {
                 if let TranspileRef::Named(name) = subty {
                     if !types.contains_key(name) {
                         return Err(TranspileError::UnknownType {
