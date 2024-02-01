@@ -26,7 +26,8 @@ required-features = ["base64"]
 
 [dependencies]
 amplify = { version = "4.5.0", features = ["apfloat"] }
-strict_encoding = { version = "2.6.1", features = ["derive", "float"] }
+strict_encoding = { version = "2.6.2", features = ["derive", "float"] }
+vesper = { version = "0.1.0", git = "https://github.com/UBIDECO/vesper" }
 indexmap = "2.0.2"
 baid58 = "0.4.4"
 half = "2.2.0"

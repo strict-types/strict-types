@@ -55,6 +55,7 @@ pub mod typelib;
 pub mod typesys;
 pub mod value;
 pub mod stl;
+pub mod layout;
 
 pub use ast::{Cls, PrimitiveRef, SemId, Translate, Ty, TypeRef};
 pub use typelib::{
