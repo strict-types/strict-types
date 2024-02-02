@@ -294,7 +294,7 @@ pub enum ItemCase {
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
-            Ty::Union(fields) => fields.ty_by_tag(pos),
+            Ty::Union(fields) => fields.ty_by_pos(pos),
             Ty::Struct(fields) => fields.ty_by_pos(pos),
             Ty::Tuple(fields) => fields.ty_by_pos(pos),
             Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(ty, _, _) if pos == 0 => {
@@ -307,7 +307,7 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn case_at(&self, pos: u8) -> Option<ItemCase> {
         match self {
             Ty::Union(fields) => {
-                fields.name_by_tag(pos).map(|name| ItemCase::UnionVariant(pos, name.clone()))
+                fields.name_by_pos(pos).map(|name| ItemCase::UnionVariant(pos, name.clone()))
             }
             Ty::Struct(fields) => {
                 fields.get(pos as usize).map(|field| ItemCase::NamedField(pos, field.name.clone()))
@@ -564,11 +564,15 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     pub fn ty_by_tag(&self, tag: u8) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
+    pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.values().skip(pos as usize).next() }
     pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
     pub fn name_by_tag(&self, tag: u8) -> Option<&VariantName> {
         self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
+    }
+    pub fn name_by_pos(&self, pos: u8) -> Option<&VariantName> {
+        self.0.keys().skip(pos as usize).next().map(|v| &v.name)
     }
 }
 
