@@ -24,8 +24,6 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::mem::swap;
 
-use encoding::constants::UNIT;
-
 use crate::ast::ItemCase;
 use crate::layout::TypeLayout;
 use crate::stl::LIB_ID_STD;
@@ -78,12 +76,7 @@ where 'tree: 'sys
 }
 
 impl Display for TypeTree<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        for item in self {
-            Display::fmt(&item, f)?;
-        }
-        Ok(())
-    }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { Display::fmt(&self.to_layout(), f) }
 }
 
 /*
@@ -127,88 +120,6 @@ impl<'sys> TypeInfo<'sys> {
     }
 }
  */
-
-impl Display for TypeInfo {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        let TypeInfo {
-            depth,
-            ty,
-            fqn,
-            item,
-            wrapped,
-        } = self;
-
-        write!(f, "{: ^1$}", "", depth * 2)?;
-        let name = fqn.as_ref().map(|f| f.name.to_string()).unwrap_or_else(|| s!("_"));
-        let comment = match item {
-            Some(ItemCase::UnnamedField(pos)) => {
-                write!(f, "{name}")?;
-                if name == "_" {
-                    write!(f, "_{pos}")?;
-                }
-                None
-            }
-            Some(ItemCase::NamedField(_, ref fname)) => {
-                write!(f, "{fname}")?;
-                fqn.as_ref().map(|_| name)
-            }
-            Some(ItemCase::UnionVariant(_, ref vname)) => {
-                write!(f, "{vname}")?;
-                fqn.as_ref().map(|_| name)
-            }
-            Some(ItemCase::MapKey) if fqn.is_some() => {
-                write!(f, "{name}")?;
-                Some(s!("map key"))
-            }
-            Some(ItemCase::MapKey) => {
-                f.write_str("mapKey")?;
-                None
-            }
-            Some(ItemCase::MapValue) if fqn.is_some() => {
-                write!(f, "{name}")?;
-                Some(s!("map value"))
-            }
-            Some(ItemCase::MapValue) => {
-                f.write_str("mapValue")?;
-                None
-            }
-            _ => {
-                write!(f, "{name}")?;
-                None
-            }
-        };
-        match ty {
-            Ty::Primitive(prim) if *prim == UNIT => write!(f, " as Unit")?,
-            Ty::Primitive(prim) => write!(f, " as {prim}")?,
-            _ => write!(f, " {}", ty.cls())?,
-        }
-        if *wrapped {
-            f.write_str(" wrapped")?;
-        }
-        if let Some(ItemCase::UnionVariant(ref pos, _)) = item {
-            write!(f, " tag={pos}")?;
-        }
-        if let Ty::Enum(vars) = ty {
-            const MAX_LINE_VARS: usize = 8;
-            if vars.len() > MAX_LINE_VARS {
-                write!(f, " {{\n{: ^1$}", "", depth * 2 + 2)?;
-            }
-            for (pos, var) in vars.iter().enumerate() {
-                write!(f, " {pos}={var}")?;
-                if pos > 0 && pos % MAX_LINE_VARS == 0 {
-                    write!(f, "\n{: ^1$}", "", depth * 2 + 2)?;
-                }
-            }
-            if vars.len() > MAX_LINE_VARS {
-                write!(f, "\n{: ^1$}}}", "", depth * 2)?;
-            }
-        }
-        if let Some(comment) = comment {
-            write!(f, " -- {comment}")?;
-        }
-        writeln!(f)
-    }
-}
 
 pub struct TypeTreeIter<'sys> {
     sem_id: SemId,

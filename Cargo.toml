@@ -52,4 +52,5 @@ all-features = true
 rustc-args = ["--cfg", "docsrs"]
 
 [patch.crates-io]
+amplify = { git = "https://github.com/rust-amplify/rust-amplify", branch = "v4.0" }
 strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "ident" }

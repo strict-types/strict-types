@@ -4,9 +4,8 @@ version = 3
 
 [[package]]
 name = "amplify"
-version = "4.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8629db306c0bbeb0a402e2918bdcf0026b5ddb24c46460f3bf5410b350d98710"
+version = "4.5.1"
+source = "git+https://github.com/rust-amplify/rust-amplify?branch=v4.0#51c7c9df47d6d83b581f54f849d8c55974ce4b9b"
 dependencies = [
  "amplify_apfloat",
  "amplify_derive",
@@ -17,7 +16,7 @@ dependencies = [
  "serde_json",
  "serde_yaml",
  "stringly_conversions",
- "toml",
+ "toml 0.7.8",
  "wasm-bindgen",
 ]
 
@@ -439,7 +438,7 @@ dependencies = [
  "serde_yaml",
  "sha2",
  "strict_encoding",
- "toml",
+ "toml 0.8.9",
  "vesper",
 ]
 
@@ -477,6 +476,18 @@ dependencies = [
 
 [[package]]
 name = "toml"
+version = "0.7.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "dd79e69d3b627db300ff956027cc6c3798cef26d22526befdfcd12feeb6d2257"
+dependencies = [
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "toml_edit 0.19.15",
+]
+
+[[package]]
+name = "toml"
 version = "0.8.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c6a4b9e8023eb94392d3dca65d717c53abc5dad49c07cb65bb8fcd87115fa325"
@@ -484,7 +495,7 @@ dependencies = [
  "serde",
  "serde_spanned",
  "toml_datetime",
- "toml_edit",
+ "toml_edit 0.21.1",
 ]
 
 [[package]]
@@ -494,6 +505,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3550f4e9685620ac18a50ed434eb3aec30db8ba93b0287467bca5826ea25baf1"
 dependencies = [
  "serde",
+]
+
+[[package]]
+name = "toml_edit"
+version = "0.19.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b5bb770da30e5cbfde35a2d7b9b8a2c4b8ef89548a7a6aeab5c9a576e3e7421"
+dependencies = [
+ "indexmap",
+ "serde",
+ "serde_spanned",
+ "toml_datetime",
+ "winnow",
 ]
 
 [[package]]
@@ -536,7 +560,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "vesper"
 version = "0.1.0"
-source = "git+https://github.com/UBIDECO/vesper#a76f3192846a991bbc0fce54c59badc58d0c5d52"
+source = "git+https://github.com/UBIDECO/vesper#18107cbbdffeb91d992dc7c76da0640aea152e8f"
 dependencies = [
  "amplify",
  "strict_encoding",

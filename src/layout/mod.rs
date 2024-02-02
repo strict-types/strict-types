@@ -24,11 +24,15 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
+use amplify::confinement::Confined;
 use amplify::num::u24;
+use encoding::constants::UNIT;
 use encoding::Ident;
-use vesper::{AttributeValue, Predicate};
+use vesper::{AttrVal, Attribute, Expression, Predicate, TExpr};
 
+use crate::ast::ItemCase;
 use crate::typesys::{TypeInfo, TypeTree};
+use crate::{Cls, Ty};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
 pub struct TypeLayout {
@@ -51,9 +55,138 @@ impl<'a> From<&'a TypeTree<'_>> for TypeLayout {
     }
 }
 
+impl Display for TypeLayout {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        Display::fmt(&self.to_vesper().display(), f)
+    }
+}
+
 impl TypeLayout {
     fn new() -> Self { Self { items: vec![] } }
+
+    pub fn to_vesper(&self) -> TypeVesper {
+        let mut root = None;
+        let mut path: Vec<usize> = vec![];
+        for item in &self.items {
+            let expr = item.to_vesper();
+            let depth = item.depth;
+
+            if path.is_empty() && depth == 0 {
+                debug_assert_eq!(root, None);
+                root = Some(expr);
+                continue;
+            }
+
+            debug_assert_ne!(depth, 0);
+            if path.len() < depth - 1 {
+                panic!("invalid type layout with skipped levels")
+            }
+            // if the stack top is the same depth or deeper:
+            // - remove everything down from the depth
+            // - take the remaining top and add the item as a new child
+            // - create new item and push it to stack
+            else if path.len() >= depth {
+                let _ = path.split_off(item.depth);
+            }
+            // if the stack top is one level up
+            // - create new item and add it as a child to the stack top item
+            // - push the newly created item to stack
+            let mut head = root.as_mut().expect("already set");
+            for el in &path {
+                head = head.content.get_mut(*el).expect("algorithm inconsistency");
+            }
+            path.push(head.content.len());
+            head.content
+                .push(Box::new(expr))
+                .expect("invalid type layout containing too much items");
+        }
+        root.expect("invalid type layout with zero items")
+    }
 }
+
+impl TypeInfo {
+    pub fn to_vesper(&self) -> TypeVesper {
+        let TypeInfo {
+            ty,
+            fqn,
+            item,
+            wrapped,
+            ..
+        } = self;
+
+        let mut attributes = vec![];
+        let mut comment = None;
+        let name = fqn.as_ref().map(|f| f.name.clone()).unwrap_or_else(|| tn!("_"));
+        let fqn = fqn.as_ref().map(|f| f.to_string());
+        let subject = match item {
+            Some(ItemCase::UnnamedField(pos)) => {
+                if name.as_str() == "_" {
+                    comment = fqn;
+                    Ident::from_uint(*pos)
+                } else {
+                    name.into_ident()
+                }
+            }
+            Some(ItemCase::NamedField(_, ref fname)) => {
+                comment = fqn;
+                fname.to_ident()
+            }
+            Some(ItemCase::UnionVariant(_, ref vname)) => {
+                comment = fqn;
+                vname.to_ident()
+            }
+            Some(ItemCase::MapKey) if fqn.is_some() => {
+                comment = Some(s!("map key"));
+                name.into_ident()
+            }
+            Some(ItemCase::MapKey) => tn!("mapKey"),
+            Some(ItemCase::MapValue) if fqn.is_some() => {
+                comment = Some(s!("map value"));
+                name.into_ident()
+            }
+            Some(ItemCase::MapValue) => tn!("mapValue"),
+            _ => name.into_ident(),
+        };
+        let mut predicate = ty.cls().into();
+        match ty {
+            Ty::Primitive(prim) if *prim == UNIT => {
+                attributes.push(Attr::TypeName(tn!("Unit")));
+            }
+            Ty::Primitive(prim) => {
+                attributes.push(Attr::TypeName(tn!("{}", prim)));
+            }
+            Ty::Array(_, len) => attributes.push(Attr::Len(*len)),
+            _ => {}
+        }
+        if *wrapped {
+            attributes.push(Attr::Wrapped);
+        }
+        match ty {
+            Ty::Enum(_) if ty.is_char_enum() => {
+                predicate = Pred::Char;
+            }
+            Ty::Enum(variants) => {
+                for var in variants {
+                    attributes.push(Attr::EnumVariant(var.tag, var.name.to_ident()))
+                }
+            }
+            _ => {}
+        }
+        if let Some(ItemCase::UnionVariant(ref pos, _)) = item {
+            attributes.push(Attr::Tag(*pos));
+        }
+
+        TypeVesper {
+            subject,
+            predicate,
+            attributes: Confined::from_collection_unsafe(attributes),
+            content: none!(),
+            comment,
+        }
+    }
+}
+
+pub type TypeVesper = TExpr<Pred>;
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display(lowercase)]
@@ -67,6 +200,7 @@ pub enum Pred {
     // Composites
     Char,
     Str,
+    Ascii,
     Bytes,
     // Collections:
     Array,
@@ -76,18 +210,73 @@ pub enum Pred {
 }
 
 impl Predicate for Pred {
-    type AttrVal = AttrVal;
+    type Attr = Attr;
+}
+
+impl From<Cls> for Pred {
+    fn from(cls: Cls) -> Self {
+        match cls {
+            Cls::Primitive => Pred::As,
+            Cls::Unicode => Pred::Str,
+            Cls::AsciiStr => Pred::Ascii,
+            Cls::Enum => Pred::Enum,
+            Cls::Union => Pred::Union,
+            Cls::Struct => Pred::Rec,
+            Cls::Tuple => Pred::Tuple,
+            Cls::Array => Pred::Array,
+            Cls::List => Pred::List,
+            Cls::Set => Pred::Set,
+            Cls::Map => Pred::Map,
+        }
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug, Display)]
 #[display(inner)]
-pub enum AttrVal {
-    Ident(Ident),
-    Int(u64),
+pub enum AttrExpr {
+    Tag(u8),
+    EnumVariant(u8),
+    Len(u16),
     LenRange(LenRange),
 }
 
-impl AttributeValue for AttrVal {}
+impl Expression for AttrExpr {}
+
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+pub enum Attr {
+    TypeName(Ident),
+    Wrapped,
+    Tag(u8),
+    EnumVariant(u8, Ident),
+    Len(u16),
+    LenRange(LenRange),
+}
+
+impl Attribute for Attr {
+    type Expression = AttrExpr;
+
+    fn name(&self) -> Option<Ident> {
+        match self {
+            Attr::TypeName(_) => None,
+            Attr::Wrapped => None,
+            Attr::Tag(_) => ident!("tag"),
+            Attr::Len(_) => ident!("len"),
+            Attr::LenRange(_) => ident!("len"),
+            Attr::EnumVariant(_, name) => Some(name.clone()),
+        }
+    }
+
+    fn value(&self) -> AttrVal<Self::Expression> {
+        match self {
+            Attr::TypeName(tn) => AttrVal::Ident(tn.clone()),
+            Attr::Wrapped => AttrVal::Ident(ident!("wrapped")),
+            Attr::Tag(tag) => AttrVal::Expr(AttrExpr::Tag(*tag)),
+            Attr::Len(len) => AttrVal::Expr(AttrExpr::Len(*len)),
+            Attr::LenRange(range) => AttrVal::Expr(AttrExpr::LenRange(range.clone())),
+            Attr::EnumVariant(pos, _) => AttrVal::Expr(AttrExpr::Tag(*pos)),
+        }
+    }
+}
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LenRange(Range<u64>);
