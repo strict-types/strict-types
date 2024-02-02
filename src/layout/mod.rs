@@ -31,7 +31,7 @@ use encoding::Ident;
 use vesper::{AttrVal, Attribute, Expression, Predicate, TExpr};
 
 use crate::ast::ItemCase;
-use crate::typesys::{TypeInfo, TypeTree};
+use crate::typesys::{NestedCase, TypeInfo, TypeTree};
 use crate::{Cls, Ty};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
@@ -110,7 +110,7 @@ impl TypeInfo {
             ty,
             fqn,
             item,
-            wrapped,
+            nested,
             ..
         } = self;
 
@@ -162,7 +162,7 @@ impl TypeInfo {
             predicate = Pred::Char;
         } else if ty.is_byte_array() {
             predicate = Pred::Bytes;
-        } else if *wrapped {
+        } else if *nested == Some(NestedCase::NewType) {
             attributes.push(Attr::Wrapped);
         }
         match ty {

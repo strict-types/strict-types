@@ -48,7 +48,7 @@ impl<'sys> TypeTree<'sys> {
             depth: 0,
             path: vec![],
             sys: &self.sys,
-            wrapped: false,
+            nested: None,
         }
     }
 
@@ -78,18 +78,17 @@ impl Display for TypeTree<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { Display::fmt(&self.to_layout(), f) }
 }
 
-/*
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
 #[display(lowercase)]
 pub enum NestedCase {
     NewType,
     Option,
-    ByteArray,
     ByteStr,
     AsciiStr,
     UniStr,
 }
 
+/*
 pub struct NestedInfo<'sys> {
     pub inner: Option<&'sys TypeFqn>,
     pub case: NestedCase,
@@ -102,8 +101,7 @@ pub struct TypeInfo {
     pub ty: Ty<SemId>,
     pub fqn: Option<TypeFqn>,
     pub item: Option<ItemCase>,
-    pub wrapped: bool,
-    // pub nested: Option<NestedInfo<'sys>>,
+    pub nested: Option<NestedCase>,
 }
 
 /*
@@ -127,7 +125,7 @@ pub struct TypeTreeIter<'sys> {
     depth: usize,
     path: Vec<(usize, ast::Iter<'sys, SemId>)>,
     sys: &'sys SymbolicSys,
-    wrapped: bool,
+    nested: Option<NestedCase>,
 }
 
 impl<'sys> Iterator for TypeTreeIter<'sys> {
@@ -138,7 +136,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
             let fqn = self.sys.symbols.lookup(self.sem_id);
             self.ty = None;
             if ty.is_newtype() {
-                self.wrapped = true
+                self.nested = Some(NestedCase::NewType);
             } else {
                 self.depth += 1;
             }
@@ -153,7 +151,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
                     ty: ty.clone(),
                     fqn: fqn.cloned(),
                     item,
-                    wrapped: self.wrapped,
+                    nested: self.nested,
                 };
                 return Some(info);
             }
@@ -164,12 +162,12 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
             match iter.next() {
                 None => {
                     self.path.pop();
-                    self.wrapped = false;
+                    self.nested = None;
                     continue;
                 }
                 Some((id, item)) => {
                     self.sem_id = *id;
-                    if !self.wrapped {
+                    if self.nested != Some(NestedCase::NewType) {
                         self.item = item;
                     }
                     self.ty = self.sys.get(*id);
