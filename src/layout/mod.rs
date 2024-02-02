@@ -158,13 +158,14 @@ impl TypeInfo {
             Ty::Array(_, len) => attributes.push(Attr::Len(*len)),
             _ => {}
         }
-        if *wrapped {
+        if ty.is_char_enum() {
+            predicate = Pred::Char;
+        } else if ty.is_byte_array() {
+            predicate = Pred::Bytes;
+        } else if *wrapped {
             attributes.push(Attr::Wrapped);
         }
         match ty {
-            Ty::Enum(_) if ty.is_char_enum() => {
-                predicate = Pred::Char;
-            }
             Ty::Enum(variants) => {
                 for var in variants {
                     attributes.push(Attr::EnumVariant(var.tag, var.name.to_ident()))

@@ -26,7 +26,6 @@ use std::mem::swap;
 
 use crate::ast::ItemCase;
 use crate::layout::TypeLayout;
-use crate::stl::LIB_ID_STD;
 use crate::typesys::TypeFqn;
 use crate::{ast, SemId, SymbolicSys, Ty};
 
@@ -138,24 +137,25 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
         if let Some(ty) = self.ty {
             let fqn = self.sys.symbols.lookup(self.sem_id);
             self.ty = None;
-            if !ty.is_newtype() {
+            if ty.is_newtype() {
+                self.wrapped = true
+            } else {
                 self.depth += 1;
             }
-            self.path.push((self.depth, ty.iter()));
-            if matches!(fqn, Some(TypeFqn {lib, .. }) if lib.to_string() == LIB_ID_STD) {
-                // Skipping standard types
-            } else if !ty.is_newtype() {
+            if !ty.is_byte_array() {
+                self.path.push((self.depth, ty.iter()));
+            }
+            if !ty.is_newtype() {
                 let mut item = None;
                 swap(&mut item, &mut self.item);
-                return Some(TypeInfo {
+                let info = TypeInfo {
                     depth: self.depth - 1,
                     ty: ty.clone(),
                     fqn: fqn.cloned(),
                     item,
                     wrapped: self.wrapped,
-                });
-            } else {
-                self.wrapped = true
+                };
+                return Some(info);
             }
         }
         loop {

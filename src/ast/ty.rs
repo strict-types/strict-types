@@ -215,6 +215,7 @@ impl<Ref: TypeRef> Ty<Ref> {
     }
 
     pub fn is_newtype(&self) -> bool { matches!(self, Ty::Tuple(fields) if fields.len() == 1) }
+    pub fn is_byte_array(&self) -> bool { matches!(self, Ty::Array(ty, _) if ty.is_byte()) }
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
