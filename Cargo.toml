@@ -25,7 +25,7 @@ name = "reflect"
 required-features = ["base64"]
 
 [dependencies]
-amplify = { version = "4.5.0", features = ["apfloat"] }
+amplify = { version = "4.5.1", features = ["apfloat"] }
 strict_encoding = { version = "2.6.2", features = ["derive", "float"] }
 vesper = { version = "0.1.0", git = "https://github.com/UBIDECO/vesper" }
 indexmap = "2.0.2"
@@ -52,5 +52,4 @@ all-features = true
 rustc-args = ["--cfg", "docsrs"]
 
 [patch.crates-io]
-amplify = { git = "https://github.com/rust-amplify/rust-amplify", branch = "v4.0" }
 strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "ident" }
