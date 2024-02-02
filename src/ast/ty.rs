@@ -216,12 +216,26 @@ impl<Ref: TypeRef> Ty<Ref> {
 
     pub fn is_newtype(&self) -> bool { matches!(self, Ty::Tuple(fields) if fields.len() == 1) }
     pub fn is_byte_array(&self) -> bool { matches!(self, Ty::Array(ty, _) if ty.is_byte()) }
-    pub fn is_option(&self) -> bool {
-        matches!(self,
-            Ty::Union(variants) if variants.len() == 2
-            && variants.first_key_value().unwrap().0 == &Variant { name: vname!("none"), tag: 0 }
-            && variants.last_key_value().unwrap().0 == &Variant { name: vname!("some"), tag: 1 }
-        )
+    pub fn is_option(&self) -> bool { self.as_some().is_some() }
+    pub fn as_some(&self) -> Option<&Ref> {
+        match self {
+            Ty::Union(variants)
+                if variants.len() == 2
+                    && variants.first_key_value().unwrap().0
+                        == &Variant {
+                            name: vname!("none"),
+                            tag: 0,
+                        }
+                    && variants.last_key_value().unwrap().0
+                        == &Variant {
+                            name: vname!("some"),
+                            tag: 1,
+                        } =>
+            {
+                Some(variants.last_key_value().unwrap().1)
+            }
+            _ => None,
+        }
     }
 }
 

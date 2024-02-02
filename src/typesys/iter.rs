@@ -48,7 +48,7 @@ impl<'sys> TypeTree<'sys> {
             depth: 0,
             path: vec![],
             sys: &self.sys,
-            nested: None,
+            nested: vec![],
         }
     }
 
@@ -78,13 +78,12 @@ impl Display for TypeTree<'_> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { Display::fmt(&self.to_layout(), f) }
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Debug, Display)]
-#[display(lowercase)]
+#[derive(Clone, Eq, PartialEq, Debug)]
 pub enum NestedCase {
-    NewType,
+    NewType(Option<TypeFqn>),
     Option,
     ByteStr,
-    AsciiStr,
+    AsciiStr(Option<TypeFqn>),
     UniStr,
 }
 
@@ -101,7 +100,7 @@ pub struct TypeInfo {
     pub ty: Ty<SemId>,
     pub fqn: Option<TypeFqn>,
     pub item: Option<ItemCase>,
-    pub nested: Option<NestedCase>,
+    pub nested: Vec<NestedCase>,
 }
 
 /*
@@ -125,7 +124,7 @@ pub struct TypeTreeIter<'sys> {
     depth: usize,
     path: Vec<(usize, ast::Iter<'sys, SemId>)>,
     sys: &'sys SymbolicSys,
-    nested: Option<NestedCase>,
+    nested: Vec<NestedCase>,
 }
 
 impl<'sys> Iterator for TypeTreeIter<'sys> {
@@ -135,23 +134,55 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
         if let Some(ty) = self.ty {
             let fqn = self.sys.symbols.lookup(self.sem_id);
             self.ty = None;
+
+            let mut dive = true;
+            let mut push = true;
+            let mut ret = true;
+            let mut iter = ty.iter();
+
             if ty.is_newtype() {
-                self.nested = Some(NestedCase::NewType);
-            } else {
+                self.nested.push(NestedCase::NewType(fqn.cloned()));
+                dive = false;
+                ret = false;
+            } else if ty.is_option() {
+                self.nested.push(NestedCase::Option);
+                let _ = iter.next(); // skipping none
+                ret = false;
+            } else if let Ty::List(inner_id, _) = ty {
+                let inner_ty = self.sys.get(*inner_id).expect("incomplete type system");
+                let nested_len = self.nested.len();
+                if inner_ty.is_char_enum() {
+                    let fqn = self.sys.symbols.lookup(*inner_id);
+                    self.nested.push(NestedCase::AsciiStr(fqn.cloned()));
+                } else if inner_ty.is_byte() {
+                    self.nested.push(NestedCase::ByteStr);
+                } else if inner_ty.is_unicode_char() {
+                    self.nested.push(NestedCase::UniStr);
+                }
+                if self.nested.len() > nested_len {
+                    push = false;
+                    dive = false;
+                }
+            } else if ty.is_byte_array() {
+                push = false;
+            }
+
+            let depth = self.depth;
+            if dive {
                 self.depth += 1;
             }
-            if !ty.is_byte_array() {
-                self.path.push((self.depth, ty.iter()));
+            if push {
+                self.path.push((self.depth, iter));
             }
-            if !ty.is_newtype() {
+            if ret {
                 let mut item = None;
                 swap(&mut item, &mut self.item);
                 let info = TypeInfo {
-                    depth: self.depth - 1,
+                    depth,
                     ty: ty.clone(),
                     fqn: fqn.cloned(),
                     item,
-                    nested: self.nested,
+                    nested: self.nested.clone(),
                 };
                 return Some(info);
             }
@@ -162,12 +193,12 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
             match iter.next() {
                 None => {
                     self.path.pop();
-                    self.nested = None;
+                    self.nested = vec![];
                     continue;
                 }
                 Some((id, item)) => {
                     self.sem_id = *id;
-                    if self.nested != Some(NestedCase::NewType) {
+                    if !matches!(self.nested.last(), Some(NestedCase::NewType(_))) {
                         self.item = item;
                     }
                     self.ty = self.sys.get(*id);

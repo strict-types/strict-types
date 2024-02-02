@@ -77,7 +77,7 @@ impl TypeLayout {
                 continue;
             }
 
-            debug_assert_ne!(depth, 0);
+            debug_assert!(depth > 0);
             if path.len() < depth - 1 {
                 panic!("invalid type layout with skipped levels")
             }
@@ -86,7 +86,7 @@ impl TypeLayout {
             // - take the remaining top and add the item as a new child
             // - create new item and push it to stack
             else if path.len() >= depth {
-                let _ = path.split_off(item.depth);
+                let _ = path.split_off(depth - 1);
             }
             // if the stack top is one level up
             // - create new item and add it as a child to the stack top item
@@ -139,12 +139,12 @@ impl TypeInfo {
                 comment = Some(s!("map key"));
                 name.into_ident()
             }
-            Some(ItemCase::MapKey) => tn!("mapKey"),
+            Some(ItemCase::MapKey) => tn!("from"),
             Some(ItemCase::MapValue) if fqn.is_some() => {
-                comment = Some(s!("map value"));
+                comment = Some(s!("mapped onto"));
                 name.into_ident()
             }
-            Some(ItemCase::MapValue) => tn!("mapValue"),
+            Some(ItemCase::MapValue) => tn!("to"),
             _ => name.into_ident(),
         };
         let mut predicate = ty.cls().into();
@@ -162,9 +162,30 @@ impl TypeInfo {
             predicate = Pred::Char;
         } else if ty.is_byte_array() {
             predicate = Pred::Bytes;
-        } else if *nested == Some(NestedCase::NewType) {
-            attributes.push(Attr::Wrapped);
         }
+        for case in nested {
+            match case {
+                NestedCase::AsciiStr(fqn) => {
+                    predicate = Pred::Ascii;
+                    if let Some(fqn) = fqn {
+                        attributes.push(Attr::AsciiEnum(fqn.name.to_ident()));
+                    }
+                }
+                NestedCase::ByteStr => {
+                    predicate = Pred::Bytes;
+                }
+                NestedCase::UniStr => {
+                    predicate = Pred::Str;
+                }
+                NestedCase::NewType(fqn) => {
+                    attributes.push(Attr::Wrapped(fqn.as_ref().map(|f| f.name.to_ident())));
+                }
+                NestedCase::Option => {
+                    attributes.push(Attr::Option);
+                }
+            }
+        }
+
         match ty {
             Ty::Enum(variants) => {
                 for var in variants {
@@ -246,8 +267,10 @@ impl Expression for AttrExpr {}
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub enum Attr {
     TypeName(Ident),
-    Wrapped,
+    Wrapped(Option<Ident>),
+    Option,
     Tag(u8),
+    AsciiEnum(Ident),
     EnumVariant(u8, Ident),
     Len(u16),
     LenRange(LenRange),
@@ -259,10 +282,13 @@ impl Attribute for Attr {
     fn name(&self) -> Option<Ident> {
         match self {
             Attr::TypeName(_) => None,
-            Attr::Wrapped => None,
+            Attr::Wrapped(name) if name.is_some() => ident!("aka"),
+            Attr::Wrapped(_) => None,
+            Attr::Option => None,
             Attr::Tag(_) => ident!("tag"),
             Attr::Len(_) => ident!("len"),
             Attr::LenRange(_) => ident!("len"),
+            Attr::AsciiEnum(_) => ident!("charset"),
             Attr::EnumVariant(_, name) => Some(name.clone()),
         }
     }
@@ -270,10 +296,12 @@ impl Attribute for Attr {
     fn value(&self) -> AttrVal<Self::Expression> {
         match self {
             Attr::TypeName(tn) => AttrVal::Ident(tn.clone()),
-            Attr::Wrapped => AttrVal::Ident(ident!("wrapped")),
+            Attr::Wrapped(name) => AttrVal::Ident(name.clone().unwrap_or(ident!("wrapped"))),
+            Attr::Option => AttrVal::Ident(ident!("option")),
             Attr::Tag(tag) => AttrVal::Expr(AttrExpr::Tag(*tag)),
             Attr::Len(len) => AttrVal::Expr(AttrExpr::Len(*len)),
             Attr::LenRange(range) => AttrVal::Expr(AttrExpr::LenRange(range.clone())),
+            Attr::AsciiEnum(name) => AttrVal::Ident(name.clone()),
             Attr::EnumVariant(pos, _) => AttrVal::Expr(AttrExpr::Tag(*pos)),
         }
     }
