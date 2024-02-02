@@ -218,8 +218,8 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_option(&self) -> bool {
         matches!(self,
             Ty::Union(variants) if variants.len() == 2
-            && variants.first_key_value().unwrap().0 == &Variant { name: fname!("none"), tag: 0 }
-            && variants.last_key_value().unwrap().0 == &Variant { name: fname!("some"), tag: 1 }
+            && variants.first_key_value().unwrap().0 == &Variant { name: vname!("none"), tag: 0 }
+            && variants.last_key_value().unwrap().0 == &Variant { name: vname!("some"), tag: 1 }
         )
     }
 }
@@ -540,19 +540,19 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     }
 
     pub fn has_tag(&self, tag: u8) -> bool { self.0.keys().any(|v| v.tag == tag) }
-    pub fn by_name(&self, name: &FieldName) -> Option<(&Variant, &Ref)> {
+    pub fn by_name(&self, name: &VariantName) -> Option<(&Variant, &Ref)> {
         self.0.iter().find(|(v, _)| &v.name == name)
     }
-    pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
+    pub fn ty_by_name(&self, name: &VariantName) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
     }
     pub fn ty_by_tag(&self, tag: u8) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
-    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
+    pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
+    pub fn name_by_tag(&self, tag: u8) -> Option<&VariantName> {
         self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
     }
 }
@@ -638,10 +638,10 @@ impl<'a> IntoIterator for &'a EnumVariants {
 impl EnumVariants {
     pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
 
-    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
+    pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.iter().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
+    pub fn name_by_tag(&self, tag: u8) -> Option<&VariantName> {
         self.0.iter().find(|v| v.tag == tag).map(|v| &v.name)
     }
     pub fn has_tag(&self, tag: u8) -> bool { self.0.iter().any(|v| v.tag == tag) }

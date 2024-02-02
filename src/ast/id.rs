@@ -26,7 +26,7 @@ use std::str::FromStr;
 
 use amplify::{ByteArray, Bytes32, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
-use encoding::{FieldName, LibName};
+use encoding::{FieldName, LibName, VariantName};
 use sha2::Digest;
 use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
@@ -120,6 +120,13 @@ impl HashId for TypeName {
 }
 
 impl HashId for FieldName {
+    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+        hasher.update([self.len() as u8]);
+        hasher.update(self.as_bytes());
+    }
+}
+
+impl HashId for VariantName {
     fn hash_id(&self, hasher: &mut sha2::Sha256) {
         hasher.update([self.len() as u8]);
         hasher.update(self.as_bytes());

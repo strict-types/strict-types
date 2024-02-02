@@ -405,8 +405,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding"
 version = "2.6.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fa76decc8ac190a56ba7857c023b69ed52b781ed974c5a181eac62cdbfc99521"
+source = "git+https://github.com/strict-types/strict-encoding?branch=ident#8f5b071efabb531fb4a4cfd099124d33f924daf7"
 dependencies = [
  "amplify",
  "half",
@@ -417,8 +416,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding_derive"
 version = "2.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37064ec285e2a633465eb525c8698eea51373dee889fe310e0d32df8343e7f4f"
+source = "git+https://github.com/strict-types/strict-encoding?branch=ident#8f5b071efabb531fb4a4cfd099124d33f924daf7"
 dependencies = [
  "amplify_syn",
  "heck",
@@ -538,7 +536,7 @@ checksum = "49874b5167b65d7193b8aba1567f5c7d93d001cafc34600cee003eda787e483f"
 [[package]]
 name = "vesper"
 version = "0.1.0"
-source = "git+https://github.com/UBIDECO/vesper#44a4d258915ab8a139f7ab4a952862769d3a261c"
+source = "git+https://github.com/UBIDECO/vesper#a76f3192846a991bbc0fce54c59badc58d0c5d52"
 dependencies = [
  "amplify",
  "strict_encoding",

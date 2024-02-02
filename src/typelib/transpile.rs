@@ -98,7 +98,7 @@ impl TypedWrite for LibBuilder {
     where u8: From<T> {
         let mut writer = UnionBuilder::with::<T>(self);
         for (_, name) in T::ALL_VARIANTS {
-            writer = writer.define_variant(fname!(*name));
+            writer = writer.define_variant(vname!(*name));
         }
         writer = DefineEnum::complete(writer);
         writer = writer.write_variant(vname!(value.variant_name()))?;
