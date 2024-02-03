@@ -33,7 +33,7 @@ use crate::ast::SemCommit;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2, TypeLib};
 use crate::{CommitConsume, Dependency, LibRef, SymbolRef, TranspileRef};
 
-pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
+pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v02";
 
 /// Semantic type id, which commits to the type memory layout, name and field/variant names.
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
