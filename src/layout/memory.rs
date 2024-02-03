@@ -75,14 +75,11 @@ impl MemoryLayout {
             }
 
             debug_assert!(depth > 0);
-            if path.len() < depth as usize - 1 {
-                panic!("invalid type layout with skipped levels")
-            }
             // if the stack top is the same depth or deeper:
             // - remove everything down from the depth
             // - take the remaining top and add the item as a new child
             // - create new item and push it to stack
-            else if path.len() >= depth as usize {
+            if path.len() >= depth as usize {
                 let _ = path.split_off(depth as usize - 1);
             }
             // if the stack top is one level up
