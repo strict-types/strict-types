@@ -20,50 +20,42 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#[macro_use]
-extern crate strict_encoding;
+use std::fs::File;
+use std::io::Write;
 
-use strict_encoding::STRICT_TYPES_LIB;
+use strict_encoding::{libname, STRICT_TYPES_LIB};
 use strict_types::stl::std_stl;
-use strict_types::typesys::SystemBuilder;
-use strict_types::{LibBuilder, SymbolicSys, TypeLib};
+use strict_types::{LibBuilder, SystemBuilder, TypeLib};
 
-fn lib() -> TypeLib {
+fn main() {
     let std = std_stl();
     let builder =
         LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
-    builder.compile().unwrap()
-}
-
-fn sys() -> SymbolicSys {
-    let std = std_stl();
-    let lib = lib();
+    let lib = builder.compile().unwrap();
     let builder = SystemBuilder::new().import(lib).unwrap().import(std).unwrap();
-    builder.finalize().unwrap_or_else(|errors| {
+    let sys = builder.finalize().unwrap_or_else(|errors| {
         for err in errors {
             eprintln!("Error: {err}");
         }
         panic!()
-    })
-}
+    });
 
-#[test]
-fn library() {
-    let lib = lib();
-    println!("{lib}");
-    println!("{lib:X}");
-}
-
-#[test]
-fn symbols() {
-    let sys = sys();
-    println!("{sys}");
-    println!("{sys:X}");
-}
-
-#[test]
-fn type_tree() {
-    let sys = sys();
     let tt = sys.type_tree("StrictTypes.TypeLib").unwrap();
-    let _ = tt.to_string();
+
+    let mut file = File::create("stl/TypeLib.vesper").expect("unable to create file");
+    writeln!(
+        file,
+        "{{-
+  Description: Data type layout in Vesper language
+  Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
+  Copyright (C) 2024 UBIDECO Institute. All rights reserved.
+  License: Apache-2.0
+-}}
+
+{} vesper lexicon=types
+",
+        STRICT_TYPES_LIB
+    )
+    .unwrap();
+    write!(file, "{tt}").unwrap();
 }

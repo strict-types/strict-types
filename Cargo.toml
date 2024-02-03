@@ -20,6 +20,9 @@ required-features = ["base85"]
 name = "strict-stl"
 required-features = ["base85"]
 
+[[bin]]
+name = "strict-vesper"
+
 [[test]]
 name = "reflect"
 required-features = ["base85"]
