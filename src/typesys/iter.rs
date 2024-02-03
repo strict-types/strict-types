@@ -135,31 +135,31 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
             let fqn = self.sys.symbols.lookup(self.sem_id);
             self.ty = None;
 
+            let mut nested = vec![];
             let mut dive = true;
             let mut push = true;
             let mut ret = true;
             let mut iter = ty.iter();
 
             if ty.is_newtype() {
-                self.nested.push(NestedCase::NewType(fqn.cloned()));
+                nested.push(NestedCase::NewType(fqn.cloned()));
                 dive = false;
                 ret = false;
             } else if ty.is_option() {
-                self.nested.push(NestedCase::Option);
+                nested.push(NestedCase::Option);
                 let _ = iter.next(); // skipping none
                 ret = false;
             } else if let Ty::List(inner_id, _) = ty {
                 let inner_ty = self.sys.get(*inner_id).expect("incomplete type system");
-                let nested_len = self.nested.len();
                 if inner_ty.is_char_enum() {
                     let fqn = self.sys.symbols.lookup(*inner_id);
-                    self.nested.push(NestedCase::AsciiStr(fqn.cloned()));
+                    nested.push(NestedCase::AsciiStr(fqn.cloned()));
                 } else if inner_ty.is_byte() {
-                    self.nested.push(NestedCase::ByteStr);
+                    nested.push(NestedCase::ByteStr);
                 } else if inner_ty.is_unicode_char() {
-                    self.nested.push(NestedCase::UniStr);
+                    nested.push(NestedCase::UniStr);
                 }
-                if self.nested.len() > nested_len {
+                if !nested.is_empty() {
                     push = false;
                     dive = false;
                 }
@@ -174,6 +174,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
             if push {
                 self.path.push((self.depth, iter));
             }
+            self.nested.extend(nested);
             if ret {
                 let mut item = None;
                 swap(&mut item, &mut self.item);
@@ -184,6 +185,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
                     item,
                     nested: self.nested.clone(),
                 };
+                self.nested = vec![];
                 return Some(info);
             }
         }
