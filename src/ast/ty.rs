@@ -612,7 +612,7 @@ where Ref: Display
             } else {
                 f.write_str(" ")?;
             }
-            last_tag += 1;
+            last_tag = last_tag.saturating_add(1);
             if ty.is_compound() {
                 f.write_str("(")?;
                 Display::fmt(ty, f)?;
@@ -697,7 +697,7 @@ impl Display for EnumVariants {
                 last_tag = variant.tag;
                 write!(f, "#{last_tag}")?;
             }
-            last_tag += 1;
+            last_tag = last_tag.saturating_add(1);
         }
         let mut chunk_size = None;
         loop {
@@ -707,7 +707,7 @@ impl Display for EnumVariants {
                     last_tag = variant.tag;
                     write!(f, "#{last_tag}")?;
                 }
-                last_tag += 1;
+                last_tag = last_tag.saturating_add(1);
             }
             chunk_size = Some(4);
             if iter.len() == 0 {
