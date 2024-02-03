@@ -54,7 +54,7 @@ pub struct SymbolicLib {
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name} {{-{sem_id:#}-}}")]
+#[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name}#{sem_id:#}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),

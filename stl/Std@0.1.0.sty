@@ -13,14 +13,14 @@ typelib Std
 
 -- no dependencies
 
-                       -- quiet-opinion-saddle
-data Alpha             : A=65 | B | C | D
+@mnemonic(quiet-opinion-saddle)
+data Alpha             : A#65 | B | C | D
                        | E | F | G | H
                        | I | J | K | L
                        | M | N | O | P
                        | Q | R | S | T
                        | U | V | W | X
-                       | Y | Z | a=97 | b
+                       | Y | Z | a#97 | b
                        | c | d | e | f
                        | g | h | i | j
                        | k | l | m | n
@@ -29,8 +29,8 @@ data Alpha             : A=65 | B | C | D
                        | w | x | y | z
 
 
-                       -- simon-pegasus-stop
-data AlphaCaps         : A=65 | B | C | D
+@mnemonic(simon-pegasus-stop)
+data AlphaCaps         : A#65 | B | C | D
                        | E | F | G | H
                        | I | J | K | L
                        | M | N | O | P
@@ -39,10 +39,10 @@ data AlphaCaps         : A=65 | B | C | D
                        | Y | Z
 
 
-                       -- magnet-section-latin
-data AlphaCapsNum      : zero=48 | one | two | three
+@mnemonic(magnet-section-latin)
+data AlphaCapsNum      : zero#48 | one | two | three
                        | four | five | six | seven
-                       | eight | nine | A=65 | B
+                       | eight | nine | A#65 | B
                        | C | D | E | F
                        | G | H | I | J
                        | K | L | M | N
@@ -51,17 +51,17 @@ data AlphaCapsNum      : zero=48 | one | two | three
                        | W | X | Y | Z
 
 
-                       -- disco-ibiza-mile
-data AlphaNum          : zero=48 | one | two | three
+@mnemonic(disco-ibiza-mile)
+data AlphaNum          : zero#48 | one | two | three
                        | four | five | six | seven
-                       | eight | nine | A=65 | B
+                       | eight | nine | A#65 | B
                        | C | D | E | F
                        | G | H | I | J
                        | K | L | M | N
                        | O | P | Q | R
                        | S | T | U | V
                        | W | X | Y | Z
-                       | a=97 | b | c | d
+                       | a#97 | b | c | d
                        | e | f | g | h
                        | i | j | k | l
                        | m | n | o | p
@@ -70,17 +70,17 @@ data AlphaNum          : zero=48 | one | two | three
                        | y | z
 
 
-                       -- good-trumpet-today
-data AlphaNumDash      : dash=45 | zero=48 | one | two
+@mnemonic(good-trumpet-today)
+data AlphaNumDash      : dash#45 | zero#48 | one | two
                        | three | four | five | six
-                       | seven | eight | nine | A=65
+                       | seven | eight | nine | A#65
                        | B | C | D | E
                        | F | G | H | I
                        | J | K | L | M
                        | N | O | P | Q
                        | R | S | T | U
                        | V | W | X | Y
-                       | Z | a=97 | b | c
+                       | Z | a#97 | b | c
                        | d | e | f | g
                        | h | i | j | k
                        | l | m | n | o
@@ -89,17 +89,17 @@ data AlphaNumDash      : dash=45 | zero=48 | one | two
                        | x | y | z
 
 
-                       -- north-sound-salsa
-data AlphaNumLodash    : zero=48 | one | two | three
+@mnemonic(north-sound-salsa)
+data AlphaNumLodash    : zero#48 | one | two | three
                        | four | five | six | seven
-                       | eight | nine | A=65 | B
+                       | eight | nine | A#65 | B
                        | C | D | E | F
                        | G | H | I | J
                        | K | L | M | N
                        | O | P | Q | R
                        | S | T | U | V
                        | W | X | Y | Z
-                       | lodash=95 | a=97 | b | c
+                       | lodash#95 | a#97 | b | c
                        | d | e | f | g
                        | h | i | j | k
                        | l | m | n | o
@@ -108,8 +108,8 @@ data AlphaNumLodash    : zero=48 | one | two | three
                        | x | y | z
 
 
-                       -- song-accent-mammal
-data AlphaSmall        : a=97 | b | c | d
+@mnemonic(song-accent-mammal)
+data AlphaSmall        : a#97 | b | c | d
                        | e | f | g | h
                        | i | j | k | l
                        | m | n | o | p
@@ -118,7 +118,7 @@ data AlphaSmall        : a=97 | b | c | d
                        | y | z
 
 
-                       -- aloha-lunar-felix
+@mnemonic(aloha-lunar-felix)
 data Ascii             : nul | soh | stx | etx
                        | eot | enq | ack | bel
                        | bs | ht | lf | vt
@@ -153,8 +153,8 @@ data Ascii             : nul | soh | stx | etx
                        | pipe | cBracketR | tilde | del
 
 
-                       -- diet-oxford-window
-data AsciiPrintable    : space=32 | excl | quotes | hash
+@mnemonic(diet-oxford-window)
+data AsciiPrintable    : space#32 | excl | quotes | hash
                        | dollar | percent | ampersand | apostrophe
                        | bracketL | bracketR | asterisk | plus
                        | comma | minus | dot | slash
@@ -180,47 +180,47 @@ data AsciiPrintable    : space=32 | excl | quotes | hash
                        | pipe | cBracketR | tilde
 
 
-                       -- laser-madam-maxwell
+@mnemonic(laser-madam-maxwell)
 data Bool              : false | true
 
 
-                       -- amanda-spider-diamond
-data Dec               : zero=48 | one | two | three
+@mnemonic(amanda-spider-diamond)
+data Dec               : zero#48 | one | two | three
                        | four | five | six | seven
                        | eight | nine
 
 
-                       -- invest-moral-anvil
-data HexDecCaps        : zero=48 | one | two | three
+@mnemonic(invest-moral-anvil)
+data HexDecCaps        : zero#48 | one | two | three
                        | four | five | six | seven
-                       | eight | nine | ten=65 | eleven
+                       | eight | nine | ten#65 | eleven
                        | twelve | thirteen | fourteen | fifteen
 
 
-                       -- forum-sahara-email
-data HexDecSmall       : zero=48 | one | two | three
+@mnemonic(forum-sahara-email)
+data HexDecSmall       : zero#48 | one | two | three
                        | four | five | six | seven
-                       | eight | nine | ten=97 | eleven
+                       | eight | nine | ten#97 | eleven
                        | twelve | thirteen | fourteen | fifteen
 
 
-                       -- adam-sample-vienna
+@mnemonic(adam-sample-vienna)
 data U2                : _0 | _1 | _2 | _3
 
 
-                       -- william-courage-corner
+@mnemonic(william-courage-corner)
 data U3                : _0 | _1 | _2 | _3
                        | _4 | _5 | _6 | _7
 
 
-                       -- america-panther-joker
+@mnemonic(america-panther-joker)
 data U4                : _0 | _1 | _2 | _3
                        | _4 | _5 | _6 | _7
                        | _8 | _9 | _10 | _11
                        | _12 | _13 | _14 | _15
 
 
-                       -- nitro-george-nebula
+@mnemonic(nitro-george-nebula)
 data U5                : _0 | _1 | _2 | _3
                        | _4 | _5 | _6 | _7
                        | _8 | _9 | _10 | _11
@@ -231,7 +231,7 @@ data U5                : _0 | _1 | _2 | _3
                        | _28 | _29 | _30 | _31
 
 
-                       -- premium-fiesta-ballad
+@mnemonic(premium-fiesta-ballad)
 data U6                : _0 | _1 | _2 | _3
                        | _4 | _5 | _6 | _7
                        | _8 | _9 | _10 | _11
@@ -250,7 +250,7 @@ data U6                : _0 | _1 | _2 | _3
                        | _60 | _61 | _62 | _63
 
 
-                       -- dublin-arsenal-cargo
+@mnemonic(dublin-arsenal-cargo)
 data U7                : _0 | _1 | _2 | _3
                        | _4 | _5 | _6 | _7
                        | _8 | _9 | _10 | _11

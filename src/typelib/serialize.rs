@@ -117,15 +117,12 @@ impl Display for SymbolicLib {
         writeln!(f, "typelib {}", self.name())?;
         writeln!(f)?;
         for dep in self.dependencies() {
-            writeln!(f, "{dep}")?;
-            if f.alternate() {
-                if let Some(index) = self.extern_types().get(&dep.name) {
-                    writeln!(f, "  -- Used types:")?;
-                    for (sem_id, name) in index {
-                        writeln!(f, "  -- {name}: {:0}", sem_id.to_baid58().mnemonic())?;
-                    }
-                    writeln!(f)?;
+            writeln!(f, "import {dep}")?;
+            if let Some(index) = self.extern_types().get(&dep.name) {
+                for (sem_id, name) in index {
+                    writeln!(f, "  use {name}#{:0}", sem_id.to_baid58().mnemonic())?;
                 }
+                writeln!(f)?;
             }
         }
         if self.dependencies().is_empty() {
@@ -136,7 +133,7 @@ impl Display for SymbolicLib {
         for (name, ty) in self.types() {
             if f.alternate() {
                 let mnemo = ty.sem_id_named(name).to_baid58().mnemonic();
-                writeln!(f, "{:1$}-- {mnemo:0}", "", width + 6)?;
+                writeln!(f, "@mnemonic({mnemo:0})")?;
             }
             write!(f, "data {name:0$} : ", width)?;
             Display::fmt(ty, f)?;

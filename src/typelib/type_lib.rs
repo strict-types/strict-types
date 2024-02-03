@@ -226,7 +226,7 @@ impl Display for LibRef {
 #[derive(Clone, Eq, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("import {name}: {id:-}")]
+#[display("{name}#{id:-}")]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Dependency {
     pub id: TypeLibId,
