@@ -36,7 +36,7 @@ pub type TypeVesper = TExpr<Pred>;
 #[display(lowercase)]
 pub enum Pred {
     /// Type alias
-    As,
+    Is,
     Tuple,
     Rec,
     Enum,
@@ -60,7 +60,7 @@ impl Predicate for Pred {
 impl From<Cls> for Pred {
     fn from(cls: Cls) -> Self {
         match cls {
-            Cls::Primitive => Pred::As,
+            Cls::Primitive => Pred::Is,
             Cls::Unicode => Pred::Str,
             Cls::AsciiStr => Pred::Ascii,
             Cls::Enum => Pred::Enum,

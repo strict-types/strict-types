@@ -60,16 +60,19 @@ impl TypeInfo {
                 comment = fqn;
                 vname.to_ident()
             }
+            Some(ItemCase::ListItem) | Some(ItemCase::SetItem) if fqn.is_none() => {
+                ident!("element")
+            }
             Some(ItemCase::MapKey) if fqn.is_some() => {
-                comment = Some(s!("map key"));
+                comment = Some(s!("mapped from"));
                 name.into_ident()
             }
-            Some(ItemCase::MapKey) => tn!("from"),
+            Some(ItemCase::MapKey) => ident!("key"),
             Some(ItemCase::MapValue) if fqn.is_some() => {
-                comment = Some(s!("mapped onto"));
+                comment = Some(s!("mapped to"));
                 name.into_ident()
             }
-            Some(ItemCase::MapValue) => tn!("to"),
+            Some(ItemCase::MapValue) => ident!("value"),
             _ => name.into_ident(),
         };
         let mut predicate = ty.cls().into();
