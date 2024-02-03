@@ -33,7 +33,7 @@ fn main() {
                 "
   Description: Strict types standard library
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2024 UBIDECO Institute. All rights reserved.
+  Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
   License: Apache-2.0",
             ),
         )
