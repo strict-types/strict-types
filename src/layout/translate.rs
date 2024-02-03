@@ -81,6 +81,9 @@ impl TypeInfo {
                 attributes.push(Attr::TypeName(tn!("{}", prim)));
             }
             Ty::Array(_, len) => attributes.push(Attr::Len(*len)),
+            Ty::List(_, sizing) | Ty::Set(_, sizing) | Ty::Map(_, _, sizing) => {
+                attributes.push(Attr::LenRange((*sizing).into()));
+            }
             _ => {}
         }
         if ty.is_char_enum() {

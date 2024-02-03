@@ -25,7 +25,7 @@ use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
 use amplify::num::u24;
-use encoding::Ident;
+use encoding::{Ident, Sizing};
 use vesper::{AttrVal, Attribute, Expression, Predicate, TExpr};
 
 use crate::Cls;
@@ -131,6 +131,11 @@ impl Attribute for Attr {
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
 pub struct LenRange(Range<u64>);
+
+impl From<Sizing> for LenRange {
+    #[inline]
+    fn from(sizing: Sizing) -> Self { Self(sizing.min..sizing.max) }
+}
 
 impl Display for LenRange {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
