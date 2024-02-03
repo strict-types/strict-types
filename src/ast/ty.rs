@@ -280,14 +280,24 @@ where Ref: Display
 }
 
 #[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = custom)]
 pub enum ItemCase {
+    #[strict_type(tag = 0)]
     UnnamedField(u8),
+    #[strict_type(tag = 1)]
     NamedField(u8, FieldName),
+    #[strict_type(tag = 2)]
     UnionVariant(u8, VariantName),
+    #[strict_type(tag = 0x10, dumb)]
     ArrayItem,
+    #[strict_type(tag = 0x11)]
     ListItem,
+    #[strict_type(tag = 0x12)]
     SetItem,
+    #[strict_type(tag = 0x13)]
     MapKey,
+    #[strict_type(tag = 0x14)]
     MapValue,
 }
 

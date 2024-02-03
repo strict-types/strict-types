@@ -24,8 +24,11 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::mem::swap;
 
+use amplify::confinement::{Confined, TinyVec};
+use strict_encoding::STRICT_TYPES_LIB;
+
 use crate::ast::ItemCase;
-use crate::layout::TypeLayout;
+use crate::layout::MemoryLayout;
 use crate::typesys::TypeFqn;
 use crate::{ast, SemId, SymbolicSys, Ty};
 
@@ -53,7 +56,7 @@ impl<'sys> TypeTree<'sys> {
     }
 
     #[inline]
-    pub fn to_layout(&self) -> TypeLayout { TypeLayout::from(self) }
+    pub fn to_layout(&self) -> MemoryLayout { MemoryLayout::from(self) }
 }
 
 /*
@@ -79,11 +82,22 @@ impl Display for TypeTree<'_> {
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = custom)]
 pub enum NestedCase {
+    #[strict_type(tag = 0x0)]
     NewType(Option<TypeFqn>),
+
+    #[strict_type(tag = 0x1, dumb)]
     Option,
+
+    #[strict_type(tag = 0x10)]
     ByteStr,
+
+    #[strict_type(tag = 0x11)]
     AsciiStr(Option<TypeFqn>),
+
+    #[strict_type(tag = 0x12)]
     UniStr,
 }
 
@@ -95,12 +109,14 @@ pub struct NestedInfo<'sys> {
  */
 
 #[derive(Clone, Eq, PartialEq, Debug)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 pub struct TypeInfo {
-    pub depth: usize,
+    pub depth: u32,
     pub ty: Ty<SemId>,
     pub fqn: Option<TypeFqn>,
     pub item: Option<ItemCase>,
-    pub nested: Vec<NestedCase>,
+    pub nested: TinyVec<NestedCase>,
 }
 
 /*
@@ -121,8 +137,8 @@ pub struct TypeTreeIter<'sys> {
     sem_id: SemId,
     ty: Option<&'sys Ty<SemId>>,
     item: Option<ItemCase>,
-    depth: usize,
-    path: Vec<(usize, ast::Iter<'sys, SemId>)>,
+    depth: u32,
+    path: Vec<(u32, ast::Iter<'sys, SemId>)>,
     sys: &'sys SymbolicSys,
     nested: Vec<NestedCase>,
 }
@@ -183,7 +199,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
                     ty: ty.clone(),
                     fqn: fqn.cloned(),
                     item,
-                    nested: self.nested.clone(),
+                    nested: Confined::from_collection_unsafe(self.nested.clone()),
                 };
                 self.nested = vec![];
                 return Some(info);

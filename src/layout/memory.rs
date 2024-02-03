@@ -23,38 +23,43 @@
 use std::fmt;
 use std::fmt::{Display, Formatter};
 
+use amplify::confinement::LargeVec;
+use strict_encoding::STRICT_TYPES_LIB;
+
 use super::vesper::TypeVesper;
 use crate::typesys::{TypeInfo, TypeTree};
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-pub struct TypeLayout {
-    items: Vec<TypeInfo>,
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
+pub struct MemoryLayout {
+    items: LargeVec<TypeInfo>,
 }
 
-impl From<TypeTree<'_>> for TypeLayout {
+impl From<TypeTree<'_>> for MemoryLayout {
     fn from(tree: TypeTree) -> Self {
-        let mut layout = TypeLayout::new();
-        layout.items.extend(&tree);
+        let mut layout = MemoryLayout::new();
+        layout.items.extend(&tree).expect("type layout exceeds billions of fields");
         layout
     }
 }
 
-impl<'a> From<&'a TypeTree<'_>> for TypeLayout {
+impl<'a> From<&'a TypeTree<'_>> for MemoryLayout {
     fn from(tree: &'a TypeTree) -> Self {
-        let mut layout = TypeLayout::new();
-        layout.items.extend(tree);
+        let mut layout = MemoryLayout::new();
+        layout.items.extend(tree).expect("type layout exceeds billions of fields");
         layout
     }
 }
 
-impl Display for TypeLayout {
+impl Display for MemoryLayout {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         Display::fmt(&self.to_vesper().display(), f)
     }
 }
 
-impl TypeLayout {
-    fn new() -> Self { Self { items: vec![] } }
+impl MemoryLayout {
+    fn new() -> Self { Self { items: empty!() } }
 
     pub fn to_vesper(&self) -> TypeVesper {
         let mut root = None;
@@ -70,15 +75,15 @@ impl TypeLayout {
             }
 
             debug_assert!(depth > 0);
-            if path.len() < depth - 1 {
+            if path.len() < depth as usize - 1 {
                 panic!("invalid type layout with skipped levels")
             }
             // if the stack top is the same depth or deeper:
             // - remove everything down from the depth
             // - take the remaining top and add the item as a new child
             // - create new item and push it to stack
-            else if path.len() >= depth {
-                let _ = path.split_off(depth - 1);
+            else if path.len() >= depth as usize {
+                let _ = path.split_off(depth as usize - 1);
             }
             // if the stack top is one level up
             // - create new item and add it as a child to the stack top item

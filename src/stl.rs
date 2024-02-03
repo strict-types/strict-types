@@ -26,6 +26,7 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U5};
 
+use crate::layout::MemoryLayout;
 use crate::{
     CompileError, LibBuilder, SymbolRef, SymbolicLib, SymbolicSys, TranspileError, TypeLib,
     TypeSymbol, TypeSysId,
@@ -34,7 +35,7 @@ use crate::{
 pub const LIB_ID_STD: &str =
     "urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:DKfPCg8jYu1apejvdTpRZvLCtXuzwaC6iZwfHqXz3Uaj#welcome-ibiza-active";
+    "urn:ubideco:stl:9Aejf981DkMJ78osEFiHY5um2ndxPFNS81LVGimgZM6T#fresh-field-alert";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
@@ -69,6 +70,7 @@ fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
         .transpile::<SymbolicSys>()
+        .transpile::<MemoryLayout>()
         .compile_symbols()
 }
 fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }

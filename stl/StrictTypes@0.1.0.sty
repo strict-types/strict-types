@@ -1,5 +1,5 @@
 {-
-  Id: urn:ubideco:stl:5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby#south-strong-welcome
+  Id: urn:ubideco:stl:9Aejf981DkMJ78osEFiHY5um2ndxPFNS81LVGimgZM6T#fresh-field-alert
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -47,12 +47,23 @@ data InlineRef1       :: inline TyInlineRef2
 -- urn:ubideco:semid:9VXzdXS3wF1eomrLkmhKMK9kTdVQnWQUW5Fhqbm3E4Ux#gong-tunnel-lexicon
 data InlineRef2       :: named SemId
                        | extern ExternRef
+-- urn:ubideco:semid:Utqq7z2RMhRBNiL6q5oAD9RjXrRThQ62zduLqAQNxr5#harlem-cartel-waiter
+data ItemCase         :: unnamedField U8
+                       | namedField (U8, FieldName)
+                       | unionVariant (U8, VariantName)
+                       | arrayItem:16 ()
+                       | listItem ()
+                       | setItem ()
+                       | mapKey ()
+                       | mapValue ()
 -- urn:ubideco:semid:CfGN6VgrTXVEvMF4TVu9vihmn9YEwHFck9GM26Gwfn7k#public-pagoda-bonjour
 data LibName          :: Ident
 -- urn:ubideco:semid:HKxXPz1j5bUNYzAyyHE5qghcffX5nUEfJWDP2hSdWyGC#focus-vitamin-plate
 data LibRef           :: inline TyInlineRef
                        | named SemId
                        | extern ExternRef
+-- urn:ubideco:semid:25z2TcpoHCswxjn8JzZaz5GXVtLte9oaKJyeUjAZMgrj#forward-rose-value
+data MemoryLayout     :: items [TypeInfo ^ ..0xffffffff]
 -- urn:ubideco:semid:94DUadJMLRjBzGtu4sbzw4m1515nWSZSoRBRX6zx94RT#arthur-shelter-bermuda
 data NamedFieldsInlineRef :: [FieldInlineRef ^ 1..0xff]
 -- urn:ubideco:semid:FTnqX46y9MLGSmSBaVTYWr5KNB43SiJDgM98eeyE1uEf#zebra-stone-river
@@ -63,6 +74,12 @@ data NamedFieldsInlineRef2 :: [FieldInlineRef2 ^ 1..0xff]
 data NamedFieldsLibRef :: [FieldLibRef ^ 1..0xff]
 -- urn:ubideco:semid:7MoLEA46Roi1ELw5DcLEqNhxVJYJ4z2hN1yQHX4RVMFa#local-english-sonata
 data NamedFieldsSemId :: [FieldSemId ^ 1..0xff]
+-- urn:ubideco:semid:ApHADBKBKjsMA7bbX2ApH8uhQ4MJ2is7vgdgFEJ4vDt2#lazarus-aladdin-salsa
+data NestedCase       :: newType TypeFqn?
+                       | option ()
+                       | byteStr:16 ()
+                       | asciiStr TypeFqn?
+                       | uniStr ()
 -- urn:ubideco:semid:3T3zMmQxuir7TsdjhBLaETJfLH4mr5amAseXDePnzhMT#hobby-cable-puzzle
 data Primitive        :: U8
 -- urn:ubideco:semid:8Ckj2p3GLKina636pSKJkj7GB6ft8XeoP4jfGkRUNwtp#cargo-plasma-catalog
@@ -135,6 +152,12 @@ data TySemId          :: primitive Primitive
                        | map (SemId, SemId, Sizing)
 -- urn:ubideco:semid:AbBubPzzwg8DYXHoASLchKS9KLUQmnX15TPHzuSTenxF#salary-apollo-chicago
 data TypeFqn          :: lib LibName, name TypeName
+-- urn:ubideco:semid:3oL9ojoDj5UNdWC6rZTPbhC1ZnLtE4x18AqGM4WgoSic#texas-store-james
+data TypeInfo         :: depth U32
+                       , ty TySemId
+                       , fqn TypeFqn?
+                       , item ItemCase?
+                       , nested [NestedCase ^ ..0xff]
 -- urn:ubideco:semid:2qdbDrCxa4pUbo5gUmu4P8b4ja8v3UVJqv4thcekvaZr#gallery-coral-actor
 data TypeLib          :: name LibName
                        , dependencies {Dependency ^ ..0xff}
@@ -170,16 +193,18 @@ data UnnamedFieldsInlineRef2 :: [InlineRef2 ^ 1..0xff]
 data UnnamedFieldsLibRef :: [LibRef ^ 1..0xff]
 -- urn:ubideco:semid:AHCYFYAtpW2kxJpVpmD6suNB9epMm6zffaDMtotKcXvh#signal-satire-russian
 data UnnamedFieldsSemId :: [SemId ^ 1..0xff]
--- urn:ubideco:semid:BPoLofDtYzh8rRxa2ss4SxWc9VsuF6wtfVNqbdstcrXf#sabrina-stage-harmony
-data Variant          :: name FieldName, tag U8
--- urn:ubideco:semid:Cy1X8nRdwM4yHmaSZ3ahiuBdsAe3RbNp6oR56LCzagx9#speech-fractal-cable
-data VariantInfoInlineRef :: name FieldName, ty InlineRef
--- urn:ubideco:semid:FQoVf49AYi7SWk5zAKMA6tttgCDPBzRTcdmBogEdUkz9#avalon-ozone-clinic
-data VariantInfoInlineRef1 :: name FieldName, ty InlineRef1
--- urn:ubideco:semid:8y3bWbWqemKa5z8AQ6yUFizMuZ9FQbtZjXw5LeKsipvq#equal-flood-crater
-data VariantInfoInlineRef2 :: name FieldName, ty InlineRef2
--- urn:ubideco:semid:ByNU4fSLr6cr9YYjyNf6ja3ErMnKeQYPtWmyZy1YHCq8#process-empire-observe
-data VariantInfoLibRef :: name FieldName, ty LibRef
--- urn:ubideco:semid:8QSJ14SZzimY7RGYUaH9w71kAgxLjECPAs9x84sk28uu#labor-south-newton
-data VariantInfoSemId :: name FieldName, ty SemId
+-- urn:ubideco:semid:3fqUEnN8aHcBtTSxe77t1EAFABknQCMALsVxyHG1njtN#igor-lorenzo-catalog
+data Variant          :: name VariantName, tag U8
+-- urn:ubideco:semid:BD629NwJoSe4EuXb8yiGhjDDY4jxEt3rvHqN4EdpUcLU#samuel-food-campus
+data VariantInfoInlineRef :: name VariantName, ty InlineRef
+-- urn:ubideco:semid:83e4XqAdKpyEvsVoRo8L7UZocuieWsJC55qZSMMWoh5c#felix-mary-tempo
+data VariantInfoInlineRef1 :: name VariantName, ty InlineRef1
+-- urn:ubideco:semid:EFmHmFrvNj9ZhfD7mjzaLWwMpwuXSpbosVjYmBoJefRU#pocket-hunter-corona
+data VariantInfoInlineRef2 :: name VariantName, ty InlineRef2
+-- urn:ubideco:semid:6gKCe3Q1rGDe3XCVP7xSDYMowVpjp96cpLbBP3KnvnyP#memphis-left-arena
+data VariantInfoLibRef :: name VariantName, ty LibRef
+-- urn:ubideco:semid:3jwkZpTyXPeGMBUkUCZaXGQU4hxqXjX9GeKQwsVJ8Qqn#shadow-pilgrim-seminar
+data VariantInfoSemId :: name VariantName, ty SemId
+-- urn:ubideco:semid:BNUcEDZy4s1VK5Az55gpismbrB1fcsfRpn8EESkc22oe#develop-compass-yogurt
+data VariantName      :: Ident
 

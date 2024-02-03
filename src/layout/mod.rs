@@ -22,6 +22,6 @@
 
 pub mod vesper;
 mod translate;
-mod linear;
+mod memory;
 
-pub use linear::TypeLayout;
+pub use memory::MemoryLayout;
