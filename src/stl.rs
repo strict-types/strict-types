@@ -22,7 +22,7 @@
 
 use encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
-    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U4,
+    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U2, U3, U4, U6, U7,
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U5};
 
@@ -33,15 +33,21 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type";
+    "urn:ubideco:stl:55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:9Aejf981DkMJ78osEFiHY5um2ndxPFNS81LVGimgZM6T#fresh-field-alert";
+    "urn:ubideco:stl:BADMWBVQ6sMJGfELP13cjeZPNutGuLzZtNNZirJQsz9e#tower-monaco-corona";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
+        // TODO: Add type
+        // .transpile::<U1>()
+        .transpile::<U2>()
+        .transpile::<U3>()
         .transpile::<U4>()
         .transpile::<U5>()
+        .transpile::<U6>()
+        .transpile::<U7>()
         .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()

@@ -38,7 +38,8 @@ fn reflect() {
 
     assert_eq!(
         lib.to_string(),
-        "typelib Test
+        "@context
+typelib Test
 
 -- no dependencies
 

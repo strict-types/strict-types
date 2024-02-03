@@ -1,5 +1,5 @@
 {-
-  Id: urn:ubideco:stl:9Aejf981DkMJ78osEFiHY5um2ndxPFNS81LVGimgZM6T#fresh-field-alert
+  Id: urn:ubideco:stl:BADMWBVQ6sMJGfELP13cjeZPNutGuLzZtNNZirJQsz9e#tower-monaco-corona
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -8,9 +8,10 @@
   License: Apache-2.0
 -}
 
+@context
 typelib StrictTypes
 
-import Std: 9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type
+import Std: 55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray
   -- Used types:
   -- AlphaNumLodash: north-sound-salsa
 
@@ -47,35 +48,35 @@ data Ident             : [Std.AlphaNumLodash {-north-sound-salsa-} ^ 1..0x64]
 
                        -- magnet-llama-drum
 data InlineRef         : inline TyInlineRef1
-                       | named SemId
-                       | extern ExternRef
+                      named SemId
+                      extern ExternRef
 
                        -- ramirez-break-ribbon
 data InlineRef1        : inline TyInlineRef2
-                       | named SemId
-                       | extern ExternRef
+                      named SemId
+                      extern ExternRef
 
                        -- gong-tunnel-lexicon
 data InlineRef2        : named SemId
-                       | extern ExternRef
+                      extern ExternRef
 
                        -- harlem-cartel-waiter
 data ItemCase          : unnamedField U8
-                       | namedField (U8, FieldName)
-                       | unionVariant (U8, VariantName)
-                       | arrayItem:16 ()
-                       | listItem ()
-                       | setItem ()
-                       | mapKey ()
-                       | mapValue ()
+                      namedField (U8, FieldName)
+                      unionVariant (U8, VariantName)
+                      arrayItem=16 ()
+                      listItem ()
+                      setItem ()
+                      mapKey ()
+                      mapValue ()
 
                        -- public-pagoda-bonjour
 data LibName           : Ident
 
                        -- focus-vitamin-plate
 data LibRef            : inline TyInlineRef
-                       | named SemId
-                       | extern ExternRef
+                      named SemId
+                      extern ExternRef
 
                        -- forward-rose-value
 data MemoryLayout      : items [TypeInfo ^ ..0xffffffff]
@@ -97,10 +98,10 @@ data NamedFieldsSemId  : [FieldSemId ^ 1..0xff]
 
                        -- lazarus-aladdin-salsa
 data NestedCase        : newType TypeFqn?
-                       | option ()
-                       | byteStr:16 ()
-                       | asciiStr TypeFqn?
-                       | uniStr ()
+                      option ()
+                      byteStr=16 ()
+                      asciiStr TypeFqn?
+                      uniStr ()
 
                        -- hobby-cable-puzzle
 data Primitive         : U8
@@ -113,9 +114,9 @@ data Sizing            : min U64, max U64
 
                        -- pocket-oxford-monster
 data SymbolRef         : libName LibName
-                       , tyName TypeName
-                       , libId TypeLibId
-                       , semId SemId
+                      , tyName TypeName
+                      , libId TypeLibId
+                      , semId SemId
 
                        -- diagram-crimson-blast
 data SymbolicSys       : symbols Symbols, types TypeSystem
@@ -125,79 +126,79 @@ data Symbols           : libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
 
                        -- absent-logo-genius
 data TyInlineRef       : primitive Primitive
-                       | unicode ()
-                       | enum:3 EnumVariants
-                       | union UnionVariantsInlineRef
-                       | tuple UnnamedFieldsInlineRef
-                       | struct NamedFieldsInlineRef
-                       | array (InlineRef, U16)
-                       | list (InlineRef, Sizing)
-                       | set (InlineRef, Sizing)
-                       | map (InlineRef, InlineRef, Sizing)
+                      unicode ()
+                      enum=3 EnumVariants
+                      union UnionVariantsInlineRef
+                      tuple UnnamedFieldsInlineRef
+                      struct NamedFieldsInlineRef
+                      array (InlineRef, U16)
+                      list (InlineRef, Sizing)
+                      set (InlineRef, Sizing)
+                      map (InlineRef, InlineRef, Sizing)
 
                        -- taxi-rhino-secret
 data TyInlineRef1      : primitive Primitive
-                       | unicode ()
-                       | enum:3 EnumVariants
-                       | union UnionVariantsInlineRef1
-                       | tuple UnnamedFieldsInlineRef1
-                       | struct NamedFieldsInlineRef1
-                       | array (InlineRef1, U16)
-                       | list (InlineRef1, Sizing)
-                       | set (InlineRef1, Sizing)
-                       | map (InlineRef1, InlineRef1, Sizing)
+                      unicode ()
+                      enum=3 EnumVariants
+                      union UnionVariantsInlineRef1
+                      tuple UnnamedFieldsInlineRef1
+                      struct NamedFieldsInlineRef1
+                      array (InlineRef1, U16)
+                      list (InlineRef1, Sizing)
+                      set (InlineRef1, Sizing)
+                      map (InlineRef1, InlineRef1, Sizing)
 
                        -- pacific-dolby-result
 data TyInlineRef2      : primitive Primitive
-                       | unicode ()
-                       | enum:3 EnumVariants
-                       | union UnionVariantsInlineRef2
-                       | tuple UnnamedFieldsInlineRef2
-                       | struct NamedFieldsInlineRef2
-                       | array (InlineRef2, U16)
-                       | list (InlineRef2, Sizing)
-                       | set (InlineRef2, Sizing)
-                       | map (InlineRef2, InlineRef2, Sizing)
+                      unicode ()
+                      enum=3 EnumVariants
+                      union UnionVariantsInlineRef2
+                      tuple UnnamedFieldsInlineRef2
+                      struct NamedFieldsInlineRef2
+                      array (InlineRef2, U16)
+                      list (InlineRef2, Sizing)
+                      set (InlineRef2, Sizing)
+                      map (InlineRef2, InlineRef2, Sizing)
 
                        -- russian-sweden-period
 data TyLibRef          : primitive Primitive
-                       | unicode ()
-                       | enum:3 EnumVariants
-                       | union UnionVariantsLibRef
-                       | tuple UnnamedFieldsLibRef
-                       | struct NamedFieldsLibRef
-                       | array (LibRef, U16)
-                       | list (LibRef, Sizing)
-                       | set (LibRef, Sizing)
-                       | map (LibRef, LibRef, Sizing)
+                      unicode ()
+                      enum=3 EnumVariants
+                      union UnionVariantsLibRef
+                      tuple UnnamedFieldsLibRef
+                      struct NamedFieldsLibRef
+                      array (LibRef, U16)
+                      list (LibRef, Sizing)
+                      set (LibRef, Sizing)
+                      map (LibRef, LibRef, Sizing)
 
                        -- solo-canal-flower
 data TySemId           : primitive Primitive
-                       | unicode ()
-                       | enum:3 EnumVariants
-                       | union UnionVariantsSemId
-                       | tuple UnnamedFieldsSemId
-                       | struct NamedFieldsSemId
-                       | array (SemId, U16)
-                       | list (SemId, Sizing)
-                       | set (SemId, Sizing)
-                       | map (SemId, SemId, Sizing)
+                      unicode ()
+                      enum=3 EnumVariants
+                      union UnionVariantsSemId
+                      tuple UnnamedFieldsSemId
+                      struct NamedFieldsSemId
+                      array (SemId, U16)
+                      list (SemId, Sizing)
+                      set (SemId, Sizing)
+                      map (SemId, SemId, Sizing)
 
                        -- salary-apollo-chicago
 data TypeFqn           : lib LibName, name TypeName
 
                        -- texas-store-james
 data TypeInfo          : depth U32
-                       , ty TySemId
-                       , fqn TypeFqn?
-                       , item ItemCase?
-                       , nested [NestedCase ^ ..0xff]
+                      , ty TySemId
+                      , fqn TypeFqn?
+                      , item ItemCase?
+                      , nested [NestedCase ^ ..0xff]
 
                        -- gallery-coral-actor
 data TypeLib           : name LibName
-                       , dependencies {Dependency ^ ..0xff}
-                       , externTypes {LibName -> ^ ..0xff {SemId -> TypeName}}
-                       , types {TypeName -> ^ 1.. TyLibRef}
+                      , dependencies {Dependency ^ ..0xff}
+                      , externTypes {LibName -> ^ ..0xff {SemId -> TypeName}}
+                      , types {TypeName -> ^ 1.. TyLibRef}
 
                        -- jessica-snake-ceramic
 data TypeLibId         : [Byte ^ 32]

@@ -104,10 +104,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6107fe1be6682a68940da878d9e9f5e90ca5745b3dec9fd1bb393c8777d4f581"
 
 [[package]]
-name = "base64"
-version = "0.21.7"
+name = "base85"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9d297deb1925b89f2ccc13d7635fa0714f12c87adce1c75356b39ca9b7178567"
+checksum = "36915bbaca237c626689b5bd14d02f2ba7a5a359d30a2a08be697392e3718079"
+dependencies = [
+ "thiserror",
+]
 
 [[package]]
 name = "bitflags"
@@ -405,7 +408,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding"
 version = "2.6.2"
-source = "git+https://github.com/strict-types/strict-encoding?branch=ident#aeb6a50e716f21540879c2429e6c6d762e1c696b"
+source = "git+https://github.com/strict-types/strict-encoding?branch=ident#9c20b327178b449cbb24a18c7db65edeb50a9d5b"
 dependencies = [
  "amplify",
  "half",
@@ -416,7 +419,7 @@ dependencies = [
 [[package]]
 name = "strict_encoding_derive"
 version = "2.0.1"
-source = "git+https://github.com/strict-types/strict-encoding?branch=ident#aeb6a50e716f21540879c2429e6c6d762e1c696b"
+source = "git+https://github.com/strict-types/strict-encoding?branch=ident#9c20b327178b449cbb24a18c7db65edeb50a9d5b"
 dependencies = [
  "amplify_syn",
  "heck",
@@ -431,7 +434,7 @@ version = "1.6.3"
 dependencies = [
  "amplify",
  "baid58",
- "base64",
+ "base85",
  "half",
  "indexmap",
  "serde",
@@ -473,6 +476,26 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.56"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d54378c645627613241d077a3a79db965db602882668f9136ac42af9ecb730ad"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.56"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fa0faa943b50f3db30a20aa7e265dbc66076993efed8463e8de414e5d06d3471"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.48",
 ]
 
 [[package]]

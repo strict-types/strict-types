@@ -26,11 +26,11 @@ use std::fmt::{self, Display, Formatter};
 use amplify::confinement;
 use encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
-use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2};
+use crate::ast::SemCommit;
+use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2, LibSubref};
 use crate::typesys::symbols::SymbolicSys;
 use crate::typesys::{SymTy, TypeFqn};
-use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
+use crate::{CommitConsume, Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
 
 /// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -55,8 +55,8 @@ impl TypeSymbol {
     }
 }
 
-impl HashId for TypeSymbol {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.id.hash_id(hasher); }
+impl SemCommit for TypeSymbol {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) { self.id.sem_commit(hasher); }
 }
 
 impl TypeRef for TypeSymbol {}
@@ -105,7 +105,7 @@ impl SystemBuilder {
             .extend(lib.dependencies.into_iter().filter(|dep| !self.imported_deps.contains(dep)));
 
         for (ty_name, ty) in lib.types {
-            let id = ty.id(Some(&ty_name));
+            let id = ty.sem_id_named(&ty_name);
             let ty = ty.translate(&mut self, &())?;
             let info = SymTy::named(lib.name.clone(), ty_name.clone(), ty);
             self.types.insert(id, info);
@@ -138,10 +138,10 @@ impl SystemBuilder {
         SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err])
     }
 
-    fn translate_inline<Ref: TypeRef>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
+    fn translate_inline<Ref: LibSubref>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
     where Ref: Translate<SemId, Context = (), Builder = SystemBuilder, Error = Error> {
         // compute id
-        let id = inline_ty.id(None);
+        let id = inline_ty.sem_id_unnamed();
         // run for nested types
         let ty = inline_ty.translate(self, &())?;
         // add to system

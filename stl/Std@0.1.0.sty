@@ -1,5 +1,5 @@
 {-
-  Id: urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type
+  Id: urn:ubideco:stl:55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray
   Name: Std
   Version: 0.1.0
   Description: Strict types standard library
@@ -8,217 +8,281 @@
   License: Apache-2.0
 -}
 
+@context
 typelib Std
 
 -- no dependencies
 
                        -- quiet-opinion-saddle
-data Alpha             : A=65 | B=66 | C=67 | D=68
-                       | E=69 | F=70 | G=71 | H=72
-                       | I=73 | J=74 | K=75 | L=76
-                       | M=77 | N=78 | O=79 | P=80
-                       | Q=81 | R=82 | S=83 | T=84
-                       | U=85 | V=86 | W=87 | X=88
-                       | Y=89 | Z=90 | a=97 | b=98
-                       | c=99 | d=100 | e=101 | f=102
-                       | g=103 | h=104 | i=105 | j=106
-                       | k=107 | l=108 | m=109 | n=110
-                       | o=111 | p=112 | q=113 | r=114
-                       | s=115 | t=116 | u=117 | v=118
-                       | w=119 | x=120 | y=121 | z=122
+data Alpha             : A=65 | B | C | D
+                       | E | F | G | H
+                       | I | J | K | L
+                       | M | N | O | P
+                       | Q | R | S | T
+                       | U | V | W | X
+                       | Y | Z | a=97 | b
+                       | c | d | e | f
+                       | g | h | i | j
+                       | k | l | m | n
+                       | o | p | q | r
+                       | s | t | u | v
+                       | w | x | y | z
 
 
                        -- simon-pegasus-stop
-data AlphaCaps         : A=65 | B=66 | C=67 | D=68
-                       | E=69 | F=70 | G=71 | H=72
-                       | I=73 | J=74 | K=75 | L=76
-                       | M=77 | N=78 | O=79 | P=80
-                       | Q=81 | R=82 | S=83 | T=84
-                       | U=85 | V=86 | W=87 | X=88
-                       | Y=89 | Z=90
+data AlphaCaps         : A=65 | B | C | D
+                       | E | F | G | H
+                       | I | J | K | L
+                       | M | N | O | P
+                       | Q | R | S | T
+                       | U | V | W | X
+                       | Y | Z
 
 
                        -- magnet-section-latin
-data AlphaCapsNum      : zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | A=65 | B=66
-                       | C=67 | D=68 | E=69 | F=70
-                       | G=71 | H=72 | I=73 | J=74
-                       | K=75 | L=76 | M=77 | N=78
-                       | O=79 | P=80 | Q=81 | R=82
-                       | S=83 | T=84 | U=85 | V=86
-                       | W=87 | X=88 | Y=89 | Z=90
+data AlphaCapsNum      : zero=48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | A=65 | B
+                       | C | D | E | F
+                       | G | H | I | J
+                       | K | L | M | N
+                       | O | P | Q | R
+                       | S | T | U | V
+                       | W | X | Y | Z
 
 
                        -- disco-ibiza-mile
-data AlphaNum          : zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | A=65 | B=66
-                       | C=67 | D=68 | E=69 | F=70
-                       | G=71 | H=72 | I=73 | J=74
-                       | K=75 | L=76 | M=77 | N=78
-                       | O=79 | P=80 | Q=81 | R=82
-                       | S=83 | T=84 | U=85 | V=86
-                       | W=87 | X=88 | Y=89 | Z=90
-                       | a=97 | b=98 | c=99 | d=100
-                       | e=101 | f=102 | g=103 | h=104
-                       | i=105 | j=106 | k=107 | l=108
-                       | m=109 | n=110 | o=111 | p=112
-                       | q=113 | r=114 | s=115 | t=116
-                       | u=117 | v=118 | w=119 | x=120
-                       | y=121 | z=122
+data AlphaNum          : zero=48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | A=65 | B
+                       | C | D | E | F
+                       | G | H | I | J
+                       | K | L | M | N
+                       | O | P | Q | R
+                       | S | T | U | V
+                       | W | X | Y | Z
+                       | a=97 | b | c | d
+                       | e | f | g | h
+                       | i | j | k | l
+                       | m | n | o | p
+                       | q | r | s | t
+                       | u | v | w | x
+                       | y | z
 
 
                        -- good-trumpet-today
-data AlphaNumDash      : dash=45 | zero=48 | one=49 | two=50
-                       | three=51 | four=52 | five=53 | six=54
-                       | seven=55 | eight=56 | nine=57 | A=65
-                       | B=66 | C=67 | D=68 | E=69
-                       | F=70 | G=71 | H=72 | I=73
-                       | J=74 | K=75 | L=76 | M=77
-                       | N=78 | O=79 | P=80 | Q=81
-                       | R=82 | S=83 | T=84 | U=85
-                       | V=86 | W=87 | X=88 | Y=89
-                       | Z=90 | a=97 | b=98 | c=99
-                       | d=100 | e=101 | f=102 | g=103
-                       | h=104 | i=105 | j=106 | k=107
-                       | l=108 | m=109 | n=110 | o=111
-                       | p=112 | q=113 | r=114 | s=115
-                       | t=116 | u=117 | v=118 | w=119
-                       | x=120 | y=121 | z=122
+data AlphaNumDash      : dash=45 | zero=48 | one | two
+                       | three | four | five | six
+                       | seven | eight | nine | A=65
+                       | B | C | D | E
+                       | F | G | H | I
+                       | J | K | L | M
+                       | N | O | P | Q
+                       | R | S | T | U
+                       | V | W | X | Y
+                       | Z | a=97 | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z
 
 
                        -- north-sound-salsa
-data AlphaNumLodash    : zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | A=65 | B=66
-                       | C=67 | D=68 | E=69 | F=70
-                       | G=71 | H=72 | I=73 | J=74
-                       | K=75 | L=76 | M=77 | N=78
-                       | O=79 | P=80 | Q=81 | R=82
-                       | S=83 | T=84 | U=85 | V=86
-                       | W=87 | X=88 | Y=89 | Z=90
-                       | lodash=95 | a=97 | b=98 | c=99
-                       | d=100 | e=101 | f=102 | g=103
-                       | h=104 | i=105 | j=106 | k=107
-                       | l=108 | m=109 | n=110 | o=111
-                       | p=112 | q=113 | r=114 | s=115
-                       | t=116 | u=117 | v=118 | w=119
-                       | x=120 | y=121 | z=122
+data AlphaNumLodash    : zero=48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | A=65 | B
+                       | C | D | E | F
+                       | G | H | I | J
+                       | K | L | M | N
+                       | O | P | Q | R
+                       | S | T | U | V
+                       | W | X | Y | Z
+                       | lodash=95 | a=97 | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z
 
 
                        -- song-accent-mammal
-data AlphaSmall        : a=97 | b=98 | c=99 | d=100
-                       | e=101 | f=102 | g=103 | h=104
-                       | i=105 | j=106 | k=107 | l=108
-                       | m=109 | n=110 | o=111 | p=112
-                       | q=113 | r=114 | s=115 | t=116
-                       | u=117 | v=118 | w=119 | x=120
-                       | y=121 | z=122
+data AlphaSmall        : a=97 | b | c | d
+                       | e | f | g | h
+                       | i | j | k | l
+                       | m | n | o | p
+                       | q | r | s | t
+                       | u | v | w | x
+                       | y | z
 
 
                        -- aloha-lunar-felix
-data Ascii             : nul=0 | soh=1 | stx=2 | etx=3
-                       | eot=4 | enq=5 | ack=6 | bel=7
-                       | bs=8 | ht=9 | lf=10 | vt=11
-                       | ff=12 | cr=13 | so=14 | si=15
-                       | dle=16 | dc1=17 | dc2=18 | dc3=19
-                       | dc4=20 | nack=21 | syn=22 | etb=23
-                       | can=24 | em=25 | sub=26 | esc=27
-                       | fs=28 | gs=29 | rs=30 | us=31
-                       | space=32 | excl=33 | quotes=34 | hash=35
-                       | dollar=36 | percent=37 | ampersand=38 | apostrophe=39
-                       | bracketL=40 | bracketR=41 | asterisk=42 | plus=43
-                       | comma=44 | minus=45 | dot=46 | slash=47
-                       | zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | colon=58 | semiColon=59
-                       | less=60 | equal=61 | greater=62 | question=63
-                       | at=64 | A=65 | B=66 | C=67
-                       | D=68 | E=69 | F=70 | G=71
-                       | H=72 | I=73 | J=74 | K=75
-                       | L=76 | M=77 | N=78 | O=79
-                       | P=80 | Q=81 | R=82 | S=83
-                       | T=84 | U=85 | V=86 | W=87
-                       | X=88 | Y=89 | Z=90 | sqBracketL=91
-                       | backSlash=92 | sqBracketR=93 | caret=94 | lodash=95
-                       | backtick=96 | a=97 | b=98 | c=99
-                       | d=100 | e=101 | f=102 | g=103
-                       | h=104 | i=105 | j=106 | k=107
-                       | l=108 | m=109 | n=110 | o=111
-                       | p=112 | q=113 | r=114 | s=115
-                       | t=116 | u=117 | v=118 | w=119
-                       | x=120 | y=121 | z=122 | cBracketL=123
-                       | pipe=124 | cBracketR=125 | tilde=126 | del=127
+data Ascii             : nul | soh | stx | etx
+                       | eot | enq | ack | bel
+                       | bs | ht | lf | vt
+                       | ff | cr | so | si
+                       | dle | dc1 | dc2 | dc3
+                       | dc4 | nack | syn | etb
+                       | can | em | sub | esc
+                       | fs | gs | rs | us
+                       | space | excl | quotes | hash
+                       | dollar | percent | ampersand | apostrophe
+                       | bracketL | bracketR | asterisk | plus
+                       | comma | minus | dot | slash
+                       | zero | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | colon | semiColon
+                       | less | equal | greater | question
+                       | at | A | B | C
+                       | D | E | F | G
+                       | H | I | J | K
+                       | L | M | N | O
+                       | P | Q | R | S
+                       | T | U | V | W
+                       | X | Y | Z | sqBracketL
+                       | backSlash | sqBracketR | caret | lodash
+                       | backtick | a | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z | cBracketL
+                       | pipe | cBracketR | tilde | del
 
 
                        -- diet-oxford-window
-data AsciiPrintable    : space=32 | excl=33 | quotes=34 | hash=35
-                       | dollar=36 | percent=37 | ampersand=38 | apostrophe=39
-                       | bracketL=40 | bracketR=41 | asterisk=42 | plus=43
-                       | comma=44 | minus=45 | dot=46 | slash=47
-                       | zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | colon=58 | semiColon=59
-                       | less=60 | equal=61 | greater=62 | question=63
-                       | at=64 | A=65 | B=66 | C=67
-                       | D=68 | E=69 | F=70 | G=71
-                       | H=72 | I=73 | J=74 | K=75
-                       | L=76 | M=77 | N=78 | O=79
-                       | P=80 | Q=81 | R=82 | S=83
-                       | T=84 | U=85 | V=86 | W=87
-                       | X=88 | Y=89 | Z=90 | sqBracketL=91
-                       | backSlash=92 | sqBracketR=93 | caret=94 | lodash=95
-                       | backtick=96 | a=97 | b=98 | c=99
-                       | d=100 | e=101 | f=102 | g=103
-                       | h=104 | i=105 | j=106 | k=107
-                       | l=108 | m=109 | n=110 | o=111
-                       | p=112 | q=113 | r=114 | s=115
-                       | t=116 | u=117 | v=118 | w=119
-                       | x=120 | y=121 | z=122 | cBracketL=123
-                       | pipe=124 | cBracketR=125 | tilde=126
+data AsciiPrintable    : space=32 | excl | quotes | hash
+                       | dollar | percent | ampersand | apostrophe
+                       | bracketL | bracketR | asterisk | plus
+                       | comma | minus | dot | slash
+                       | zero | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | colon | semiColon
+                       | less | equal | greater | question
+                       | at | A | B | C
+                       | D | E | F | G
+                       | H | I | J | K
+                       | L | M | N | O
+                       | P | Q | R | S
+                       | T | U | V | W
+                       | X | Y | Z | sqBracketL
+                       | backSlash | sqBracketR | caret | lodash
+                       | backtick | a | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z | cBracketL
+                       | pipe | cBracketR | tilde
 
 
                        -- laser-madam-maxwell
-data Bool              : false=0 | true=1
+data Bool              : false | true
 
 
                        -- amanda-spider-diamond
-data Dec               : zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57
+data Dec               : zero=48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine
 
 
                        -- invest-moral-anvil
-data HexDecCaps        : zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | ten=65 | eleven=66
-                       | twelve=67 | thirteen=68 | fourteen=69 | fifteen=70
+data HexDecCaps        : zero=48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | ten=65 | eleven
+                       | twelve | thirteen | fourteen | fifteen
 
 
                        -- forum-sahara-email
-data HexDecSmall       : zero=48 | one=49 | two=50 | three=51
-                       | four=52 | five=53 | six=54 | seven=55
-                       | eight=56 | nine=57 | ten=97 | eleven=98
-                       | twelve=99 | thirteen=100 | fourteen=101 | fifteen=102
+data HexDecSmall       : zero=48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | ten=97 | eleven
+                       | twelve | thirteen | fourteen | fifteen
 
 
-                       -- east-invest-harvest
-data U4                : u4_0=0 | u4_1=1 | u4_2=2 | u4_3=3
-                       | u4_4=4 | u4_5=5 | u4_6=6 | u4_7=7
-                       | u4_8=8 | u4_9=9 | u4_10=10 | u4_11=11
-                       | u4_12=12 | u4_13=13 | u4_14=14 | u4_15=15
+                       -- adam-sample-vienna
+data U2                : _0 | _1 | _2 | _3
 
 
-                       -- ground-volume-singer
-data U5                : u5_0=0 | u5_1=1 | u5_2=2 | u5_3=3
-                       | u5_4=4 | u5_5=5 | u5_6=6 | u5_7=7
-                       | u5_8=8 | u5_9=9 | u5_10=10 | u5_11=11
-                       | u5_12=12 | u5_13=13 | u5_14=14 | u5_15=15
-                       | u5_16=16 | u5_17=17 | u5_18=18 | u5_19=19
-                       | u5_20=20 | u5_21=21 | u5_22=22 | u5_23=23
-                       | u5_24=24 | u5_25=25 | u5_26=26 | u5_27=27
-                       | u5_28=28 | u5_29=29 | u5_30=30 | u5_31=31
+                       -- william-courage-corner
+data U3                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+
+
+                       -- america-panther-joker
+data U4                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+
+
+                       -- nitro-george-nebula
+data U5                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+                       | _16 | _17 | _18 | _19
+                       | _20 | _21 | _22 | _23
+                       | _24 | _25 | _26 | _27
+                       | _28 | _29 | _30 | _31
+
+
+                       -- premium-fiesta-ballad
+data U6                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+                       | _16 | _17 | _18 | _19
+                       | _20 | _21 | _22 | _23
+                       | _24 | _25 | _26 | _27
+                       | _28 | _29 | _30 | _31
+                       | _32 | _33 | _34 | _35
+                       | _36 | _37 | _38 | _39
+                       | _40 | _41 | _42 | _43
+                       | _44 | _45 | _46 | _47
+                       | _48 | _49 | _50 | _51
+                       | _52 | _53 | _54 | _55
+                       | _56 | _57 | _58 | _59
+                       | _60 | _61 | _62 | _63
+
+
+                       -- dublin-arsenal-cargo
+data U7                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+                       | _16 | _17 | _18 | _19
+                       | _20 | _21 | _22 | _23
+                       | _24 | _25 | _26 | _27
+                       | _28 | _29 | _30 | _31
+                       | _32 | _33 | _34 | _35
+                       | _36 | _37 | _38 | _39
+                       | _40 | _41 | _42 | _43
+                       | _44 | _45 | _46 | _47
+                       | _48 | _49 | _50 | _51
+                       | _52 | _53 | _54 | _55
+                       | _56 | _57 | _58 | _59
+                       | _60 | _61 | _62 | _63
+                       | _64 | _65 | _66 | _67
+                       | _68 | _69 | _70 | _71
+                       | _72 | _73 | _74 | _75
+                       | _76 | _77 | _78 | _79
+                       | _80 | _81 | _82 | _83
+                       | _84 | _85 | _86 | _87
+                       | _88 | _89 | _90 | _91
+                       | _92 | _93 | _94 | _95
+                       | _96 | _97 | _98 | _99
+                       | _100 | _101 | _102 | _103
+                       | _104 | _105 | _106 | _107
+                       | _108 | _109 | _110 | _111
+                       | _112 | _113 | _114 | _115
+                       | _116 | _117 | _118 | _119
+                       | _120 | _121 | _122 | _123
+                       | _124 | _125 | _126 | _127
 
 
 

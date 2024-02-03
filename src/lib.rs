@@ -66,3 +66,14 @@ pub use typelib::{
 pub use typesys::{SymbolicSys, SystemBuilder, TypeSymbol, TypeSysId, TypeSystem};
 pub use util::{parse_args, BuildFragment, PreFragment, SemVer, StlFormat, UnknownFormat, Urn};
 pub use value::{decode, ston, typify, KeyStep, Path, PathError, Step, StrictVal};
+
+pub trait CommitConsume {
+    fn commit_consume(&mut self, data: impl AsRef<[u8]>);
+}
+
+impl CommitConsume for sha2::Sha256 {
+    fn commit_consume(&mut self, data: impl AsRef<[u8]>) {
+        use sha2::Digest;
+        self.update(data)
+    }
+}

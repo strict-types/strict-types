@@ -30,7 +30,7 @@ use sha2::Digest;
 use strict_encoding::{StrictDumb, TypeName, STRICT_TYPES_LIB};
 
 use super::{LibBuilder, SymbolContext};
-use crate::ast::{HashId, PrimitiveRef, SEM_ID_TAG};
+use crate::ast::{PrimitiveRef, SemCommit, SEM_ID_TAG};
 use crate::typelib::{CompileError, ExternRef, NestedContext, SymbolError, TypeIndex, TypeMap};
 use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
@@ -114,7 +114,7 @@ impl TranspileRef {
             let mut hasher = sha2::Sha256::new();
             hasher.update(tag);
             hasher.update(tag);
-            self.hash_id(&mut hasher);
+            self.sem_commit(&mut hasher);
             SemId::from_byte_array(hasher.finalize())
         }
     }
@@ -266,7 +266,7 @@ impl SymbolicLib {
                     extern_types,
                     stack: empty!(),
                 };
-                let ty = match ty.clone().translate(&mut ctx, &()) {
+                let ty: Ty<LibRef> = match ty.clone().translate(&mut ctx, &()) {
                     Ok(ty) => ty,
                     Err(CompileError::Continue) => {
                         index = ctx.index;
@@ -278,7 +278,7 @@ impl SymbolicLib {
                 index = ctx.index;
                 extern_types = ctx.extern_types;
                 found = true;
-                let id = ty.id(Some(name));
+                let id = ty.sem_id_named(name);
                 index.insert(name.clone(), id);
                 new_types.insert(name.clone(), ty);
                 old_types.remove(name);
@@ -318,7 +318,7 @@ impl TypeLib {
     pub fn to_symbolic(&self) -> Result<SymbolicLib, SymbolError> {
         let lib_index = self.dependencies.iter().map(|dep| (dep.id, dep.name.clone())).collect();
         let reverse_index =
-            self.types.iter().map(|(name, ty)| (ty.id(Some(name)), name.clone())).collect();
+            self.types.iter().map(|(name, ty)| (ty.sem_id_named(name), name.clone())).collect();
         let ctx = SymbolContext {
             reverse_index,
             lib_index,

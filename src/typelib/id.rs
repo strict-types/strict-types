@@ -29,9 +29,9 @@ use encoding::StrictEncode;
 use sha2::{Digest, Sha256};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
 
-use crate::ast::HashId;
+use crate::ast::SemCommit;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2, TypeLib};
-use crate::{Dependency, LibRef, SymbolRef, TranspileRef};
+use crate::{CommitConsume, Dependency, LibRef, SymbolRef, TranspileRef};
 
 pub const LIB_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:lib:v01";
 
@@ -76,93 +76,95 @@ impl Display for TypeLibId {
     }
 }
 
-impl HashId for TypeLibId {
-    fn hash_id(&self, hasher: &mut Sha256) { hasher.update(self.as_slice()); }
+impl SemCommit for TypeLibId {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
+        hasher.commit_consume(self.as_slice());
+    }
 }
 
-impl HashId for TypeLib {
-    fn hash_id(&self, hasher: &mut Sha256) {
-        self.name.hash_id(hasher);
-        hasher.update([self.dependencies.len_u8()]);
+impl SemCommit for TypeLib {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
+        self.name.sem_commit(hasher);
+        hasher.commit_consume([self.dependencies.len_u8()]);
         for dep in &self.dependencies {
-            dep.hash_id(hasher);
+            dep.sem_commit(hasher);
         }
-        hasher.update(self.types.len_u16().to_le_bytes());
+        hasher.commit_consume(self.types.len_u16().to_le_bytes());
         for (name, ty) in &self.types {
-            let sem_id = ty.id(Some(name));
-            sem_id.hash_id(hasher);
+            let sem_id = ty.sem_id_named(name);
+            sem_id.sem_commit(hasher);
         }
     }
 }
 
-impl HashId for Dependency {
-    fn hash_id(&self, hasher: &mut Sha256) { self.id.hash_id(hasher); }
+impl SemCommit for Dependency {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) { self.id.sem_commit(hasher); }
 }
 
-impl HashId for TranspileRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+impl SemCommit for TranspileRef {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
         match self {
-            TranspileRef::Embedded(ty) => ty.hash_id(hasher),
-            TranspileRef::Named(name) => name.hash_id(hasher),
-            TranspileRef::Extern(ext) => ext.hash_id(hasher),
+            TranspileRef::Embedded(ty) => ty.sem_commit(hasher),
+            TranspileRef::Named(name) => name.sem_commit(hasher),
+            TranspileRef::Extern(ext) => ext.sem_commit(hasher),
         }
     }
 }
 
-impl HashId for SymbolRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
+impl SemCommit for SymbolRef {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) { self.sem_id.sem_commit(hasher); }
 }
 
-impl HashId for LibRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+impl SemCommit for LibRef {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
         match self {
-            LibRef::Inline(ty) => ty.hash_id(hasher),
-            LibRef::Named(id) => id.hash_id(hasher),
-            LibRef::Extern(ext) => ext.hash_id(hasher),
+            LibRef::Inline(ty) => ty.sem_commit(hasher),
+            LibRef::Named(id) => id.sem_commit(hasher),
+            LibRef::Extern(ext) => ext.sem_commit(hasher),
         }
     }
 }
 
-impl HashId for InlineRef2 {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+impl SemCommit for InlineRef2 {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
         match self {
-            InlineRef2::Named(sem_id) => sem_id.hash_id(hasher),
-            InlineRef2::Extern(ext) => ext.hash_id(hasher),
+            InlineRef2::Named(sem_id) => sem_id.sem_commit(hasher),
+            InlineRef2::Extern(ext) => ext.sem_commit(hasher),
         }
     }
 }
 
-impl HashId for InlineRef1 {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+impl SemCommit for InlineRef1 {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
         match self {
-            InlineRef1::Inline(ty) => ty.hash_id(hasher),
-            InlineRef1::Named(id) => id.hash_id(hasher),
-            InlineRef1::Extern(ext) => ext.hash_id(hasher),
+            InlineRef1::Inline(ty) => ty.sem_commit(hasher),
+            InlineRef1::Named(id) => id.sem_commit(hasher),
+            InlineRef1::Extern(ext) => ext.sem_commit(hasher),
         }
     }
 }
 
-impl HashId for InlineRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) {
+impl SemCommit for InlineRef {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
         match self {
-            InlineRef::Inline(ty) => ty.hash_id(hasher),
-            InlineRef::Named(id) => id.hash_id(hasher),
-            InlineRef::Extern(ext) => ext.hash_id(hasher),
+            InlineRef::Inline(ty) => ty.sem_commit(hasher),
+            InlineRef::Named(id) => id.sem_commit(hasher),
+            InlineRef::Extern(ext) => ext.sem_commit(hasher),
         }
     }
 }
 
-impl HashId for ExternRef {
-    fn hash_id(&self, hasher: &mut sha2::Sha256) { self.sem_id.hash_id(hasher); }
+impl SemCommit for ExternRef {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) { self.sem_id.sem_commit(hasher); }
 }
 
 impl TypeLib {
     pub fn id(&self) -> TypeLibId {
         let tag = Sha256::new_with_prefix(LIB_ID_TAG).finalize();
         let mut hasher = Sha256::new();
-        hasher.update(tag);
-        hasher.update(tag);
-        self.hash_id(&mut hasher);
+        hasher.commit_consume(tag);
+        hasher.commit_consume(tag);
+        self.sem_commit(&mut hasher);
         TypeLibId::from_byte_array(hasher.finalize())
     }
 }

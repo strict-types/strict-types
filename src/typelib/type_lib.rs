@@ -33,6 +33,12 @@ use crate::typelib::id::TypeLibId;
 use crate::typelib::ExternTypes;
 use crate::{SemId, Ty, TypeRef};
 
+pub trait LibSubref: TypeRef {}
+impl LibSubref for LibRef {}
+impl LibSubref for InlineRef {}
+impl LibSubref for InlineRef1 {}
+impl LibSubref for InlineRef2 {}
+
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
