@@ -30,7 +30,7 @@ use crate::typesys::{NestedCase, TypeInfo};
 use crate::Ty;
 
 impl TypeInfo {
-    pub fn to_vesper(&self) -> TypeVesper {
+    pub(super) fn to_vesper(&self) -> TypeVesper {
         let TypeInfo {
             ty,
             fqn,
@@ -42,7 +42,7 @@ impl TypeInfo {
         let mut attributes = vec![];
         let mut comment = None;
         let name = fqn.as_ref().map(|f| f.name.clone()).unwrap_or_else(|| tn!("_"));
-        let fqn = fqn.as_ref().map(|f| f.to_string());
+        let fqn = fqn.as_ref().map(|f| f.name.to_string());
         let subject = match item {
             Some(ItemCase::UnnamedField(pos)) => {
                 if name.as_str() == "_" {
