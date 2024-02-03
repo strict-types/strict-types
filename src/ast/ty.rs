@@ -31,12 +31,12 @@ use strict_encoding::{
     FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
 };
 
-use super::id::HashId;
+use super::id::SemCommit;
 use crate::ast::Iter;
 
 /// Glue for constructing ASTs.
 pub trait TypeRef:
-    HashId + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
+    SemCommit + Clone + StrictEncode + StrictDecode + StrictDumb + Eq + Debug + Sized
 {
     fn as_ty(&self) -> Option<&Ty<Self>> { None }
     fn type_refs(&self) -> Iter<Self> { Iter::from(self) }
@@ -218,6 +218,17 @@ impl<Ref: TypeRef> Ty<Ref> {
             && variants.first_key_value().unwrap().0 == &Variant { name: fname!("none"), tag: 0 }
             && variants.last_key_value().unwrap().0 == &Variant { name: fname!("some"), tag: 1 }
         )
+    }
+
+    pub fn as_wrapped_ty(&self) -> Option<&Ty<Ref>> {
+        if let Ty::Tuple(fields) = self {
+            if fields.len() == 1 {
+                if let Some(inner) = fields.first() {
+                    return inner.as_ty();
+                }
+            }
+        }
+        None
     }
 }
 
