@@ -26,7 +26,7 @@ use encoding::stl::{
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U5};
 
-use crate::layout::MemoryLayout;
+use crate::layout::TypeLayout;
 use crate::{
     CompileError, LibBuilder, SymbolRef, SymbolicLib, SymbolicSys, TranspileError, TypeLib,
     TypeSymbol, TypeSysId,
@@ -76,7 +76,7 @@ fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
         .transpile::<SymbolicSys>()
-        .transpile::<MemoryLayout>()
+        .transpile::<TypeLayout>()
         .compile_symbols()
 }
 fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }

@@ -22,6 +22,9 @@
 
 pub mod vesper;
 mod translate;
+mod r#type;
+mod id;
 mod memory;
 
-pub use memory::MemoryLayout;
+pub use id::{MemId, MEM_ID_TAG};
+pub use r#type::TypeLayout;

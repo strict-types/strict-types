@@ -28,7 +28,7 @@ use amplify::confinement::{Confined, TinyVec};
 use strict_encoding::STRICT_TYPES_LIB;
 
 use crate::ast::ItemCase;
-use crate::layout::MemoryLayout;
+use crate::layout::TypeLayout;
 use crate::typesys::TypeFqn;
 use crate::{ast, SemId, SymbolicSys, Ty};
 
@@ -56,7 +56,7 @@ impl<'sys> TypeTree<'sys> {
     }
 
     #[inline]
-    pub fn to_layout(&self) -> MemoryLayout { MemoryLayout::from(self) }
+    pub fn to_layout(&self) -> TypeLayout { TypeLayout::from(self) }
 }
 
 /*
