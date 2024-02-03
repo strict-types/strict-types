@@ -106,18 +106,16 @@ impl Display for Symbols {
     }
 }
 
-#[cfg(feature = "base64")]
+#[cfg(feature = "base85")]
 impl fmt::UpperHex for Symbols {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::confinement::U32;
-        use base64::Engine;
 
         writeln!(f, "-----BEGIN STRICT SYMBOL SYSTEM-----")?;
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<U32>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
+        let data = base85::encode(&data);
         let mut data = data.as_str();
         while data.len() >= 64 {
             let (line, rest) = data.split_at(64);
@@ -195,20 +193,19 @@ impl Display for SymbolicSys {
             match self.lookup(*id) {
                 Some(fqn) => {
                     writeln!(f, "-- {id:0}")?;
-                    writeln!(f, "data {fqn} :: {:0}", ty)?;
+                    writeln!(f, "data {fqn} : {:0}", ty)?;
                 }
-                None => writeln!(f, "data {id:0} :: {:0}", ty)?,
+                None => writeln!(f, "data {id:0} : {:0}", ty)?,
             }
         }
         Ok(())
     }
 }
 
-#[cfg(feature = "base64")]
+#[cfg(feature = "base85")]
 impl fmt::UpperHex for SymbolicSys {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         use amplify::confinement::U32;
-        use base64::Engine;
 
         let id = self.id();
 
@@ -217,8 +214,7 @@ impl fmt::UpperHex for SymbolicSys {
         writeln!(f)?;
 
         let data = self.to_strict_serialized::<U32>().expect("in-memory");
-        let engine = base64::engine::general_purpose::STANDARD;
-        let data = engine.encode(data);
+        let data = base85::encode(&data);
         let mut data = data.as_str();
         while data.len() >= 64 {
             let (line, rest) = data.split_at(64);
