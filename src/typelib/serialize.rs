@@ -25,6 +25,7 @@ use std::path::Path;
 use std::{fmt, io};
 
 use amplify::num::u24;
+use baid58::ToBaid58;
 use encoding::{StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
 use crate::{StlFormat, SymbolicLib, TypeLib};
@@ -115,28 +116,30 @@ impl Display for SymbolicLib {
         writeln!(f, "typelib {}", self.name())?;
         writeln!(f)?;
         for dep in self.dependencies() {
-            writeln!(f, "{dep} as {}", dep.name)?;
+            writeln!(f, "{dep}")?;
             if f.alternate() {
                 if let Some(index) = self.extern_types().get(&dep.name) {
-                    writeln!(f, "-- Imports:")?;
+                    writeln!(f, "  -- Used types:")?;
                     for (sem_id, name) in index {
-                        writeln!(f, "-- {name} := {sem_id:0}")?;
+                        writeln!(f, "  -- {name}: {:0}", sem_id.to_baid58().mnemonic())?;
                     }
                     writeln!(f)?;
                 }
             }
         }
         if self.dependencies().is_empty() {
-            f.write_str("-- no dependencies")?;
+            f.write_str("-- no dependencies\n")?;
         }
         writeln!(f)?;
-        writeln!(f)?;
+        let width = f.width().unwrap_or(16);
         for (name, ty) in self.types() {
             if f.alternate() {
-                writeln!(f, "-- {:0}", ty.id(Some(name)))?;
+                let mnemo = ty.id(Some(name)).to_baid58().mnemonic();
+                writeln!(f, "{:1$}-- {mnemo:0}", "", width + 6)?;
             }
-            write!(f, "data {name:0$} :: ", f.width().unwrap_or(16))?;
+            write!(f, "data {name:0$} :: ", width)?;
             Display::fmt(ty, f)?;
+            writeln!(f)?;
             writeln!(f)?;
         }
         Ok(())
@@ -156,7 +159,7 @@ impl Display for TypeLib {
         writeln!(f)?;
         writeln!(f)?;
         for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} :: {ty}")?;
+            writeln!(f, "data {name:16} :: {ty}\n")?;
         }
         Ok(())
     }
