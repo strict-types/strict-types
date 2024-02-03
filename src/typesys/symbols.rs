@@ -200,10 +200,10 @@ impl Display for SymbolicSys {
             let ty = ty.clone().translate(&mut (), self).expect("type system inconsistency");
             match self.lookup(*id) {
                 Some(fqn) => {
-                    writeln!(f, "-- {id:0}")?;
-                    writeln!(f, "data {fqn} :: {:0}", ty)?;
+                    writeln!(f, "-- {id:-}")?;
+                    writeln!(f, "data {fqn}: {:0}", ty)?;
                 }
-                None => writeln!(f, "data {id:0} :: {:0}", ty)?,
+                None => writeln!(f, "data {id:-}: {:0}", ty)?,
             }
         }
         Ok(())

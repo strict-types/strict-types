@@ -131,13 +131,13 @@ impl Display for SymbolicLib {
             f.write_str("-- no dependencies\n")?;
         }
         writeln!(f)?;
-        let width = f.width().unwrap_or(16);
+        let width = f.width().unwrap_or(17);
         for (name, ty) in self.types() {
             if f.alternate() {
                 let mnemo = ty.id(Some(name)).to_baid58().mnemonic();
                 writeln!(f, "{:1$}-- {mnemo:0}", "", width + 6)?;
             }
-            write!(f, "data {name:0$} :: ", width)?;
+            write!(f, "data {name:0$} : ", width)?;
             Display::fmt(ty, f)?;
             writeln!(f)?;
             writeln!(f)?;
@@ -158,8 +158,9 @@ impl Display for TypeLib {
         }
         writeln!(f)?;
         writeln!(f)?;
+        let width = f.width().unwrap_or(17);
         for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} :: {ty}\n")?;
+            writeln!(f, "data {name:0$} : {ty}\n", width)?;
         }
         Ok(())
     }

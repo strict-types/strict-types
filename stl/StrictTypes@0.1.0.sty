@@ -10,57 +10,57 @@
 
 typelib StrictTypes
 
-import Std :: 9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type
+import Std: 9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type
   -- Used types:
   -- AlphaNumLodash: north-sound-salsa
 
 
-                      -- silence-tommy-direct
-data Dependency       :: id TypeLibId, name LibName
+                       -- silence-tommy-direct
+data Dependency        : id TypeLibId, name LibName
 
-                      -- karate-sister-aztec
-data EnumVariants     :: {Variant ^ 1..0xff}
+                       -- karate-sister-aztec
+data EnumVariants      : {Variant ^ 1..0xff}
 
-                      -- ritual-soprano-scholar
-data ExternRef        :: libId TypeLibId, semId SemId
+                       -- ritual-soprano-scholar
+data ExternRef         : libId TypeLibId, semId SemId
 
-                      -- phoenix-poker-amanda
-data FieldInlineRef   :: name FieldName, ty InlineRef
+                       -- phoenix-poker-amanda
+data FieldInlineRef    : name FieldName, ty InlineRef
 
-                      -- pedro-cement-crown
-data FieldInlineRef1  :: name FieldName, ty InlineRef1
+                       -- pedro-cement-crown
+data FieldInlineRef1   : name FieldName, ty InlineRef1
 
-                      -- serpent-natasha-freddie
-data FieldInlineRef2  :: name FieldName, ty InlineRef2
+                       -- serpent-natasha-freddie
+data FieldInlineRef2   : name FieldName, ty InlineRef2
 
-                      -- stone-horizon-protect
-data FieldLibRef      :: name FieldName, ty LibRef
+                       -- stone-horizon-protect
+data FieldLibRef       : name FieldName, ty LibRef
 
-                      -- today-green-neptune
-data FieldName        :: Ident
+                       -- today-green-neptune
+data FieldName         : Ident
 
-                      -- storm-vega-pegasus
-data FieldSemId       :: name FieldName, ty SemId
+                       -- storm-vega-pegasus
+data FieldSemId        : name FieldName, ty SemId
 
-                      -- connect-fragile-exile
-data Ident            :: [Std.AlphaNumLodash {-north-sound-salsa-} ^ 1..0x64]
+                       -- connect-fragile-exile
+data Ident             : [Std.AlphaNumLodash {-north-sound-salsa-} ^ 1..0x64]
 
-                      -- magnet-llama-drum
-data InlineRef        :: inline TyInlineRef1
+                       -- magnet-llama-drum
+data InlineRef         : inline TyInlineRef1
                        | named SemId
                        | extern ExternRef
 
-                      -- ramirez-break-ribbon
-data InlineRef1       :: inline TyInlineRef2
+                       -- ramirez-break-ribbon
+data InlineRef1        : inline TyInlineRef2
                        | named SemId
                        | extern ExternRef
 
-                      -- gong-tunnel-lexicon
-data InlineRef2       :: named SemId
+                       -- gong-tunnel-lexicon
+data InlineRef2        : named SemId
                        | extern ExternRef
 
-                      -- harlem-cartel-waiter
-data ItemCase         :: unnamedField U8
+                       -- harlem-cartel-waiter
+data ItemCase          : unnamedField U8
                        | namedField (U8, FieldName)
                        | unionVariant (U8, VariantName)
                        | arrayItem:16 ()
@@ -69,62 +69,62 @@ data ItemCase         :: unnamedField U8
                        | mapKey ()
                        | mapValue ()
 
-                      -- public-pagoda-bonjour
-data LibName          :: Ident
+                       -- public-pagoda-bonjour
+data LibName           : Ident
 
-                      -- focus-vitamin-plate
-data LibRef           :: inline TyInlineRef
+                       -- focus-vitamin-plate
+data LibRef            : inline TyInlineRef
                        | named SemId
                        | extern ExternRef
 
-                      -- forward-rose-value
-data MemoryLayout     :: items [TypeInfo ^ ..0xffffffff]
+                       -- forward-rose-value
+data MemoryLayout      : items [TypeInfo ^ ..0xffffffff]
 
-                      -- arthur-shelter-bermuda
-data NamedFieldsInlineRef :: [FieldInlineRef ^ 1..0xff]
+                       -- arthur-shelter-bermuda
+data NamedFieldsInlineRef : [FieldInlineRef ^ 1..0xff]
 
-                      -- zebra-stone-river
-data NamedFieldsInlineRef1 :: [FieldInlineRef1 ^ 1..0xff]
+                       -- zebra-stone-river
+data NamedFieldsInlineRef1 : [FieldInlineRef1 ^ 1..0xff]
 
-                      -- java-paper-maze
-data NamedFieldsInlineRef2 :: [FieldInlineRef2 ^ 1..0xff]
+                       -- java-paper-maze
+data NamedFieldsInlineRef2 : [FieldInlineRef2 ^ 1..0xff]
 
-                      -- silicon-average-gong
-data NamedFieldsLibRef :: [FieldLibRef ^ 1..0xff]
+                       -- silicon-average-gong
+data NamedFieldsLibRef : [FieldLibRef ^ 1..0xff]
 
-                      -- local-english-sonata
-data NamedFieldsSemId :: [FieldSemId ^ 1..0xff]
+                       -- local-english-sonata
+data NamedFieldsSemId  : [FieldSemId ^ 1..0xff]
 
-                      -- lazarus-aladdin-salsa
-data NestedCase       :: newType TypeFqn?
+                       -- lazarus-aladdin-salsa
+data NestedCase        : newType TypeFqn?
                        | option ()
                        | byteStr:16 ()
                        | asciiStr TypeFqn?
                        | uniStr ()
 
-                      -- hobby-cable-puzzle
-data Primitive        :: U8
+                       -- hobby-cable-puzzle
+data Primitive         : U8
 
-                      -- cargo-plasma-catalog
-data SemId            :: [Byte ^ 32]
+                       -- cargo-plasma-catalog
+data SemId             : [Byte ^ 32]
 
-                      -- canoe-gordon-amazon
-data Sizing           :: min U64, max U64
+                       -- canoe-gordon-amazon
+data Sizing            : min U64, max U64
 
-                      -- pocket-oxford-monster
-data SymbolRef        :: libName LibName
+                       -- pocket-oxford-monster
+data SymbolRef         : libName LibName
                        , tyName TypeName
                        , libId TypeLibId
                        , semId SemId
 
-                      -- diagram-crimson-blast
-data SymbolicSys      :: symbols Symbols, types TypeSystem
+                       -- diagram-crimson-blast
+data SymbolicSys       : symbols Symbols, types TypeSystem
 
-                      -- shock-castle-robin
-data Symbols          :: libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
+                       -- shock-castle-robin
+data Symbols           : libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
 
-                      -- absent-logo-genius
-data TyInlineRef      :: primitive Primitive
+                       -- absent-logo-genius
+data TyInlineRef       : primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
                        | union UnionVariantsInlineRef
@@ -135,8 +135,8 @@ data TyInlineRef      :: primitive Primitive
                        | set (InlineRef, Sizing)
                        | map (InlineRef, InlineRef, Sizing)
 
-                      -- taxi-rhino-secret
-data TyInlineRef1     :: primitive Primitive
+                       -- taxi-rhino-secret
+data TyInlineRef1      : primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
                        | union UnionVariantsInlineRef1
@@ -147,8 +147,8 @@ data TyInlineRef1     :: primitive Primitive
                        | set (InlineRef1, Sizing)
                        | map (InlineRef1, InlineRef1, Sizing)
 
-                      -- pacific-dolby-result
-data TyInlineRef2     :: primitive Primitive
+                       -- pacific-dolby-result
+data TyInlineRef2      : primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
                        | union UnionVariantsInlineRef2
@@ -159,8 +159,8 @@ data TyInlineRef2     :: primitive Primitive
                        | set (InlineRef2, Sizing)
                        | map (InlineRef2, InlineRef2, Sizing)
 
-                      -- russian-sweden-period
-data TyLibRef         :: primitive Primitive
+                       -- russian-sweden-period
+data TyLibRef          : primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
                        | union UnionVariantsLibRef
@@ -171,8 +171,8 @@ data TyLibRef         :: primitive Primitive
                        | set (LibRef, Sizing)
                        | map (LibRef, LibRef, Sizing)
 
-                      -- solo-canal-flower
-data TySemId          :: primitive Primitive
+                       -- solo-canal-flower
+data TySemId           : primitive Primitive
                        | unicode ()
                        | enum:3 EnumVariants
                        | union UnionVariantsSemId
@@ -183,86 +183,86 @@ data TySemId          :: primitive Primitive
                        | set (SemId, Sizing)
                        | map (SemId, SemId, Sizing)
 
-                      -- salary-apollo-chicago
-data TypeFqn          :: lib LibName, name TypeName
+                       -- salary-apollo-chicago
+data TypeFqn           : lib LibName, name TypeName
 
-                      -- texas-store-james
-data TypeInfo         :: depth U32
+                       -- texas-store-james
+data TypeInfo          : depth U32
                        , ty TySemId
                        , fqn TypeFqn?
                        , item ItemCase?
                        , nested [NestedCase ^ ..0xff]
 
-                      -- gallery-coral-actor
-data TypeLib          :: name LibName
+                       -- gallery-coral-actor
+data TypeLib           : name LibName
                        , dependencies {Dependency ^ ..0xff}
                        , externTypes {LibName -> ^ ..0xff {SemId -> TypeName}}
                        , types {TypeName -> ^ 1.. TyLibRef}
 
-                      -- jessica-snake-ceramic
-data TypeLibId        :: [Byte ^ 32]
+                       -- jessica-snake-ceramic
+data TypeLibId         : [Byte ^ 32]
 
-                      -- vega-shock-state
-data TypeName         :: Ident
+                       -- vega-shock-state
+data TypeName          : Ident
 
-                      -- match-alaska-fragile
-data TypeSymbol       :: id SemId, fqn TypeFqn?
+                       -- match-alaska-fragile
+data TypeSymbol        : id SemId, fqn TypeFqn?
 
-                      -- clara-tonight-office
-data TypeSysId        :: [Byte ^ 32]
+                       -- clara-tonight-office
+data TypeSysId         : [Byte ^ 32]
 
-                      -- system-marco-torpedo
-data TypeSystem       :: {SemId -> ^ ..0xffffff TySemId}
+                       -- system-marco-torpedo
+data TypeSystem        : {SemId -> ^ ..0xffffff TySemId}
 
-                      -- sonar-voodoo-change
-data UnionVariantsInlineRef :: {U8 -> ^ ..0xff VariantInfoInlineRef}
+                       -- sonar-voodoo-change
+data UnionVariantsInlineRef : {U8 -> ^ ..0xff VariantInfoInlineRef}
 
-                      -- japan-hope-monster
-data UnionVariantsInlineRef1 :: {U8 -> ^ ..0xff VariantInfoInlineRef1}
+                       -- japan-hope-monster
+data UnionVariantsInlineRef1 : {U8 -> ^ ..0xff VariantInfoInlineRef1}
 
-                      -- stage-secret-bonus
-data UnionVariantsInlineRef2 :: {U8 -> ^ ..0xff VariantInfoInlineRef2}
+                       -- stage-secret-bonus
+data UnionVariantsInlineRef2 : {U8 -> ^ ..0xff VariantInfoInlineRef2}
 
-                      -- violet-mailbox-kimono
-data UnionVariantsLibRef :: {U8 -> ^ ..0xff VariantInfoLibRef}
+                       -- violet-mailbox-kimono
+data UnionVariantsLibRef : {U8 -> ^ ..0xff VariantInfoLibRef}
 
-                      -- sponsor-lotus-pretend
-data UnionVariantsSemId :: {U8 -> ^ ..0xff VariantInfoSemId}
+                       -- sponsor-lotus-pretend
+data UnionVariantsSemId : {U8 -> ^ ..0xff VariantInfoSemId}
 
-                      -- silk-mega-loyal
-data UnnamedFieldsInlineRef :: [InlineRef ^ 1..0xff]
+                       -- silk-mega-loyal
+data UnnamedFieldsInlineRef : [InlineRef ^ 1..0xff]
 
-                      -- rabbit-burma-geneva
-data UnnamedFieldsInlineRef1 :: [InlineRef1 ^ 1..0xff]
+                       -- rabbit-burma-geneva
+data UnnamedFieldsInlineRef1 : [InlineRef1 ^ 1..0xff]
 
-                      -- fashion-april-special
-data UnnamedFieldsInlineRef2 :: [InlineRef2 ^ 1..0xff]
+                       -- fashion-april-special
+data UnnamedFieldsInlineRef2 : [InlineRef2 ^ 1..0xff]
 
-                      -- poetic-century-ozone
-data UnnamedFieldsLibRef :: [LibRef ^ 1..0xff]
+                       -- poetic-century-ozone
+data UnnamedFieldsLibRef : [LibRef ^ 1..0xff]
 
-                      -- signal-satire-russian
-data UnnamedFieldsSemId :: [SemId ^ 1..0xff]
+                       -- signal-satire-russian
+data UnnamedFieldsSemId : [SemId ^ 1..0xff]
 
-                      -- igor-lorenzo-catalog
-data Variant          :: name VariantName, tag U8
+                       -- igor-lorenzo-catalog
+data Variant           : name VariantName, tag U8
 
-                      -- samuel-food-campus
-data VariantInfoInlineRef :: name VariantName, ty InlineRef
+                       -- samuel-food-campus
+data VariantInfoInlineRef : name VariantName, ty InlineRef
 
-                      -- felix-mary-tempo
-data VariantInfoInlineRef1 :: name VariantName, ty InlineRef1
+                       -- felix-mary-tempo
+data VariantInfoInlineRef1 : name VariantName, ty InlineRef1
 
-                      -- pocket-hunter-corona
-data VariantInfoInlineRef2 :: name VariantName, ty InlineRef2
+                       -- pocket-hunter-corona
+data VariantInfoInlineRef2 : name VariantName, ty InlineRef2
 
-                      -- memphis-left-arena
-data VariantInfoLibRef :: name VariantName, ty LibRef
+                       -- memphis-left-arena
+data VariantInfoLibRef : name VariantName, ty LibRef
 
-                      -- shadow-pilgrim-seminar
-data VariantInfoSemId :: name VariantName, ty SemId
+                       -- shadow-pilgrim-seminar
+data VariantInfoSemId  : name VariantName, ty SemId
 
-                      -- develop-compass-yogurt
-data VariantName      :: Ident
+                       -- develop-compass-yogurt
+data VariantName       : Ident
 
 
