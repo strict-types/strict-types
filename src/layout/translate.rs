@@ -117,13 +117,10 @@ impl TypeInfo {
             }
         }
 
-        match ty {
-            Ty::Enum(variants) => {
-                for var in variants {
-                    attributes.push(Attr::EnumVariant(var.tag, var.name.to_ident()))
-                }
+        if let Ty::Enum(variants) = ty {
+            for var in variants {
+                attributes.push(Attr::EnumVariant(var.tag, var.name.to_ident()))
             }
-            _ => {}
         }
         if let Some(ItemCase::UnionVariant(ref pos, _)) = item {
             attributes.push(Attr::Tag(*pos));

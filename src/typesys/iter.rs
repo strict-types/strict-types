@@ -50,7 +50,7 @@ impl<'sys> TypeTree<'sys> {
             item: None,
             depth: 0,
             path: vec![],
-            sys: &self.sys,
+            sys: self.sys,
             nested: vec![],
         }
     }

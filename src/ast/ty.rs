@@ -585,7 +585,7 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     pub fn ty_by_tag(&self, tag: u8) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
-    pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.values().skip(pos as usize).next() }
+    pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.values().nth(pos as usize) }
     pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
@@ -593,7 +593,7 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
         self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
     }
     pub fn name_by_pos(&self, pos: u8) -> Option<&VariantName> {
-        self.0.keys().skip(pos as usize).next().map(|v| &v.name)
+        self.0.keys().nth(pos as usize).map(|v| &v.name)
     }
 }
 
