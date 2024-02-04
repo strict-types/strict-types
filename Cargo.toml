@@ -8,7 +8,7 @@ license = "Apache-2.0"
 keywords = ["encoding", "strict-encoding", "aluvm", "ubideco", "gadt"]
 categories = ["compilers", "parser-implementations", "mathematics", "science", "data-structures"]
 edition = "2021"
-rust-version = "1.67.0"
+rust-version = "1.69.0" # due to toml dependency of amplify crate
 readme = "README.md"
 exclude = [".github"]
 
