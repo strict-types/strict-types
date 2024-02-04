@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,12 @@ pub struct TypeFqn {
 }
 
 impl TypeFqn {
-    pub fn with(lib: LibName, name: TypeName) -> TypeFqn { TypeFqn { lib, name } }
+    pub fn with(lib: impl Into<LibName>, name: impl Into<TypeName>) -> TypeFqn {
+        TypeFqn {
+            lib: lib.into(),
+            name: name.into(),
+        }
+    }
 }
 
 impl From<&'static str> for TypeFqn {
@@ -138,7 +143,7 @@ impl Display for TypeSystem {
         writeln!(f, "typesys -- {}", self.id())?;
         writeln!(f)?;
         for (id, ty) in &self.0 {
-            writeln!(f, "data {id:-} : {:-}", ty)?;
+            writeln!(f, "data {id:-}: {:-}", ty)?;
         }
         Ok(())
     }

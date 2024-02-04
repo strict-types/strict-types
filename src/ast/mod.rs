@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -32,5 +32,6 @@ pub use iter::{CheckError, IntoIter, Iter};
 pub use path::{Path, PathError, Step};
 pub use translate::Translate;
 pub use ty::{
-    Cls, EnumVariants, Field, NamedFields, PrimitiveRef, Ty, TypeRef, UnionVariants, UnnamedFields,
+    Cls, EnumVariants, Field, ItemCase, NamedFields, PrimitiveRef, Ty, TypeRef, UnionVariants,
+    UnnamedFields,
 };

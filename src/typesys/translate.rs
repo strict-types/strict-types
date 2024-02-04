@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -122,7 +122,7 @@ impl SystemBuilder {
         }
 
         for (sem_id, info) in &self.types {
-            for inner_id in info.ty.type_refs() {
+            for (inner_id, _) in info.ty.type_refs() {
                 if !self.types.contains_key(sem_id) {
                     errors.push(Error::InnerTypeAbsent {
                         unknown: *inner_id,

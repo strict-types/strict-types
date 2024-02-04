@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -22,25 +22,32 @@
 
 use encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
-    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U4,
+    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U2, U3, U4, U6, U7,
 };
 use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U5};
 
+use crate::layout::MemoryLayout;
 use crate::{
     CompileError, LibBuilder, SymbolRef, SymbolicLib, SymbolicSys, TranspileError, TypeLib,
     TypeSymbol, TypeSysId,
 };
 
 pub const LIB_ID_STD: &str =
-    "urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type";
+    "urn:ubideco:stl:55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby#south-strong-welcome";
+    "urn:ubideco:stl:BADMWBVQ6sMJGfELP13cjeZPNutGuLzZtNNZirJQsz9e#tower-monaco-corona";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
+        // TODO: Add type
+        // .transpile::<U1>()
+        .transpile::<U2>()
+        .transpile::<U3>()
         .transpile::<U4>()
         .transpile::<U5>()
+        .transpile::<U6>()
+        .transpile::<U7>()
         .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()
@@ -69,6 +76,7 @@ fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
         .transpile::<TypeSysId>()
         .transpile::<TypeSymbol>()
         .transpile::<SymbolicSys>()
+        .transpile::<MemoryLayout>()
         .compile_symbols()
 }
 fn _strict_types_stl() -> Result<TypeLib, CompileError> { _strict_types_sym()?.compile() }

@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -44,7 +44,8 @@ extern crate core;
 
 pub use encoding::derive;
 pub use strict_encoding::{
-    fname, libname, strict_dumb, tn, vname, StrictDecode, StrictDumb, StrictEncode, StrictType,
+    fname, ident, libname, strict_dumb, tn, vname, StrictDecode, StrictDumb, StrictEncode,
+    StrictType,
 };
 
 #[macro_use]
@@ -55,6 +56,7 @@ pub mod typelib;
 pub mod typesys;
 pub mod value;
 pub mod stl;
+pub mod layout;
 
 pub use ast::{Cls, PrimitiveRef, SemId, Translate, Ty, TypeRef};
 pub use typelib::{

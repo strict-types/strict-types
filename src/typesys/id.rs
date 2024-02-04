@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -62,7 +62,11 @@ impl FromStr for TypeSysId {
 }
 impl Display for TypeSysId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        if f.sign_minus() {
+        if f.alternate() {
+            write!(f, "{}", self.to_baid58().mnemonic())
+        } else if f.sign_minus() {
+            write!(f, "{:#}", self.to_baid58())
+        } else if f.sign_aware_zero_pad() {
             write!(f, "urn:ubideco:{::<}", self.to_baid58())
         } else {
             write!(f, "urn:ubideco:{::<#}", self.to_baid58())

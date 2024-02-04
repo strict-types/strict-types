@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ fn main() {
                 "
   Description: Confined generalized algebraic data types (GADT)
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+  Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
   License: Apache-2.0",
             ),
         )

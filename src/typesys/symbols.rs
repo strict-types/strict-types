@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ use std::ops::Index;
 use amplify::confinement::{self, MediumOrdSet, SmallOrdSet};
 use encoding::{StrictDeserialize, StrictSerialize, STRICT_TYPES_LIB};
 
-use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol, TypeSysId};
+use crate::typesys::{translate, SymTy, TypeFqn, TypeSymbol, TypeSysId, TypeTree};
 use crate::typify::TypeSpec;
 use crate::{Dependency, SemId, Translate, Ty, TypeSystem};
 
@@ -135,7 +135,7 @@ impl fmt::UpperHex for Symbols {
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct SymbolicSys {
-    symbols: Symbols,
+    pub(super) symbols: Symbols,
     types: TypeSystem,
 }
 
@@ -170,6 +170,12 @@ impl SymbolicSys {
         self.types.get(sem_id)
     }
 
+    pub fn type_tree(&self, spec: impl Into<TypeSpec>) -> Option<TypeTree<'_>> {
+        let sem_id = self.to_sem_id(spec)?;
+        let _ = self.types.get(sem_id)?;
+        Some(TypeTree::new(sem_id, self))
+    }
+
     pub fn resolve(&self, fqn: impl Into<TypeFqn>) -> Option<&SemId> { self.symbols.get(fqn) }
 
     pub fn lookup(&self, sem_id: SemId) -> Option<&TypeFqn> { self.symbols.lookup(sem_id) }
@@ -192,10 +198,10 @@ impl Display for SymbolicSys {
             let ty = ty.clone().translate(&mut (), self).expect("type system inconsistency");
             match self.lookup(*id) {
                 Some(fqn) => {
-                    writeln!(f, "-- {id:0}")?;
-                    writeln!(f, "data {fqn} : {:0}", ty)?;
+                    writeln!(f, "-- {id:-}")?;
+                    writeln!(f, "data {fqn}: {:0}", ty)?;
                 }
-                None => writeln!(f, "data {id:0} : {:0}", ty)?,
+                None => writeln!(f, "data {id:-}: {:0}", ty)?,
             }
         }
         Ok(())

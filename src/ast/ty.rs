@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ use std::ops::Deref;
 
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
+use encoding::VariantName;
 use strict_encoding::constants::*;
 use strict_encoding::{
     FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
@@ -212,12 +213,29 @@ impl<Ref: TypeRef> Ty<Ref> {
     pub fn is_collection(&self) -> bool {
         matches!(self, Ty::Array(..) | Ty::List(..) | Ty::Set(..) | Ty::Map(..))
     }
-    pub fn is_option(&self) -> bool {
-        matches!(self,
-            Ty::Union(variants) if variants.len() == 2
-            && variants.first_key_value().unwrap().0 == &Variant { name: fname!("none"), tag: 0 }
-            && variants.last_key_value().unwrap().0 == &Variant { name: fname!("some"), tag: 1 }
-        )
+
+    pub fn is_newtype(&self) -> bool { matches!(self, Ty::Tuple(fields) if fields.len() == 1) }
+    pub fn is_byte_array(&self) -> bool { matches!(self, Ty::Array(ty, _) if ty.is_byte()) }
+    pub fn is_option(&self) -> bool { self.as_some().is_some() }
+    pub fn as_some(&self) -> Option<&Ref> {
+        match self {
+            Ty::Union(variants)
+                if variants.len() == 2
+                    && variants.first_key_value().unwrap().0
+                        == &Variant {
+                            name: vname!("none"),
+                            tag: 0,
+                        }
+                    && variants.last_key_value().unwrap().0
+                        == &Variant {
+                            name: vname!("some"),
+                            tag: 1,
+                        } =>
+            {
+                Some(variants.last_key_value().unwrap().1)
+            }
+            _ => None,
+        }
     }
 
     pub fn as_wrapped_ty(&self) -> Option<&Ty<Ref>> {
@@ -272,16 +290,55 @@ where Ref: Display
     }
 }
 
+#[derive(Clone, Eq, PartialEq, Hash, Debug)]
+#[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB, tags = custom)]
+pub enum ItemCase {
+    #[strict_type(tag = 0)]
+    UnnamedField(u8),
+    #[strict_type(tag = 1)]
+    NamedField(u8, FieldName),
+    #[strict_type(tag = 2)]
+    UnionVariant(u8, VariantName),
+    #[strict_type(tag = 0x10, dumb)]
+    ArrayItem,
+    #[strict_type(tag = 0x11)]
+    ListItem,
+    #[strict_type(tag = 0x12)]
+    SetItem,
+    #[strict_type(tag = 0x13)]
+    MapKey,
+    #[strict_type(tag = 0x14)]
+    MapValue,
+}
+
 impl<Ref: TypeRef> Ty<Ref> {
     pub fn ty_at(&self, pos: u8) -> Option<&Ref> {
         match self {
-            Ty::Union(fields) => fields.ty_by_tag(pos),
+            Ty::Union(fields) => fields.ty_by_pos(pos),
             Ty::Struct(fields) => fields.ty_by_pos(pos),
             Ty::Tuple(fields) => fields.ty_by_pos(pos),
-            // TODO: Handle map type
-            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(_, ty, _) if pos > 0 => {
+            Ty::Array(ty, _) | Ty::List(ty, _) | Ty::Set(ty, _) | Ty::Map(ty, _, _) if pos == 0 => {
                 Some(ty)
             }
+            Ty::Map(_, ty, _) if pos == 1 => Some(ty),
+            _ => None,
+        }
+    }
+    pub fn case_at(&self, pos: u8) -> Option<ItemCase> {
+        match self {
+            Ty::Union(fields) => {
+                fields.name_by_pos(pos).map(|name| ItemCase::UnionVariant(pos, name.clone()))
+            }
+            Ty::Struct(fields) => {
+                fields.get(pos as usize).map(|field| ItemCase::NamedField(pos, field.name.clone()))
+            }
+            Ty::Tuple(fields) if fields.len_u8() == pos => Some(ItemCase::UnnamedField(pos)),
+            Ty::Array(_, _) if pos == 0 => Some(ItemCase::ArrayItem),
+            Ty::List(_, _) if pos == 0 => Some(ItemCase::ListItem),
+            Ty::Set(_, _) if pos == 0 => Some(ItemCase::SetItem),
+            Ty::Map(_, _, _) if pos == 0 => Some(ItemCase::MapKey),
+            Ty::Map(_, _, _) if pos == 1 => Some(ItemCase::MapValue),
             _ => None,
         }
     }
@@ -376,7 +433,7 @@ where Ref: Display
         for field in iter {
             Display::fmt(field, f)?;
             if len >= 3 {
-                f.write_str("\n                      , ")?;
+                f.write_str("\n                       , ")?;
             } else {
                 f.write_str(", ")?;
             }
@@ -519,20 +576,24 @@ impl<Ref: TypeRef> UnionVariants<Ref> {
     }
 
     pub fn has_tag(&self, tag: u8) -> bool { self.0.keys().any(|v| v.tag == tag) }
-    pub fn by_name(&self, name: &FieldName) -> Option<(&Variant, &Ref)> {
+    pub fn by_name(&self, name: &VariantName) -> Option<(&Variant, &Ref)> {
         self.0.iter().find(|(v, _)| &v.name == name)
     }
-    pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
+    pub fn ty_by_name(&self, name: &VariantName) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| &v.name == name).map(|(_, ty)| ty)
     }
     pub fn ty_by_tag(&self, tag: u8) -> Option<&Ref> {
         self.0.iter().find(|(v, _)| v.tag == tag).map(|(_, ty)| ty)
     }
-    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
+    pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.values().nth(pos as usize) }
+    pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.keys().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
+    pub fn name_by_tag(&self, tag: u8) -> Option<&VariantName> {
         self.0.keys().find(|v| v.tag == tag).map(|v| &v.name)
+    }
+    pub fn name_by_pos(&self, pos: u8) -> Option<&VariantName> {
+        self.0.keys().nth(pos as usize).map(|v| &v.name)
     }
 }
 
@@ -547,11 +608,11 @@ where Ref: Display
             write!(f, "{variant}")?;
             if last_tag != variant.tag {
                 last_tag = variant.tag;
-                write!(f, "={last_tag} ")?;
+                write!(f, "#{last_tag} ")?;
             } else {
                 f.write_str(" ")?;
             }
-            last_tag += 1;
+            last_tag = last_tag.saturating_add(1);
             if ty.is_compound() {
                 f.write_str("(")?;
                 Display::fmt(ty, f)?;
@@ -559,13 +620,13 @@ where Ref: Display
             } else {
                 Display::fmt(ty, f)?;
             }
-            write!(f, "\n                      | ")?;
+            write!(f, "\n                       | ")?;
         }
         if let Some((variant, ty)) = last {
             write!(f, "{variant}")?;
             if last_tag != variant.tag {
                 last_tag = variant.tag;
-                write!(f, "={last_tag} ")?;
+                write!(f, "#{last_tag} ")?;
             } else {
                 f.write_str(" ")?;
             }
@@ -617,10 +678,10 @@ impl<'a> IntoIterator for &'a EnumVariants {
 impl EnumVariants {
     pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
 
-    pub fn tag_by_name(&self, name: &FieldName) -> Option<u8> {
+    pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.iter().find(|v| &v.name == name).map(|v| v.tag)
     }
-    pub fn name_by_tag(&self, tag: u8) -> Option<&FieldName> {
+    pub fn name_by_tag(&self, tag: u8) -> Option<&VariantName> {
         self.0.iter().find(|v| v.tag == tag).map(|v| &v.name)
     }
     pub fn has_tag(&self, tag: u8) -> bool { self.0.iter().any(|v| v.tag == tag) }
@@ -634,9 +695,9 @@ impl Display for EnumVariants {
             write!(f, "{variant}")?;
             if variant.tag != last_tag {
                 last_tag = variant.tag;
-                write!(f, "={last_tag}")?;
+                write!(f, "#{last_tag}")?;
             }
-            last_tag += 1;
+            last_tag = last_tag.saturating_add(1);
         }
         let mut chunk_size = None;
         loop {
@@ -644,15 +705,15 @@ impl Display for EnumVariants {
                 write!(f, " | {variant}")?;
                 if variant.tag != last_tag {
                     last_tag = variant.tag;
-                    write!(f, "={last_tag}")?;
+                    write!(f, "#{last_tag}")?;
                 }
-                last_tag += 1;
+                last_tag = last_tag.saturating_add(1);
             }
             chunk_size = Some(4);
             if iter.len() == 0 {
                 break;
             }
-            write!(f, "\n                     ")?;
+            write!(f, "\n                      ")?;
         }
         writeln!(f)
     }

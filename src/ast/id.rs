@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -26,7 +26,7 @@ use std::str::FromStr;
 
 use amplify::{ByteArray, Bytes32, Wrapper};
 use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
-use encoding::{FieldName, LibName};
+use encoding::{FieldName, LibName, VariantName};
 use sha2::Digest;
 use strict_encoding::{Sizing, TypeName, Variant, STRICT_TYPES_LIB};
 
@@ -68,7 +68,11 @@ impl FromStr for SemId {
 }
 impl Display for SemId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        if f.sign_minus() {
+        if f.alternate() {
+            write!(f, "{}", self.to_baid58().mnemonic())
+        } else if f.sign_minus() {
+            write!(f, "{:#}", self.to_baid58())
+        } else if f.sign_aware_zero_pad() {
             write!(f, "urn:ubideco:{::<}", self.to_baid58())
         } else {
             write!(f, "urn:ubideco:{::<#}", self.to_baid58())
@@ -148,6 +152,13 @@ impl SemCommit for TypeName {
 }
 
 impl SemCommit for FieldName {
+    fn sem_commit(&self, hasher: &mut impl CommitConsume) {
+        hasher.commit_consume([self.len() as u8]);
+        hasher.commit_consume(self.as_bytes());
+    }
+}
+
+impl SemCommit for VariantName {
     fn sem_commit(&self, hasher: &mut impl CommitConsume) {
         hasher.commit_consume([self.len() as u8]);
         hasher.commit_consume(self.as_bytes());

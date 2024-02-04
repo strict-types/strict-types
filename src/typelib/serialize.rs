@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ use std::path::Path;
 use std::{fmt, io};
 
 use amplify::num::u24;
+use baid58::ToBaid58;
 use encoding::{StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
 use crate::{StlFormat, SymbolicLib, TypeLib};
@@ -116,28 +117,27 @@ impl Display for SymbolicLib {
         writeln!(f, "typelib {}", self.name())?;
         writeln!(f)?;
         for dep in self.dependencies() {
-            writeln!(f, "{dep} as {}", dep.name)?;
-            if f.alternate() {
-                if let Some(index) = self.extern_types().get(&dep.name) {
-                    writeln!(f, "-- Imports:")?;
-                    for (sem_id, name) in index {
-                        writeln!(f, "-- {name} := {sem_id:0}")?;
-                    }
-                    writeln!(f)?;
+            writeln!(f, "import {dep}")?;
+            if let Some(index) = self.extern_types().get(&dep.name) {
+                for (sem_id, name) in index {
+                    writeln!(f, "  use {name}#{:0}", sem_id.to_baid58().mnemonic())?;
                 }
+                writeln!(f)?;
             }
         }
         if self.dependencies().is_empty() {
-            f.write_str("-- no dependencies")?;
+            f.write_str("-- no dependencies\n")?;
         }
         writeln!(f)?;
-        writeln!(f)?;
+        let width = f.width().unwrap_or(17);
         for (name, ty) in self.types() {
             if f.alternate() {
-                writeln!(f, "-- {:0}", ty.sem_id_named(name))?;
+                let mnemo = ty.sem_id_named(name).to_baid58().mnemonic();
+                writeln!(f, "@mnemonic({mnemo:0})")?;
             }
-            write!(f, "data {name:0$} : ", f.width().unwrap_or(16))?;
+            write!(f, "data {name:0$} : ", width)?;
             Display::fmt(ty, f)?;
+            writeln!(f)?;
             writeln!(f)?;
         }
         Ok(())
@@ -156,8 +156,9 @@ impl Display for TypeLib {
         }
         writeln!(f)?;
         writeln!(f)?;
+        let width = f.width().unwrap_or(17);
         for (name, ty) in &self.types {
-            writeln!(f, "data {name:16} : {ty}")?;
+            writeln!(f, "data {name:0$} : {ty}\n", width)?;
         }
         Ok(())
     }

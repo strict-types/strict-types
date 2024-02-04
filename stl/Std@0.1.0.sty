@@ -1,209 +1,288 @@
 {-
-  Id: urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type
+  Id: urn:ubideco:stl:55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray
   Name: Std
   Version: 0.1.0
   Description: Strict types standard library
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+  Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
   License: Apache-2.0
 -}
 
+@context
 typelib Std
 
 -- no dependencies
 
--- urn:ubideco:semid:55LGxTk42rZVmuXepF2FJNfP52h3QG5pBnBaY1VnnvnP#quiet-opinion-saddle
-data Alpha            : A=65 | B | C | D
-                      | E | F | G | H
-                      | I | J | K | L
-                      | M | N | O | P
-                      | Q | R | S | T
-                      | U | V | W | X
-                      | Y | Z | a=97 | b
-                      | c | d | e | f
-                      | g | h | i | j
-                      | k | l | m | n
-                      | o | p | q | r
-                      | s | t | u | v
-                      | w | x | y | z
+@mnemonic(quiet-opinion-saddle)
+data Alpha             : A#65 | B | C | D
+                       | E | F | G | H
+                       | I | J | K | L
+                       | M | N | O | P
+                       | Q | R | S | T
+                       | U | V | W | X
+                       | Y | Z | a#97 | b
+                       | c | d | e | f
+                       | g | h | i | j
+                       | k | l | m | n
+                       | o | p | q | r
+                       | s | t | u | v
+                       | w | x | y | z
 
--- urn:ubideco:semid:43EA5YjDDUMdgMApG3xuUWGSzDXKr6U5b9gtgLwuqCc3#simon-pegasus-stop
-data AlphaCaps        : A=65 | B | C | D
-                      | E | F | G | H
-                      | I | J | K | L
-                      | M | N | O | P
-                      | Q | R | S | T
-                      | U | V | W | X
-                      | Y | Z
 
--- urn:ubideco:semid:7U5NvJNf343ZzFXsqW2DBYtTSvrb3YdL6oxYd2BaMsVr#magnet-section-latin
-data AlphaCapsNum     : zero=48 | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | A=65 | B
-                      | C | D | E | F
-                      | G | H | I | J
-                      | K | L | M | N
-                      | O | P | Q | R
-                      | S | T | U | V
-                      | W | X | Y | Z
+@mnemonic(simon-pegasus-stop)
+data AlphaCaps         : A#65 | B | C | D
+                       | E | F | G | H
+                       | I | J | K | L
+                       | M | N | O | P
+                       | Q | R | S | T
+                       | U | V | W | X
+                       | Y | Z
 
--- urn:ubideco:semid:DZX8CtQMz2kGByNeWpSpWzor5EPoeQ1LRsSWcR13w9bH#disco-ibiza-mile
-data AlphaNum         : zero=48 | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | A=65 | B
-                      | C | D | E | F
-                      | G | H | I | J
-                      | K | L | M | N
-                      | O | P | Q | R
-                      | S | T | U | V
-                      | W | X | Y | Z
-                      | a=97 | b | c | d
-                      | e | f | g | h
-                      | i | j | k | l
-                      | m | n | o | p
-                      | q | r | s | t
-                      | u | v | w | x
-                      | y | z
 
--- urn:ubideco:semid:4UQSpEBq39vFqEBYDaLEMaQ6qJYGDiEFsGFYzv7U7ipA#good-trumpet-today
-data AlphaNumDash     : dash=45 | zero=48 | one | two
-                      | three | four | five | six
-                      | seven | eight | nine | A=65
-                      | B | C | D | E
-                      | F | G | H | I
-                      | J | K | L | M
-                      | N | O | P | Q
-                      | R | S | T | U
-                      | V | W | X | Y
-                      | Z | a=97 | b | c
-                      | d | e | f | g
-                      | h | i | j | k
-                      | l | m | n | o
-                      | p | q | r | s
-                      | t | u | v | w
-                      | x | y | z
+@mnemonic(magnet-section-latin)
+data AlphaCapsNum      : zero#48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | A#65 | B
+                       | C | D | E | F
+                       | G | H | I | J
+                       | K | L | M | N
+                       | O | P | Q | R
+                       | S | T | U | V
+                       | W | X | Y | Z
 
--- urn:ubideco:semid:8iBe2dh8beD1KUairdqCacEcxAr4h55XfUQN2PspWXjz#north-sound-salsa
-data AlphaNumLodash   : zero=48 | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | A=65 | B
-                      | C | D | E | F
-                      | G | H | I | J
-                      | K | L | M | N
-                      | O | P | Q | R
-                      | S | T | U | V
-                      | W | X | Y | Z
-                      | lodash=95 | a=97 | b | c
-                      | d | e | f | g
-                      | h | i | j | k
-                      | l | m | n | o
-                      | p | q | r | s
-                      | t | u | v | w
-                      | x | y | z
 
--- urn:ubideco:semid:HmLtNhtTNv8cdSDzKcU3p1i3jcJS6TWkrRCw1vYABFJG#song-accent-mammal
-data AlphaSmall       : a=97 | b | c | d
-                      | e | f | g | h
-                      | i | j | k | l
-                      | m | n | o | p
-                      | q | r | s | t
-                      | u | v | w | x
-                      | y | z
+@mnemonic(disco-ibiza-mile)
+data AlphaNum          : zero#48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | A#65 | B
+                       | C | D | E | F
+                       | G | H | I | J
+                       | K | L | M | N
+                       | O | P | Q | R
+                       | S | T | U | V
+                       | W | X | Y | Z
+                       | a#97 | b | c | d
+                       | e | f | g | h
+                       | i | j | k | l
+                       | m | n | o | p
+                       | q | r | s | t
+                       | u | v | w | x
+                       | y | z
 
--- urn:ubideco:semid:2NFrhqQqGNDA4HujyTW2pmcjtrN5sbtFfpPFXPPYcGER#aloha-lunar-felix
-data Ascii            : nul | soh | stx | etx
-                      | eot | enq | ack | bel
-                      | bs | ht | lf | vt
-                      | ff | cr | so | si
-                      | dle | dc1 | dc2 | dc3
-                      | dc4 | nack | syn | etb
-                      | can | em | sub | esc
-                      | fs | gs | rs | us
-                      | space | excl | quotes | hash
-                      | dollar | percent | ampersand | apostrophe
-                      | bracketL | bracketR | asterisk | plus
-                      | comma | minus | dot | slash
-                      | zero | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | colon | semiColon
-                      | less | equal | greater | question
-                      | at | A | B | C
-                      | D | E | F | G
-                      | H | I | J | K
-                      | L | M | N | O
-                      | P | Q | R | S
-                      | T | U | V | W
-                      | X | Y | Z | sqBracketL
-                      | backSlash | sqBracketR | caret | lodash
-                      | backtick | a | b | c
-                      | d | e | f | g
-                      | h | i | j | k
-                      | l | m | n | o
-                      | p | q | r | s
-                      | t | u | v | w
-                      | x | y | z | cBracketL
-                      | pipe | cBracketR | tilde | del
 
--- urn:ubideco:semid:mbH4meZSjxky12xHm9pg3rw8VoGxEa6rXtt6dAMZLbt#diet-oxford-window
-data AsciiPrintable   : space=32 | excl | quotes | hash
-                      | dollar | percent | ampersand | apostrophe
-                      | bracketL | bracketR | asterisk | plus
-                      | comma | minus | dot | slash
-                      | zero | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | colon | semiColon
-                      | less | equal | greater | question
-                      | at | A | B | C
-                      | D | E | F | G
-                      | H | I | J | K
-                      | L | M | N | O
-                      | P | Q | R | S
-                      | T | U | V | W
-                      | X | Y | Z | sqBracketL
-                      | backSlash | sqBracketR | caret | lodash
-                      | backtick | a | b | c
-                      | d | e | f | g
-                      | h | i | j | k
-                      | l | m | n | o
-                      | p | q | r | s
-                      | t | u | v | w
-                      | x | y | z | cBracketL
-                      | pipe | cBracketR | tilde
+@mnemonic(good-trumpet-today)
+data AlphaNumDash      : dash#45 | zero#48 | one | two
+                       | three | four | five | six
+                       | seven | eight | nine | A#65
+                       | B | C | D | E
+                       | F | G | H | I
+                       | J | K | L | M
+                       | N | O | P | Q
+                       | R | S | T | U
+                       | V | W | X | Y
+                       | Z | a#97 | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z
 
--- urn:ubideco:semid:7ZhBHGSJm9ixmm8Z9vCX7i5Ga7j5xrW8t11nsb1Cgpnx#laser-madam-maxwell
-data Bool             : false | true
 
--- urn:ubideco:semid:DfVXYs8NyS6G5QLTQMUELHWGkSoenXDw3ZFrHzG3LjMW#amanda-spider-diamond
-data Dec              : zero=48 | one | two | three
-                      | four | five | six | seven
-                      | eight | nine
+@mnemonic(north-sound-salsa)
+data AlphaNumLodash    : zero#48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | A#65 | B
+                       | C | D | E | F
+                       | G | H | I | J
+                       | K | L | M | N
+                       | O | P | Q | R
+                       | S | T | U | V
+                       | W | X | Y | Z
+                       | lodash#95 | a#97 | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z
 
--- urn:ubideco:semid:H5T3iaCVzmGH5BcotfpzcRNb5Z1ri27rwVrRhJ6UosU6#invest-moral-anvil
-data HexDecCaps       : zero=48 | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | ten=65 | eleven
-                      | twelve | thirteen | fourteen | fifteen
 
--- urn:ubideco:semid:CBhZBmVRHY5sgou91KEAQrxun6kQQdbCPRekEEoB5Lik#forum-sahara-email
-data HexDecSmall      : zero=48 | one | two | three
-                      | four | five | six | seven
-                      | eight | nine | ten=97 | eleven
-                      | twelve | thirteen | fourteen | fifteen
+@mnemonic(song-accent-mammal)
+data AlphaSmall        : a#97 | b | c | d
+                       | e | f | g | h
+                       | i | j | k | l
+                       | m | n | o | p
+                       | q | r | s | t
+                       | u | v | w | x
+                       | y | z
 
--- urn:ubideco:semid:BrEhDdRPrktqBgsNbgsmUagRz9b5n5csfbmif8Y7Bcc8#east-invest-harvest
-data U4               : u4_0 | u4_1 | u4_2 | u4_3
-                      | u4_4 | u4_5 | u4_6 | u4_7
-                      | u4_8 | u4_9 | u4_10 | u4_11
-                      | u4_12 | u4_13 | u4_14 | u4_15
 
--- urn:ubideco:semid:3MDHMYsJt8d1gUiyx5vGCWcNLQ7biek6UTjHg3ksW4Bf#ground-volume-singer
-data U5               : u5_0 | u5_1 | u5_2 | u5_3
-                      | u5_4 | u5_5 | u5_6 | u5_7
-                      | u5_8 | u5_9 | u5_10 | u5_11
-                      | u5_12 | u5_13 | u5_14 | u5_15
-                      | u5_16 | u5_17 | u5_18 | u5_19
-                      | u5_20 | u5_21 | u5_22 | u5_23
-                      | u5_24 | u5_25 | u5_26 | u5_27
-                      | u5_28 | u5_29 | u5_30 | u5_31
+@mnemonic(aloha-lunar-felix)
+data Ascii             : nul | soh | stx | etx
+                       | eot | enq | ack | bel
+                       | bs | ht | lf | vt
+                       | ff | cr | so | si
+                       | dle | dc1 | dc2 | dc3
+                       | dc4 | nack | syn | etb
+                       | can | em | sub | esc
+                       | fs | gs | rs | us
+                       | space | excl | quotes | hash
+                       | dollar | percent | ampersand | apostrophe
+                       | bracketL | bracketR | asterisk | plus
+                       | comma | minus | dot | slash
+                       | zero | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | colon | semiColon
+                       | less | equal | greater | question
+                       | at | A | B | C
+                       | D | E | F | G
+                       | H | I | J | K
+                       | L | M | N | O
+                       | P | Q | R | S
+                       | T | U | V | W
+                       | X | Y | Z | sqBracketL
+                       | backSlash | sqBracketR | caret | lodash
+                       | backtick | a | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z | cBracketL
+                       | pipe | cBracketR | tilde | del
+
+
+@mnemonic(diet-oxford-window)
+data AsciiPrintable    : space#32 | excl | quotes | hash
+                       | dollar | percent | ampersand | apostrophe
+                       | bracketL | bracketR | asterisk | plus
+                       | comma | minus | dot | slash
+                       | zero | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | colon | semiColon
+                       | less | equal | greater | question
+                       | at | A | B | C
+                       | D | E | F | G
+                       | H | I | J | K
+                       | L | M | N | O
+                       | P | Q | R | S
+                       | T | U | V | W
+                       | X | Y | Z | sqBracketL
+                       | backSlash | sqBracketR | caret | lodash
+                       | backtick | a | b | c
+                       | d | e | f | g
+                       | h | i | j | k
+                       | l | m | n | o
+                       | p | q | r | s
+                       | t | u | v | w
+                       | x | y | z | cBracketL
+                       | pipe | cBracketR | tilde
+
+
+@mnemonic(laser-madam-maxwell)
+data Bool              : false | true
+
+
+@mnemonic(amanda-spider-diamond)
+data Dec               : zero#48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine
+
+
+@mnemonic(invest-moral-anvil)
+data HexDecCaps        : zero#48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | ten#65 | eleven
+                       | twelve | thirteen | fourteen | fifteen
+
+
+@mnemonic(forum-sahara-email)
+data HexDecSmall       : zero#48 | one | two | three
+                       | four | five | six | seven
+                       | eight | nine | ten#97 | eleven
+                       | twelve | thirteen | fourteen | fifteen
+
+
+@mnemonic(adam-sample-vienna)
+data U2                : _0 | _1 | _2 | _3
+
+
+@mnemonic(william-courage-corner)
+data U3                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+
+
+@mnemonic(america-panther-joker)
+data U4                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+
+
+@mnemonic(nitro-george-nebula)
+data U5                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+                       | _16 | _17 | _18 | _19
+                       | _20 | _21 | _22 | _23
+                       | _24 | _25 | _26 | _27
+                       | _28 | _29 | _30 | _31
+
+
+@mnemonic(premium-fiesta-ballad)
+data U6                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+                       | _16 | _17 | _18 | _19
+                       | _20 | _21 | _22 | _23
+                       | _24 | _25 | _26 | _27
+                       | _28 | _29 | _30 | _31
+                       | _32 | _33 | _34 | _35
+                       | _36 | _37 | _38 | _39
+                       | _40 | _41 | _42 | _43
+                       | _44 | _45 | _46 | _47
+                       | _48 | _49 | _50 | _51
+                       | _52 | _53 | _54 | _55
+                       | _56 | _57 | _58 | _59
+                       | _60 | _61 | _62 | _63
+
+
+@mnemonic(dublin-arsenal-cargo)
+data U7                : _0 | _1 | _2 | _3
+                       | _4 | _5 | _6 | _7
+                       | _8 | _9 | _10 | _11
+                       | _12 | _13 | _14 | _15
+                       | _16 | _17 | _18 | _19
+                       | _20 | _21 | _22 | _23
+                       | _24 | _25 | _26 | _27
+                       | _28 | _29 | _30 | _31
+                       | _32 | _33 | _34 | _35
+                       | _36 | _37 | _38 | _39
+                       | _40 | _41 | _42 | _43
+                       | _44 | _45 | _46 | _47
+                       | _48 | _49 | _50 | _51
+                       | _52 | _53 | _54 | _55
+                       | _56 | _57 | _58 | _59
+                       | _60 | _61 | _62 | _63
+                       | _64 | _65 | _66 | _67
+                       | _68 | _69 | _70 | _71
+                       | _72 | _73 | _74 | _75
+                       | _76 | _77 | _78 | _79
+                       | _80 | _81 | _82 | _83
+                       | _84 | _85 | _86 | _87
+                       | _88 | _89 | _90 | _91
+                       | _92 | _93 | _94 | _95
+                       | _96 | _97 | _98 | _99
+                       | _100 | _101 | _102 | _103
+                       | _104 | _105 | _106 | _107
+                       | _108 | _109 | _110 | _111
+                       | _112 | _113 | _114 | _115
+                       | _116 | _117 | _118 | _119
+                       | _120 | _121 | _122 | _123
+                       | _124 | _125 | _126 | _127
+
 
 

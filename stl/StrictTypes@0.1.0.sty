@@ -1,185 +1,268 @@
 {-
-  Id: urn:ubideco:stl:5XLKQ1sNryZm9bdFKU2kBY3MPYdZXhchVdQKBbHA3gby#south-strong-welcome
+  Id: urn:ubideco:stl:BADMWBVQ6sMJGfELP13cjeZPNutGuLzZtNNZirJQsz9e#tower-monaco-corona
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
   Author: Dr Maxim Orlovsky <orlovsky@ubideco.org>
-  Copyright (C) 2023 UBIDECO Institute. All rights reserved.
+  Copyright (C) 2023-2024 UBIDECO Institute. All rights reserved.
   License: Apache-2.0
 -}
 
+@context
 typelib StrictTypes
 
-import urn:ubideco:stl:9KALDYR8Nyjq4FdMW6kYoL7vdkWnqPqNuFnmE9qHpNjZ#justice-rocket-type as Std
--- Imports:
--- AlphaNumLodash := urn:ubideco:semid:8iBe2dh8beD1KUairdqCacEcxAr4h55XfUQN2PspWXjz#north-sound-salsa
+import Std#55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray
+  use AlphaNumLodash#north-sound-salsa
 
 
+@mnemonic(silence-tommy-direct)
+data Dependency        : id TypeLibId, name LibName
 
--- urn:ubideco:semid:FV6aCKqTnAc6kavvC48U6WEjAqc4H6UTi2iRTxFrhqPY#silence-tommy-direct
-data Dependency       : id TypeLibId, name LibName
--- urn:ubideco:semid:51iuuNfXdzE8dx9Y9QEaiGP2cc7yJzirY4abawBKNGE6#karate-sister-aztec
-data EnumVariants     : {Variant ^ 1..0xff}
--- urn:ubideco:semid:29hz6aMnfcGz3SEVoUv6k5PfZjSPJX7bJpiQj3EKkGwx#ritual-soprano-scholar
-data ExternRef        : libId TypeLibId, semId SemId
--- urn:ubideco:semid:2GJ4sjfUm59XEr5Hrcn9hdA9zD9VhHuyjtErnrpH6vEs#phoenix-poker-amanda
-data FieldInlineRef   : name FieldName, ty InlineRef
--- urn:ubideco:semid:4cYyU4JWGoY76byD4PYLwNsHTrbRiic5PbUDpSQMFYih#pedro-cement-crown
-data FieldInlineRef1  : name FieldName, ty InlineRef1
--- urn:ubideco:semid:5tdhprRvkZVPGAqkYuZT1RmsccSgfg5mz1ohgXH32PLy#serpent-natasha-freddie
-data FieldInlineRef2  : name FieldName, ty InlineRef2
--- urn:ubideco:semid:4NgjiSuLr3txVBAtRWe9t68GiwigifkCB5hzTqo7fQSj#stone-horizon-protect
-data FieldLibRef      : name FieldName, ty LibRef
--- urn:ubideco:semid:EXf9yMeW9dZv4Aq4kPcWAgG1pmBDaLKzV6fMqMxckeWK#today-green-neptune
-data FieldName        : Ident
--- urn:ubideco:semid:8yQQNsKP7MtL4dVP7dJNXnGutLdhs5xdmx369dp18pea#storm-vega-pegasus
-data FieldSemId       : name FieldName, ty SemId
--- urn:ubideco:semid:9SkVki7nQ7WRGN2ayWjySv7QSh6ftrakdNRbE2sSbUYw#connect-fragile-exile
-data Ident            : [Std.AlphaNumLodash {- urn:ubideco:semid:8iBe2dh8beD1KUairdqCacEcxAr4h55XfUQN2PspWXjz#north-sound-salsa -} ^ 1..0x64]
--- urn:ubideco:semid:ACXJeMFxSCfKaDXpGZzzDJ9PZrnWERenBSkaVgmqztT9#magnet-llama-drum
-data InlineRef        : inline TyInlineRef1
-                      | named SemId
-                      | extern ExternRef
--- urn:ubideco:semid:GuvQNNvNkmUT8fJYCXuucUCFSRqoHoy4g2wB54PgnP5D#ramirez-break-ribbon
-data InlineRef1       : inline TyInlineRef2
-                      | named SemId
-                      | extern ExternRef
--- urn:ubideco:semid:9VXzdXS3wF1eomrLkmhKMK9kTdVQnWQUW5Fhqbm3E4Ux#gong-tunnel-lexicon
-data InlineRef2       : named SemId
-                      | extern ExternRef
--- urn:ubideco:semid:CfGN6VgrTXVEvMF4TVu9vihmn9YEwHFck9GM26Gwfn7k#public-pagoda-bonjour
-data LibName          : Ident
--- urn:ubideco:semid:HKxXPz1j5bUNYzAyyHE5qghcffX5nUEfJWDP2hSdWyGC#focus-vitamin-plate
-data LibRef           : inline TyInlineRef
-                      | named SemId
-                      | extern ExternRef
--- urn:ubideco:semid:94DUadJMLRjBzGtu4sbzw4m1515nWSZSoRBRX6zx94RT#arthur-shelter-bermuda
+@mnemonic(karate-sister-aztec)
+data EnumVariants      : {Variant ^ 1..0xff}
+
+@mnemonic(ritual-soprano-scholar)
+data ExternRef         : libId TypeLibId, semId SemId
+
+@mnemonic(phoenix-poker-amanda)
+data FieldInlineRef    : name FieldName, ty InlineRef
+
+@mnemonic(pedro-cement-crown)
+data FieldInlineRef1   : name FieldName, ty InlineRef1
+
+@mnemonic(serpent-natasha-freddie)
+data FieldInlineRef2   : name FieldName, ty InlineRef2
+
+@mnemonic(stone-horizon-protect)
+data FieldLibRef       : name FieldName, ty LibRef
+
+@mnemonic(today-green-neptune)
+data FieldName         : Ident
+
+@mnemonic(storm-vega-pegasus)
+data FieldSemId        : name FieldName, ty SemId
+
+@mnemonic(connect-fragile-exile)
+data Ident             : [Std.AlphaNumLodash#north-sound-salsa ^ 1..0x64]
+
+@mnemonic(magnet-llama-drum)
+data InlineRef         : inline TyInlineRef1
+                       | named SemId
+                       | extern ExternRef
+
+@mnemonic(ramirez-break-ribbon)
+data InlineRef1        : inline TyInlineRef2
+                       | named SemId
+                       | extern ExternRef
+
+@mnemonic(gong-tunnel-lexicon)
+data InlineRef2        : named SemId
+                       | extern ExternRef
+
+@mnemonic(harlem-cartel-waiter)
+data ItemCase          : unnamedField U8
+                       | namedField (U8, FieldName)
+                       | unionVariant (U8, VariantName)
+                       | arrayItem#16 ()
+                       | listItem ()
+                       | setItem ()
+                       | mapKey ()
+                       | mapValue ()
+
+@mnemonic(public-pagoda-bonjour)
+data LibName           : Ident
+
+@mnemonic(focus-vitamin-plate)
+data LibRef            : inline TyInlineRef
+                       | named SemId
+                       | extern ExternRef
+
+@mnemonic(forward-rose-value)
+data MemoryLayout      : items [TypeInfo ^ ..0xffffffff]
+
+@mnemonic(arthur-shelter-bermuda)
 data NamedFieldsInlineRef : [FieldInlineRef ^ 1..0xff]
--- urn:ubideco:semid:FTnqX46y9MLGSmSBaVTYWr5KNB43SiJDgM98eeyE1uEf#zebra-stone-river
+
+@mnemonic(zebra-stone-river)
 data NamedFieldsInlineRef1 : [FieldInlineRef1 ^ 1..0xff]
--- urn:ubideco:semid:A56U8yCFhAKvocfRD2mbE9YemfE5iDQVwygBXeWgA1Hx#java-paper-maze
+
+@mnemonic(java-paper-maze)
 data NamedFieldsInlineRef2 : [FieldInlineRef2 ^ 1..0xff]
--- urn:ubideco:semid:EDuAn1A4guy6TkgtgKcLksuHPz1AWNxYQRyw1bkXrpGv#silicon-average-gong
+
+@mnemonic(silicon-average-gong)
 data NamedFieldsLibRef : [FieldLibRef ^ 1..0xff]
--- urn:ubideco:semid:7MoLEA46Roi1ELw5DcLEqNhxVJYJ4z2hN1yQHX4RVMFa#local-english-sonata
-data NamedFieldsSemId : [FieldSemId ^ 1..0xff]
--- urn:ubideco:semid:3T3zMmQxuir7TsdjhBLaETJfLH4mr5amAseXDePnzhMT#hobby-cable-puzzle
-data Primitive        : U8
--- urn:ubideco:semid:8Ckj2p3GLKina636pSKJkj7GB6ft8XeoP4jfGkRUNwtp#cargo-plasma-catalog
-data SemId            : [Byte ^ 32]
--- urn:ubideco:semid:9jnMbAs5A91zjK9KDrLuFH42WtinmB8GY6JE6BMY31hw#canoe-gordon-amazon
-data Sizing           : min U64, max U64
--- urn:ubideco:semid:HTSFwsgZjYXJRLbgpT4NXrqn81U1epqjZAJf7Lf4XLT1#pocket-oxford-monster
-data SymbolRef        : libName LibName
-                      , tyName TypeName
-                      , libId TypeLibId
-                      , semId SemId
--- urn:ubideco:semid:CatmbYRFh9sq96VaCNZDoxwPSs3QA6U9z8g5mXy5JyeD#diagram-crimson-blast
-data SymbolicSys      : symbols Symbols, types TypeSystem
--- urn:ubideco:semid:3YfnJ7fXxmtKqtNg6bUGo9ac8vdwUpqib8R6nGPiJJLF#shock-castle-robin
-data Symbols          : libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
--- urn:ubideco:semid:8DRwuKzTL4Le1SS1ZqsRAKXSf5vEeH4GZpBP7C47KQLZ#absent-logo-genius
-data TyInlineRef      : primitive Primitive
-                      | unicode ()
-                      | enum=3 EnumVariants
-                      | union UnionVariantsInlineRef
-                      | tuple UnnamedFieldsInlineRef
-                      | struct NamedFieldsInlineRef
-                      | array (InlineRef, U16)
-                      | list (InlineRef, Sizing)
-                      | set (InlineRef, Sizing)
-                      | map (InlineRef, InlineRef, Sizing)
--- urn:ubideco:semid:8uSo7Y1LqX6RZXB9n4B3ckMpVSUXSgBcVe4NDQFcFkFN#taxi-rhino-secret
-data TyInlineRef1     : primitive Primitive
-                      | unicode ()
-                      | enum=3 EnumVariants
-                      | union UnionVariantsInlineRef1
-                      | tuple UnnamedFieldsInlineRef1
-                      | struct NamedFieldsInlineRef1
-                      | array (InlineRef1, U16)
-                      | list (InlineRef1, Sizing)
-                      | set (InlineRef1, Sizing)
-                      | map (InlineRef1, InlineRef1, Sizing)
--- urn:ubideco:semid:8Zao2AsxACSZEghypLLtvZe2UELita7DpVS7sQTqcvod#pacific-dolby-result
-data TyInlineRef2     : primitive Primitive
-                      | unicode ()
-                      | enum=3 EnumVariants
-                      | union UnionVariantsInlineRef2
-                      | tuple UnnamedFieldsInlineRef2
-                      | struct NamedFieldsInlineRef2
-                      | array (InlineRef2, U16)
-                      | list (InlineRef2, Sizing)
-                      | set (InlineRef2, Sizing)
-                      | map (InlineRef2, InlineRef2, Sizing)
--- urn:ubideco:semid:8Ph3m9aiAfvjV6kHYXBAaK9PeyfGyBgU387PspxCDupQ#russian-sweden-period
-data TyLibRef         : primitive Primitive
-                      | unicode ()
-                      | enum=3 EnumVariants
-                      | union UnionVariantsLibRef
-                      | tuple UnnamedFieldsLibRef
-                      | struct NamedFieldsLibRef
-                      | array (LibRef, U16)
-                      | list (LibRef, Sizing)
-                      | set (LibRef, Sizing)
-                      | map (LibRef, LibRef, Sizing)
--- urn:ubideco:semid:5umsZQXgcipmGCn8h2TTged2CDuaSDoDJQzW3BkTr4aK#solo-canal-flower
-data TySemId          : primitive Primitive
-                      | unicode ()
-                      | enum=3 EnumVariants
-                      | union UnionVariantsSemId
-                      | tuple UnnamedFieldsSemId
-                      | struct NamedFieldsSemId
-                      | array (SemId, U16)
-                      | list (SemId, Sizing)
-                      | set (SemId, Sizing)
-                      | map (SemId, SemId, Sizing)
--- urn:ubideco:semid:AbBubPzzwg8DYXHoASLchKS9KLUQmnX15TPHzuSTenxF#salary-apollo-chicago
-data TypeFqn          : lib LibName, name TypeName
--- urn:ubideco:semid:2qdbDrCxa4pUbo5gUmu4P8b4ja8v3UVJqv4thcekvaZr#gallery-coral-actor
-data TypeLib          : name LibName
-                      , dependencies {Dependency ^ ..0xff}
-                      , externTypes {LibName -> ^ ..0xff {SemId -> TypeName}}
-                      , types {TypeName -> ^ 1.. TyLibRef}
--- urn:ubideco:semid:DENrVJmXwRSwiZez8ZgUBsvQkTBTKy86zADExJ68bcaq#jessica-snake-ceramic
-data TypeLibId        : [Byte ^ 32]
--- urn:ubideco:semid:BeAZU9i8ViQp3kbm2kXTVTchqzybypmhcFNG7yr1mi39#vega-shock-state
-data TypeName         : Ident
--- urn:ubideco:semid:2mWV4gJf12MJKJ93AsXmXqocLkwndHW79NS1G2xoZrpy#match-alaska-fragile
-data TypeSymbol       : id SemId, fqn TypeFqn?
--- urn:ubideco:semid:46cvynAxpvUUTPvrCDQARcmwHHETLhkcgy8345mN1LLq#clara-tonight-office
-data TypeSysId        : [Byte ^ 32]
--- urn:ubideco:semid:A3dqfyLgVP7VBHEeYPKkBvAtouxNvKS2EFNYeKXsN2iy#system-marco-torpedo
-data TypeSystem       : {SemId -> ^ ..0xffffff TySemId}
--- urn:ubideco:semid:6AWJKZiwinJPiiidywfDKCLnkYMzy1mQNU46q9AqLrRj#sonar-voodoo-change
+
+@mnemonic(local-english-sonata)
+data NamedFieldsSemId  : [FieldSemId ^ 1..0xff]
+
+@mnemonic(lazarus-aladdin-salsa)
+data NestedCase        : newType TypeFqn?
+                       | option ()
+                       | byteStr#16 ()
+                       | asciiStr TypeFqn?
+                       | uniStr ()
+
+@mnemonic(hobby-cable-puzzle)
+data Primitive         : U8
+
+@mnemonic(cargo-plasma-catalog)
+data SemId             : [Byte ^ 32]
+
+@mnemonic(canoe-gordon-amazon)
+data Sizing            : min U64, max U64
+
+@mnemonic(pocket-oxford-monster)
+data SymbolRef         : libName LibName
+                       , tyName TypeName
+                       , libId TypeLibId
+                       , semId SemId
+
+@mnemonic(diagram-crimson-blast)
+data SymbolicSys       : symbols Symbols, types TypeSystem
+
+@mnemonic(shock-castle-robin)
+data Symbols           : libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
+
+@mnemonic(absent-logo-genius)
+data TyInlineRef       : primitive Primitive
+                       | unicode ()
+                       | enum#3 EnumVariants
+                       | union UnionVariantsInlineRef
+                       | tuple UnnamedFieldsInlineRef
+                       | struct NamedFieldsInlineRef
+                       | array (InlineRef, U16)
+                       | list (InlineRef, Sizing)
+                       | set (InlineRef, Sizing)
+                       | map (InlineRef, InlineRef, Sizing)
+
+@mnemonic(taxi-rhino-secret)
+data TyInlineRef1      : primitive Primitive
+                       | unicode ()
+                       | enum#3 EnumVariants
+                       | union UnionVariantsInlineRef1
+                       | tuple UnnamedFieldsInlineRef1
+                       | struct NamedFieldsInlineRef1
+                       | array (InlineRef1, U16)
+                       | list (InlineRef1, Sizing)
+                       | set (InlineRef1, Sizing)
+                       | map (InlineRef1, InlineRef1, Sizing)
+
+@mnemonic(pacific-dolby-result)
+data TyInlineRef2      : primitive Primitive
+                       | unicode ()
+                       | enum#3 EnumVariants
+                       | union UnionVariantsInlineRef2
+                       | tuple UnnamedFieldsInlineRef2
+                       | struct NamedFieldsInlineRef2
+                       | array (InlineRef2, U16)
+                       | list (InlineRef2, Sizing)
+                       | set (InlineRef2, Sizing)
+                       | map (InlineRef2, InlineRef2, Sizing)
+
+@mnemonic(russian-sweden-period)
+data TyLibRef          : primitive Primitive
+                       | unicode ()
+                       | enum#3 EnumVariants
+                       | union UnionVariantsLibRef
+                       | tuple UnnamedFieldsLibRef
+                       | struct NamedFieldsLibRef
+                       | array (LibRef, U16)
+                       | list (LibRef, Sizing)
+                       | set (LibRef, Sizing)
+                       | map (LibRef, LibRef, Sizing)
+
+@mnemonic(solo-canal-flower)
+data TySemId           : primitive Primitive
+                       | unicode ()
+                       | enum#3 EnumVariants
+                       | union UnionVariantsSemId
+                       | tuple UnnamedFieldsSemId
+                       | struct NamedFieldsSemId
+                       | array (SemId, U16)
+                       | list (SemId, Sizing)
+                       | set (SemId, Sizing)
+                       | map (SemId, SemId, Sizing)
+
+@mnemonic(salary-apollo-chicago)
+data TypeFqn           : lib LibName, name TypeName
+
+@mnemonic(texas-store-james)
+data TypeInfo          : depth U32
+                       , ty TySemId
+                       , fqn TypeFqn?
+                       , item ItemCase?
+                       , nested [NestedCase ^ ..0xff]
+
+@mnemonic(gallery-coral-actor)
+data TypeLib           : name LibName
+                       , dependencies {Dependency ^ ..0xff}
+                       , externTypes {LibName -> ^ ..0xff {SemId -> TypeName}}
+                       , types {TypeName -> ^ 1.. TyLibRef}
+
+@mnemonic(jessica-snake-ceramic)
+data TypeLibId         : [Byte ^ 32]
+
+@mnemonic(vega-shock-state)
+data TypeName          : Ident
+
+@mnemonic(match-alaska-fragile)
+data TypeSymbol        : id SemId, fqn TypeFqn?
+
+@mnemonic(clara-tonight-office)
+data TypeSysId         : [Byte ^ 32]
+
+@mnemonic(system-marco-torpedo)
+data TypeSystem        : {SemId -> ^ ..0xffffff TySemId}
+
+@mnemonic(sonar-voodoo-change)
 data UnionVariantsInlineRef : {U8 -> ^ ..0xff VariantInfoInlineRef}
--- urn:ubideco:semid:B38wGtyv8gja4Z1RgX4BYSkwLg2SWNfWoHy6Lm74ZFGA#japan-hope-monster
+
+@mnemonic(japan-hope-monster)
 data UnionVariantsInlineRef1 : {U8 -> ^ ..0xff VariantInfoInlineRef1}
--- urn:ubideco:semid:7wf6GJPBgC6NKeB1JfK9W72ZDNkPFfd6C2R19FiL5Yn8#stage-secret-bonus
+
+@mnemonic(stage-secret-bonus)
 data UnionVariantsInlineRef2 : {U8 -> ^ ..0xff VariantInfoInlineRef2}
--- urn:ubideco:semid:zPC3EHHjZnDwJGNih8rYV52sjgfpNrpZz2eZey47d28#violet-mailbox-kimono
+
+@mnemonic(violet-mailbox-kimono)
 data UnionVariantsLibRef : {U8 -> ^ ..0xff VariantInfoLibRef}
--- urn:ubideco:semid:DkkFcBhrhogm6ACVw48aLr9FJ2mMy5Pi6nySsobbrBb5#sponsor-lotus-pretend
+
+@mnemonic(sponsor-lotus-pretend)
 data UnionVariantsSemId : {U8 -> ^ ..0xff VariantInfoSemId}
--- urn:ubideco:semid:79HiyC2Lm1dFG4ZcaeyfLT94RjnteSmkRkcReVdMzTM4#silk-mega-loyal
+
+@mnemonic(silk-mega-loyal)
 data UnnamedFieldsInlineRef : [InlineRef ^ 1..0xff]
--- urn:ubideco:semid:udGXz59QaShngQ467mwGx42uto92AQbvR2gQyZM3ihb#rabbit-burma-geneva
+
+@mnemonic(rabbit-burma-geneva)
 data UnnamedFieldsInlineRef1 : [InlineRef1 ^ 1..0xff]
--- urn:ubideco:semid:4P9ySyD5yTC9pVRkiRENje4ub4E2avLiQuB1hbUNWgYx#fashion-april-special
+
+@mnemonic(fashion-april-special)
 data UnnamedFieldsInlineRef2 : [InlineRef2 ^ 1..0xff]
--- urn:ubideco:semid:4CvGjQBATcDfDMPF2QNu8vej45ehRatkwRm7LK5MZ7MK#poetic-century-ozone
+
+@mnemonic(poetic-century-ozone)
 data UnnamedFieldsLibRef : [LibRef ^ 1..0xff]
--- urn:ubideco:semid:AHCYFYAtpW2kxJpVpmD6suNB9epMm6zffaDMtotKcXvh#signal-satire-russian
+
+@mnemonic(signal-satire-russian)
 data UnnamedFieldsSemId : [SemId ^ 1..0xff]
--- urn:ubideco:semid:BPoLofDtYzh8rRxa2ss4SxWc9VsuF6wtfVNqbdstcrXf#sabrina-stage-harmony
-data Variant          : name FieldName, tag U8
--- urn:ubideco:semid:Cy1X8nRdwM4yHmaSZ3ahiuBdsAe3RbNp6oR56LCzagx9#speech-fractal-cable
-data VariantInfoInlineRef : name FieldName, ty InlineRef
--- urn:ubideco:semid:FQoVf49AYi7SWk5zAKMA6tttgCDPBzRTcdmBogEdUkz9#avalon-ozone-clinic
-data VariantInfoInlineRef1 : name FieldName, ty InlineRef1
--- urn:ubideco:semid:8y3bWbWqemKa5z8AQ6yUFizMuZ9FQbtZjXw5LeKsipvq#equal-flood-crater
-data VariantInfoInlineRef2 : name FieldName, ty InlineRef2
--- urn:ubideco:semid:ByNU4fSLr6cr9YYjyNf6ja3ErMnKeQYPtWmyZy1YHCq8#process-empire-observe
-data VariantInfoLibRef : name FieldName, ty LibRef
--- urn:ubideco:semid:8QSJ14SZzimY7RGYUaH9w71kAgxLjECPAs9x84sk28uu#labor-south-newton
-data VariantInfoSemId : name FieldName, ty SemId
+
+@mnemonic(igor-lorenzo-catalog)
+data Variant           : name VariantName, tag U8
+
+@mnemonic(samuel-food-campus)
+data VariantInfoInlineRef : name VariantName, ty InlineRef
+
+@mnemonic(felix-mary-tempo)
+data VariantInfoInlineRef1 : name VariantName, ty InlineRef1
+
+@mnemonic(pocket-hunter-corona)
+data VariantInfoInlineRef2 : name VariantName, ty InlineRef2
+
+@mnemonic(memphis-left-arena)
+data VariantInfoLibRef : name VariantName, ty LibRef
+
+@mnemonic(shadow-pilgrim-seminar)
+data VariantInfoSemId  : name VariantName, ty SemId
+
+@mnemonic(develop-compass-yogurt)
+data VariantName       : Ident
+
 

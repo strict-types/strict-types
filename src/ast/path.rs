@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ use std::fmt::{Display, Formatter};
 
 use amplify::confinement::SmallVec;
 use amplify::Wrapper;
+use encoding::VariantName;
 use strict_encoding::{FieldName, STRICT_TYPES_LIB};
 
 use crate::{Ty, TypeRef};
@@ -39,6 +40,10 @@ pub enum Step {
     #[display(".{0}")]
     #[from]
     UnnamedField(u8),
+
+    #[display(".{0}")]
+    #[from]
+    Variant(VariantName),
 
     #[strict_type(dumb)]
     #[display("#")]
@@ -105,7 +110,7 @@ impl<Ref: TypeRef> Ty<Ref> {
         while let Some(step) = path.pop() {
             let res = match (self, &step) {
                 (Ty::Struct(fields), Step::NamedField(name)) => fields.ty_by_name(name),
-                (Ty::Union(variants), Step::NamedField(name)) => variants.ty_by_name(name),
+                (Ty::Union(variants), Step::Variant(name)) => variants.ty_by_name(name),
                 (Ty::Struct(fields), Step::UnnamedField(tag)) => fields.ty_by_pos(*tag),
                 (Ty::Union(variants), Step::UnnamedField(tag)) => variants.ty_by_tag(*tag),
                 (Ty::Array(ty, _), Step::Index) => Some(ty),

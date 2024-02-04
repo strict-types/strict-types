@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,7 +54,7 @@ pub struct SymbolicLib {
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name} {{- {sem_id:0} -}}")]
+#[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name}#{sem_id:#}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -191,7 +191,7 @@ impl LibBuilder {
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
         for ty in types.values() {
-            for subty in ty.type_refs() {
+            for (subty, _) in ty.type_refs() {
                 if let TranspileRef::Named(name) = subty {
                     if !types.contains_key(name) {
                         return Err(TranspileError::UnknownType {

@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,8 +24,10 @@ mod type_sys;
 mod translate;
 mod id;
 mod symbols;
+mod iter;
 
 pub use id::TypeSysId;
+pub use iter::{NestedCase, TypeInfo, TypeTree, TypeTreeIter};
 pub use symbols::{SymbolicSys, Symbols};
 pub use translate::{Error, SystemBuilder, TypeSymbol};
 pub use type_sys::{SymTy, TypeFqn, TypeSystem};

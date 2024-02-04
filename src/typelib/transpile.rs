@@ -3,10 +3,10 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2023 by
+// Written in 2022-2024 by
 //     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2023 UBIDECO Institute
+// Copyright 2022-2024 UBIDECO Institute
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -98,7 +98,7 @@ impl TypedWrite for LibBuilder {
     where u8: From<T> {
         let mut writer = UnionBuilder::with::<T>(self);
         for (_, name) in T::ALL_VARIANTS {
-            writer = writer.define_variant(fname!(*name));
+            writer = writer.define_variant(vname!(*name));
         }
         writer = DefineEnum::complete(writer);
         writer = writer.write_variant(vname!(value.variant_name()))?;
