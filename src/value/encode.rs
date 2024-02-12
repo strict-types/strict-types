@@ -27,6 +27,7 @@ use amplify::num::u24;
 use encoding::constants::UNIT;
 use encoding::{
     SerializeError, Sizing, StrictEncode, StrictSerialize, StrictType, TypeName, TypedWrite,
+    WriteRaw,
 };
 
 use crate::typify::TypedVal;
@@ -43,8 +44,9 @@ impl<const MAX_LEN: usize> StrictType for SerializedType<MAX_LEN> {
 }
 #[doc(hidden)]
 impl<const MAX_LEN: usize> StrictEncode for SerializedType<MAX_LEN> {
-    fn strict_encode<W: TypedWrite>(&self, writer: W) -> io::Result<W> {
-        unsafe { writer._write_raw::<MAX_LEN>(&self.0) }
+    fn strict_encode<W: TypedWrite>(&self, mut writer: W) -> io::Result<W> {
+        unsafe { writer.raw_writer().write_raw::<MAX_LEN>(&self.0) }?;
+        Ok(writer)
     }
 }
 impl<const MAX_LEN: usize> StrictSerialize for SerializedType<MAX_LEN> {}

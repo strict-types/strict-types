@@ -24,9 +24,9 @@ use std::fmt::{Display, Formatter};
 use std::path::Path;
 use std::{fmt, io};
 
-use amplify::num::u24;
+use amplify::confinement::U24 as U24MAX;
 use baid58::ToBaid58;
-use encoding::{StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
+use encoding::{StreamWriter, StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
 use crate::{StlFormat, SymbolicLib, TypeLib};
 
@@ -56,7 +56,7 @@ impl TypeLib {
 
         match format {
             StlFormat::Binary => {
-                self.strict_encode(StrictWriter::with(u24::MAX.into_usize(), file))?;
+                self.strict_encode(StrictWriter::with(StreamWriter::new::<U24MAX>(file)))?;
             }
             #[cfg(feature = "base85")]
             StlFormat::Armored => {

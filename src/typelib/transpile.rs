@@ -24,8 +24,9 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement::Confined;
+use amplify::confinement::{Confined, U64 as U64MAX};
 use amplify::Wrapper;
+use encoding::StreamWriter;
 use strict_encoding::{
     DefineEnum, DefineStruct, DefineTuple, DefineUnion, FieldName, LibName, Primitive, Sizing,
     SplitParent, StrictDumb, StrictEncode, StrictEnum, StrictParent, StrictStruct, StrictSum,
@@ -36,7 +37,9 @@ use strict_encoding::{
 use crate::ast::{EnumVariants, Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::{Dependency, SemId, SymbolRef, TranspileRef, Ty, TypeLibId};
 
-pub trait BuilderParent: StrictParent<Sink> {
+const MAX_WRITE_COUNT: usize = U64MAX;
+
+pub trait BuilderParent: StrictParent<StreamWriter<Sink>> {
     /// Converts strict-encodable value into a type information. Must be propagated back to the
     /// lib builder which does the TypedWrite implementation to call strict encode on the type
     fn compile_type<T: StrictEncode>(self, value: &T) -> (Self, TranspileRef);
@@ -51,6 +54,7 @@ pub struct LibBuilder {
     pub(super) known_libs: BTreeSet<Dependency>,
     pub(super) extern_types: BTreeMap<LibName, BTreeMap<SemId, TypeName>>,
     pub(super) types: BTreeMap<TypeName, Ty<TranspileRef>>,
+    sink: StreamWriter<Sink>,
     last_compiled: Option<TranspileRef>,
 }
 
@@ -64,6 +68,7 @@ impl LibBuilder {
             known_libs: known_libs.into_iter().collect(),
             extern_types: empty!(),
             types: empty!(),
+            sink: StreamWriter::sink::<MAX_WRITE_COUNT>(),
             last_compiled: None,
         }
     }
@@ -85,6 +90,9 @@ impl TypedWrite for LibBuilder {
     type TupleWriter = StructBuilder<Self>;
     type StructWriter = StructBuilder<Self>;
     type UnionDefiner = UnionBuilder;
+    type RawWriter = StreamWriter<Sink>;
+
+    unsafe fn raw_writer(&mut self) -> &mut Self::RawWriter { &mut self.sink }
 
     fn write_union<T: StrictUnion>(
         self,
@@ -171,19 +179,16 @@ impl TypedWrite for LibBuilder {
         self.last_compiled = Some(Ty::Map(key_ref, val_ref, sizing).into());
         self
     }
-
-    unsafe fn _write_raw<const LEN: usize>(self, _bytes: impl AsRef<[u8]>) -> io::Result<Self> {
-        // Nothing to do here
-        Ok(self)
-    }
 }
 
 impl TypedParent for LibBuilder {}
-impl StrictParent<Sink> for LibBuilder {
+impl StrictParent<StreamWriter<Sink>> for LibBuilder {
     type Remnant = LibBuilder;
-    fn from_write_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
-    fn into_write_split(self) -> (StrictWriter<Sink>, Self::Remnant) {
-        (StrictWriter::sink(), self)
+    fn from_write_split(_: StrictWriter<StreamWriter<Sink>>, remnant: Self::Remnant) -> Self {
+        remnant
+    }
+    fn into_write_split(self) -> (StrictWriter<StreamWriter<Sink>>, Self::Remnant) {
+        (StrictWriter::sink::<MAX_WRITE_COUNT>(), self)
     }
 }
 impl BuilderParent for LibBuilder {
@@ -241,7 +246,7 @@ impl BuilderParent for LibBuilder {
 pub struct StructBuilder<P: BuilderParent> {
     lib: LibName,
     name: Option<TypeName>,
-    writer: StructWriter<Sink, P>,
+    writer: StructWriter<StreamWriter<Sink>, P>,
     fields: Vec<(Option<FieldName>, TranspileRef)>,
     cursor: Option<u8>,
 }
@@ -250,7 +255,7 @@ impl<P: BuilderParent> StructBuilder<P> {
     pub fn with(
         lib: LibName,
         name: Option<TypeName>,
-        writer: StructWriter<Sink, P>,
+        writer: StructWriter<StreamWriter<Sink>, P>,
         definer: bool,
     ) -> Self {
         StructBuilder {
@@ -398,7 +403,7 @@ pub struct UnionBuilder {
     name: Option<TypeName>,
     variants: BTreeMap<u8, TranspileRef>,
     parent: LibBuilder,
-    writer: UnionWriter<Sink>,
+    writer: UnionWriter<StreamWriter<Sink>>,
 }
 
 impl UnionBuilder {
@@ -408,7 +413,7 @@ impl UnionBuilder {
             name: T::strict_name(),
             variants: empty!(),
             parent,
-            writer: UnionWriter::with::<T>(StrictWriter::sink()),
+            writer: UnionWriter::with::<T>(StrictWriter::sink::<MAX_WRITE_COUNT>()),
         }
     }
 
@@ -463,12 +468,12 @@ impl UnionBuilder {
         self.parent.report_compiled(self.lib, self.name, ty)
     }
 
-    fn from_split(writer: UnionWriter<Sink>, mut remnant: Self) -> Self {
+    fn from_split(writer: UnionWriter<StreamWriter<Sink>>, mut remnant: Self) -> Self {
         remnant.writer = writer;
         remnant
     }
 
-    fn into_split(self) -> (UnionWriter<Sink>, UnionBuilder) {
+    fn into_split(self) -> (UnionWriter<StreamWriter<Sink>>, UnionBuilder) {
         let (_, writer) = self.writer.into_write_split();
         let remnant = Self {
             lib: self.lib,
@@ -482,11 +487,13 @@ impl UnionBuilder {
 }
 
 impl TypedParent for UnionBuilder {}
-impl StrictParent<Sink> for UnionBuilder {
+impl StrictParent<StreamWriter<Sink>> for UnionBuilder {
     type Remnant = UnionBuilder;
-    fn from_write_split(_: StrictWriter<Sink>, remnant: Self::Remnant) -> Self { remnant }
-    fn into_write_split(self) -> (StrictWriter<Sink>, Self::Remnant) {
-        (StrictWriter::sink(), self)
+    fn from_write_split(_: StrictWriter<StreamWriter<Sink>>, remnant: Self::Remnant) -> Self {
+        remnant
+    }
+    fn into_write_split(self) -> (StrictWriter<StreamWriter<Sink>>, Self::Remnant) {
+        (StrictWriter::sink::<MAX_WRITE_COUNT>(), self)
     }
 }
 impl BuilderParent for UnionBuilder {
