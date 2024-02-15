@@ -22,16 +22,15 @@
 
 //! Reification module: reads & writes strict values from binary strict encodings.
 
-use std::io;
-
 use amplify::ascii::AsciiString;
 use amplify::confinement::{
     Confined, LargeAscii, LargeBlob, LargeString, MediumAscii, MediumBlob, MediumString,
-    SmallAscii, SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString,
+    SmallAscii, SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString, U16 as MAX16,
+    U32 as MAX32,
 };
 use amplify::num::u24;
 use encoding::constants::*;
-use encoding::{DecodeError, StrictDecode, StrictReader};
+use encoding::{DecodeError, ReadRaw, StreamReader, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
 use crate::typesys::{SymbolicSys, TypeSymbol};
@@ -69,7 +68,7 @@ impl SymbolicSys {
     pub fn strict_read_type(
         &self,
         spec: impl Into<TypeSpec>,
-        d: &mut impl io::Read,
+        d: &mut impl ReadRaw,
     ) -> Result<TypedVal, Error> {
         let spec = spec.into();
         let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
@@ -82,7 +81,7 @@ impl TypeSystem {
         &self,
         len: usize,
         ty: SemId,
-        d: &mut impl io::Read,
+        d: &mut impl ReadRaw,
     ) -> Result<Vec<StrictVal>, Error> {
         let mut list = Vec::with_capacity(len);
         for _ in 0..len {
@@ -97,7 +96,7 @@ impl TypeSystem {
         len: usize,
         key_ty: SemId,
         ty: SemId,
-        d: &mut impl io::Read,
+        d: &mut impl ReadRaw,
     ) -> Result<Vec<(StrictVal, StrictVal)>, Error> {
         let mut list = Vec::with_capacity(len);
         for _ in 0..len {
@@ -109,9 +108,9 @@ impl TypeSystem {
     }
 
     pub fn strict_deserialize_type(&self, sem_id: SemId, data: &[u8]) -> Result<TypedVal, Error> {
-        let mut cursor = io::Cursor::new(data);
+        let mut cursor = StreamReader::cursor::<MAX32>(data);
         let ty = self.strict_read_type(sem_id, &mut cursor)?;
-        if cursor.position() as usize != data.len() {
+        if cursor.unconfine().position() as usize != data.len() {
             return Err(Error::NotEntirelyConsumed);
         }
         Ok(ty)
@@ -120,12 +119,12 @@ impl TypeSystem {
     pub fn strict_read_type(
         &self,
         sem_id: SemId,
-        mut d: &mut impl io::Read,
+        mut d: &mut impl ReadRaw,
     ) -> Result<TypedVal, Error> {
         let spec = TypeSpec::from(sem_id);
         let ty = self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
 
-        let mut reader = StrictReader::with(usize::MAX, d);
+        let mut reader = StrictReader::with(d);
 
         let val = match ty {
             Ty::Primitive(prim) => {
@@ -190,10 +189,9 @@ impl TypeSystem {
 
             // Fixed-size arrays:
             Ty::Array(ty, len) if ty.is_byte() => {
-                let mut buf = vec![0u8; *len as usize];
                 let d = reader.unbox();
-                d.read_exact(&mut buf).map_err(DecodeError::from)?;
-                StrictVal::Bytes(buf.to_vec())
+                let buf = d.read_raw::<MAX16>(*len as usize).map_err(DecodeError::from)?;
+                StrictVal::Bytes(buf)
             }
             Ty::Array(ty, len) => {
                 let mut list = Vec::<StrictVal>::with_capacity(*len as usize);

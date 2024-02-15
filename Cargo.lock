@@ -407,8 +407,8 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding"
-version = "2.6.2"
-source = "git+https://github.com/strict-types/strict-encoding?branch=ident#9c20b327178b449cbb24a18c7db65edeb50a9d5b"
+version = "2.7.0"
+source = "git+https://github.com/strict-types/strict-encoding?branch=refactor/io#bdd35d550369590a3e6a86439a55e0b2f2d06766"
 dependencies = [
  "amplify",
  "half",
@@ -418,8 +418,8 @@ dependencies = [
 
 [[package]]
 name = "strict_encoding_derive"
-version = "2.0.1"
-source = "git+https://github.com/strict-types/strict-encoding?branch=ident#9c20b327178b449cbb24a18c7db65edeb50a9d5b"
+version = "2.7.0"
+source = "git+https://github.com/strict-types/strict-encoding?branch=refactor/io#bdd35d550369590a3e6a86439a55e0b2f2d06766"
 dependencies = [
  "amplify_syn",
  "heck",
@@ -646,9 +646,9 @@ checksum = "4d91413b1c31d7539ba5ef2451af3f0b833a005eb27a631cec32bc0635a8602b"
 
 [[package]]
 name = "winnow"
-version = "0.5.36"
+version = "0.5.37"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "818ce546a11a9986bc24f93d0cdf38a8a1a400f1473ea8c82e59f6e0ffab9249"
+checksum = "a7cad8365489051ae9f054164e459304af2e7e9bb407c958076c8bf4aef52da5"
 dependencies = [
  "memchr",
 ]

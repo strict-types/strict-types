@@ -396,9 +396,8 @@ impl TypeSystem {
 
 #[cfg(test)]
 mod test {
-    use std::io;
-
-    use encoding::StrictSerialize;
+    use amplify::confinement::U32 as MAX32;
+    use encoding::{StreamReader, StrictSerialize};
 
     use super::super::test_helpers::*;
     // use super::*;
@@ -411,7 +410,7 @@ mod test {
             svstruct!(name => "Some name", ticker => svnewtype!("TICK"), precision => svenum!(2));
 
         let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
-        let mut reader = io::Cursor::new(data);
+        let mut reader = StreamReader::cursor::<MAX32>(data);
         let loaded = sys.strict_read_type("TestLib.Nominal", &mut reader).unwrap();
         assert_eq!(loaded.val, value);
     }
