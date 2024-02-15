@@ -28,9 +28,8 @@ use amplify::confinement::{
     SmallAscii, SmallBlob, SmallString, TinyAscii, TinyBlob, TinyString, U16 as MAX16,
     U32 as MAX32,
 };
-use amplify::num::u24;
-use encoding::constants::*;
-use encoding::{DecodeError, ReadRaw, StreamReader, StrictDecode, StrictReader};
+use amplify::num::{u24, u40, u48, u56};
+use encoding::{DecodeError, Primitive, ReadRaw, StreamReader, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
 use crate::typesys::{SymbolicSys, TypeSymbol};
@@ -129,20 +128,23 @@ impl TypeSystem {
         let val = match ty {
             Ty::Primitive(prim) => {
                 match *prim {
-                    UNIT => StrictVal::Unit,
-                    BYTE => StrictVal::num(u8::strict_decode(&mut reader)?),
-                    U8 => StrictVal::num(u8::strict_decode(&mut reader)?),
-                    U16 => StrictVal::num(u16::strict_decode(&mut reader)?),
-                    U24 => StrictVal::num(u24::strict_decode(&mut reader)?.into_u32()),
-                    U32 => StrictVal::num(u32::strict_decode(&mut reader)?),
-                    U64 => StrictVal::num(u64::strict_decode(&mut reader)?),
-                    U128 => StrictVal::num(u128::strict_decode(&mut reader)?),
-                    I8 => StrictVal::num(i8::strict_decode(&mut reader)?),
-                    I16 => StrictVal::num(i16::strict_decode(&mut reader)?),
+                    Primitive::UNIT => StrictVal::Unit,
+                    Primitive::BYTE => StrictVal::num(u8::strict_decode(&mut reader)?),
+                    Primitive::U8 => StrictVal::num(u8::strict_decode(&mut reader)?),
+                    Primitive::U16 => StrictVal::num(u16::strict_decode(&mut reader)?),
+                    Primitive::U24 => StrictVal::num(u24::strict_decode(&mut reader)?.into_u32()),
+                    Primitive::U32 => StrictVal::num(u32::strict_decode(&mut reader)?),
+                    Primitive::U40 => StrictVal::num(u40::strict_decode(&mut reader)?),
+                    Primitive::U48 => StrictVal::num(u48::strict_decode(&mut reader)?),
+                    Primitive::U56 => StrictVal::num(u56::strict_decode(&mut reader)?),
+                    Primitive::U64 => StrictVal::num(u64::strict_decode(&mut reader)?),
+                    Primitive::U128 => StrictVal::num(u128::strict_decode(&mut reader)?),
+                    Primitive::I8 => StrictVal::num(i8::strict_decode(&mut reader)?),
+                    Primitive::I16 => StrictVal::num(i16::strict_decode(&mut reader)?),
                     // I24 => StrictVal::num(i24::strict_decode(&mut reader)?),
-                    I32 => StrictVal::num(i32::strict_decode(&mut reader)?),
-                    I64 => StrictVal::num(i64::strict_decode(&mut reader)?),
-                    I128 => StrictVal::num(i128::strict_decode(&mut reader)?),
+                    Primitive::I32 => StrictVal::num(i32::strict_decode(&mut reader)?),
+                    Primitive::I64 => StrictVal::num(i64::strict_decode(&mut reader)?),
+                    Primitive::I128 => StrictVal::num(i128::strict_decode(&mut reader)?),
                     other => {
                         return Err(Error::NotImplemented(format!(
                             "loading {other} into a typed value is not yet implemented"

@@ -24,7 +24,7 @@ use encoding::stl::{
     Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
     AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U2, U3, U4, U6, U7,
 };
-use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U5};
+use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U1, U5};
 
 use crate::layout::MemoryLayout;
 use crate::{
@@ -40,8 +40,7 @@ pub const LIB_ID_STRICT_TYPES: &str =
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
-        // TODO: Add type
-        // .transpile::<U1>()
+        .transpile::<U1>()
         .transpile::<U2>()
         .transpile::<U3>()
         .transpile::<U4>()

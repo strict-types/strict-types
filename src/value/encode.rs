@@ -24,10 +24,9 @@ use std::io;
 
 use amplify::confinement::Confined;
 use amplify::num::u24;
-use encoding::constants::UNIT;
 use encoding::{
-    SerializeError, Sizing, StrictEncode, StrictSerialize, StrictType, TypeName, TypedWrite,
-    WriteRaw,
+    Primitive, SerializeError, Sizing, StrictEncode, StrictSerialize, StrictType, TypeName,
+    TypedWrite, WriteRaw,
 };
 
 use crate::typify::TypedVal;
@@ -87,7 +86,7 @@ impl TypeSystem {
     ) -> Result<(), io::Error> {
         match (val, ty) {
             (StrictVal::Unit, Ty::Primitive(prim)) => {
-                debug_assert_eq!(*prim, UNIT);
+                debug_assert_eq!(*prim, Primitive::UNIT);
                 // Do nothing
             }
             (StrictVal::Number(StrictNum::Uint(num)), Ty::Primitive(prim)) => {

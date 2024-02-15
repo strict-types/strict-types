@@ -25,7 +25,7 @@
 use std::fmt::Debug;
 
 // use amplify::num::apfloat::ieee;
-use amplify::num::{i1024, u1024};
+use amplify::num::{i1024, u1024, u24, u40, u48, u56};
 use encoding::{FieldName, StrictEnum, VariantName};
 use indexmap::IndexMap;
 
@@ -141,7 +141,11 @@ macro_rules! svtable {
 pub enum StrictNum {
     #[from(u8)]
     #[from(u16)]
+    #[from(u24)]
     #[from(u32)]
+    #[from(u40)]
+    #[from(u48)]
+    #[from(u56)]
     #[from(u64)]
     #[from]
     Uint(u128),

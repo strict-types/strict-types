@@ -27,7 +27,6 @@ use std::ops::Deref;
 use amplify::confinement::Confined;
 use amplify::{confinement, Wrapper};
 use encoding::VariantName;
-use strict_encoding::constants::*;
 use strict_encoding::{
     FieldName, Primitive, Sizing, StrictDecode, StrictDumb, StrictEncode, Variant, STRICT_TYPES_LIB,
 };
@@ -150,36 +149,39 @@ pub enum Ty<Ref: TypeRef> {
 }
 
 impl<Ref: TypeRef> Ty<Ref> {
-    pub const UNIT: Ty<Ref> = Ty::Primitive(UNIT);
-    pub const BYTE: Ty<Ref> = Ty::Primitive(BYTE);
+    pub const UNIT: Ty<Ref> = Ty::Primitive(Primitive::UNIT);
+    pub const BYTE: Ty<Ref> = Ty::Primitive(Primitive::BYTE);
 
-    pub const U8: Ty<Ref> = Ty::Primitive(U8);
-    pub const U16: Ty<Ref> = Ty::Primitive(U16);
-    pub const U24: Ty<Ref> = Ty::Primitive(U24);
-    pub const U32: Ty<Ref> = Ty::Primitive(U32);
-    pub const U64: Ty<Ref> = Ty::Primitive(U64);
-    pub const U128: Ty<Ref> = Ty::Primitive(U128);
-    pub const U256: Ty<Ref> = Ty::Primitive(U256);
-    pub const U512: Ty<Ref> = Ty::Primitive(U512);
-    pub const U1024: Ty<Ref> = Ty::Primitive(U1024);
+    pub const U8: Ty<Ref> = Ty::Primitive(Primitive::U8);
+    pub const U16: Ty<Ref> = Ty::Primitive(Primitive::U16);
+    pub const U24: Ty<Ref> = Ty::Primitive(Primitive::U24);
+    pub const U32: Ty<Ref> = Ty::Primitive(Primitive::U32);
+    pub const U40: Ty<Ref> = Ty::Primitive(Primitive::U40);
+    pub const U48: Ty<Ref> = Ty::Primitive(Primitive::U48);
+    pub const U56: Ty<Ref> = Ty::Primitive(Primitive::U56);
+    pub const U64: Ty<Ref> = Ty::Primitive(Primitive::U64);
+    pub const U128: Ty<Ref> = Ty::Primitive(Primitive::U128);
+    pub const U256: Ty<Ref> = Ty::Primitive(Primitive::U256);
+    pub const U512: Ty<Ref> = Ty::Primitive(Primitive::U512);
+    pub const U1024: Ty<Ref> = Ty::Primitive(Primitive::U1024);
 
-    pub const I8: Ty<Ref> = Ty::Primitive(I8);
-    pub const I16: Ty<Ref> = Ty::Primitive(I16);
-    pub const I24: Ty<Ref> = Ty::Primitive(I24);
-    pub const I32: Ty<Ref> = Ty::Primitive(I32);
-    pub const I64: Ty<Ref> = Ty::Primitive(I64);
-    pub const I128: Ty<Ref> = Ty::Primitive(I128);
-    pub const I256: Ty<Ref> = Ty::Primitive(I256);
-    pub const I512: Ty<Ref> = Ty::Primitive(I512);
-    pub const I1024: Ty<Ref> = Ty::Primitive(I1024);
+    pub const I8: Ty<Ref> = Ty::Primitive(Primitive::I8);
+    pub const I16: Ty<Ref> = Ty::Primitive(Primitive::I16);
+    pub const I24: Ty<Ref> = Ty::Primitive(Primitive::I24);
+    pub const I32: Ty<Ref> = Ty::Primitive(Primitive::I32);
+    pub const I64: Ty<Ref> = Ty::Primitive(Primitive::I64);
+    pub const I128: Ty<Ref> = Ty::Primitive(Primitive::I128);
+    pub const I256: Ty<Ref> = Ty::Primitive(Primitive::I256);
+    pub const I512: Ty<Ref> = Ty::Primitive(Primitive::I512);
+    pub const I1024: Ty<Ref> = Ty::Primitive(Primitive::I1024);
 
-    pub const F16B: Ty<Ref> = Ty::Primitive(F16B);
-    pub const F16: Ty<Ref> = Ty::Primitive(F16);
-    pub const F32: Ty<Ref> = Ty::Primitive(F32);
-    pub const F64: Ty<Ref> = Ty::Primitive(F64);
-    pub const F80: Ty<Ref> = Ty::Primitive(F80);
-    pub const F128: Ty<Ref> = Ty::Primitive(F128);
-    pub const F256: Ty<Ref> = Ty::Primitive(F256);
+    pub const F16B: Ty<Ref> = Ty::Primitive(Primitive::F16B);
+    pub const F16: Ty<Ref> = Ty::Primitive(Primitive::F16);
+    pub const F32: Ty<Ref> = Ty::Primitive(Primitive::F32);
+    pub const F64: Ty<Ref> = Ty::Primitive(Primitive::F64);
+    pub const F80: Ty<Ref> = Ty::Primitive(Primitive::F80);
+    pub const F128: Ty<Ref> = Ty::Primitive(Primitive::F128);
+    pub const F256: Ty<Ref> = Ty::Primitive(Primitive::F256);
 
     pub const UNICODE: Ty<Ref> = Ty::UnicodeChar;
 

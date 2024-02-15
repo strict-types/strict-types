@@ -26,7 +26,6 @@ use std::collections::BTreeSet;
 
 use amplify::ascii::{AsAsciiStrError, AsciiString};
 use amplify::Wrapper;
-use encoding::constants::UNIT;
 use encoding::{FieldName, InvalidIdent, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
@@ -142,7 +141,7 @@ impl TypeSystem {
         let ty = self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
         let val = match (val, ty) {
             // Primitive direct matches:
-            (val @ StrictVal::Unit, Ty::Primitive(prim)) if *prim == UNIT => val,
+            (val @ StrictVal::Unit, Ty::Primitive(prim)) if *prim == Primitive::UNIT => val,
             (val @ StrictVal::Number(StrictNum::Uint(_)), Ty::Primitive(prim))
                 if prim.is_small_unsigned() =>
             {

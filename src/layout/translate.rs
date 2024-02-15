@@ -21,8 +21,7 @@
 // limitations under the License.
 
 use amplify::confinement::Confined;
-use encoding::constants::UNIT;
-use encoding::Ident;
+use encoding::{Ident, Primitive};
 
 use super::vesper::{Attr, Pred, TypeVesper};
 use crate::ast::ItemCase;
@@ -77,7 +76,7 @@ impl TypeInfo {
         };
         let mut predicate = ty.cls().into();
         match ty {
-            Ty::Primitive(prim) if *prim == UNIT => {
+            Ty::Primitive(prim) if *prim == Primitive::UNIT => {
                 attributes.push(Attr::TypeName(tn!("Unit")));
             }
             Ty::Primitive(prim) => {

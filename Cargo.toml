@@ -1,7 +1,7 @@
 [package]
 name = "strict_types"
 description = "Strict types: confined generalized algebraic data types (GADT)"
-version = "2.7.0"
+version = "2.7.0-beta.1"
 authors = ["Dr. Maxim Orlovsky <orlovsky@ubideco.org>"]
 homepage = "https://strict-types.org"
 license = "Apache-2.0"
@@ -28,9 +28,9 @@ name = "reflect"
 required-features = ["base85"]
 
 [dependencies]
-amplify = { version = "4.5.1", features = ["apfloat"] }
-strict_encoding = { version = "2.6.2", features = ["derive", "float"] }
-vesper = { version = "0.1.0", git = "https://github.com/UBIDECO/vesper" }
+amplify = { version = "4.6.0", features = ["apfloat"] }
+strict_encoding = { version = "2.7.0-beta.1", features = ["derive", "float"] }
+vesper-lang = "0.1.0"
 indexmap = "2.0.2"
 baid58 = "0.4.4"
 half = "2.2.0"
@@ -53,6 +53,3 @@ serde = [
 [package.metadata.docs.rs]
 all-features = true
 rustc-args = ["--cfg", "docsrs"]
-
-[patch.crates-io]
-strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "refactor/io" }
