@@ -52,24 +52,32 @@ impl TypeInfo {
                 }
             }
             Some(ItemCase::NamedField(_, ref fname)) => {
-                comment = fqn;
+                if name.as_str() != "_" {
+                    attributes.push(Attr::TypeName(name.into_ident()));
+                }
                 fname.to_ident()
             }
             Some(ItemCase::UnionVariant(_, ref vname)) => {
-                comment = fqn;
+                if name.as_str() != "_" {
+                    attributes.push(Attr::TypeName(name.into_ident()));
+                }
                 vname.to_ident()
             }
             Some(ItemCase::ListItem) | Some(ItemCase::SetItem) if fqn.is_none() => {
                 ident!("element")
             }
             Some(ItemCase::MapKey) if fqn.is_some() => {
-                comment = Some(s!("mapped from"));
-                name.into_ident()
+                if name.as_str() != "_" {
+                    attributes.push(Attr::TypeName(name.into_ident()));
+                }
+                ident!("key")
             }
             Some(ItemCase::MapKey) => ident!("key"),
             Some(ItemCase::MapValue) if fqn.is_some() => {
-                comment = Some(s!("mapped to"));
-                name.into_ident()
+                if name.as_str() != "_" {
+                    attributes.push(Attr::TypeName(name.into_ident()));
+                }
+                ident!("value")
             }
             Some(ItemCase::MapValue) => ident!("value"),
             _ => name.into_ident(),
