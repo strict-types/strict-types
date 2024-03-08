@@ -53,11 +53,12 @@ pub const BINDLE_MAX_LEN: usize = U24MAX;
 )]
 #[display("{name} <{email}>; using={suite}")]
 #[non_exhaustive]
-pub struct Identity {
+pub struct IdentityCert {
     pub name: TinyString,
     pub email: TinyAscii,
     pub suite: IdSuite,
     pub pk: TinyBlob,
+    pub cert: TinyBlob,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, Display)]
@@ -88,8 +89,8 @@ pub enum IdSuite {
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", rename_all = "camelCase")
 )]
-pub struct Cert {
-    pub signer: Identity,
+pub struct Sig {
+    pub signer: IdentityCert,
     pub signature: TinyBlob,
 }
 
@@ -99,11 +100,11 @@ pub struct Cert {
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, dumb = Self(confined_bset!(strict_dumb!())))]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct ContentSigs(Confined<BTreeSet<Cert>, 1, 10>);
+pub struct ContentSigs(Confined<BTreeSet<Sig>, 1, 10>);
 
 impl IntoIterator for ContentSigs {
-    type Item = Cert;
-    type IntoIter = btree_set::IntoIter<Cert>;
+    type Item = Sig;
+    type IntoIter = btree_set::IntoIter<Sig>;
 
     fn into_iter(self) -> Self::IntoIter { self.0.into_iter() }
 }
@@ -164,7 +165,7 @@ impl BindleContent for SymbolicSys {
 pub struct Bindle<C: BindleContent> {
     id: C::Id,
     data: C,
-    sigs: TinyVec<Cert>,
+    sigs: TinyVec<Sig>,
 }
 
 impl<C: BindleContent> Deref for Bindle<C> {
@@ -187,7 +188,7 @@ impl<C: BindleContent> Bindle<C> {
 
     pub fn id(&self) -> C::Id { self.id }
 
-    pub fn into_split(self) -> (C, TinyVec<Cert>) { (self.data, self.sigs) }
+    pub fn into_split(self) -> (C, TinyVec<Sig>) { (self.data, self.sigs) }
     pub fn unbindle(self) -> C { self.data }
 }
 
@@ -289,6 +290,9 @@ impl<C: BindleContent> Display for Bindle<C> {
         writeln!(f, "{}", data)?;
 
         writeln!(f, "\n-----END {}-----", C::PLATE_TITLE)?;
+
+        // TODO: Print sigs
+
         Ok(())
     }
 }
