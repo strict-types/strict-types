@@ -58,6 +58,7 @@ pub mod value;
 pub mod stl;
 pub mod layout;
 mod bindle;
+mod armor;
 
 pub use ast::{Cls, PrimitiveRef, SemId, Translate, Ty, TypeRef};
 #[cfg(feature = "fs")]
