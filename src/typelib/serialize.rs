@@ -58,9 +58,10 @@ impl TypeLib {
             StlFormat::Binary => {
                 self.strict_encode(StrictWriter::with(StreamWriter::new::<U24MAX>(file)))?;
             }
-            #[cfg(feature = "base85")]
+            #[cfg(feature = "armor")]
             StlFormat::Armored => {
-                writeln!(file, "{self:X}")?;
+                use armor::AsciiArmor;
+                writeln!(file, "{}", self.to_ascii_armored_string())?;
             }
             StlFormat::Source => {
                 writeln!(
@@ -164,40 +165,20 @@ impl Display for TypeLib {
     }
 }
 
-#[cfg(feature = "base85")]
-impl fmt::UpperHex for TypeLib {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        writeln!(f, "-----BEGIN STRICT TYPE LIB-----")?;
-        writeln!(f, "Id: {:-}", self.id())?;
-        writeln!(f, "Name: {}", self.name)?;
-        write!(f, "Dependencies: ")?;
-        if self.dependencies.is_empty() {
-            writeln!(f, "~")?;
-        } else {
-            writeln!(f)?;
-        }
-        let mut iter = self.dependencies.iter();
-        while let Some(dep) = iter.next() {
-            write!(f, "  {:-}", dep.id)?;
-            if iter.len() > 0 {
-                writeln!(f, ",")?;
-            } else {
-                writeln!(f)?;
-            }
-        }
-        writeln!(f)?;
+#[cfg(feature = "armor")]
+impl armor::StrictArmor for TypeLib {
+    type Id = crate::TypeLibId;
+    const PLATE_TITLE: &'static str = "STRICT TYPE LIB";
 
-        let data = self.to_strict_serialized::<0xFFFFFF>().expect("in-memory");
-        let data = base85::encode(&data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
+    fn armor_id(&self) -> Self::Id { self.id() }
 
-        writeln!(f, "\n-----END STRICT TYPE LIB-----")?;
-        Ok(())
+    fn armor_headers(&self) -> Vec<armor::ArmorHeader> {
+        use armor::ArmorHeader;
+
+        let mut headers = vec![ArmorHeader::new("Name", self.name.to_string())];
+        for dep in &self.dependencies {
+            headers.push(ArmorHeader::new("Dependency", format!("{:-}", dep.id)));
+        }
+        headers
     }
 }

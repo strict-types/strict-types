@@ -23,6 +23,7 @@
 #[macro_use]
 extern crate strict_encoding;
 
+use armor::AsciiArmor;
 use strict_encoding::STRICT_TYPES_LIB;
 use strict_types::stl::std_stl;
 use strict_types::typesys::SystemBuilder;
@@ -51,14 +52,22 @@ fn sys() -> SymbolicSys {
 fn library() {
     let lib = lib();
     println!("{lib}");
-    println!("{lib:X}");
+
+    let s = lib.to_ascii_armored_string();
+    println!("{s}");
+    let lib2 = TypeLib::from_ascii_armored_str(&s).unwrap();
+    assert_eq!(lib, lib2);
 }
 
 #[test]
 fn symbols() {
     let sys = sys();
     println!("{sys}");
-    println!("{sys:X}");
+
+    let s = sys.to_ascii_armored_string();
+    println!("{s}");
+    let sys2 = SymbolicSys::from_ascii_armored_str(&s).unwrap();
+    assert_eq!(sys, sys2);
 }
 
 #[test]

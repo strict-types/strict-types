@@ -106,29 +106,6 @@ impl Display for Symbols {
     }
 }
 
-#[cfg(feature = "base85")]
-impl fmt::UpperHex for Symbols {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::confinement::U32;
-
-        writeln!(f, "-----BEGIN STRICT SYMBOL SYSTEM-----")?;
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<U32>().expect("in-memory");
-        let data = base85::encode(&data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT SYMBOL SYSTEM-----")?;
-        Ok(())
-    }
-}
-
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
 #[getter(prefix = "as_")]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
@@ -208,28 +185,10 @@ impl Display for SymbolicSys {
     }
 }
 
-#[cfg(feature = "base85")]
-impl fmt::UpperHex for SymbolicSys {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::confinement::U32;
+#[cfg(feature = "armor")]
+impl armor::StrictArmor for SymbolicSys {
+    type Id = TypeSysId;
+    const PLATE_TITLE: &'static str = "STRICT SYMBOLIC TYPES";
 
-        let id = self.id();
-
-        writeln!(f, "-----BEGIN STRICT SYMBOLIC TYPES-----")?;
-        writeln!(f, "Id: {}", id)?;
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<U32>().expect("in-memory");
-        let data = base85::encode(&data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT SYMBOLIC TYPES-----")?;
-        Ok(())
-    }
+    fn armor_id(&self) -> Self::Id { self.id() }
 }
