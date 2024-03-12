@@ -33,9 +33,9 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "urn:ubideco:stl:55f8bsTvyh7zAeYAiNwL9G1DxgwXzDvE8edcTFJz3Q9H#milan-poncho-gray";
+    "urn:ubideco:stl:DzTvt9gGhPUKD8Dkkjk9PDBhkJ4gtWxXWQjxnmUYLNrs#voyage-kimono-disco";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:BADMWBVQ6sMJGfELP13cjeZPNutGuLzZtNNZirJQsz9e#tower-monaco-corona";
+    "urn:ubideco:stl:5teCJyjMWaxbQK8vdga2soWh2U7waERS3ev8KHShJcgv#trumpet-scratch-pelican";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
