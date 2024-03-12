@@ -149,28 +149,10 @@ impl Display for TypeSystem {
     }
 }
 
-#[cfg(feature = "base85")]
-impl fmt::UpperHex for TypeSystem {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        use amplify::confinement::U32;
+#[cfg(feature = "armor")]
+impl armor::StrictArmor for TypeSystem {
+    type Id = crate::TypeSysId;
+    const PLATE_TITLE: &'static str = "STRICT TYPE SYSTEM";
 
-        let id = self.id();
-
-        writeln!(f, "-----BEGIN STRICT TYPE SYSTEM-----")?;
-        writeln!(f, "Id: {:-}", id)?;
-        writeln!(f)?;
-
-        let data = self.to_strict_serialized::<U32>().expect("in-memory");
-        let data = base85::encode(&data);
-        let mut data = data.as_str();
-        while data.len() >= 64 {
-            let (line, rest) = data.split_at(64);
-            writeln!(f, "{}", line)?;
-            data = rest;
-        }
-        writeln!(f, "{}", data)?;
-
-        writeln!(f, "\n-----END STRICT TYPE SYSTEM-----")?;
-        Ok(())
-    }
+    fn armor_id(&self) -> Self::Id { self.id() }
 }

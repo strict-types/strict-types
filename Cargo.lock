@@ -84,6 +84,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "ascii-armor"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "743d90b41a39d6e3920eef64a70f6411097cbb47141606a45b2a96533ec7111c"
+dependencies = [
+ "amplify",
+ "baid58",
+ "base85",
+ "sha2",
+ "strict_encoding",
+]
+
+[[package]]
 name = "baid58"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -433,8 +446,8 @@ name = "strict_types"
 version = "2.7.0-beta.1"
 dependencies = [
  "amplify",
+ "ascii-armor",
  "baid58",
- "base85",
  "half",
  "indexmap",
  "serde",

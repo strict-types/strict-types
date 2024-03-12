@@ -30,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         feature:
-          - base85
+          - armor
           - serde
     steps:
       - uses: actions/checkout@v2
