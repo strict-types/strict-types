@@ -30,7 +30,7 @@ use crate::ast::SemCommit;
 use crate::typelib::{ExternRef, InlineRef, InlineRef1, InlineRef2, LibSubref};
 use crate::typesys::symbols::SymbolicSys;
 use crate::typesys::{SymTy, TypeFqn};
-use crate::{CommitConsume, Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeRef};
+use crate::{CommitConsume, Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRef};
 
 /// Information about type semantic id and fully qualified name, if any.
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
@@ -98,6 +98,8 @@ impl SystemBuilder {
     pub fn new() -> SystemBuilder { SystemBuilder::default() }
 
     pub fn import(mut self, lib: TypeLib) -> Result<Self, Error> {
+        let lib_id = lib.id();
+
         let dependency = Dependency::from(&lib);
         self.pending_deps.remove(&dependency);
         self.imported_deps.insert(dependency);
@@ -106,8 +108,8 @@ impl SystemBuilder {
 
         for (ty_name, ty) in lib.types {
             let id = ty.sem_id_named(&ty_name);
-            let ty = ty.translate(&mut self, &())?;
-            let info = SymTy::named(lib.name.clone(), ty_name.clone(), ty);
+            let ty = ty.translate(&mut self, &lib_id)?;
+            let info = SymTy::named(lib_id, lib.name.clone(), ty_name.clone(), ty);
             self.types.insert(id, info);
         }
 
@@ -138,74 +140,80 @@ impl SystemBuilder {
         SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err])
     }
 
-    fn translate_inline<Ref: LibSubref>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
-    where Ref: Translate<SemId, Context = (), Builder = SystemBuilder, Error = Error> {
+    fn translate_inline<Ref: LibSubref>(
+        &mut self,
+        lib_id: TypeLibId,
+        inline_ty: Ty<Ref>,
+    ) -> Result<SemId, Error>
+    where
+        Ref: Translate<SemId, Context = TypeLibId, Builder = SystemBuilder, Error = Error>,
+    {
         // compute id
         let id = inline_ty.sem_id_unnamed();
         // run for nested types
-        let ty = inline_ty.translate(self, &())?;
+        let ty = inline_ty.translate(self, &lib_id)?;
         // add to system
-        self.types.insert(id, SymTy::unnamed(ty));
+        self.types.insert(id, SymTy::unnamed(lib_id, ty));
         Ok(id)
     }
 }
 
 impl Translate<SemId> for LibRef {
-    type Context = ();
+    type Context = TypeLibId;
     type Builder = SystemBuilder;
     type Error = Error;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
-        _ctx: &Self::Context,
+        ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
             LibRef::Named(sem_id) => Ok(sem_id),
-            LibRef::Inline(inline_ty) => builder.translate_inline(inline_ty),
+            LibRef::Inline(inline_ty) => builder.translate_inline(*ctx, inline_ty),
             LibRef::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
 
 impl Translate<SemId> for InlineRef {
-    type Context = ();
+    type Context = TypeLibId;
     type Builder = SystemBuilder;
     type Error = Error;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
-        _ctx: &Self::Context,
+        ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
             InlineRef::Named(sem_id) => Ok(sem_id),
-            InlineRef::Inline(inline_ty) => builder.translate_inline(inline_ty),
+            InlineRef::Inline(inline_ty) => builder.translate_inline(*ctx, inline_ty),
             InlineRef::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
 
 impl Translate<SemId> for InlineRef1 {
-    type Context = ();
+    type Context = TypeLibId;
     type Builder = SystemBuilder;
     type Error = Error;
 
     fn translate(
         self,
         builder: &mut Self::Builder,
-        _ctx: &Self::Context,
+        ctx: &Self::Context,
     ) -> Result<SemId, Self::Error> {
         match self {
             InlineRef1::Named(sem_id) => Ok(sem_id),
-            InlineRef1::Inline(inline_ty) => builder.translate_inline(inline_ty),
+            InlineRef1::Inline(inline_ty) => builder.translate_inline(*ctx, inline_ty),
             InlineRef1::Extern(ExternRef { sem_id, .. }) => Ok(sem_id),
         }
     }
 }
 
 impl Translate<SemId> for InlineRef2 {
-    type Context = ();
+    type Context = TypeLibId;
     type Builder = SystemBuilder;
     type Error = Error;
 

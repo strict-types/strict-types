@@ -26,12 +26,12 @@
 use std::fmt::{self, Display, Formatter};
 use std::ops::Index;
 
-use amplify::confinement::{self, MediumOrdMap};
+use amplify::confinement::{self, MediumOrdMap, SmallOrdSet};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
-use crate::{SemId, Ty};
+use crate::{SemId, Ty, TypeLibId};
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -70,6 +70,7 @@ impl From<&'static str> for TypeFqn {
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct SymTy {
+    pub lib: TypeLibId,
     /// Type origin providing information from which library and under which name the type is
     /// originating from. The origin information may be empty for the unnamed types.
     pub orig: Option<TypeFqn>,
@@ -78,14 +79,17 @@ pub struct SymTy {
 }
 
 impl SymTy {
-    pub fn named(lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> SymTy {
-        Self::with(Some(TypeFqn::with(lib_name, ty_name)), ty)
+    pub fn named(lib_id: TypeLibId, lib_name: LibName, ty_name: TypeName, ty: Ty<SemId>) -> SymTy {
+        Self::with(lib_id, Some(TypeFqn::with(lib_name, ty_name)), ty)
     }
 
-    pub fn unnamed(ty: Ty<SemId>) -> SymTy { Self::with(None::<TypeFqn>, ty) }
+    pub fn unnamed(lib_id: TypeLibId, ty: Ty<SemId>) -> SymTy {
+        Self::with(lib_id, None::<TypeFqn>, ty)
+    }
 
-    pub fn with(orig: Option<impl Into<TypeFqn>>, ty: Ty<SemId>) -> SymTy {
+    pub fn with(lib_id: TypeLibId, orig: Option<impl Into<TypeFqn>>, ty: Ty<SemId>) -> SymTy {
         SymTy {
+            lib: lib_id,
             orig: orig.map(|o| o.into()),
             ty,
         }
@@ -94,7 +98,13 @@ impl SymTy {
 
 /// Type system represents a set of strict types assembled from multiple
 /// libraries. It is designed to provide all necessary type information to
-/// analyze a type with all types it depends onto.
+/// analyze a type with all types it depends on.
+///
+/// Type system contains and commits to the information on type semantic ids,
+/// as well as source libraries. The reason in simple: since the semantic id
+/// doesn't commit to the library name, and two semantically-distinct
+/// libraries may contain the same-named type, for the complete semantic
+/// information we have to take into account library ids as well.
 ///
 /// # Type guarantees
 ///
@@ -102,12 +112,14 @@ impl SymTy {
 /// - Strict-serialized size is less than 2^24 bytes;
 /// - A type with the same semantic id can't appear in more than 256 libraries;
 /// - Type system is complete (i.e. no type references a type which is not a part of the system).
-#[derive(Wrapper, Clone, Eq, PartialEq, Debug, Default, From)]
-#[wrapper(Deref)]
+#[derive(Clone, Eq, PartialEq, Debug, Default)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
-pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
+pub struct TypeSystem {
+    libs: SmallOrdSet<TypeLibId>,
+    types: MediumOrdMap<SemId, Ty<SemId>>,
+}
 
 impl StrictSerialize for TypeSystem {}
 impl StrictDeserialize for TypeSystem {}
@@ -115,17 +127,26 @@ impl StrictDeserialize for TypeSystem {}
 impl TypeSystem {
     pub fn new() -> Self { Self::default() }
 
-    pub fn count_types(&self) -> u24 { self.0.len_u24() }
+    pub fn count_libs(&self) -> u16 { self.libs.len_u16() }
+    pub fn count_types(&self) -> u24 { self.types.len_u24() }
 
     pub(super) fn insert_unchecked(
         &mut self,
+        lib_id: TypeLibId,
         sem_id: SemId,
         ty: Ty<SemId>,
     ) -> Result<bool, confinement::Error> {
-        self.0.insert(sem_id, ty).map(|r| r.is_some())
+        self.libs.push(lib_id)?;
+        self.types.insert(sem_id, ty).map(|r| r.is_some())
     }
 
-    pub fn get(&self, sem_id: SemId) -> Option<&Ty<SemId>> { self.0.get(&sem_id) }
+    pub fn lib_ids(&self) -> impl Iterator<Item = TypeLibId> + '_ { self.libs.iter().cloned() }
+    pub fn sem_ids(&self) -> impl Iterator<Item = SemId> + '_ { self.types.keys().cloned() }
+    pub fn types(&self) -> impl Iterator<Item = (&SemId, &Ty<SemId>)> + '_ { self.types.iter() }
+
+    pub fn includes(&self, lib_id: TypeLibId) -> bool { self.libs.contains(&lib_id) }
+    pub fn contains(&self, sem_id: SemId) -> bool { self.types.contains_key(&sem_id) }
+    pub fn get(&self, sem_id: SemId) -> Option<&Ty<SemId>> { self.types.get(&sem_id) }
 }
 
 impl Index<SemId> for TypeSystem {
@@ -142,8 +163,12 @@ impl Display for TypeSystem {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {}", self.id())?;
         writeln!(f)?;
-        for (id, ty) in &self.0 {
-            writeln!(f, "data {id:-}: {:-}", ty)?;
+        for id in &self.libs {
+            writeln!(f, "uses {id:-}")?;
+        }
+        writeln!(f)?;
+        for (id, ty) in &self.types {
+            writeln!(f, "data {id:-}: {ty:-}")?;
         }
         Ok(())
     }

@@ -61,7 +61,7 @@ impl SymbolicSys {
     ) -> Result<TypedVal, Error> {
         let spec = spec.into();
         let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
-        self.as_types().strict_deserialize_type(sem_id, data)
+        self.as_type_system().strict_deserialize_type(sem_id, data)
     }
 
     pub fn strict_read_type(
@@ -71,7 +71,7 @@ impl SymbolicSys {
     ) -> Result<TypedVal, Error> {
         let spec = spec.into();
         let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
-        self.as_types().strict_read_type(sem_id, d)
+        self.as_type_system().strict_read_type(sem_id, d)
     }
 }
 

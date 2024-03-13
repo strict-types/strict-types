@@ -25,7 +25,6 @@
 use std::collections::BTreeSet;
 
 use amplify::ascii::{AsAsciiStrError, AsciiString};
-use amplify::Wrapper;
 use encoding::{FieldName, InvalidIdent, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
@@ -127,13 +126,13 @@ impl SymbolicSys {
     pub fn typify(&self, val: StrictVal, spec: impl Into<TypeSpec>) -> Result<TypedVal, Error> {
         let spec = spec.into();
         let sem_id = self.to_sem_id(spec.clone()).ok_or(Error::TypeAbsent(spec))?;
-        self.as_types().typify(val, sem_id)
+        self.as_type_system().typify(val, sem_id)
     }
 }
 
 impl TypeSystem {
     pub fn find(&self, sem_id: SemId) -> Option<&Ty<SemId>> {
-        self.as_inner().iter().find(|(my_id, _)| **my_id == sem_id).map(|(_, ty)| ty)
+        self.types().find(|(my_id, _)| **my_id == sem_id).map(|(_, ty)| ty)
     }
 
     pub fn typify(&self, val: StrictVal, sem_id: SemId) -> Result<TypedVal, Error> {

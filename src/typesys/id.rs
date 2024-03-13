@@ -32,7 +32,7 @@ use strict_encoding::STRICT_TYPES_LIB;
 use crate::ast::SemCommit;
 use crate::{CommitConsume, TypeSystem};
 
-pub const TYPESYS_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:sys:v01";
+pub const TYPESYS_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:sys:v02";
 
 #[derive(Wrapper, Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, From)]
 #[wrapper(Deref, BorrowSlice, Hex, Index, RangeOps)]
@@ -76,8 +76,12 @@ impl Display for TypeSysId {
 
 impl SemCommit for TypeSystem {
     fn sem_commit(&self, hasher: &mut impl CommitConsume) {
-        hasher.commit_consume(self.len_u24().to_le_bytes());
-        for sem_id in self.keys() {
+        hasher.commit_consume(self.count_libs().to_le_bytes());
+        for lib_id in self.lib_ids() {
+            lib_id.sem_commit(hasher);
+        }
+        hasher.commit_consume(self.count_types().to_le_bytes());
+        for sem_id in self.sem_ids() {
             sem_id.sem_commit(hasher);
         }
     }

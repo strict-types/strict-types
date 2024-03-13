@@ -35,7 +35,7 @@ use crate::{
 pub const LIB_ID_STD: &str =
     "urn:ubideco:stl:DzTvt9gGhPUKD8Dkkjk9PDBhkJ4gtWxXWQjxnmUYLNrs#voyage-kimono-disco";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:5teCJyjMWaxbQK8vdga2soWh2U7waERS3ev8KHShJcgv#trumpet-scratch-pelican";
+    "urn:ubideco:stl:7czFNhGJnctpY3wEunXQYvD9aTv1X98rZ1YveyxpAAEJ#video-amazon-bahama";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)

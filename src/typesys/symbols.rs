@@ -113,7 +113,7 @@ impl Display for Symbols {
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct SymbolicSys {
     pub(super) symbols: Symbols,
-    types: TypeSystem,
+    type_system: TypeSystem,
 }
 
 impl StrictSerialize for SymbolicSys {}
@@ -128,28 +128,33 @@ impl SymbolicSys {
         let mut sym = Symbols::with(libs)?;
 
         for (sem_id, info) in types {
-            sys.insert_unchecked(sem_id, info.ty)?;
+            sys.insert_unchecked(info.lib, sem_id, info.ty)?;
             sym.update_unchecked(sem_id, info.orig)?;
         }
 
         Ok(Self {
             symbols: sym,
-            types: sys,
+            type_system: sys,
         })
     }
 
-    pub fn new(types: TypeSystem, symbols: Symbols) -> Self { Self { symbols, types } }
+    pub fn new(types: TypeSystem, symbols: Symbols) -> Self {
+        Self {
+            symbols,
+            type_system: types,
+        }
+    }
 
-    pub fn id(&self) -> TypeSysId { self.types.id() }
+    pub fn id(&self) -> TypeSysId { self.type_system.id() }
 
     pub fn get(&self, spec: impl Into<TypeSpec>) -> Option<&Ty<SemId>> {
         let sem_id = self.to_sem_id(spec)?;
-        self.types.get(sem_id)
+        self.type_system.get(sem_id)
     }
 
     pub fn type_tree(&self, spec: impl Into<TypeSpec>) -> Option<TypeTree<'_>> {
         let sem_id = self.to_sem_id(spec)?;
-        let _ = self.types.get(sem_id)?;
+        let _ = self.type_system.get(sem_id)?;
         Some(TypeTree::new(sem_id, self))
     }
 
@@ -164,14 +169,18 @@ impl SymbolicSys {
         }
     }
 
-    pub fn into_type_system(self) -> TypeSystem { self.types }
+    pub fn into_type_system(self) -> TypeSystem { self.type_system }
 }
 
 impl Display for SymbolicSys {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
-        for (id, ty) in self.types.as_inner() {
+        for id in self.type_system.lib_ids() {
+            writeln!(f, "uses {id:-}")?;
+        }
+        writeln!(f)?;
+        for (id, ty) in self.type_system.types() {
             let ty = ty.clone().translate(&mut (), self).expect("type system inconsistency");
             match self.lookup(*id) {
                 Some(fqn) => {
