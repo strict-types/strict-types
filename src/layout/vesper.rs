@@ -104,13 +104,13 @@ impl Attribute for Attr {
     fn name(&self) -> Option<Ident> {
         match self {
             Attr::TypeName(_) => None,
-            Attr::Wrapped(name) if name.is_some() => ident!("aka"),
+            Attr::Wrapped(name) if name.is_some() => Some(ident!("aka")),
             Attr::Wrapped(_) => None,
             Attr::Option => None,
-            Attr::Tag(_) => ident!("tag"),
-            Attr::Len(_) => ident!("len"),
-            Attr::LenRange(_) => ident!("len"),
-            Attr::AsciiEnum(_) => ident!("charset"),
+            Attr::Tag(_) => Some(ident!("tag")),
+            Attr::Len(_) => Some(ident!("len")),
+            Attr::LenRange(_) => Some(ident!("len")),
+            Attr::AsciiEnum(_) => Some(ident!("charset")),
             Attr::EnumVariant(_, name) => Some(name.clone()),
         }
     }

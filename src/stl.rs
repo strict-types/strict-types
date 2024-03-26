@@ -21,10 +21,13 @@
 // limitations under the License.
 
 use encoding::stl::{
-    Alpha, AlphaCaps, AlphaCapsNum, AlphaNum, AlphaNumDash, AlphaNumLodash, AlphaSmall,
-    AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps, HexDecSmall, U2, U3, U4, U6, U7,
+    Alpha, AlphaCaps, AlphaCapsLodash, AlphaCapsNum, AlphaLodash, AlphaNum, AlphaNumDash,
+    AlphaNumLodash, AlphaSmall, AlphaSmallLodash, AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps,
+    HexDecSmall, U2, U3, U4, U6, U7,
 };
-use encoding::{LIB_NAME_STD, STRICT_TYPES_LIB, U1, U5};
+use encoding::{
+    FieldName, Ident, LibName, TypeName, VariantName, LIB_NAME_STD, STRICT_TYPES_LIB, U1, U5,
+};
 
 use crate::layout::MemoryLayout;
 use crate::{
@@ -33,9 +36,9 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "urn:ubideco:stl:DzTvt9gGhPUKD8Dkkjk9PDBhkJ4gtWxXWQjxnmUYLNrs#voyage-kimono-disco";
+    "urn:ubideco:stl:EcCNgrgLaygt3tCZNu2ZVEzMzSAZYEUeTNAVi5E81YWi#aspirin-mango-average";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:5teCJyjMWaxbQK8vdga2soWh2U7waERS3ev8KHShJcgv#trumpet-scratch-pelican";
+    "urn:ubideco:stl:ACBoDKVqDSuPrZLs2W2bLVj2TnpThzUMcJJrC3GhsQ79#idea-judo-benny";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
@@ -50,8 +53,11 @@ fn _std_sym() -> Result<SymbolicLib, TranspileError> {
         .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()
+        .transpile::<AlphaLodash>()
         .transpile::<AlphaCaps>()
+        .transpile::<AlphaCapsLodash>()
         .transpile::<AlphaSmall>()
+        .transpile::<AlphaSmallLodash>()
         .transpile::<Dec>()
         .transpile::<HexDecCaps>()
         .transpile::<HexDecSmall>()
@@ -70,6 +76,11 @@ pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library
 
 fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(STRICT_TYPES_LIB), [std_stl().to_dependency()])
+        .transpile::<Ident>()
+        .transpile::<TypeName>()
+        .transpile::<FieldName>()
+        .transpile::<VariantName>()
+        .transpile::<LibName>()
         .transpile::<SymbolRef>()
         .transpile::<TypeLib>()
         .transpile::<TypeSysId>()
