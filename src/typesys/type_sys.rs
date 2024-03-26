@@ -126,6 +126,10 @@ impl TypeSystem {
     }
 
     pub fn get(&self, sem_id: SemId) -> Option<&Ty<SemId>> { self.0.get(&sem_id) }
+
+    pub fn extend(&mut self, other: Self) -> Result<(), confinement::Error> {
+        self.0.extend(other.0)
+    }
 }
 
 impl Index<SemId> for TypeSystem {
