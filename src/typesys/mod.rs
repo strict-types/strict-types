@@ -30,4 +30,4 @@ pub use id::TypeSysId;
 pub use iter::{NestedCase, TypeInfo, TypeTree, TypeTreeIter};
 pub use symbols::{SymbolicSys, Symbols};
 pub use translate::{Error, SystemBuilder, TypeSymbol};
-pub use type_sys::{SymTy, TypeFqn, TypeSystem};
+pub use type_sys::{SymTy, TypeFqn, TypeSystem, UnknownType};
