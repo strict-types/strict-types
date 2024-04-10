@@ -136,8 +136,8 @@ impl TypeSystem {
         self.0.extend(other.0)
     }
 
-    pub fn extract(&self, ids: impl AsRef<[SemId]>) -> Result<Self, UnknownType> {
-        let mut ids = ids.as_ref().iter().copied().collect::<BTreeSet<_>>();
+    pub fn extract(&self, ids: impl IntoIterator<Item = SemId>) -> Result<Self, UnknownType> {
+        let mut ids = ids.into_iter().collect::<BTreeSet<_>>();
         let mut found = BTreeSet::new();
         let mut extract = BTreeMap::<SemId, Ty<SemId>>::new();
 
