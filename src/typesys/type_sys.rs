@@ -23,15 +23,20 @@
 //! Embedded lib is a set of compiled type libraries having no external
 //! dependencies
 
+use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Display, Formatter};
 use std::ops::Index;
 
-use amplify::confinement::{self, MediumOrdMap};
+use amplify::confinement::{self, Confined, MediumOrdMap};
 use amplify::num::u24;
 use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
 use crate::{SemId, Ty};
+
+#[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
+#[display("type with id `{0}` is not a part of the type system.")]
+pub struct UnknownType(SemId);
 
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
@@ -126,6 +131,25 @@ impl TypeSystem {
     }
 
     pub fn get(&self, sem_id: SemId) -> Option<&Ty<SemId>> { self.0.get(&sem_id) }
+
+    pub fn extend(&mut self, other: Self) -> Result<(), confinement::Error> {
+        self.0.extend(other.0)
+    }
+
+    pub fn extract(&self, ids: impl IntoIterator<Item = SemId>) -> Result<Self, UnknownType> {
+        let mut ids = ids.into_iter().collect::<BTreeSet<_>>();
+        let mut found = BTreeSet::new();
+        let mut extract = BTreeMap::<SemId, Ty<SemId>>::new();
+
+        while let Some(id) = ids.pop_first() {
+            let ty = self.get(id).ok_or(UnknownType(id))?.clone();
+            found.insert(id);
+            ids.extend(ty.iter().filter(|(id, _)| !found.contains(*id)).map(|(id, _)| *id));
+            extract.insert(id, ty);
+        }
+
+        Ok(Self(Confined::from_collection_unsafe(extract)))
+    }
 }
 
 impl Index<SemId> for TypeSystem {
