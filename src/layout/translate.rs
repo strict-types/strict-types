@@ -21,7 +21,7 @@
 // limitations under the License.
 
 use amplify::confinement::Confined;
-use encoding::{Ident, Primitive};
+use encoding::Primitive;
 
 use super::vesper::{Attr, Pred, TypeVesper};
 use crate::ast::ItemCase;
@@ -46,7 +46,7 @@ impl TypeInfo {
             Some(ItemCase::UnnamedField(pos)) => {
                 if name.as_str() == "_" {
                     comment = fqn;
-                    Ident::from_uint(*pos)
+                    ident!("{}", pos)
                 } else {
                     name.into_ident()
                 }
@@ -85,10 +85,10 @@ impl TypeInfo {
         let mut predicate = ty.cls().into();
         match ty {
             Ty::Primitive(prim) if *prim == Primitive::UNIT => {
-                attributes.push(Attr::TypeName(tn!("Unit")));
+                attributes.push(Attr::TypeName(ident!("Unit")));
             }
             Ty::Primitive(prim) => {
-                attributes.push(Attr::TypeName(tn!("{}", prim)));
+                attributes.push(Attr::TypeName(ident!("{}", prim)));
             }
             Ty::Array(_, len) => attributes.push(Attr::Len(*len)),
             Ty::List(_, sizing) | Ty::Set(_, sizing) | Ty::Map(_, _, sizing) => {

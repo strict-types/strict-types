@@ -26,7 +26,7 @@ use std::collections::BTreeSet;
 
 use amplify::ascii::{AsAsciiStrError, AsciiString};
 use amplify::Wrapper;
-use encoding::{FieldName, InvalidIdent, Primitive, Sizing, VariantName};
+use encoding::{FieldName, InvalidRString, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
 use super::StrictVal;
@@ -97,7 +97,7 @@ pub enum Error {
 
     #[display(inner)]
     #[from]
-    InvalidFieldName(InvalidIdent),
+    InvalidFieldName(InvalidRString),
 
     /// invalid enum tag `{0}`; allowed variants are {1}.
     EnumTagInvalid(EnumTag, EnumVariants),
