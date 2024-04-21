@@ -176,9 +176,9 @@ impl Display for SymbolicSys {
             match self.lookup(*id) {
                 Some(fqn) => {
                     writeln!(f, "-- {id:-}")?;
-                    writeln!(f, "data {fqn}: {:0}", ty)?;
+                    writeln!(f, "data {fqn}: {ty:-}")?;
                 }
-                None => writeln!(f, "data {id:-}: {:0}", ty)?,
+                None => writeln!(f, "data {id:-}: {ty:-}")?,
             }
         }
         Ok(())

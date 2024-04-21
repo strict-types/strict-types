@@ -42,7 +42,7 @@ impl LibSubref for InlineRef2 {}
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{lib_id}.{sem_id:0}")]
+#[display("{lib_id}.{sem_id}")]
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
@@ -96,7 +96,7 @@ impl TypeRef for InlineRef {
 impl Display for InlineRef {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef::Named(sem_id) => write!(f, "{sem_id:0}"),
+            InlineRef::Named(sem_id) => write!(f, "{sem_id}"),
             InlineRef::Extern(ext) => Display::fmt(ext, f),
             InlineRef::Inline(ty) => Display::fmt(ty, f),
         }
@@ -142,7 +142,7 @@ impl TypeRef for InlineRef1 {
 impl Display for InlineRef1 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef1::Named(sem_id) => write!(f, "{sem_id:0}"),
+            InlineRef1::Named(sem_id) => write!(f, "{sem_id}"),
             InlineRef1::Extern(ext) => Display::fmt(ext, f),
             InlineRef1::Inline(ty) => Display::fmt(ty, f),
         }
@@ -171,7 +171,7 @@ impl TypeRef for InlineRef2 {
 impl Display for InlineRef2 {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            InlineRef2::Named(sem_id) => write!(f, "{sem_id:0}"),
+            InlineRef2::Named(sem_id) => write!(f, "{sem_id}"),
             InlineRef2::Extern(ext) => Display::fmt(ext, f),
         }
     }

@@ -65,13 +65,12 @@ impl FromStr for TypeLibId {
 impl Display for TypeLibId {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         if f.alternate() {
-            write!(f, "{}", self.to_baid58().mnemonic())
-        } else if f.sign_minus() {
-            write!(f, "{:#}", self.to_baid58())
-        } else if f.sign_aware_zero_pad() {
-            write!(f, "urn:ubideco:{::<}", self.to_baid58())
+            f.write_str("urn:ubideco:stl:")?;
+        }
+        if f.sign_minus() {
+            write!(f, "{:.2}", self.to_baid58())
         } else {
-            write!(f, "urn:ubideco:{::<#}", self.to_baid58())
+            write!(f, "{:#.2}", self.to_baid58())
         }
     }
 }

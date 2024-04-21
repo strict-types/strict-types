@@ -121,7 +121,7 @@ impl Display for SymbolicLib {
             writeln!(f, "import {dep}")?;
             if let Some(index) = self.extern_types().get(&dep.name) {
                 for (sem_id, name) in index {
-                    writeln!(f, "  use {name}#{:0}", sem_id.to_baid58().mnemonic())?;
+                    writeln!(f, "  use {name}#{}", sem_id.to_baid58().mnemonic())?;
                 }
                 writeln!(f)?;
             }
@@ -134,7 +134,7 @@ impl Display for SymbolicLib {
         for (name, ty) in self.types() {
             if f.alternate() {
                 let mnemo = ty.sem_id_named(name).to_baid58().mnemonic();
-                writeln!(f, "@mnemonic({mnemo:0})")?;
+                writeln!(f, "@mnemonic({mnemo})")?;
             }
             write!(f, "data {name:0$} : ", width)?;
             Display::fmt(ty, f)?;
