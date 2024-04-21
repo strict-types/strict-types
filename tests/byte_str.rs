@@ -43,6 +43,7 @@ typelib Test
 
 -- no dependencies
 
+@mnemonic(scale-stage-rufus)
 data ByteStr           : [Byte]
 
 "

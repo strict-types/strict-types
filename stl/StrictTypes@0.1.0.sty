@@ -39,13 +39,13 @@ data FieldInlineRef2   : name FieldName, ty InlineRef2
 data FieldLibRef       : name FieldName, ty LibRef
 
 @mnemonic(toyota-plasma-austria)
-data FieldName         : [Std.AlphaSmallLodash#urn:ubideco:semid:F5nChHjhEz5Vf1RmdxicsgnPGDj3AA4juyGZii5tuYTF#plastic-snake-modular ^ 1..0x64]
+data FieldName         : [Std.AlphaSmallLodash ^ 1..0x64]
 
 @mnemonic(storm-vega-pegasus)
 data FieldSemId        : name FieldName, ty SemId
 
 @mnemonic(icon-salon-aladdin)
-data Ident             : [Std.AlphaLodash#urn:ubideco:semid:9pnzMNSD2NTa7KrcrxHDMtBNXmDYmc1VqhPBMDeSFGJa#hope-clark-buffalo ^ 1..0x64]
+data Ident             : [Std.AlphaLodash ^ 1..0x64]
 
 @mnemonic(magnet-llama-drum)
 data InlineRef         : inline TyInlineRef1
@@ -72,7 +72,7 @@ data ItemCase          : unnamedField U8
                        | mapValue ()
 
 @mnemonic(fidel-perfume-strange)
-data LibName           : [Std.AlphaCapsLodash#urn:ubideco:semid:DVAijcXfyo8DiiBiNApv2qHBziFdECg4J9p6RG9CrD4z#winter-vampire-energy ^ 1..0x64]
+data LibName           : [Std.AlphaCapsLodash ^ 1..0x64]
 
 @mnemonic(focus-vitamin-plate)
 data LibRef            : inline TyInlineRef
@@ -205,7 +205,7 @@ data TypeLib           : name LibName
 data TypeLibId         : [Byte ^ 32]
 
 @mnemonic(gray-bonanza-kilo)
-data TypeName          : [Std.AlphaCapsLodash#urn:ubideco:semid:DVAijcXfyo8DiiBiNApv2qHBziFdECg4J9p6RG9CrD4z#winter-vampire-energy ^ 1..0x64]
+data TypeName          : [Std.AlphaCapsLodash ^ 1..0x64]
 
 @mnemonic(match-alaska-fragile)
 data TypeSymbol        : id SemId, fqn TypeFqn?
@@ -265,6 +265,6 @@ data VariantInfoLibRef : name VariantName, ty LibRef
 data VariantInfoSemId  : name VariantName, ty SemId
 
 @mnemonic(fiesta-center-yoga)
-data VariantName       : [Std.AlphaSmallLodash#urn:ubideco:semid:F5nChHjhEz5Vf1RmdxicsgnPGDj3AA4juyGZii5tuYTF#plastic-snake-modular ^ 1..0x64]
+data VariantName       : [Std.AlphaSmallLodash ^ 1..0x64]
 
 

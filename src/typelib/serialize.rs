@@ -175,9 +175,14 @@ impl armor::StrictArmor for TypeLib {
     fn armor_headers(&self) -> Vec<armor::ArmorHeader> {
         use armor::ArmorHeader;
 
+        use crate::Dependency;
+
         let mut headers = vec![ArmorHeader::new("Name", self.name.to_string())];
-        for dep in &self.dependencies {
-            headers.push(ArmorHeader::new("Dependency", format!("{dep}")));
+        if !self.dependencies.is_empty() {
+            headers.push(ArmorHeader::with(
+                "Dependencies",
+                self.dependencies.iter().map(Dependency::to_string),
+            ));
         }
         headers
     }
