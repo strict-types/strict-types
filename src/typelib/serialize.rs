@@ -70,7 +70,7 @@ impl TypeLib {
                     self.name,
                     header.unwrap_or_default()
                 )?;
-                writeln!(file, "{:#}", self.to_symbolic().expect("invalid library data"))?;
+                writeln!(file, "{}", self.to_symbolic().expect("invalid library data"))?;
             }
         }
 
@@ -106,7 +106,7 @@ impl SymbolicLib {
             self.name(),
             header.unwrap_or_default()
         )?;
-        writeln!(file, "{self:#}")?;
+        writeln!(file, "{self}")?;
 
         Ok(())
     }
@@ -132,7 +132,7 @@ impl Display for SymbolicLib {
         writeln!(f)?;
         let width = f.width().unwrap_or(17);
         for (name, ty) in self.types() {
-            if f.alternate() {
+            if !f.alternate() {
                 let mnemo = ty.sem_id_named(name).to_baid58().mnemonic();
                 writeln!(f, "@mnemonic({mnemo})")?;
             }
