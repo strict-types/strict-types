@@ -150,7 +150,7 @@ impl Display for TypeLib {
         writeln!(f, "typelib {} -- {}", self.name, self.id())?;
         writeln!(f)?;
         for dep in &self.dependencies {
-            writeln!(f, "{dep} as {}", dep.name)?;
+            writeln!(f, "import {dep}")?;
         }
         if self.dependencies.is_empty() {
             f.write_str("-- no dependencies")?;
@@ -177,7 +177,7 @@ impl armor::StrictArmor for TypeLib {
 
         let mut headers = vec![ArmorHeader::new("Name", self.name.to_string())];
         for dep in &self.dependencies {
-            headers.push(ArmorHeader::new("Dependency", format!("{:-}", dep.id)));
+            headers.push(ArmorHeader::new("Dependency", format!("{dep}")));
         }
         headers
     }
