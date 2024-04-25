@@ -29,9 +29,10 @@ use amplify::confinement::{
     U32 as MAX32,
 };
 use amplify::num::{u24, u40, u48, u56};
-use encoding::{DecodeError, Primitive, ReadRaw, StreamReader, StrictDecode, StrictReader};
+use encoding::{DecodeError, Primitive, ReadRaw, Sizing, StreamReader, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
+use crate::ast::UnnamedFields;
 use crate::typesys::{SymbolicSys, TypeSymbol};
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
@@ -125,6 +126,31 @@ impl TypeSystem {
 
         let mut reader = StrictReader::with(d);
 
+        let rstring_sizing =
+            |fields: &UnnamedFields<SemId>| -> Result<Option<(SemId, Sizing)>, Error> {
+                let rest = fields[1];
+                let rest = self.find(rest).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
+                if let Ty::List(rest, sizing) = rest {
+                    let mut sizing = sizing.clone();
+                    sizing.min += 1;
+                    sizing.max += 1;
+                    return Ok(Some((*rest, sizing)));
+                }
+                Ok(None)
+            };
+        let is_rstring = |fields: &UnnamedFields<SemId>| -> Result<bool, Error> {
+            if fields.len() != 2 {
+                return Ok(false);
+            }
+            let first = fields[0];
+            let Some((rest, _)) = rstring_sizing(fields)? else {
+                return Ok(false);
+            };
+
+            Ok(self.find(first).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.is_char_enum()
+                && self.find(rest).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.is_char_enum())
+        };
+
         let val = match ty {
             Ty::Primitive(prim) => {
                 match *prim {
@@ -155,6 +181,52 @@ impl TypeSystem {
             Ty::UnicodeChar => {
                 todo!()
             }
+
+            // ASCII strings:
+            Ty::List(sem_id, sizing)
+                if self
+                    .find(*sem_id)
+                    .ok_or_else(|| Error::TypeAbsent(spec.clone()))?
+                    .is_char_enum() =>
+            {
+                if sizing.max <= u8::MAX as u64 {
+                    StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u16::MAX as u64 {
+                    StrictVal::String(SmallAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u24::MAX.into_u64() {
+                    StrictVal::String(MediumAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u32::MAX as u64 {
+                    StrictVal::String(LargeAscii::strict_decode(&mut reader)?.to_string())
+                } else {
+                    StrictVal::String(
+                        Confined::<AsciiString, 0, { u64::MAX as usize }>::strict_decode(
+                            &mut reader,
+                        )?
+                        .to_string(),
+                    )
+                }
+            }
+            // Restricted strings:
+            Ty::Tuple(fields) if is_rstring(fields)? => {
+                let (_, sizing) = rstring_sizing(fields)?.expect("checked in match");
+                if sizing.max <= u8::MAX as u64 {
+                    StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u16::MAX as u64 {
+                    StrictVal::String(SmallAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u24::MAX.into_u64() {
+                    StrictVal::String(MediumAscii::strict_decode(&mut reader)?.to_string())
+                } else if sizing.max <= u32::MAX as u64 {
+                    StrictVal::String(LargeAscii::strict_decode(&mut reader)?.to_string())
+                } else {
+                    StrictVal::String(
+                        Confined::<AsciiString, 0, { u64::MAX as usize }>::strict_decode(
+                            &mut reader,
+                        )?
+                        .to_string(),
+                    )
+                }
+            }
+
             Ty::Enum(variants) => {
                 let tag = u8::strict_decode(&mut reader)?;
                 if !variants.has_tag(tag) {
@@ -239,31 +311,6 @@ impl TypeSystem {
             Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u32::MAX as u64 => {
                 let string = LargeString::strict_decode(&mut reader)?;
                 StrictVal::String(string.into_inner())
-            }
-
-            // ASCII strings:
-            Ty::List(sem_id, sizing)
-                if self
-                    .find(*sem_id)
-                    .ok_or_else(|| Error::TypeAbsent(spec.clone()))?
-                    .is_char_enum() =>
-            {
-                if sizing.max <= u8::MAX as u64 {
-                    StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())
-                } else if sizing.max <= u16::MAX as u64 {
-                    StrictVal::String(SmallAscii::strict_decode(&mut reader)?.to_string())
-                } else if sizing.max <= u24::MAX.into_u64() {
-                    StrictVal::String(MediumAscii::strict_decode(&mut reader)?.to_string())
-                } else if sizing.max <= u32::MAX as u64 {
-                    StrictVal::String(LargeAscii::strict_decode(&mut reader)?.to_string())
-                } else {
-                    StrictVal::String(
-                        Confined::<AsciiString, 0, { u64::MAX as usize }>::strict_decode(
-                            &mut reader,
-                        )?
-                        .to_string(),
-                    )
-                }
             }
 
             // Other lists:

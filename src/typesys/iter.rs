@@ -25,6 +25,7 @@ use std::fmt::{Display, Formatter};
 use std::mem::swap;
 
 use amplify::confinement::{Confined, TinyVec};
+use encoding::Sizing;
 use strict_encoding::STRICT_TYPES_LIB;
 
 use crate::ast::ItemCase;
@@ -99,6 +100,9 @@ pub enum NestedCase {
 
     #[strict_type(tag = 0x12)]
     UniStr,
+
+    #[strict_type(tag = 0x13)]
+    RStr(Option<TypeFqn>, Option<TypeFqn>, Sizing),
 }
 
 /*
@@ -165,6 +169,24 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
                 nested.push(NestedCase::Option);
                 let _ = iter.next(); // skipping none
                 ret = false;
+            } else if let Ty::Tuple(fields) = ty {
+                if fields.len() == 2 {
+                    let first = self.sys.get(fields[0]);
+                    let rest = self.sys.get(fields[1]);
+                    if let Some((first, Ty::List(rest, sizing))) = first.zip(rest) {
+                        let other = self.sys.get(*rest);
+                        if first.is_char_enum() && other.map(Ty::is_char_enum).unwrap_or_default() {
+                            let first = self.sys.symbols.lookup(fields[0]);
+                            let rest = self.sys.symbols.lookup(*rest);
+                            let mut sizing = sizing.clone();
+                            sizing.min += 1;
+                            sizing.max += 1;
+                            let _ = iter.next(); // skipping first char
+                            let _ = iter.next(); // skipping nested list
+                            nested.push(NestedCase::RStr(first.cloned(), rest.cloned(), sizing))
+                        }
+                    }
+                }
             } else if let Ty::List(inner_id, _) = ty {
                 let inner_ty = self.sys.get(*inner_id).expect("incomplete type system");
                 if inner_ty.is_char_enum() {

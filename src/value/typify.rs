@@ -217,6 +217,11 @@ impl TypeSystem {
             }
             (val @ StrictVal::List(_), Ty::Array(_, _)) => val,
 
+            // RString
+            (StrictVal::String(s), Ty::Tuple(fields)) if s.is_ascii() && fields.len() == 2 => {
+                StrictVal::String(s)
+            }
+
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
             (val @ StrictVal::String(_), Ty::List(id, _)) if id.is_unicode_char() => val,

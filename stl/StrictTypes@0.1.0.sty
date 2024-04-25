@@ -1,5 +1,5 @@
 {-
-  Id: stl:iJbHeD@G-W2pjO55-14flJqZ-yGY1X8X-v6GNduw-LsHDgVA#motif-canyon-tornado
+  Id: stl:ReqjX9v2-45ABOvH-i7YYKfx-30V2lgT-owwpkNk-E$v5ENk#century-comrade-chess
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -13,6 +13,7 @@ typelib StrictTypes
 
 import Std#ralph-blue-lucky
   use AlphaLodash#halt-alamo-mimic
+  use AlphaNumLodash#percent-bingo-caesar
   use AlphaCapsLodash#duet-hammer-labor
   use AlphaSmallLodash#pioneer-eagle-spell
 
@@ -38,14 +39,14 @@ data FieldInlineRef2   : name FieldName, ty InlineRef2
 @mnemonic(trumpet-neptune-gondola)
 data FieldLibRef       : name FieldName, ty LibRef
 
-@mnemonic(prime-next-aloha)
-data FieldName         : [Std.AlphaSmallLodash ^ 1..0x64]
+@mnemonic(present-flute-herman)
+data FieldName         : Std.AlphaSmallLodash, [Std.AlphaNumLodash ^ ..0x63]
 
 @mnemonic(gemini-rainbow-loyal)
 data FieldSemId        : name FieldName, ty SemId
 
-@mnemonic(samuel-little-ringo)
-data Ident             : [Std.AlphaLodash ^ 1..0x64]
+@mnemonic(exotic-october-option)
+data Ident             : Std.AlphaLodash, [Std.AlphaNumLodash ^ ..0x63]
 
 @mnemonic(fame-local-critic)
 data InlineRef         : inline TyInlineRef1
@@ -71,8 +72,8 @@ data ItemCase          : unnamedField U8
                        | mapKey ()
                        | mapValue ()
 
-@mnemonic(family-uniform-begin)
-data LibName           : [Std.AlphaCapsLodash ^ 1..0x64]
+@mnemonic(cabaret-toyota-arena)
+data LibName           : Std.AlphaCapsLodash, [Std.AlphaNumLodash ^ ..0x63]
 
 @mnemonic(equal-hello-amigo)
 data LibRef            : inline TyInlineRef
@@ -97,12 +98,13 @@ data NamedFieldsLibRef : [FieldLibRef ^ 1..0xff]
 @mnemonic(chapter-zigzag-hunter)
 data NamedFieldsSemId  : [FieldSemId ^ 1..0xff]
 
-@mnemonic(owner-theory-between)
+@mnemonic(wolf-taxi-druid)
 data NestedCase        : newType TypeFqn?
                        | option ()
                        | byteStr#16 ()
                        | asciiStr TypeFqn?
                        | uniStr ()
+                       | rStr (TypeFqn?, TypeFqn?, Sizing)
 
 @mnemonic(deliver-arrow-boxer)
 data Primitive         : U8
@@ -204,8 +206,8 @@ data TypeLib           : name LibName
 @mnemonic(torpedo-accent-silver)
 data TypeLibId         : [Byte ^ 32]
 
-@mnemonic(teacher-cinema-right)
-data TypeName          : [Std.AlphaCapsLodash ^ 1..0x64]
+@mnemonic(edgar-carol-mystery)
+data TypeName          : Std.AlphaCapsLodash, [Std.AlphaNumLodash ^ ..0x63]
 
 @mnemonic(sigma-miami-elite)
 data TypeSymbol        : id SemId, fqn TypeFqn?
@@ -264,7 +266,7 @@ data VariantInfoLibRef : name VariantName, ty LibRef
 @mnemonic(radius-cloud-accent)
 data VariantInfoSemId  : name VariantName, ty SemId
 
-@mnemonic(basil-risk-jerome)
-data VariantName       : [Std.AlphaSmallLodash ^ 1..0x64]
+@mnemonic(theory-austin-before)
+data VariantName       : Std.AlphaSmallLodash, [Std.AlphaNumLodash ^ ..0x63]
 
 
