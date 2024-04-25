@@ -25,6 +25,7 @@ use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{Confined, TinyOrdSet};
+use baid64::DisplayBaid64;
 use encoding::StrictDumb;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
 
@@ -223,10 +224,9 @@ impl Display for LibRef {
     }
 }
 
-#[derive(Clone, Eq, Debug, Display)]
+#[derive(Clone, Eq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[display("{name}#{id:-}")]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct Dependency {
     pub id: TypeLibId,
@@ -255,6 +255,12 @@ impl From<&TypeLib> for Dependency {
             id: lib.id(),
             name: lib.name.clone(),
         }
+    }
+}
+
+impl Display for Dependency {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "{}#{}", self.name, self.id.to_baid64_mnemonic())
     }
 }
 

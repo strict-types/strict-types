@@ -25,7 +25,7 @@ use std::path::Path;
 use std::{fmt, io};
 
 use amplify::confinement::U24 as U24MAX;
-use baid58::ToBaid58;
+use baid64::DisplayBaid64;
 use encoding::{StreamWriter, StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
 use crate::{StlFormat, SymbolicLib, TypeLib};
@@ -121,7 +121,7 @@ impl Display for SymbolicLib {
             writeln!(f, "import {dep}")?;
             if let Some(index) = self.extern_types().get(&dep.name) {
                 for (sem_id, name) in index {
-                    writeln!(f, "  use {name}#{}", sem_id.to_baid58().mnemonic())?;
+                    writeln!(f, "  use {name}#{}", sem_id.to_baid64_mnemonic())?;
                 }
                 writeln!(f)?;
             }
@@ -133,7 +133,7 @@ impl Display for SymbolicLib {
         let width = f.width().unwrap_or(17);
         for (name, ty) in self.types() {
             if !f.alternate() {
-                let mnemo = ty.sem_id_named(name).to_baid58().mnemonic();
+                let mnemo = ty.sem_id_named(name).to_baid64_mnemonic();
                 writeln!(f, "@mnemonic({mnemo})")?;
             }
             write!(f, "data {name:0$} : ", width)?;
