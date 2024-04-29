@@ -186,6 +186,18 @@ impl TypeSystem {
                 }
             }
 
+            (StrictVal::String(s), Ty::Tuple(fields))
+                if s.is_ascii() && self.is_rstring(fields).expect("type absent") =>
+            {
+                let (_, sizing) =
+                    self.rstring_sizing(fields).expect("type absent").expect("checked above");
+                let bytes_count = sizing.byte_size();
+                debug_assert!(s.len() <= sizing.max as usize);
+                let le_bytes = &s.len().to_le_bytes()[0..bytes_count];
+                writer.write_all(le_bytes)?;
+                writer.write_all(s.as_bytes())?;
+            }
+
             (a, b) => panic!("bug in business logic of type system. Details:\n{a:#?}\n{b:#?}"),
         }
 

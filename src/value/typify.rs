@@ -219,6 +219,14 @@ impl TypeSystem {
 
             // RString
             (StrictVal::String(s), Ty::Tuple(fields)) if s.is_ascii() && fields.len() == 2 => {
+                /* Invalid: we need to preserve string structure
+                let first = fields.first().expect("checked length");
+                let rest = fields.last().expect("checked length");
+                let first =
+                    self.typify(StrictVal::Enum(EnumTag::Ord(s.as_bytes()[0] as u8)), *first)?;
+                let rest = self.typify(StrictVal::String(s[1..].to_owned()), *rest)?;
+                StrictVal::Tuple(vec![first.val, rest.val])
+                 */
                 StrictVal::String(s)
             }
 

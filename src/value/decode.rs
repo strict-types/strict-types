@@ -29,11 +29,10 @@ use amplify::confinement::{
     U32 as MAX32,
 };
 use amplify::num::{u24, u40, u48, u56};
-use encoding::{DecodeError, Primitive, ReadRaw, Sizing, StreamReader, StrictDecode, StrictReader};
+use encoding::{DecodeError, Primitive, ReadRaw, StreamReader, StrictDecode, StrictReader};
 use indexmap::IndexMap;
 
-use crate::ast::UnnamedFields;
-use crate::typesys::{SymbolicSys, TypeSymbol};
+use crate::typesys::{SymbolicSys, TypeSymbol, UnknownType};
 use crate::typify::{TypeSpec, TypedVal};
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
@@ -42,6 +41,10 @@ use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 pub enum Error {
     /// unknown type `{0}`.
     TypeAbsent(TypeSpec),
+
+    #[display(inner)]
+    #[from]
+    UnknownType(UnknownType),
 
     /// {0} is not yet implemented. Please update `strict_types` to the latest version.
     NotImplemented(String),
@@ -126,31 +129,6 @@ impl TypeSystem {
 
         let mut reader = StrictReader::with(d);
 
-        let rstring_sizing =
-            |fields: &UnnamedFields<SemId>| -> Result<Option<(SemId, Sizing)>, Error> {
-                let rest = fields[1];
-                let rest = self.find(rest).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
-                if let Ty::List(rest, sizing) = rest {
-                    let mut sizing = sizing.clone();
-                    sizing.min += 1;
-                    sizing.max += 1;
-                    return Ok(Some((*rest, sizing)));
-                }
-                Ok(None)
-            };
-        let is_rstring = |fields: &UnnamedFields<SemId>| -> Result<bool, Error> {
-            if fields.len() != 2 {
-                return Ok(false);
-            }
-            let first = fields[0];
-            let Some((rest, _)) = rstring_sizing(fields)? else {
-                return Ok(false);
-            };
-
-            Ok(self.find(first).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.is_char_enum()
-                && self.find(rest).ok_or_else(|| Error::TypeAbsent(spec.clone()))?.is_char_enum())
-        };
-
         let val = match ty {
             Ty::Primitive(prim) => {
                 match *prim {
@@ -207,8 +185,8 @@ impl TypeSystem {
                 }
             }
             // Restricted strings:
-            Ty::Tuple(fields) if is_rstring(fields)? => {
-                let (_, sizing) = rstring_sizing(fields)?.expect("checked in match");
+            Ty::Tuple(fields) if self.is_rstring(fields)? => {
+                let (_, sizing) = self.rstring_sizing(fields)?.expect("checked in match");
                 if sizing.max <= u8::MAX as u64 {
                     StrictVal::String(TinyAscii::strict_decode(&mut reader)?.to_string())
                 } else if sizing.max <= u16::MAX as u64 {
