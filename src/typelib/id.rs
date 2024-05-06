@@ -24,7 +24,7 @@ use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 
 use amplify::{ByteArray, Bytes32};
-use baid58::{Baid58ParseError, FromBaid58, ToBaid58};
+use baid64::{Baid64ParseError, DisplayBaid64, FromBaid64Str};
 use encoding::StrictEncode;
 use sha2::{Digest, Sha256};
 use strict_encoding::{StrictDumb, STRICT_TYPES_LIB};
@@ -51,29 +51,21 @@ pub struct TypeLibId(
     Bytes32,
 );
 
-impl ToBaid58<32> for TypeLibId {
+impl DisplayBaid64 for TypeLibId {
     const HRI: &'static str = "stl";
-    fn to_baid58_payload(&self) -> [u8; 32] { self.to_byte_array() }
+    const CHUNKING: bool = true;
+    const PREFIX: bool = true;
+    const EMBED_CHECKSUM: bool = false;
+    const MNEMONIC: bool = true;
+    fn to_baid64_payload(&self) -> [u8; 32] { self.to_byte_array() }
 }
-impl FromBaid58<32> for TypeLibId {}
+impl FromBaid64Str for TypeLibId {}
 impl FromStr for TypeLibId {
-    type Err = Baid58ParseError;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        Self::from_baid58_str(s.trim_start_matches("urn:ubideco:"))
-    }
+    type Err = Baid64ParseError;
+    fn from_str(s: &str) -> Result<Self, Self::Err> { Self::from_baid64_str(s) }
 }
 impl Display for TypeLibId {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        if f.alternate() {
-            write!(f, "{}", self.to_baid58().mnemonic())
-        } else if f.sign_minus() {
-            write!(f, "{:#}", self.to_baid58())
-        } else if f.sign_aware_zero_pad() {
-            write!(f, "urn:ubideco:{::<}", self.to_baid58())
-        } else {
-            write!(f, "urn:ubideco:{::<#}", self.to_baid58())
-        }
-    }
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { self.fmt_baid64(f) }
 }
 
 impl SemCommit for TypeLibId {

@@ -150,6 +150,23 @@ impl TypedWrite for LibBuilder {
         self
     }
 
+    unsafe fn register_rstring(
+        mut self,
+        c: &impl StrictEncode,
+        c1: &impl StrictEncode,
+        mut sizing: Sizing,
+    ) -> Self {
+        self = c.strict_encode(self).expect("in-memory encoding");
+        let ty1 = self.last_compiled.clone().expect("can't compile type");
+        self = c1.strict_encode(self).expect("in-memory encoding");
+        let ty = self.last_compiled.expect("can't compile type");
+        sizing.min -= 1;
+        sizing.max -= 1;
+        let list = TranspileRef::Embedded(Box::new(Ty::List(ty, sizing)));
+        self.last_compiled = Some(Ty::Tuple(confined_vec![ty1, list]).into());
+        self
+    }
+
     unsafe fn register_list(mut self, ty: &impl StrictEncode, sizing: Sizing) -> Self {
         self = ty.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");

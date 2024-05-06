@@ -25,7 +25,7 @@ use std::path::Path;
 use std::{fmt, io};
 
 use amplify::confinement::U24 as U24MAX;
-use baid58::ToBaid58;
+use baid64::DisplayBaid64;
 use encoding::{StreamWriter, StrictDeserialize, StrictEncode, StrictSerialize, StrictWriter};
 
 use crate::{StlFormat, SymbolicLib, TypeLib};
@@ -70,7 +70,7 @@ impl TypeLib {
                     self.name,
                     header.unwrap_or_default()
                 )?;
-                writeln!(file, "{:#}", self.to_symbolic().expect("invalid library data"))?;
+                writeln!(file, "{}", self.to_symbolic().expect("invalid library data"))?;
             }
         }
 
@@ -106,7 +106,7 @@ impl SymbolicLib {
             self.name(),
             header.unwrap_or_default()
         )?;
-        writeln!(file, "{self:#}")?;
+        writeln!(file, "{self}")?;
 
         Ok(())
     }
@@ -121,7 +121,7 @@ impl Display for SymbolicLib {
             writeln!(f, "import {dep}")?;
             if let Some(index) = self.extern_types().get(&dep.name) {
                 for (sem_id, name) in index {
-                    writeln!(f, "  use {name}#{:0}", sem_id.to_baid58().mnemonic())?;
+                    writeln!(f, "  use {name}#{}", sem_id.to_baid64_mnemonic())?;
                 }
                 writeln!(f)?;
             }
@@ -132,9 +132,9 @@ impl Display for SymbolicLib {
         writeln!(f)?;
         let width = f.width().unwrap_or(17);
         for (name, ty) in self.types() {
-            if f.alternate() {
-                let mnemo = ty.sem_id_named(name).to_baid58().mnemonic();
-                writeln!(f, "@mnemonic({mnemo:0})")?;
+            if !f.alternate() {
+                let mnemo = ty.sem_id_named(name).to_baid64_mnemonic();
+                writeln!(f, "@mnemonic({mnemo})")?;
             }
             write!(f, "data {name:0$} : ", width)?;
             Display::fmt(ty, f)?;
@@ -150,7 +150,7 @@ impl Display for TypeLib {
         writeln!(f, "typelib {} -- {}", self.name, self.id())?;
         writeln!(f)?;
         for dep in &self.dependencies {
-            writeln!(f, "{dep} as {}", dep.name)?;
+            writeln!(f, "import {dep}")?;
         }
         if self.dependencies.is_empty() {
             f.write_str("-- no dependencies")?;
@@ -175,9 +175,14 @@ impl armor::StrictArmor for TypeLib {
     fn armor_headers(&self) -> Vec<armor::ArmorHeader> {
         use armor::ArmorHeader;
 
+        use crate::Dependency;
+
         let mut headers = vec![ArmorHeader::new("Name", self.name.to_string())];
-        for dep in &self.dependencies {
-            headers.push(ArmorHeader::new("Dependency", format!("{:-}", dep.id)));
+        if !self.dependencies.is_empty() {
+            headers.push(ArmorHeader::with(
+                "Dependencies",
+                self.dependencies.iter().map(Dependency::to_string),
+            ));
         }
         headers
     }

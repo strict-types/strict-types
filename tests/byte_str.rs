@@ -43,6 +43,7 @@ typelib Test
 
 -- no dependencies
 
+@mnemonic(pasta-tomato-manual)
 data ByteStr           : [Byte]
 
 "

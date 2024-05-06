@@ -93,6 +93,8 @@ pub enum Attr {
     Option,
     Tag(u8),
     AsciiEnum(Ident),
+    AsciiFirst(Ident),
+    AsciiRest(Ident),
     EnumVariant(u8, Ident),
     Len(u16),
     LenRange(LenRange),
@@ -111,6 +113,8 @@ impl Attribute for Attr {
             Attr::Len(_) => Some(ident!("len")),
             Attr::LenRange(_) => Some(ident!("len")),
             Attr::AsciiEnum(_) => Some(ident!("charset")),
+            Attr::AsciiFirst(_) => Some(ident!("first")),
+            Attr::AsciiRest(_) => Some(ident!("rest")),
             Attr::EnumVariant(_, name) => Some(name.clone()),
         }
     }
@@ -124,6 +128,8 @@ impl Attribute for Attr {
             Attr::Len(len) => AttrVal::Expr(AttrExpr::Len(*len)),
             Attr::LenRange(range) => AttrVal::Expr(AttrExpr::LenRange(range.clone())),
             Attr::AsciiEnum(name) => AttrVal::Ident(name.clone()),
+            Attr::AsciiFirst(name) => AttrVal::Ident(name.clone()),
+            Attr::AsciiRest(name) => AttrVal::Ident(name.clone()),
             Attr::EnumVariant(pos, _) => AttrVal::Expr(AttrExpr::Tag(*pos)),
         }
     }

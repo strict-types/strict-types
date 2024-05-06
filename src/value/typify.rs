@@ -217,6 +217,19 @@ impl TypeSystem {
             }
             (val @ StrictVal::List(_), Ty::Array(_, _)) => val,
 
+            // RString
+            (StrictVal::String(s), Ty::Tuple(fields)) if s.is_ascii() && fields.len() == 2 => {
+                /* Invalid: we need to preserve string structure
+                let first = fields.first().expect("checked length");
+                let rest = fields.last().expect("checked length");
+                let first =
+                    self.typify(StrictVal::Enum(EnumTag::Ord(s.as_bytes()[0] as u8)), *first)?;
+                let rest = self.typify(StrictVal::String(s[1..].to_owned()), *rest)?;
+                StrictVal::Tuple(vec![first.val, rest.val])
+                 */
+                StrictVal::String(s)
+            }
+
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
             (val @ StrictVal::String(_), Ty::List(id, _)) if id.is_unicode_char() => val,

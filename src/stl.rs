@@ -36,9 +36,9 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "urn:ubideco:stl:EcCNgrgLaygt3tCZNu2ZVEzMzSAZYEUeTNAVi5E81YWi#aspirin-mango-average";
+    "stl:yiweb4OZ-3TAMPm@-eUS$XRw-iMgF32K-DbZZJX5-xmwCVCc#ralph-blue-lucky";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "urn:ubideco:stl:ACBoDKVqDSuPrZLs2W2bLVj2TnpThzUMcJJrC3GhsQ79#idea-judo-benny";
+    "stl:ReqjX9v2-45ABOvH-i7YYKfx-30V2lgT-owwpkNk-E$v5ENk#century-comrade-chess";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)

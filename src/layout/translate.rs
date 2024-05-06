@@ -109,6 +109,16 @@ impl TypeInfo {
                         attributes.push(Attr::AsciiEnum(fqn.name.to_ident()));
                     }
                 }
+                NestedCase::RStr(first, rest, sizing) => {
+                    predicate = Pred::Ascii;
+                    if let Some(fqn) = first {
+                        attributes.push(Attr::AsciiFirst(fqn.name.to_ident()));
+                    }
+                    if let Some(fqn) = rest {
+                        attributes.push(Attr::AsciiRest(fqn.name.to_ident()));
+                    }
+                    attributes.push(Attr::LenRange((*sizing).into()));
+                }
                 NestedCase::ByteStr => {
                     predicate = Pred::Bytes;
                 }

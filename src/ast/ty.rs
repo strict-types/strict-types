@@ -223,16 +223,10 @@ impl<Ref: TypeRef> Ty<Ref> {
         match self {
             Ty::Union(variants)
                 if variants.len() == 2
-                    && variants.first_key_value().unwrap().0
-                        == &Variant {
-                            name: vname!("none"),
-                            tag: 0,
-                        }
-                    && variants.last_key_value().unwrap().0
-                        == &Variant {
-                            name: vname!("some"),
-                            tag: 1,
-                        } =>
+                    && &variants.unwrap_first().name == &vname!("none")
+                    && variants.unwrap_first().tag == 0
+                    && &variants.unwrap_last().name == &vname!("some")
+                    && variants.unwrap_last().tag == 1 =>
             {
                 Some(variants.last_key_value().unwrap().1)
             }
@@ -568,6 +562,9 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a UnionVariants<Ref> {
 
 impl<Ref: TypeRef> UnionVariants<Ref> {
     pub fn into_inner(self) -> BTreeMap<Variant, Ref> { self.0.into_inner() }
+
+    pub fn unwrap_first(&self) -> &Variant { &self.0.first_key_value().unwrap().0 }
+    pub fn unwrap_last(&self) -> &Variant { &self.0.last_key_value().unwrap().0 }
 
     pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Variant, Ref> {
         self.0.into_inner().into_keys()

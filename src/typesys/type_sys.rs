@@ -29,9 +29,10 @@ use std::ops::Index;
 
 use amplify::confinement::{self, Confined, MediumOrdMap};
 use amplify::num::u24;
-use encoding::{LibName, StrictDeserialize, StrictSerialize, TypeName};
+use encoding::{LibName, Sizing, StrictDeserialize, StrictSerialize, TypeName};
 use strict_encoding::STRICT_TYPES_LIB;
 
+use crate::ast::UnnamedFields;
 use crate::{SemId, Ty};
 
 #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Display, Error)]
@@ -149,6 +150,34 @@ impl TypeSystem {
         }
 
         Ok(Self(Confined::from_collection_unsafe(extract)))
+    }
+
+    pub(crate) fn rstring_sizing(
+        &self,
+        fields: &UnnamedFields<SemId>,
+    ) -> Result<Option<(SemId, Sizing)>, UnknownType> {
+        let rest = fields[1];
+        let rest = self.find(rest).ok_or_else(|| UnknownType(rest))?;
+        if let Ty::List(rest, sizing) = rest {
+            let mut sizing = sizing.clone();
+            sizing.min += 1;
+            sizing.max += 1;
+            return Ok(Some((*rest, sizing)));
+        }
+        Ok(None)
+    }
+
+    pub(crate) fn is_rstring(&self, fields: &UnnamedFields<SemId>) -> Result<bool, UnknownType> {
+        if fields.len() != 2 {
+            return Ok(false);
+        }
+        let first = fields[0];
+        let Some((rest, _)) = self.rstring_sizing(fields)? else {
+            return Ok(false);
+        };
+
+        Ok(self.find(first).ok_or_else(|| UnknownType(first))?.is_char_enum()
+            && self.find(rest).ok_or_else(|| UnknownType(rest))?.is_char_enum())
     }
 }
 

@@ -1,5 +1,5 @@
 {-
-  Id: urn:ubideco:stl:5teCJyjMWaxbQK8vdga2soWh2U7waERS3ev8KHShJcgv#trumpet-scratch-pelican
+  Id: stl:ReqjX9v2-45ABOvH-i7YYKfx-30V2lgT-owwpkNk-E$v5ENk#century-comrade-chess
   Name: StrictTypes
   Version: 0.1.0
   Description: Confined generalized algebraic data types (GADT)
@@ -11,55 +11,58 @@
 @context
 typelib StrictTypes
 
-import Std#DzTvt9gGhPUKD8Dkkjk9PDBhkJ4gtWxXWQjxnmUYLNrs#voyage-kimono-disco
-  use AlphaNumLodash#north-sound-salsa
+import Std#ralph-blue-lucky
+  use AlphaLodash#halt-alamo-mimic
+  use AlphaNumLodash#percent-bingo-caesar
+  use AlphaCapsLodash#duet-hammer-labor
+  use AlphaSmallLodash#pioneer-eagle-spell
 
 
-@mnemonic(silence-tommy-direct)
+@mnemonic(herman-chariot-madrid)
 data Dependency        : id TypeLibId, name LibName
 
-@mnemonic(karate-sister-aztec)
+@mnemonic(collect-museum-penguin)
 data EnumVariants      : {Variant ^ 1..0xff}
 
-@mnemonic(ritual-soprano-scholar)
+@mnemonic(public-toronto-velvet)
 data ExternRef         : libId TypeLibId, semId SemId
 
-@mnemonic(phoenix-poker-amanda)
+@mnemonic(cotton-store-figure)
 data FieldInlineRef    : name FieldName, ty InlineRef
 
-@mnemonic(pedro-cement-crown)
+@mnemonic(rent-olympic-gemini)
 data FieldInlineRef1   : name FieldName, ty InlineRef1
 
-@mnemonic(serpent-natasha-freddie)
+@mnemonic(lithium-hippie-capital)
 data FieldInlineRef2   : name FieldName, ty InlineRef2
 
-@mnemonic(stone-horizon-protect)
+@mnemonic(trumpet-neptune-gondola)
 data FieldLibRef       : name FieldName, ty LibRef
 
-@mnemonic(today-green-neptune)
-data FieldName         : Ident
+@mnemonic(present-flute-herman)
+data FieldName         : Std.AlphaSmallLodash, [Std.AlphaNumLodash ^ ..0x63]
 
-@mnemonic(storm-vega-pegasus)
+@mnemonic(gemini-rainbow-loyal)
 data FieldSemId        : name FieldName, ty SemId
 
-@mnemonic(connect-fragile-exile)
-data Ident             : [Std.AlphaNumLodash#north-sound-salsa ^ 1..0x64]
+@mnemonic(exotic-october-option)
+data Ident             : Std.AlphaLodash, [Std.AlphaNumLodash ^ ..0x63]
 
-@mnemonic(magnet-llama-drum)
+@mnemonic(fame-local-critic)
 data InlineRef         : inline TyInlineRef1
                        | named SemId
                        | extern ExternRef
 
-@mnemonic(ramirez-break-ribbon)
+@mnemonic(twin-maximum-darwin)
 data InlineRef1        : inline TyInlineRef2
                        | named SemId
                        | extern ExternRef
 
-@mnemonic(gong-tunnel-lexicon)
+@mnemonic(orient-sting-arthur)
 data InlineRef2        : named SemId
                        | extern ExternRef
 
-@mnemonic(harlem-cartel-waiter)
+@mnemonic(germany-ammonia-parole)
 data ItemCase          : unnamedField U8
                        | namedField (U8, FieldName)
                        | unionVariant (U8, VariantName)
@@ -69,61 +72,62 @@ data ItemCase          : unnamedField U8
                        | mapKey ()
                        | mapValue ()
 
-@mnemonic(public-pagoda-bonjour)
-data LibName           : Ident
+@mnemonic(cabaret-toyota-arena)
+data LibName           : Std.AlphaCapsLodash, [Std.AlphaNumLodash ^ ..0x63]
 
-@mnemonic(focus-vitamin-plate)
+@mnemonic(equal-hello-amigo)
 data LibRef            : inline TyInlineRef
                        | named SemId
                        | extern ExternRef
 
-@mnemonic(forward-rose-value)
+@mnemonic(spoon-magnum-guest)
 data MemoryLayout      : items [TypeInfo ^ ..0xffffffff]
 
-@mnemonic(arthur-shelter-bermuda)
+@mnemonic(neuron-ginger-dispute)
 data NamedFieldsInlineRef : [FieldInlineRef ^ 1..0xff]
 
-@mnemonic(zebra-stone-river)
+@mnemonic(fire-alarm-toyota)
 data NamedFieldsInlineRef1 : [FieldInlineRef1 ^ 1..0xff]
 
-@mnemonic(java-paper-maze)
+@mnemonic(life-carrot-garbo)
 data NamedFieldsInlineRef2 : [FieldInlineRef2 ^ 1..0xff]
 
-@mnemonic(silicon-average-gong)
+@mnemonic(edison-kinetic-village)
 data NamedFieldsLibRef : [FieldLibRef ^ 1..0xff]
 
-@mnemonic(local-english-sonata)
+@mnemonic(chapter-zigzag-hunter)
 data NamedFieldsSemId  : [FieldSemId ^ 1..0xff]
 
-@mnemonic(lazarus-aladdin-salsa)
+@mnemonic(wolf-taxi-druid)
 data NestedCase        : newType TypeFqn?
                        | option ()
                        | byteStr#16 ()
                        | asciiStr TypeFqn?
                        | uniStr ()
+                       | rStr (TypeFqn?, TypeFqn?, Sizing)
 
-@mnemonic(hobby-cable-puzzle)
+@mnemonic(deliver-arrow-boxer)
 data Primitive         : U8
 
-@mnemonic(cargo-plasma-catalog)
+@mnemonic(logic-absorb-hilton)
 data SemId             : [Byte ^ 32]
 
-@mnemonic(canoe-gordon-amazon)
+@mnemonic(courage-alien-salon)
 data Sizing            : min U64, max U64
 
-@mnemonic(pocket-oxford-monster)
+@mnemonic(janet-lecture-taboo)
 data SymbolRef         : libName LibName
                        , tyName TypeName
                        , libId TypeLibId
                        , semId SemId
 
-@mnemonic(diagram-crimson-blast)
+@mnemonic(alice-bicycle-europe)
 data SymbolicSys       : symbols Symbols, types TypeSystem
 
-@mnemonic(shock-castle-robin)
+@mnemonic(polaris-escape-santana)
 data Symbols           : libs {Dependency}, symbols {TypeSymbol ^ ..0xffffff}
 
-@mnemonic(absent-logo-genius)
+@mnemonic(extend-exile-fish)
 data TyInlineRef       : primitive Primitive
                        | unicode ()
                        | enum#3 EnumVariants
@@ -135,7 +139,7 @@ data TyInlineRef       : primitive Primitive
                        | set (InlineRef, Sizing)
                        | map (InlineRef, InlineRef, Sizing)
 
-@mnemonic(taxi-rhino-secret)
+@mnemonic(morgan-freedom-indigo)
 data TyInlineRef1      : primitive Primitive
                        | unicode ()
                        | enum#3 EnumVariants
@@ -147,7 +151,7 @@ data TyInlineRef1      : primitive Primitive
                        | set (InlineRef1, Sizing)
                        | map (InlineRef1, InlineRef1, Sizing)
 
-@mnemonic(pacific-dolby-result)
+@mnemonic(veteran-culture-clarion)
 data TyInlineRef2      : primitive Primitive
                        | unicode ()
                        | enum#3 EnumVariants
@@ -159,7 +163,7 @@ data TyInlineRef2      : primitive Primitive
                        | set (InlineRef2, Sizing)
                        | map (InlineRef2, InlineRef2, Sizing)
 
-@mnemonic(russian-sweden-period)
+@mnemonic(vega-beatles-right)
 data TyLibRef          : primitive Primitive
                        | unicode ()
                        | enum#3 EnumVariants
@@ -171,7 +175,7 @@ data TyLibRef          : primitive Primitive
                        | set (LibRef, Sizing)
                        | map (LibRef, LibRef, Sizing)
 
-@mnemonic(solo-canal-flower)
+@mnemonic(armada-matrix-vodka)
 data TySemId           : primitive Primitive
                        | unicode ()
                        | enum#3 EnumVariants
@@ -183,86 +187,86 @@ data TySemId           : primitive Primitive
                        | set (SemId, Sizing)
                        | map (SemId, SemId, Sizing)
 
-@mnemonic(salary-apollo-chicago)
+@mnemonic(lemon-vampire-gloria)
 data TypeFqn           : lib LibName, name TypeName
 
-@mnemonic(texas-store-james)
+@mnemonic(iron-junior-jordan)
 data TypeInfo          : depth U32
                        , ty TySemId
                        , fqn TypeFqn?
                        , item ItemCase?
                        , nested [NestedCase ^ ..0xff]
 
-@mnemonic(gallery-coral-actor)
+@mnemonic(consul-sharon-cabaret)
 data TypeLib           : name LibName
                        , dependencies {Dependency ^ ..0xff}
                        , externTypes {LibName -> ^ ..0xff {SemId -> TypeName}}
                        , types {TypeName -> ^ 1.. TyLibRef}
 
-@mnemonic(jessica-snake-ceramic)
+@mnemonic(torpedo-accent-silver)
 data TypeLibId         : [Byte ^ 32]
 
-@mnemonic(vega-shock-state)
-data TypeName          : Ident
+@mnemonic(edgar-carol-mystery)
+data TypeName          : Std.AlphaCapsLodash, [Std.AlphaNumLodash ^ ..0x63]
 
-@mnemonic(match-alaska-fragile)
+@mnemonic(sigma-miami-elite)
 data TypeSymbol        : id SemId, fqn TypeFqn?
 
-@mnemonic(clara-tonight-office)
+@mnemonic(chant-beach-junior)
 data TypeSysId         : [Byte ^ 32]
 
-@mnemonic(system-marco-torpedo)
+@mnemonic(alias-address-shave)
 data TypeSystem        : {SemId -> ^ ..0xffffff TySemId}
 
-@mnemonic(sonar-voodoo-change)
+@mnemonic(ventura-siren-salon)
 data UnionVariantsInlineRef : {U8 -> ^ ..0xff VariantInfoInlineRef}
 
-@mnemonic(japan-hope-monster)
+@mnemonic(gram-tommy-people)
 data UnionVariantsInlineRef1 : {U8 -> ^ ..0xff VariantInfoInlineRef1}
 
-@mnemonic(stage-secret-bonus)
+@mnemonic(dominic-screen-trilogy)
 data UnionVariantsInlineRef2 : {U8 -> ^ ..0xff VariantInfoInlineRef2}
 
-@mnemonic(violet-mailbox-kimono)
+@mnemonic(rudolf-bison-stop)
 data UnionVariantsLibRef : {U8 -> ^ ..0xff VariantInfoLibRef}
 
-@mnemonic(sponsor-lotus-pretend)
+@mnemonic(maximum-twist-october)
 data UnionVariantsSemId : {U8 -> ^ ..0xff VariantInfoSemId}
 
-@mnemonic(silk-mega-loyal)
+@mnemonic(boris-indigo-prime)
 data UnnamedFieldsInlineRef : [InlineRef ^ 1..0xff]
 
-@mnemonic(rabbit-burma-geneva)
+@mnemonic(griffin-frozen-melody)
 data UnnamedFieldsInlineRef1 : [InlineRef1 ^ 1..0xff]
 
-@mnemonic(fashion-april-special)
+@mnemonic(jordan-baby-spiral)
 data UnnamedFieldsInlineRef2 : [InlineRef2 ^ 1..0xff]
 
-@mnemonic(poetic-century-ozone)
+@mnemonic(bread-honey-modest)
 data UnnamedFieldsLibRef : [LibRef ^ 1..0xff]
 
-@mnemonic(signal-satire-russian)
+@mnemonic(oxford-dallas-capitan)
 data UnnamedFieldsSemId : [SemId ^ 1..0xff]
 
-@mnemonic(igor-lorenzo-catalog)
+@mnemonic(magic-holiday-aztec)
 data Variant           : name VariantName, tag U8
 
-@mnemonic(samuel-food-campus)
+@mnemonic(icon-menu-fragile)
 data VariantInfoInlineRef : name VariantName, ty InlineRef
 
-@mnemonic(felix-mary-tempo)
+@mnemonic(profile-castle-graph)
 data VariantInfoInlineRef1 : name VariantName, ty InlineRef1
 
-@mnemonic(pocket-hunter-corona)
+@mnemonic(venus-lotus-abraham)
 data VariantInfoInlineRef2 : name VariantName, ty InlineRef2
 
-@mnemonic(memphis-left-arena)
+@mnemonic(buffalo-blue-gossip)
 data VariantInfoLibRef : name VariantName, ty LibRef
 
-@mnemonic(shadow-pilgrim-seminar)
+@mnemonic(radius-cloud-accent)
 data VariantInfoSemId  : name VariantName, ty SemId
 
-@mnemonic(develop-compass-yogurt)
-data VariantName       : Ident
+@mnemonic(theory-austin-before)
+data VariantName       : Std.AlphaSmallLodash, [Std.AlphaNumLodash ^ ..0x63]
 
 
