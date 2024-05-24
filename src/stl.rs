@@ -36,7 +36,7 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "stl:yiweb4OZ-3TAMPm@-eUS$XRw-iMgF32K-DbZZJX5-xmwCVCc#ralph-blue-lucky";
+    "stl:yiweb4OZ-3TAMPm!-eUS$XRw-iMgF32K-DbZZJX5-xmwCVCc#ralph-blue-lucky";
 pub const LIB_ID_STRICT_TYPES: &str =
     "stl:ReqjX9v2-45ABOvH-i7YYKfx-30V2lgT-owwpkNk-E$v5ENk#century-comrade-chess";
 

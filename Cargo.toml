@@ -1,14 +1,14 @@
 [package]
 name = "strict_types"
 description = "Strict types: confined generalized algebraic data types (GADT)"
-version = "2.7.0-beta.3"
+version = "2.7.0-beta.4"
 authors = ["Dr. Maxim Orlovsky <orlovsky@ubideco.org>"]
 homepage = "https://strict-types.org"
 license = "Apache-2.0"
 keywords = ["encoding", "strict-encoding", "aluvm", "ubideco", "gadt"]
 categories = ["compilers", "parser-implementations", "mathematics", "science", "data-structures"]
 edition = "2021"
-rust-version = "1.69.0" # due to toml dependency of amplify crate
+rust-version = "1.70.0" # due to toml dependency of amplify crate
 readme = "README.md"
 exclude = [".github"]
 
@@ -29,12 +29,12 @@ required-features = ["armor"]
 
 [dependencies]
 amplify = { version = "4.6.0", features = ["apfloat"] }
-ascii-armor = { version = "0.6.0", optional = true }
-baid64 = "0.1.0"
-strict_encoding = { version = "2.7.0-beta.3", features = ["derive", "float"] }
+ascii-armor = { version = "0.7.0", optional = true }
+baid64 = "0.2.0"
+strict_encoding = { version = "2.7.0-beta.4", features = ["derive", "float"] }
 vesper-lang = "0.1.0"
-indexmap = "2.0.2"
-half = "2.2.0"
+indexmap = "2.2.6"
+half = "2.4.1"
 sha2 = "0.10.8"
 serde_crate = { package = "serde", version = "1", optional = true }
 serde_json = { version = "1.0", optional = true }
@@ -54,6 +54,3 @@ serde = [
 [package.metadata.docs.rs]
 all-features = true
 rustc-args = ["--cfg", "docsrs"]
-
-[patch.crates-io]
-strict_encoding = { git = "https://github.com/strict-types/strict-encoding", branch = "develop" }
