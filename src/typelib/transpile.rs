@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::io;
 use std::io::Sink;
 
-use amplify::confinement::{Confined, U64 as U64MAX};
+use amplify::confinement::{Confined, NonEmptyVec, U64 as U64MAX};
 use amplify::Wrapper;
 use encoding::StreamWriter;
 use strict_encoding::{
@@ -163,7 +163,8 @@ impl TypedWrite for LibBuilder {
         sizing.min -= 1;
         sizing.max -= 1;
         let list = TranspileRef::Embedded(Box::new(Ty::List(ty, sizing)));
-        self.last_compiled = Some(Ty::Tuple(confined_vec![ty1, list]).into());
+        self.last_compiled =
+            Some(Ty::Tuple(NonEmptyVec::from_iter_checked([ty1, list]).into()).into());
         self
     }
 

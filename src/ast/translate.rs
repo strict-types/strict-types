@@ -22,6 +22,8 @@
 
 use std::collections::BTreeMap;
 
+use amplify::confinement::Confined;
+
 use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::{Ty, TypeRef};
 
@@ -79,7 +81,7 @@ where Ref: Translate<ToRef>
         for (variant, ty) in self {
             variants.insert(variant, ty.translate(builder, ctx)?);
         }
-        Ok(UnionVariants::try_from(variants).expect("re-packing existing fields structure"))
+        Ok(Confined::from_checked(variants).into())
     }
 }
 

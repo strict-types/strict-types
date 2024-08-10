@@ -171,7 +171,7 @@ impl Display for SymbolicSys {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         writeln!(f, "typesys -- {:+}", self.id())?;
         writeln!(f)?;
-        for (id, ty) in self.types.as_inner() {
+        for (id, ty) in self.types.as_unconfined() {
             let ty = ty.clone().translate(&mut (), self).expect("type system inconsistency");
             match self.lookup(*id) {
                 Some(fqn) => {

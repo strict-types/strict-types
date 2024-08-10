@@ -21,10 +21,9 @@
 // limitations under the License.
 
 use std::cmp::Ordering;
-use std::collections::BTreeMap;
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement::{Confined, TinyOrdSet};
+use amplify::confinement::{NonEmptyOrdMap, TinyOrdSet};
 use baid64::DisplayBaid64;
 use encoding::StrictDumb;
 use strict_encoding::{LibName, TypeName, STRICT_TYPES_LIB};
@@ -264,25 +263,28 @@ impl Display for Dependency {
     }
 }
 
-pub type TypeMap = Confined<BTreeMap<TypeName, Ty<LibRef>>, 1, { u16::MAX as usize }>;
+pub type TypeMap = NonEmptyOrdMap<TypeName, Ty<LibRef>, { u16::MAX as usize }>;
 
 #[derive(Clone, Eq, PartialEq, Debug)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
-#[strict_type(
-    lib = STRICT_TYPES_LIB,
-    dumb = { TypeLib {
-        name: LibName::strict_dumb(),
-        dependencies: default!(),
-        extern_types: default!(),
-        types: confined_bmap!(tn!("DumbType") => Ty::strict_dumb())
-    } }
-)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
+#[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
 pub struct TypeLib {
     pub name: LibName,
     pub dependencies: TinyOrdSet<Dependency>,
     pub extern_types: ExternTypes,
     pub types: TypeMap,
+}
+
+impl StrictDumb for TypeLib {
+    fn strict_dumb() -> Self {
+        TypeLib {
+            name: LibName::strict_dumb(),
+            dependencies: default!(),
+            extern_types: default!(),
+            types: TypeMap::with_key_value(tn!("DumbType"), Ty::strict_dumb()),
+        }
+    }
 }
 
 impl TypeLib {

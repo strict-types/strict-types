@@ -221,7 +221,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
                     ty: ty.clone(),
                     fqn: fqn.cloned(),
                     item,
-                    nested: Confined::from_collection_unsafe(self.nested.clone()),
+                    nested: Confined::from_checked(self.nested.clone()),
                 };
                 self.nested = vec![];
                 return Some(info);

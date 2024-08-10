@@ -146,7 +146,7 @@ impl TypeInfo {
         TypeVesper {
             subject,
             predicate,
-            attributes: Confined::from_collection_unsafe(attributes),
+            attributes: Confined::from_checked(attributes),
             content: none!(),
             comment,
         }

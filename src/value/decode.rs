@@ -258,37 +258,37 @@ impl TypeSystem {
             // Byte strings:
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u8::MAX as u64 => {
                 let string = TinyBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.into_inner())
+                StrictVal::Bytes(string.release())
             }
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u16::MAX as u64 => {
                 let string = SmallBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.into_inner())
+                StrictVal::Bytes(string.release())
             }
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u24::MAX.into_u64() => {
                 let string = MediumBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.into_inner())
+                StrictVal::Bytes(string.release())
             }
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u32::MAX as u64 => {
                 let string = LargeBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.into_inner())
+                StrictVal::Bytes(string.release())
             }
 
             // Unicode strings:
             Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u8::MAX as u64 => {
                 let string = TinyString::strict_decode(&mut reader)?;
-                StrictVal::String(string.into_inner())
+                StrictVal::String(string.release())
             }
             Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u16::MAX as u64 => {
                 let string = SmallString::strict_decode(&mut reader)?;
-                StrictVal::String(string.into_inner())
+                StrictVal::String(string.release())
             }
             Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u24::MAX.into_u64() => {
                 let string = MediumString::strict_decode(&mut reader)?;
-                StrictVal::String(string.into_inner())
+                StrictVal::String(string.release())
             }
             Ty::List(ty, sizing) if ty.is_unicode_char() && sizing.max <= u32::MAX as u64 => {
                 let string = LargeString::strict_decode(&mut reader)?;
-                StrictVal::String(string.into_inner())
+                StrictVal::String(string.release())
             }
 
             // Other lists:

@@ -24,7 +24,7 @@ use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{self, Debug, Display, Formatter};
 use std::ops::Deref;
 
-use amplify::confinement::Confined;
+use amplify::confinement::{Confined, NonEmptyOrdMap, NonEmptyOrdSet, NonEmptyVec};
 use amplify::{confinement, Wrapper};
 use encoding::VariantName;
 use strict_encoding::{
@@ -370,10 +370,10 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct NamedFields<Ref: TypeRef>(Confined<Vec<Field<Ref>>, 1, { u8::MAX as usize }>);
+pub struct NamedFields<Ref: TypeRef>(NonEmptyVec<Field<Ref>, { u8::MAX as usize }>);
 
 impl<Ref: TypeRef> Wrapper for NamedFields<Ref> {
-    type Inner = Confined<Vec<Field<Ref>>, 1, { u8::MAX as usize }>;
+    type Inner = NonEmptyVec<Field<Ref>, { u8::MAX as usize }>;
 
     fn from_inner(inner: Self::Inner) -> Self { Self(inner) }
 
@@ -383,7 +383,7 @@ impl<Ref: TypeRef> Wrapper for NamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> Deref for NamedFields<Ref> {
-    type Target = Confined<Vec<Field<Ref>>, 1, { u8::MAX as usize }>;
+    type Target = NonEmptyVec<Field<Ref>, { u8::MAX as usize }>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
@@ -411,7 +411,7 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a NamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> NamedFields<Ref> {
-    pub fn into_inner(self) -> Vec<Field<Ref>> { self.0.into_inner() }
+    pub fn into_inner(self) -> Vec<Field<Ref>> { self.0.release() }
 
     pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.get(pos as usize).map(|f| &f.ty) }
     pub fn ty_by_name(&self, name: &FieldName) -> Option<&Ref> {
@@ -449,10 +449,10 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct UnnamedFields<Ref: TypeRef>(Confined<Vec<Ref>, 1, { u8::MAX as usize }>);
+pub struct UnnamedFields<Ref: TypeRef>(NonEmptyVec<Ref, { u8::MAX as usize }>);
 
 impl<Ref: TypeRef> Wrapper for UnnamedFields<Ref> {
-    type Inner = Confined<Vec<Ref>, 1, { u8::MAX as usize }>;
+    type Inner = NonEmptyVec<Ref, { u8::MAX as usize }>;
 
     fn from_inner(inner: Self::Inner) -> Self { Self(inner) }
 
@@ -462,7 +462,7 @@ impl<Ref: TypeRef> Wrapper for UnnamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> Deref for UnnamedFields<Ref> {
-    type Target = Confined<Vec<Ref>, 1, { u8::MAX as usize }>;
+    type Target = NonEmptyVec<Ref, { u8::MAX as usize }>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
@@ -490,7 +490,7 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a UnnamedFields<Ref> {
 }
 
 impl<Ref: TypeRef> UnnamedFields<Ref> {
-    pub fn into_inner(self) -> Vec<Ref> { self.0.into_inner() }
+    pub fn into_inner(self) -> Vec<Ref> { self.0.release() }
 
     pub fn ty_by_pos(&self, pos: u8) -> Option<&Ref> { self.0.get(pos as usize) }
 }
@@ -520,10 +520,10 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct UnionVariants<Ref: TypeRef>(Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>);
+pub struct UnionVariants<Ref: TypeRef>(NonEmptyOrdMap<Variant, Ref, { u8::MAX as usize }>);
 
 impl<Ref: TypeRef> Wrapper for UnionVariants<Ref> {
-    type Inner = Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>;
+    type Inner = NonEmptyOrdMap<Variant, Ref, { u8::MAX as usize }>;
 
     fn from_inner(inner: Self::Inner) -> Self { Self(inner) }
 
@@ -533,7 +533,7 @@ impl<Ref: TypeRef> Wrapper for UnionVariants<Ref> {
 }
 
 impl<Ref: TypeRef> Deref for UnionVariants<Ref> {
-    type Target = Confined<BTreeMap<Variant, Ref>, 1, { u8::MAX as usize }>;
+    type Target = NonEmptyOrdMap<Variant, Ref, { u8::MAX as usize }>;
 
     fn deref(&self) -> &Self::Target { &self.0 }
 }
@@ -561,17 +561,17 @@ impl<'a, Ref: TypeRef> IntoIterator for &'a UnionVariants<Ref> {
 }
 
 impl<Ref: TypeRef> UnionVariants<Ref> {
-    pub fn into_inner(self) -> BTreeMap<Variant, Ref> { self.0.into_inner() }
+    pub fn into_inner(self) -> BTreeMap<Variant, Ref> { self.0.release() }
 
     pub fn unwrap_first(&self) -> &Variant { &self.0.first_key_value().unwrap().0 }
     pub fn unwrap_last(&self) -> &Variant { &self.0.last_key_value().unwrap().0 }
 
     pub fn into_keys(self) -> std::collections::btree_map::IntoKeys<Variant, Ref> {
-        self.0.into_inner().into_keys()
+        self.0.release().into_keys()
     }
 
     pub fn into_values(self) -> std::collections::btree_map::IntoValues<Variant, Ref> {
-        self.0.into_inner().into_values()
+        self.0.release().into_values()
     }
 
     pub fn has_tag(&self, tag: u8) -> bool { self.0.keys().any(|v| v.tag == tag) }
@@ -650,7 +650,7 @@ where Ref: Display
     derive(Serialize, Deserialize),
     serde(crate = "serde_crate", transparent)
 )]
-pub struct EnumVariants(Confined<BTreeSet<Variant>, 1, { u8::MAX as usize }>);
+pub struct EnumVariants(NonEmptyOrdSet<Variant, { u8::MAX as usize }>);
 
 impl TryFrom<BTreeSet<Variant>> for EnumVariants {
     type Error = confinement::Error;
@@ -675,7 +675,7 @@ impl<'a> IntoIterator for &'a EnumVariants {
 }
 
 impl EnumVariants {
-    pub fn into_inner(self) -> BTreeSet<Variant> { self.0.into_inner() }
+    pub fn into_inner(self) -> BTreeSet<Variant> { self.0.release() }
 
     pub fn tag_by_name(&self, name: &VariantName) -> Option<u8> {
         self.0.iter().find(|v| &v.name == name).map(|v| v.tag)

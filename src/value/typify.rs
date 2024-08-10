@@ -22,9 +22,8 @@
 
 //! Checks strict values against provied strict type specification.
 
-use std::collections::BTreeSet;
-
 use amplify::ascii::{AsAsciiStrError, AsciiString};
+use amplify::confinement::NonEmptyOrdSet;
 use amplify::Wrapper;
 use encoding::{FieldName, InvalidRString, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
@@ -309,8 +308,7 @@ impl TypeSystem {
                 }) else {
                     return Err(Error::UnionTagInvalid(
                         tag,
-                        EnumVariants::try_from(vars_req.keys().cloned().collect::<BTreeSet<_>>())
-                            .expect("same collection size"),
+                        NonEmptyOrdSet::from_iter_checked(vars_req.keys().cloned()).into(),
                     ));
                 };
                 let checked = self.typify(*val, *id)?;

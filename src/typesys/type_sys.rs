@@ -149,7 +149,7 @@ impl TypeSystem {
             extract.insert(id, ty);
         }
 
-        Ok(Self(Confined::from_collection_unsafe(extract)))
+        Ok(Self(Confined::from_checked(extract)))
     }
 
     pub(crate) fn rstring_sizing(
