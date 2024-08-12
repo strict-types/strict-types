@@ -33,7 +33,7 @@ pub trait Translate<To: Sized> {
     type Error;
 
     fn translate(self, builder: &mut Self::Builder, ctx: &Self::Context)
-        -> Result<To, Self::Error>;
+    -> Result<To, Self::Error>;
 }
 
 impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>

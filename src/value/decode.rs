@@ -152,7 +152,7 @@ impl TypeSystem {
                     other => {
                         return Err(Error::NotImplemented(format!(
                             "loading {other} into a typed value is not yet implemented"
-                        )))
+                        )));
                     }
                 }
             }

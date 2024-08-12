@@ -210,7 +210,7 @@ impl LibBuilder {
             }
             match known_libs.iter().find(|dep| &dep.name == lib) {
                 None if !used_dependencies.iter().any(|dep| &dep.name == lib) => {
-                    return Err(TranspileError::UnknownLib(lib.clone()))
+                    return Err(TranspileError::UnknownLib(lib.clone()));
                 }
                 None => {}
                 Some(dep) => {
@@ -293,7 +293,7 @@ impl SymbolicLib {
             }
             match dependencies.iter().find(|dep| &dep.name == lib) {
                 None if !used_dependencies.iter().any(|dep| &dep.name == lib) => {
-                    return Err(CompileError::UnknownLib(lib.clone()))
+                    return Err(CompileError::UnknownLib(lib.clone()));
                 }
                 None => {}
                 Some(dep) => {
