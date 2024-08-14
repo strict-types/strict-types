@@ -178,7 +178,7 @@ impl<'sys> Iterator for TypeTreeIter<'sys> {
                         if first.is_char_enum() && other.map(Ty::is_char_enum).unwrap_or_default() {
                             let first = self.sys.symbols.lookup(fields[0]);
                             let rest = self.sys.symbols.lookup(*rest);
-                            let mut sizing = sizing.clone();
+                            let mut sizing = *sizing;
                             sizing.min += 1;
                             sizing.max += 1;
                             let _ = iter.next(); // skipping first char
