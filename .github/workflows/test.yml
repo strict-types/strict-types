@@ -34,4 +34,4 @@ jobs:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v26
       - name: Test in headless Chrome
-        run: nix develop .#wasm -c wasm-pack test --headless --chrome rust
+        run: nix develop .#wasm -c wasm-pack test --headless --chrome
