@@ -21,6 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v26
+      - run: nix develop ".#nightly" -c cargo --version
       - name: Formatting
         run: nix develop ".#nightly" -c cargo fmt --all -- --check
   clippy:
@@ -28,6 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v26
+      - run: nix develop ".#stable" -c cargo --version
       - name: Formatting
         run: nix develop ".#stable" -c cargo clippy --workspace --all-features --all-targets -- -D warnings
   doc:
@@ -35,5 +37,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: cachix/install-nix-action@v26
+      - run: nix develop ".#nightly" -c cargo --version
       - name: Formatting
         run: nix develop ".#nightly" -c cargo doc --workspace --all-features
