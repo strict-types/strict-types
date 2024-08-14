@@ -210,7 +210,7 @@ impl LibBuilder {
             }
             match known_libs.iter().find(|dep| &dep.name == lib) {
                 None if !used_dependencies.iter().any(|dep| &dep.name == lib) => {
-                    return Err(TranspileError::UnknownLib(lib.clone()))
+                    return Err(TranspileError::UnknownLib(lib.clone()));
                 }
                 None => {}
                 Some(dep) => {
@@ -249,7 +249,7 @@ impl SymbolicLib {
         let name = self.name;
         let dependencies = self.dependencies;
         let mut extern_types = self.extern_types;
-        let mut old_types = self.types.into_inner();
+        let mut old_types = self.types.release();
         let mut index = TypeIndex::new();
         let mut new_types = BTreeMap::<TypeName, Ty<LibRef>>::new();
         let names = old_types.keys().cloned().collect::<BTreeSet<_>>();
@@ -293,7 +293,7 @@ impl SymbolicLib {
             }
             match dependencies.iter().find(|dep| &dep.name == lib) {
                 None if !used_dependencies.iter().any(|dep| &dep.name == lib) => {
-                    return Err(CompileError::UnknownLib(lib.clone()))
+                    return Err(CompileError::UnknownLib(lib.clone()));
                 }
                 None => {}
                 Some(dep) => {
@@ -302,8 +302,8 @@ impl SymbolicLib {
             }
         }
 
-        let types = TypeMap::try_from(new_types).expect("same collection size");
-        let dependencies = Confined::try_from(used_dependencies).expect("same collection size");
+        let types = TypeMap::from_checked(new_types);
+        let dependencies = Confined::from_checked(used_dependencies);
 
         Ok(TypeLib {
             name,

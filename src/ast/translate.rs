@@ -22,6 +22,8 @@
 
 use std::collections::BTreeMap;
 
+use amplify::confinement::Confined;
+
 use crate::ast::{Field, NamedFields, UnionVariants, UnnamedFields};
 use crate::{Ty, TypeRef};
 
@@ -31,7 +33,7 @@ pub trait Translate<To: Sized> {
     type Error;
 
     fn translate(self, builder: &mut Self::Builder, ctx: &Self::Context)
-        -> Result<To, Self::Error>;
+    -> Result<To, Self::Error>;
 }
 
 impl<Ref: TypeRef, ToRef: TypeRef> Translate<Ty<ToRef>> for Ty<Ref>
@@ -79,7 +81,7 @@ where Ref: Translate<ToRef>
         for (variant, ty) in self {
             variants.insert(variant, ty.translate(builder, ctx)?);
         }
-        Ok(UnionVariants::try_from(variants).expect("re-packing existing fields structure"))
+        Ok(Confined::from_checked(variants).into())
     }
 }
 

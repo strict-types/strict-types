@@ -43,7 +43,7 @@ pub use val::{EnumTag, StrictNum, StrictVal};
 
 #[cfg(test)]
 mod test_helpers {
-    use amplify::confinement::Confined;
+    use amplify::confinement::{Confined, NonEmptyString};
     use encoding::{Ident, StrictDeserialize, StrictSerialize};
 
     use crate::stl::{std_stl, strict_types_stl};
@@ -66,7 +66,7 @@ mod test_helpers {
     #[strict_type(lib = "TestLib", dumb = { Nominal::with("DUMB", "Dumb", strict_dumb!()) })]
     pub struct Nominal {
         pub ticker: Ident,
-        pub name: Confined<String, 1, 32>,
+        pub name: NonEmptyString<32>,
         pub precision: Precision,
     }
 

@@ -149,7 +149,7 @@ impl TypeSystem {
             extract.insert(id, ty);
         }
 
-        Ok(Self(Confined::from_collection_unsafe(extract)))
+        Ok(Self(Confined::from_checked(extract)))
     }
 
     pub(crate) fn rstring_sizing(
@@ -157,9 +157,9 @@ impl TypeSystem {
         fields: &UnnamedFields<SemId>,
     ) -> Result<Option<(SemId, Sizing)>, UnknownType> {
         let rest = fields[1];
-        let rest = self.find(rest).ok_or_else(|| UnknownType(rest))?;
+        let rest = self.find(rest).ok_or(UnknownType(rest))?;
         if let Ty::List(rest, sizing) = rest {
-            let mut sizing = sizing.clone();
+            let mut sizing = *sizing;
             sizing.min += 1;
             sizing.max += 1;
             return Ok(Some((*rest, sizing)));
@@ -176,8 +176,8 @@ impl TypeSystem {
             return Ok(false);
         };
 
-        Ok(self.find(first).ok_or_else(|| UnknownType(first))?.is_char_enum()
-            && self.find(rest).ok_or_else(|| UnknownType(rest))?.is_char_enum())
+        Ok(self.find(first).ok_or(UnknownType(first))?.is_char_enum()
+            && self.find(rest).ok_or(UnknownType(rest))?.is_char_enum())
     }
 }
 

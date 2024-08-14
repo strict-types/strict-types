@@ -138,6 +138,7 @@ impl SystemBuilder {
         SymbolicSys::with(self.imported_deps, self.types).map_err(|err| vec![err])
     }
 
+    #[allow(clippy::multiple_bound_locations)]
     fn translate_inline<Ref: LibSubref>(&mut self, inline_ty: Ty<Ref>) -> Result<SemId, Error>
     where Ref: Translate<SemId, Context = (), Builder = SystemBuilder, Error = Error> {
         // compute id

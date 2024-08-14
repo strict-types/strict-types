@@ -22,9 +22,8 @@
 
 //! Checks strict values against provied strict type specification.
 
-use std::collections::BTreeSet;
-
 use amplify::ascii::{AsAsciiStrError, AsciiString};
+use amplify::confinement::NonEmptyOrdSet;
 use amplify::Wrapper;
 use encoding::{FieldName, InvalidRString, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
@@ -172,32 +171,32 @@ impl TypeSystem {
             (StrictVal::Bytes(s), Ty::Array(id, len))
                 if id.is_byte() && s.len() > *len as usize =>
             {
-                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)));
             }
             (StrictVal::String(s), Ty::Array(id, len))
                 if id.is_unicode_char() && s.len() > *len as usize =>
             {
-                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)));
             }
             (StrictVal::String(s), Ty::Array(_, len)) if s.len() > *len as usize => {
-                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)));
             }
             (StrictVal::List(s), Ty::Array(_, len)) if s.len() > *len as usize => {
-                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)))
+                return Err(Error::OutOfBounds(spec, s.len(), Sizing::fixed(*len as u64)));
             }
             (StrictVal::String(s), Ty::List(_, sizing)) if !sizing.check(s.len()) => {
-                return Err(Error::OutOfBounds(spec, s.len(), *sizing))
+                return Err(Error::OutOfBounds(spec, s.len(), *sizing));
             }
             (StrictVal::Bytes(s), Ty::List(_, sizing)) if !sizing.check(s.len()) => {
-                return Err(Error::OutOfBounds(spec, s.len(), *sizing))
+                return Err(Error::OutOfBounds(spec, s.len(), *sizing));
             }
             (StrictVal::List(s), Ty::List(_, sizing)) | (StrictVal::Set(s), Ty::Set(_, sizing))
                 if !sizing.check(s.len()) =>
             {
-                return Err(Error::OutOfBounds(spec, s.len(), *sizing))
+                return Err(Error::OutOfBounds(spec, s.len(), *sizing));
             }
             (StrictVal::Map(s), Ty::Map(_, _, sizing)) if !sizing.check(s.len()) => {
-                return Err(Error::OutOfBounds(spec, s.len(), *sizing))
+                return Err(Error::OutOfBounds(spec, s.len(), *sizing));
             }
 
             // Ascii or other sub-byte character
@@ -309,8 +308,7 @@ impl TypeSystem {
                 }) else {
                     return Err(Error::UnionTagInvalid(
                         tag,
-                        EnumVariants::try_from(vars_req.keys().cloned().collect::<BTreeSet<_>>())
-                            .expect("same collection size"),
+                        NonEmptyOrdSet::from_iter_checked(vars_req.keys().cloned()).into(),
                     ));
                 };
                 let checked = self.typify(*val, *id)?;
@@ -325,7 +323,7 @@ impl TypeSystem {
                     spec,
                     expected: fields_req.len(),
                     found: fields.len(),
-                })
+                });
             }
             (StrictVal::Struct(fields), Ty::Struct(fields_req))
                 if fields.len() != fields_req.len() =>
@@ -334,7 +332,7 @@ impl TypeSystem {
                     spec,
                     expected: fields_req.len(),
                     found: fields.len(),
-                })
+                });
             }
 
             // Check specific field types:
@@ -396,7 +394,7 @@ impl TypeSystem {
                 return Err(Error::TypeMismatch {
                     value: val,
                     expected: ty.clone(),
-                })
+                });
             }
         };
         Ok(TypedVal {
