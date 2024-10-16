@@ -30,16 +30,6 @@ use super::StrictVal;
 use crate::value::EnumTag;
 
 impl StrictVal {
-    pub fn is_composite(&self) -> bool {
-        match self {
-            StrictVal::Struct(_) | StrictVal::List(_) | StrictVal::Set(_) | StrictVal::Map(_) => {
-                true
-            }
-            StrictVal::Tuple(fields) if fields.iter().any(StrictVal::is_composite) => true,
-            _ => false,
-        }
-    }
-
     fn needs_parenthesis(&self) -> bool {
         match self {
             StrictVal::Unit
@@ -51,10 +41,8 @@ impl StrictVal {
             | StrictVal::List(_)
             | StrictVal::Set(_)
             | StrictVal::Map(_) => false,
-            StrictVal::Tuple(fields) if fields.len() <= 1 => false,
-            StrictVal::Tuple(fields) if fields.iter().any(StrictVal::is_composite) => true,
-            StrictVal::Struct(fields) if fields.values().any(StrictVal::is_composite) => true,
-            StrictVal::Tuple(_) | StrictVal::Struct(_) => false,
+            StrictVal::Tuple(fields) if fields.len() == 1 => false,
+            StrictVal::Tuple(_) | StrictVal::Struct(_) => true,
         }
     }
 }
@@ -69,55 +57,50 @@ impl Display for StrictVal {
             StrictVal::Bytes(blob) => write!(f, "0x{}", blob.to_hex()),
             StrictVal::Tuple(fields) => {
                 let mut iter = fields.iter();
-                let last = iter.next_back();
-                if self.needs_parenthesis() {
-                    f.write_str("(")?;
-                }
-                for field in iter {
+                while let Some(field) = iter.next() {
+                    if field.needs_parenthesis() {
+                        f.write_str("(")?;
+                    }
                     Display::fmt(field, f)?;
-                    f.write_str(", ")?;
-                }
-                if let Some(field) = last {
-                    Display::fmt(field, f)?;
-                }
-                if self.needs_parenthesis() {
-                    f.write_str(")")?;
+                    if field.needs_parenthesis() {
+                        f.write_str(")")?;
+                    }
+                    if iter.len() > 0 {
+                        f.write_str(", ")?;
+                    }
                 }
                 Ok(())
             }
             StrictVal::Struct(fields) => {
                 let mut iter = fields.iter();
-                let last = iter.next_back();
-                if self.needs_parenthesis() {
-                    f.write_str("(")?;
-                }
-                for (fname, fval) in iter {
+                while let Some((fname, fval)) = iter.next() {
                     write!(f, "{fname} ")?;
+                    if fval.needs_parenthesis() {
+                        f.write_str("(")?;
+                    }
                     Display::fmt(fval, f)?;
-                    f.write_str(", ")?;
-                }
-                if let Some((fname, fval)) = last {
-                    write!(f, "{fname} ")?;
-                    Display::fmt(fval, f)?;
-                }
-                if self.needs_parenthesis() {
-                    f.write_str(")")?;
+                    if fval.needs_parenthesis() {
+                        f.write_str(")")?;
+                    }
+                    if iter.len() > 0 {
+                        f.write_str(", ")?;
+                    }
                 }
                 Ok(())
             }
             StrictVal::Enum(tag) => Display::fmt(tag, f),
-            StrictVal::Union(tag, val)
+            StrictVal::Union(tag, content)
                 if (*tag == EnumTag::Ord(0) || *tag == EnumTag::Name(vname!("none")))
-                    && **val == StrictVal::Unit =>
+                    && **content == StrictVal::Unit =>
             {
                 f.write_str("~")
             }
-            StrictVal::Union(tag, val) => {
-                if val.needs_parenthesis() {
+            StrictVal::Union(tag, content) => {
+                if content.needs_parenthesis() {
                     f.write_str("(")?;
                 }
-                Display::fmt(val, f)?;
-                if val.needs_parenthesis() {
+                Display::fmt(content, f)?;
+                if content.needs_parenthesis() {
                     f.write_str(")")?;
                 }
                 f.write_str(".")?;
@@ -126,42 +109,53 @@ impl Display for StrictVal {
             }
             StrictVal::List(items) => {
                 let mut iter = items.iter();
-                let last = iter.next_back();
                 f.write_str("[")?;
-                for item in iter {
+                while let Some(item) = iter.next() {
+                    if item.needs_parenthesis() {
+                        f.write_str("(")?;
+                    }
                     Display::fmt(item, f)?;
-                    f.write_str(", ")?;
-                }
-                if let Some(item) = last {
-                    Display::fmt(item, f)?;
+                    if item.needs_parenthesis() {
+                        f.write_str(")")?;
+                    }
+                    if iter.len() > 0 {
+                        f.write_str(", ")?;
+                    }
                 }
                 f.write_str("]")
             }
             StrictVal::Set(items) => {
                 let mut iter = items.iter();
-                let last = iter.next_back();
                 f.write_str("{")?;
-                for item in iter {
+                while let Some(item) = iter.next() {
+                    if item.needs_parenthesis() {
+                        f.write_str("(")?;
+                    }
                     Display::fmt(item, f)?;
-                    f.write_str(", ")?;
-                }
-                if let Some(item) = last {
-                    Display::fmt(item, f)?;
+                    if item.needs_parenthesis() {
+                        f.write_str(")")?;
+                    }
+                    if iter.len() > 0 {
+                        f.write_str(", ")?;
+                    }
                 }
                 f.write_str("}")
             }
             StrictVal::Map(items) => {
                 let mut iter = items.iter();
-                let last = iter.next_back();
                 f.write_str("{")?;
-                for (fname, fval) in iter {
+                while let Some((fname, fval)) = iter.next() {
                     write!(f, "{fname} -> ")?;
+                    if fval.needs_parenthesis() {
+                        f.write_str("(")?;
+                    }
                     Display::fmt(fval, f)?;
-                    f.write_str(", ")?;
-                }
-                if let Some((fname, fval)) = last {
-                    write!(f, "{fname} -> ")?;
-                    Display::fmt(fval, f)?;
+                    if fval.needs_parenthesis() {
+                        f.write_str(")")?;
+                    }
+                    if iter.len() > 0 {
+                        f.write_str(", ")?;
+                    }
                 }
                 f.write_str("}")
             }
@@ -196,7 +190,11 @@ mod test {
 
     #[test]
     fn complex() {
-        let strct = ston!(name "Some name", ticker "TICK", precision svenum!(8));
-        assert_eq!(format!("{strct}"), r#"name "Some name", ticker "TICK", precision 8"#)
+        let strct = ston!(name "Some name", ticker "TICK", precision svenum!(8), data svlist!([0u8, 1, 2, 3, 4]), tuple ston!(a 15u8, b "text"));
+        assert_eq!(
+            format!("{strct}"),
+            r#"name "Some name", ticker "TICK", precision 8, data [0, 1, 2, 3, 4], tuple (a 15, b "text")"#
+        )
+    }
     }
 }
