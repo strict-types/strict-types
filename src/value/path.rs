@@ -57,7 +57,9 @@ impl KeyStep {
             (KeyStep::Number(no), StrictVal::Enum(EnumTag::Ord(tag))) if *tag as u128 == *no => {
                 true
             }
-            (KeyStep::Number(num1), StrictVal::Number(StrictNum::Uint(num2))) if num1 == num2 => {
+            (KeyStep::Number(num1), StrictVal::Number(StrictNum::Uint(num2)))
+                if *num1 == *num2 as u128 =>
+            {
                 true
             }
             (KeyStep::TinyBlob(blob1), StrictVal::Bytes(blob2))

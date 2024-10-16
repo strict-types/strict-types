@@ -8,7 +8,7 @@ license = "Apache-2.0"
 keywords = ["encoding", "strict-encoding", "aluvm", "ubideco", "gadt"]
 categories = ["compilers", "parser-implementations", "mathematics", "science", "data-structures"]
 edition = "2021"
-rust-version = "1.75.0" # due to amplify crate
+rust-version = "1.77.0"
 readme = "README.md"
 exclude = [".github"]
 
@@ -56,7 +56,8 @@ armor = ["ascii-armor"]
 serde = [
     "serde_crate",
     "serde_json", "serde_yaml", "toml",
-    "amplify/serde", "strict_encoding/serde"
+    "amplify/serde", "strict_encoding/serde",
+    "indexmap/serde"
 ]
 
 [package.metadata.docs.rs]

@@ -254,3 +254,15 @@ impl SemCommit for Sizing {
         hasher.commit_consume(&data);
     }
 }
+
+#[cfg(test)]
+mod test {
+    use encoding::Primitive;
+
+    use super::*;
+
+    #[test]
+    fn byte() {
+        assert!(Ty::<SemId>::Primitive(Primitive::BYTE).is_byte());
+    }
+}

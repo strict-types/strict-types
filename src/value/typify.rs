@@ -28,7 +28,7 @@ use amplify::Wrapper;
 use encoding::{FieldName, InvalidRString, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
-use super::StrictVal;
+use super::{Blob, StrictVal};
 use crate::ast::EnumVariants;
 use crate::typesys::{SymbolicSys, TypeFqn, TypeSymbol};
 use crate::value::{EnumTag, StrictNum};
@@ -106,6 +106,9 @@ pub enum Error {
 
     /// mapping found where a structure value was expected.
     MapNotStructure,
+
+    /// invalid optional structure {0}.
+    InvalidOptional(StrictVal),
 }
 
 trait PrimitiveValue {
@@ -149,7 +152,7 @@ impl TypeSystem {
             (StrictVal::Number(StrictNum::Uint(val)), Ty::Primitive(prim))
                 if prim.is_small_signed() && (val & 0x8000_0000_0000_0000) == 0 =>
             {
-                StrictVal::Number(StrictNum::Int(val as i128))
+                StrictVal::Number(StrictNum::Int(val as i64))
             }
             (val @ StrictVal::Number(StrictNum::BigUint(_)), Ty::Primitive(prim))
                 if prim.is_large_unsigned() =>
@@ -232,6 +235,9 @@ impl TypeSystem {
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
             (val @ StrictVal::String(_), Ty::List(id, _)) if id.is_unicode_char() => val,
+            (StrictVal::String(s), Ty::List(id, _)) if id.is_byte() => {
+                StrictVal::Bytes(Blob(s.into_bytes()))
+            }
             (StrictVal::String(s), Ty::List(_, _)) if s.is_ascii() => {
                 AsciiString::from_ascii(s.as_bytes()).map_err(|err| err.ascii_error())?;
                 StrictVal::String(s)
@@ -281,11 +287,10 @@ impl TypeSystem {
             }
             (StrictVal::String(s), Ty::Enum(variants)) => {
                 if let Ok(vname) = VariantName::try_from(s.clone()) {
-                    let tag = variants.tag_by_name(&vname);
-                    match tag {
-                        None => return Err(Error::EnumTagInvalid(vname.into(), variants.clone())),
-                        Some(name) => StrictVal::enumer(name),
+                    if !variants.has_name(&vname) {
+                        return Err(Error::EnumTagInvalid(vname.into(), variants.clone()));
                     }
+                    StrictVal::enumer(vname)
                 } else {
                     return Err(Error::TypeMismatch {
                         value: StrictVal::String(s),
@@ -301,7 +306,7 @@ impl TypeSystem {
                     Some(name) => StrictVal::enumer(name.clone()),
                 }
             }
-            (StrictVal::Union(tag, val), Ty::Union(vars_req)) => {
+            (StrictVal::Union(tag, content), Ty::Union(vars_req)) => {
                 let Some(id) = (match &tag {
                     EnumTag::Name(name) => vars_req.ty_by_name(name),
                     EnumTag::Ord(ord) => vars_req.ty_by_tag(*ord),
@@ -311,7 +316,7 @@ impl TypeSystem {
                         NonEmptyOrdSet::from_iter_checked(vars_req.keys().cloned()).into(),
                     ));
                 };
-                let checked = self.typify(*val, *id)?;
+                let checked = self.typify(*content, *id)?;
                 StrictVal::Union(tag, Box::new(checked.val))
             }
 
@@ -374,14 +379,26 @@ impl TypeSystem {
             // Optional
             (StrictVal::Unit, ty @ Ty::Union(_)) if ty.is_option() => {
                 // this is `None`
-                StrictVal::union(0, ())
+                StrictVal::union("none", ())
+            }
+            (StrictVal::Tuple(mut tuple), ty @ Ty::Union(fields))
+                if ty.is_option() && tuple.len() == 2 =>
+            {
+                let content = *fields.ty_by_tag(1).expect("optional always have `Some`");
+                if tuple[0] == StrictVal::String(s!("none")) && tuple[1] == StrictVal::Unit {
+                    StrictVal::union("none", StrictVal::Unit)
+                } else if tuple[0] == StrictVal::String(s!("some")) {
+                    let inner = self.typify(tuple.pop().expect("two elements"), content)?.val;
+                    StrictVal::union("some", inner)
+                } else {
+                    return Err(Error::InvalidOptional(StrictVal::Tuple(tuple)));
+                }
             }
             (val, ty @ Ty::Union(fields)) if ty.is_option() => {
                 // this is `Some`
-                let inner = self
-                    .typify(val, *fields.ty_by_tag(1).expect("optional always have `Some`"))?
-                    .val;
-                StrictVal::union(1, inner)
+                let content = *fields.ty_by_tag(1).expect("optional always have `Some`");
+                let inner = self.typify(val, content)?.val;
+                StrictVal::union("some", inner)
             }
 
             // Newtype wrapper
@@ -417,7 +434,7 @@ mod test {
         let sys = test_system();
         let nominal = Nominal::with("TICK", "Some name", 2);
         let value =
-            svstruct!(name => "Some name", ticker => svnewtype!("TICK"), precision => svenum!(2));
+            ston!(name "Some name", ticker svnewtype!("TICK"), precision svenum!(twoDecimals));
 
         let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
         let mut reader = StreamReader::cursor::<MAX32>(data);

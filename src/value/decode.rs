@@ -34,6 +34,7 @@ use indexmap::IndexMap;
 
 use crate::typesys::{SymbolicSys, TypeSymbol, UnknownType};
 use crate::typify::{TypeSpec, TypedVal};
+use crate::value::Blob;
 use crate::{SemId, StrictVal, Ty, TypeRef, TypeSystem};
 
 #[derive(Clone, Eq, PartialEq, Debug, Display, Error, From)]
@@ -142,13 +143,13 @@ impl TypeSystem {
                     Primitive::U48 => StrictVal::num(u48::strict_decode(&mut reader)?),
                     Primitive::U56 => StrictVal::num(u56::strict_decode(&mut reader)?),
                     Primitive::U64 => StrictVal::num(u64::strict_decode(&mut reader)?),
-                    Primitive::U128 => StrictVal::num(u128::strict_decode(&mut reader)?),
+                    // Primitive::U128 => StrictVal::num(u128::strict_decode(&mut reader)?),
                     Primitive::I8 => StrictVal::num(i8::strict_decode(&mut reader)?),
                     Primitive::I16 => StrictVal::num(i16::strict_decode(&mut reader)?),
                     // I24 => StrictVal::num(i24::strict_decode(&mut reader)?),
                     Primitive::I32 => StrictVal::num(i32::strict_decode(&mut reader)?),
                     Primitive::I64 => StrictVal::num(i64::strict_decode(&mut reader)?),
-                    Primitive::I128 => StrictVal::num(i128::strict_decode(&mut reader)?),
+                    // Primitive::I128 => StrictVal::num(i128::strict_decode(&mut reader)?),
                     other => {
                         return Err(Error::NotImplemented(format!(
                             "loading {other} into a typed value is not yet implemented"
@@ -207,18 +208,18 @@ impl TypeSystem {
 
             Ty::Enum(variants) => {
                 let tag = u8::strict_decode(&mut reader)?;
-                if !variants.has_tag(tag) {
+                let Some(name) = variants.name_by_tag(tag) else {
                     return Err(DecodeError::EnumTagNotKnown(spec.to_string(), tag).into());
-                }
-                StrictVal::enumer(tag)
+                };
+                StrictVal::enumer(name.clone())
             }
             Ty::Union(variants) => {
                 let tag = u8::strict_decode(&mut reader)?;
-                let Some(ty) = variants.ty_by_tag(tag) else {
+                let Some((variant, ty)) = variants.by_tag(tag) else {
                     return Err(DecodeError::EnumTagNotKnown(spec.to_string(), tag).into());
                 };
                 let fields = self.strict_read_type(*ty, reader.unbox())?;
-                StrictVal::union(tag, fields.val)
+                StrictVal::union(variant.name.clone(), fields.val)
             }
             Ty::Tuple(reqs) => {
                 let mut fields = Vec::with_capacity(reqs.len());
@@ -243,7 +244,7 @@ impl TypeSystem {
             Ty::Array(ty, len) if ty.is_byte() => {
                 let d = reader.unbox();
                 let buf = d.read_raw::<MAX16>(*len as usize).map_err(DecodeError::from)?;
-                StrictVal::Bytes(buf)
+                StrictVal::Bytes(Blob(buf))
             }
             Ty::Array(ty, len) => {
                 let mut list = Vec::<StrictVal>::with_capacity(*len as usize);
@@ -258,19 +259,19 @@ impl TypeSystem {
             // Byte strings:
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u8::MAX as u64 => {
                 let string = TinyBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.release())
+                StrictVal::Bytes(Blob(string.release()))
             }
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u16::MAX as u64 => {
                 let string = SmallBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.release())
+                StrictVal::Bytes(Blob(string.release()))
             }
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u24::MAX.into_u64() => {
                 let string = MediumBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.release())
+                StrictVal::Bytes(Blob(string.release()))
             }
             Ty::List(ty, sizing) if ty.is_byte() && sizing.max <= u32::MAX as u64 => {
                 let string = LargeBlob::strict_decode(&mut reader)?;
-                StrictVal::Bytes(string.release())
+                StrictVal::Bytes(Blob(string.release()))
             }
 
             // Unicode strings:
@@ -401,11 +402,11 @@ mod test {
     fn typify() {
         let sys = test_system();
         //let nominal = Nominal::with("TICK", "Some name", 2);
-        let value = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(2));
+        let value = ston!(name "Some name", ticker "TICK", precision svenum!(2));
         let checked = sys.typify(value, "TestLib.Nominal").unwrap();
         assert_eq!(
             format!("{}", checked.val),
-            r#"(name="Some name", ticker=("TICK"), precision=twoDecimals)"#
+            r#"name "Some name", ticker "TICK", precision twoDecimals"#
         );
     }
 }
