@@ -235,6 +235,9 @@ impl TypeSystem {
             // Collection items type checks:
             (val @ StrictVal::Bytes(_), Ty::List(id, _)) if id.is_byte() => val,
             (val @ StrictVal::String(_), Ty::List(id, _)) if id.is_unicode_char() => val,
+            (StrictVal::String(s), Ty::List(id, _)) if id.is_byte() => {
+                StrictVal::Bytes(Blob(s.into_bytes()))
+            }
             (StrictVal::String(s), Ty::List(_, _)) if s.is_ascii() => {
                 AsciiString::from_ascii(s.as_bytes()).map_err(|err| err.ascii_error())?;
                 StrictVal::String(s)
