@@ -207,18 +207,18 @@ impl TypeSystem {
 
             Ty::Enum(variants) => {
                 let tag = u8::strict_decode(&mut reader)?;
-                if !variants.has_tag(tag) {
+                let Some(name) = variants.name_by_tag(tag) else {
                     return Err(DecodeError::EnumTagNotKnown(spec.to_string(), tag).into());
-                }
-                StrictVal::enumer(tag)
+                };
+                StrictVal::enumer(name.clone())
             }
             Ty::Union(variants) => {
                 let tag = u8::strict_decode(&mut reader)?;
-                let Some(ty) = variants.ty_by_tag(tag) else {
+                let Some((variant, ty)) = variants.by_tag(tag) else {
                     return Err(DecodeError::EnumTagNotKnown(spec.to_string(), tag).into());
                 };
                 let fields = self.strict_read_type(*ty, reader.unbox())?;
-                StrictVal::union(tag, fields.val)
+                StrictVal::union(variant.name.clone(), fields.val)
             }
             Ty::Tuple(reqs) => {
                 let mut fields = Vec::with_capacity(reqs.len());
