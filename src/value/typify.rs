@@ -106,6 +106,9 @@ pub enum Error {
 
     /// mapping found where a structure value was expected.
     MapNotStructure,
+
+    /// invalid optional structure {0}.
+    InvalidOptional(StrictVal),
 }
 
 trait PrimitiveValue {
@@ -374,14 +377,26 @@ impl TypeSystem {
             // Optional
             (StrictVal::Unit, ty @ Ty::Union(_)) if ty.is_option() => {
                 // this is `None`
-                StrictVal::union(0, ())
+                StrictVal::union("none", ())
+            }
+            (StrictVal::Tuple(mut tuple), ty @ Ty::Union(fields))
+                if ty.is_option() && tuple.len() == 2 =>
+            {
+                let content = *fields.ty_by_tag(1).expect("optional always have `Some`");
+                if tuple[0] == StrictVal::String(s!("none")) && tuple[1] == StrictVal::Unit {
+                    StrictVal::union("none", StrictVal::Unit)
+                } else if tuple[0] == StrictVal::String(s!("some")) {
+                    let inner = self.typify(tuple.pop().expect("two elements"), content)?.val;
+                    StrictVal::union("some", inner)
+                } else {
+                    return Err(Error::InvalidOptional(StrictVal::Tuple(tuple)));
+                }
             }
             (val, ty @ Ty::Union(fields)) if ty.is_option() => {
                 // this is `Some`
-                let inner = self
-                    .typify(val, *fields.ty_by_tag(1).expect("optional always have `Some`"))?
-                    .val;
-                StrictVal::union(1, inner)
+                let content = *fields.ty_by_tag(1).expect("optional always have `Some`");
+                let inner = self.typify(val, content)?.val;
+                StrictVal::union("some", inner)
             }
 
             // Newtype wrapper
