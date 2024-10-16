@@ -405,7 +405,7 @@ mod test {
         let checked = sys.typify(value, "TestLib.Nominal").unwrap();
         assert_eq!(
             format!("{}", checked.val),
-            r#"name="Some name", ticker="TICK", precision=twoDecimals"#
+            r#"name "Some name", ticker "TICK", precision twoDecimals"#
         );
     }
 }

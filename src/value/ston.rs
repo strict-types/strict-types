@@ -92,12 +92,12 @@ impl Display for StrictVal {
                     f.write_str("(")?;
                 }
                 for (fname, fval) in iter {
-                    write!(f, "{fname}=")?;
+                    write!(f, "{fname} ")?;
                     Display::fmt(fval, f)?;
                     f.write_str(", ")?;
                 }
                 if let Some((fname, fval)) = last {
-                    write!(f, "{fname}=")?;
+                    write!(f, "{fname} ")?;
                     Display::fmt(fval, f)?;
                 }
                 if self.needs_parenthesis() {
@@ -197,6 +197,6 @@ mod test {
     #[test]
     fn complex() {
         let strct = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(8));
-        assert_eq!(format!("{strct}"), r#"name="Some name", ticker="TICK", precision=8"#)
+        assert_eq!(format!("{strct}"), r#"name "Some name", ticker "TICK", precision 8"#)
     }
 }
