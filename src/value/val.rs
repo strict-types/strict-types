@@ -25,7 +25,7 @@
 use std::fmt::Debug;
 
 // use amplify::num::apfloat::ieee;
-use amplify::num::{i1024, u24, u40, u48, u56, u1024};
+use amplify::num::{i1024, u1024, u24, u40, u48, u56};
 use encoding::{FieldName, StrictEnum, VariantName};
 use indexmap::IndexMap;
 

@@ -22,9 +22,9 @@
 
 //! Checks strict values against provied strict type specification.
 
-use amplify::Wrapper;
 use amplify::ascii::{AsAsciiStrError, AsciiString};
 use amplify::confinement::NonEmptyOrdSet;
+use amplify::Wrapper;
 use encoding::{FieldName, InvalidRString, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
