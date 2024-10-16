@@ -28,7 +28,7 @@ use amplify::Wrapper;
 use encoding::{FieldName, InvalidRString, Primitive, Sizing, VariantName};
 use indexmap::IndexMap;
 
-use super::StrictVal;
+use super::{Blob, StrictVal};
 use crate::ast::EnumVariants;
 use crate::typesys::{SymbolicSys, TypeFqn, TypeSymbol};
 use crate::value::{EnumTag, StrictNum};
@@ -152,7 +152,7 @@ impl TypeSystem {
             (StrictVal::Number(StrictNum::Uint(val)), Ty::Primitive(prim))
                 if prim.is_small_signed() && (val & 0x8000_0000_0000_0000) == 0 =>
             {
-                StrictVal::Number(StrictNum::Int(val as i128))
+                StrictVal::Number(StrictNum::Int(val as i64))
             }
             (val @ StrictVal::Number(StrictNum::BigUint(_)), Ty::Primitive(prim))
                 if prim.is_large_unsigned() =>
@@ -306,7 +306,7 @@ impl TypeSystem {
                     Some(name) => StrictVal::enumer(name.clone()),
                 }
             }
-            (StrictVal::Union(tag, val), Ty::Union(vars_req)) => {
+            (StrictVal::Union(tag, content), Ty::Union(vars_req)) => {
                 let Some(id) = (match &tag {
                     EnumTag::Name(name) => vars_req.ty_by_name(name),
                     EnumTag::Ord(ord) => vars_req.ty_by_tag(*ord),
@@ -316,7 +316,7 @@ impl TypeSystem {
                         NonEmptyOrdSet::from_iter_checked(vars_req.keys().cloned()).into(),
                     ));
                 };
-                let checked = self.typify(*val, *id)?;
+                let checked = self.typify(*content, *id)?;
                 StrictVal::Union(tag, Box::new(checked.val))
             }
 
@@ -433,7 +433,8 @@ mod test {
     fn load() {
         let sys = test_system();
         let nominal = Nominal::with("TICK", "Some name", 2);
-        let value = ston!(name "Some name", ticker svnewtype!("TICK"), precision svenum!(2));
+        let value =
+            ston!(name "Some name", ticker svnewtype!("TICK"), precision svenum!(twoDecimals));
 
         let data = nominal.to_strict_serialized::<{ usize::MAX }>().unwrap();
         let mut reader = StreamReader::cursor::<MAX32>(data);

@@ -39,7 +39,7 @@ pub mod convert;
 mod encode;
 
 pub use path::{KeyStep, Path, PathError, Step};
-pub use val::{EnumTag, StrictNum, StrictVal};
+pub use val::{Blob, EnumTag, StrictNum, StrictVal};
 
 #[cfg(test)]
 mod test_helpers {

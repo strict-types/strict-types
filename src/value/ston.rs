@@ -196,5 +196,94 @@ mod test {
             r#"name "Some name", ticker "TICK", precision 8, data [0, 1, 2, 3, 4], tuple (a 15, b "text")"#
         )
     }
+
+    #[test]
+    #[cfg(feature = "serde")]
+    fn serde() {
+        use std::iter;
+
+        use amplify::confinement;
+        use amplify::confinement::{SmallVec, TinyBlob, TinyString};
+        use encoding::{Primitive, StrictDeserialize, StrictSerialize};
+
+        use crate::{LibBuilder, SemId, StrictVal, SystemBuilder, Ty};
+
+        #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Default)]
+        #[derive(StrictType, StrictEncode, StrictDecode)]
+        #[strict_type(lib = "Test", try_from_u8, into_u8, tags = repr)]
+        enum Enum {
+            One = 1,
+            #[default]
+            Two = 2,
+        }
+        #[derive(Default)]
+        #[derive(StrictType, StrictEncode, StrictDecode)]
+        #[strict_type(lib = "Test")]
+        struct Tuple(TinyString, i16, TinyString);
+        #[derive(Default)]
+        #[derive(StrictType, StrictEncode, StrictDecode)]
+        #[strict_type(lib = "Test")]
+        struct Test {
+            name: TinyString,
+            option: Option<u8>,
+            precision: Enum,
+            data: TinyBlob,
+            list: SmallVec<u16>,
+            tuple: Tuple,
+        }
+        impl StrictSerialize for Test {}
+        impl StrictDeserialize for Test {}
+
+        let lib =
+            LibBuilder::new(libname!("Test"), iter::empty()).transpile::<Test>().compile().unwrap();
+        let stl = lib.types.get(&tn!("Test")).unwrap();
+        assert_eq!(
+            stl.to_string(),
+            "name [Unicode ^ ..0xff]
+                       , option U8?
+                       , precision \
+             semid:3KnxzApb-9$6dpmO-YsJf16I-zNiMxSh-sNC3zIL-q$uHyeo#manila-compare-person
+                       , data [Byte ^ ..0xff]
+                       , list [U16]
+                       , tuple \
+             semid:61l54MmE-DY1FQ1b-jjkquKp-5UOyhe0-sBSjtr$-VPzs4fk#cabinet-vampire-change"
+        );
+        let sys = SystemBuilder::new().import(lib).unwrap().finalize().unwrap();
+        eprintln!("{}", Ty::<SemId>::Primitive(Primitive::BYTE).is_byte());
+
+        let strct = Test::default();
+        let blob = strct.to_strict_serialized::<{ confinement::U16 }>().unwrap();
+        let typed = sys.strict_deserialize_type("Test.Test", blob.as_slice()).unwrap();
+
+        assert_eq!(
+            format!("{}", typed.val),
+            r#"name "", option ~, precision two, data 0x, list [], tuple ("", 0, "")"#
+        );
+        let typified = sys.typify(typed.val.clone(), "Test.Test").unwrap();
+        assert_eq!(typified, typed);
+
+        let ser = serde_yaml::to_string(&typed.val).unwrap();
+        assert_eq!(
+            ser,
+            r#"name: ''
+option:
+- none
+- null
+precision: two
+data: ''
+list: []
+tuple:
+- ''
+- 0
+- ''
+"#
+        );
+        let des: StrictVal = serde_yaml::from_str(&ser).unwrap();
+        assert_eq!(
+            des.to_string(),
+            r#"name "", option ~, precision "two", data "", list [], tuple ["", 0, ""]"#
+        );
+        let typified = sys.typify(des, "Test.Test").unwrap();
+        assert_eq!(typified, typed);
     }
 }

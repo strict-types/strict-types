@@ -56,7 +56,8 @@ armor = ["ascii-armor"]
 serde = [
     "serde_crate",
     "serde_json", "serde_yaml", "toml",
-    "amplify/serde", "strict_encoding/serde"
+    "amplify/serde", "strict_encoding/serde",
+    "indexmap/serde"
 ]
 
 [package.metadata.docs.rs]
