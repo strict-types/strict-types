@@ -25,7 +25,7 @@
 use std::fmt::Debug;
 
 // use amplify::num::apfloat::ieee;
-use amplify::num::{i1024, u1024, u24, u40, u48, u56};
+use amplify::num::{i1024, u24, u40, u48, u56, u1024};
 use encoding::{FieldName, StrictEnum, VariantName};
 use indexmap::IndexMap;
 
@@ -205,6 +205,10 @@ pub enum EnumTag {
     Ord(u8),
 }
 
+impl From<&'static str> for EnumTag {
+    fn from(tag: &'static str) -> Self { EnumTag::Name(VariantName::from(tag)) }
+}
+
 impl EnumTag {
     pub fn unwrap_ord(&self) -> u8 {
         match self {
@@ -303,8 +307,8 @@ impl StrictVal {
     pub fn union(tag: impl Into<EnumTag>, val: impl Into<StrictVal>) -> Self {
         StrictVal::Union(tag.into(), Box::new(val.into()))
     }
-    pub fn none() -> Self { StrictVal::union(0, ()) }
-    pub fn some(val: impl Into<StrictVal>) -> Self { StrictVal::union(1, val) }
+    pub fn none() -> Self { StrictVal::union("none", ()) }
+    pub fn some(val: impl Into<StrictVal>) -> Self { StrictVal::union("some", val) }
     pub fn list(items: impl IntoIterator<Item = impl Into<StrictVal>>) -> Self {
         StrictVal::List(items.into_iter().map(|v| v.into()).collect())
     }
