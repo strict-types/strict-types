@@ -196,7 +196,7 @@ mod test {
 
     #[test]
     fn complex() {
-        let strct = svstruct!(name => "Some name", ticker => "TICK", precision => svenum!(8));
+        let strct = ston!(name "Some name", ticker "TICK", precision svenum!(8));
         assert_eq!(format!("{strct}"), r#"name "Some name", ticker "TICK", precision 8"#)
     }
 }

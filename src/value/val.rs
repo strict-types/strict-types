@@ -30,6 +30,38 @@ use encoding::{FieldName, StrictEnum, VariantName};
 use indexmap::IndexMap;
 
 #[macro_export]
+macro_rules! ston {
+    (~) => {
+        $crate::StrictVal::none()
+    };
+    ($tag:literal) => {
+        $crate::StrictVal::from($val)
+    };
+    ($val:expr) => {
+        $crate::StrictVal::from($val)
+    };
+    ($tag:ident) => {
+        $crate::StrictVal::enumer(vname!(stringify!($tag)))
+    };
+    ($tag:literal $val:expr) => {
+        $crate::StrictVal::union($tag, $val)
+    };
+    ($tag:ident $val:expr) => {
+        $crate::StrictVal::union(vname!(stringify!($tag)), $val)
+    };
+    ($($val:expr ),*) => {
+        $crate::StrictVal::tuple([
+            $( $crate::sv!($val) ),*
+        ])
+    };
+    ($($tag:ident $val:expr ),*) => {
+        $crate::StrictVal::struc([
+            $( (stringify!($tag), $crate::sv!($val)) ),*
+        ])
+    };
+}
+
+#[macro_export]
 macro_rules! sv {
     ($val:expr) => {
         $crate::StrictVal::from($val)
@@ -65,6 +97,7 @@ macro_rules! svnewtype {
 }
 
 #[macro_export]
+#[deprecated(since = "2.7.1", note = "use `ston!` macro instead")]
 macro_rules! svtuple {
     ($val:expr) => {
         $crate::StrictVal::tuple($val)
@@ -72,6 +105,7 @@ macro_rules! svtuple {
 }
 
 #[macro_export]
+#[deprecated(since = "2.7.1", note = "use `ston!` macro instead")]
 macro_rules! svstruct {
     ($($tag:ident => $val:expr ),*) => {
         $crate::StrictVal::struc([
@@ -91,6 +125,7 @@ macro_rules! svenum {
 }
 
 #[macro_export]
+#[deprecated(since = "2.7.1", note = "use `ston!` macro instead")]
 macro_rules! svunion {
     ($tag:literal => $val:expr) => {
         $crate::StrictVal::union($tag, $val)
@@ -475,10 +510,10 @@ mod test {
         svstr!("some");
         svnone!();
         svsome!("val");
-        svtuple!([sv!(1), sv!("some"), svsome!("val")]);
+        ston!(1, "some", "val");
         svlist!([1, 2, 3]);
         svlist!(["a", "b", "c"]);
-        let strct = svstruct!(name => "Some name", ticker => "TICK", precision => 8u8);
+        let strct = ston!(name "Some name", ticker "TICK", precision 8u8);
         assert_eq!(
             format!("{strct:?}"),
             r#"Struct({FieldName("name"): String("Some name"), FieldName("ticker"): String("TICK"), FieldName("precision"): Number(Uint(8))})"#
