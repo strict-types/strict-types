@@ -284,11 +284,10 @@ impl TypeSystem {
             }
             (StrictVal::String(s), Ty::Enum(variants)) => {
                 if let Ok(vname) = VariantName::try_from(s.clone()) {
-                    let tag = variants.tag_by_name(&vname);
-                    match tag {
-                        None => return Err(Error::EnumTagInvalid(vname.into(), variants.clone())),
-                        Some(name) => StrictVal::enumer(name),
+                    if !variants.has_name(&vname) {
+                        return Err(Error::EnumTagInvalid(vname.into(), variants.clone()));
                     }
+                    StrictVal::enumer(vname)
                 } else {
                     return Err(Error::TypeMismatch {
                         value: StrictVal::String(s),
