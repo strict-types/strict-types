@@ -44,8 +44,8 @@ extern crate core;
 
 pub use encoding::derive;
 pub use strict_encoding::{
-    fname, ident, libname, strict_dumb, tn, vname, StrictDecode, StrictDumb, StrictEncode,
-    StrictType,
+    fname, ident, impl_ident_subtype, impl_ident_type, impl_strict_newtype, impl_strict_struct,
+    libname, strict_dumb, tn, vname, StrictDecode, StrictDumb, StrictEncode, StrictType,
 };
 
 #[macro_use]
