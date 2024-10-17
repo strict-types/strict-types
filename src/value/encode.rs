@@ -22,7 +22,7 @@
 
 use std::io;
 
-use amplify::confinement::Confined;
+use amplify::confinement::{Confined, ConfinedBlob};
 use amplify::num::u24;
 use encoding::{
     Primitive, SerializeError, Sizing, StrictEncode, StrictSerialize, StrictType, TypeName,
@@ -51,24 +51,43 @@ impl<const MAX_LEN: usize> StrictEncode for SerializedType<MAX_LEN> {
 impl<const MAX_LEN: usize> StrictSerialize for SerializedType<MAX_LEN> {}
 
 impl TypeSystem {
+    pub fn strict_serialize_value<const MAX_LEN: usize>(
+        &self,
+        typed: &TypedVal,
+    ) -> Result<ConfinedBlob<0, MAX_LEN>, SerializeError> {
+        let mut buf = Vec::new();
+        self.strict_write_value(typed, &mut buf)?;
+        Confined::try_from(buf).map_err(SerializeError::from)
+    }
+
+    #[deprecated(since = "2.7.2", note = "use strict_serialize_value instead")]
     pub fn strict_serialize_type<const MAX_LEN: usize>(
         &self,
         typed: &TypedVal,
     ) -> Result<SerializedType<MAX_LEN>, SerializeError> {
         let mut buf = Vec::new();
-        self.strict_write_type(typed, &mut buf)?;
+        self.strict_write_value(typed, &mut buf)?;
         Confined::try_from(buf).map(SerializedType).map_err(SerializeError::from)
     }
 
+    pub fn strict_write_value(
+        &self,
+        typed: &TypedVal,
+        writer: &mut impl io::Write,
+    ) -> Result<(), io::Error> {
+        self.strict_write_val(&typed.val, typed.orig.id, writer)
+    }
+
+    #[deprecated(since = "2.7.2", note = "use strict_write_value instead")]
     pub fn strict_write_type(
         &self,
         typed: &TypedVal,
         writer: &mut impl io::Write,
     ) -> Result<(), io::Error> {
-        self.strict_write_value(&typed.val, typed.orig.id, writer)
+        self.strict_write_val(&typed.val, typed.orig.id, writer)
     }
 
-    fn strict_write_value(
+    fn strict_write_val(
         &self,
         val: &StrictVal,
         sem_id: SemId,
@@ -126,13 +145,13 @@ impl TypeSystem {
             (StrictVal::Tuple(vals), Ty::Tuple(fields)) => {
                 debug_assert_eq!(vals.len(), fields.len());
                 for (val, sem_id) in vals.iter().zip(fields) {
-                    self.strict_write_value(val, *sem_id, writer)?;
+                    self.strict_write_val(val, *sem_id, writer)?;
                 }
             }
             (StrictVal::Struct(vals), Ty::Struct(fields)) => {
                 debug_assert_eq!(vals.len(), fields.len());
                 for (val, field) in vals.values().zip(fields) {
-                    self.strict_write_value(val, field.ty, writer)?;
+                    self.strict_write_val(val, field.ty, writer)?;
                 }
             }
             (StrictVal::Enum(EnumTag::Ord(tag)), Ty::Enum(variants)) => {
@@ -146,13 +165,13 @@ impl TypeSystem {
             (StrictVal::Union(EnumTag::Ord(tag), val), Ty::Union(variants)) => {
                 let sem_id = variants.ty_by_tag(*tag).expect("Type::System::typify guarantees");
                 writer.write_all(&[*tag])?;
-                self.strict_write_value(val, *sem_id, writer)?;
+                self.strict_write_val(val, *sem_id, writer)?;
             }
             (StrictVal::Union(EnumTag::Name(tag), val), Ty::Union(variants)) => {
                 let (variant, sem_id) =
                     variants.by_name(tag).expect("Type::System::typify guarantees");
                 writer.write_all(&[variant.tag])?;
-                self.strict_write_value(val, *sem_id, writer)?;
+                self.strict_write_val(val, *sem_id, writer)?;
             }
 
             (StrictVal::String(s), Ty::List(_, sizing)) => {
@@ -173,7 +192,7 @@ impl TypeSystem {
                 let le_bytes = &list.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 for val in list {
-                    self.strict_write_value(val, *sem_id, writer)?;
+                    self.strict_write_val(val, *sem_id, writer)?;
                 }
             }
             (StrictVal::Map(list), Ty::Map(key_id, sem_id, sizing)) => {
@@ -181,8 +200,8 @@ impl TypeSystem {
                 let le_bytes = &list.len().to_le_bytes()[0..bytes_count];
                 writer.write_all(le_bytes)?;
                 for (key, val) in list {
-                    self.strict_write_value(key, *key_id, writer)?;
-                    self.strict_write_value(val, *sem_id, writer)?;
+                    self.strict_write_val(key, *key_id, writer)?;
+                    self.strict_write_val(val, *sem_id, writer)?;
                 }
             }
 
