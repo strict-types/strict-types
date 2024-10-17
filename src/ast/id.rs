@@ -52,6 +52,7 @@ pub struct SemId(
 );
 
 impl Default for SemId {
+    /// Default implementation returns semantic id of a Unit type.
     fn default() -> Self { Ty::<SemId>::UNIT.sem_id_unnamed() }
 }
 
@@ -73,6 +74,10 @@ impl Display for SemId {
 }
 
 pub const SEM_ID_TAG: [u8; 32] = *b"urn:ubideco:strict-types:typ:v01";
+
+impl SemId {
+    pub fn unit() -> Self { SemId::default() }
+}
 
 impl TypeRef for SemId {
     fn is_unicode_char(&self) -> bool { Self::unicode_char() == *self }
