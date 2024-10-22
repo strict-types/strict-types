@@ -441,12 +441,12 @@ impl StrictVal {
         };
         match tag {
             EnumTag::Name(name)
-                if name.as_str() == "None" && content.as_ref() == &StrictVal::Unit =>
+                if name.as_str() == "none" && content.as_ref() == &StrictVal::Unit =>
             {
                 None
             }
             EnumTag::Ord(0) if content.as_ref() == &StrictVal::Unit => None,
-            EnumTag::Name(name) if name.as_str() == "Some" => Some(content.as_ref()),
+            EnumTag::Name(name) if name.as_str() == "some" => Some(content.as_ref()),
             EnumTag::Ord(1) => Some(content.as_ref()),
             _ => panic!("StrictVal expected to be an optional, but it is not: {self}"),
         }
