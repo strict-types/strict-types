@@ -45,7 +45,9 @@ extern crate core;
 pub use encoding::derive;
 pub use strict_encoding::{
     fname, ident, impl_ident_subtype, impl_ident_type, impl_strict_newtype, impl_strict_struct,
-    libname, strict_dumb, tn, vname, StrictDecode, StrictDumb, StrictEncode, StrictType,
+    libname, strict_dumb, tn, vname, DecodeError, DeserializeError, FieldName, Ident,
+    InvalidRString, LibName, RString, SerializeError, StrictDecode, StrictDeserialize, StrictDumb,
+    StrictEncode, StrictSerialize, StrictType, TypeName, VariantError, VariantName,
 };
 
 #[macro_use]
