@@ -33,7 +33,7 @@ ascii-armor = { version = "0.7.2", optional = true }
 baid64 = "0.2.2"
 strict_encoding = { version = "2.7.0", features = ["derive", "float"] }
 vesper-lang = "0.1.0"
-indexmap = "2.3.0"
+indexmap = "2.6.0"
 half = "2.4.1"
 sha2 = "0.10.8"
 serde_crate = { package = "serde", version = "1", optional = true }
