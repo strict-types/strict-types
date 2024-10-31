@@ -508,7 +508,7 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "2.7.1"
+version = "2.7.2"
 dependencies = [
  "amplify",
  "ascii-armor",
