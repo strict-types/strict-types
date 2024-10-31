@@ -177,7 +177,7 @@ macro_rules! svtable {
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", rename_all = "camelCase", untagged)
+    serde(rename_all = "camelCase", untagged)
 )]
 #[non_exhaustive]
 pub enum StrictNum {
@@ -243,7 +243,7 @@ impl StrictNum {
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", rename_all = "camelCase", untagged)
+    serde(rename_all = "camelCase", untagged)
 )]
 pub enum EnumTag {
     #[from]
@@ -284,8 +284,8 @@ impl ToHex for Blob {
 #[cfg(feature = "serde")]
 mod _serde {
     use amplify::hex::FromHex;
-    use serde_crate::de::Error;
-    use serde_crate::{Deserialize, Deserializer, Serialize, Serializer};
+    use serde::de::Error;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
     use super::*;
 
@@ -317,7 +317,7 @@ mod _serde {
 #[cfg_attr(
     feature = "serde",
     derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", rename_all = "camelCase", untagged)
+    serde(rename_all = "camelCase", untagged)
 )]
 pub enum StrictVal {
     #[from(())]

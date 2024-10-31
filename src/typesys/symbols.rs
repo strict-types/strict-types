@@ -34,7 +34,7 @@ use crate::{Dependency, SemId, Translate, Ty, TypeSystem};
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Symbols {
     libs: SmallOrdSet<Dependency>,
     symbols: MediumOrdSet<TypeSymbol>,
@@ -110,7 +110,7 @@ impl Display for Symbols {
 #[getter(prefix = "as_")]
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SymbolicSys {
     pub(super) symbols: Symbols,
     types: TypeSystem,

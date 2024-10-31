@@ -43,7 +43,7 @@ pub struct UnknownType(SemId);
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("{lib}.{name}")]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TypeFqn {
     pub lib: LibName,
     pub name: TypeName,
@@ -74,7 +74,7 @@ impl From<&'static str> for TypeFqn {
 #[derive(Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct SymTy {
     /// Type origin providing information from which library and under which name the type is
     /// originating from. The origin information may be empty for the unnamed types.
@@ -112,7 +112,7 @@ impl SymTy {
 #[wrapper(Deref)]
 #[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TypeSystem(MediumOrdMap<SemId, Ty<SemId>>);
 
 impl StrictSerialize for TypeSystem {}
