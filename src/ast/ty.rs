@@ -639,6 +639,11 @@ where Ref: Display
             } else {
                 Display::fmt(ty, f)?;
             }
+            if self.len() == 1 {
+                f.write_str(" | (|)")?;
+            }
+        } else {
+            f.write_str("(|)")?;
         }
         Ok(())
     }
@@ -696,6 +701,9 @@ impl EnumVariants {
 
 impl Display for EnumVariants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.is_empty() {
+            return f.write_str("(|)");
+        }
         let mut iter = self.iter();
         let mut last_tag = 0;
         if let Some(variant) = iter.next() {
@@ -707,6 +715,9 @@ impl Display for EnumVariants {
             last_tag = last_tag.saturating_add(1);
         }
         let mut chunk_size = None;
+        if self.len() == 1 {
+            f.write_str(" | (|)")?;
+        }
         loop {
             for variant in iter.by_ref().take(chunk_size.unwrap_or(3)) {
                 write!(f, " | {variant}")?;
