@@ -36,7 +36,7 @@ use crate::{CommitConsume, Dependency, LibRef, SemId, Translate, Ty, TypeLib, Ty
 #[derive(Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct TypeSymbol {
     pub id: SemId,
     pub fqn: Option<TypeFqn>,

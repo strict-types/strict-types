@@ -39,11 +39,7 @@ pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<SemId, TypeName>>;
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", rename_all = "camelCase")
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(rename_all = "camelCase"))]
 pub struct SymbolicLib {
     name: LibName,
     dependencies: TinyOrdSet<Dependency>,
@@ -55,11 +51,7 @@ pub struct SymbolicLib {
 #[derive(StrictType, StrictDumb, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[display("{lib_name}.{ty_name}", alt = "{lib_name}.{ty_name}#{sem_id:#}")]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", rename = "camelCase")
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(rename = "camelCase"))]
 pub struct SymbolRef {
     pub lib_name: LibName,
     pub ty_name: TypeName,
@@ -90,7 +82,7 @@ impl From<SymbolRef> for ExternRef {
 #[derive(Clone, Eq, PartialEq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { Self::Named(strict_dumb!()) })]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum TranspileRef {
     #[from(Ty<TranspileRef>)]
     Embedded(Box<Ty<TranspileRef>>),

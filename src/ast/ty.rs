@@ -107,7 +107,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 #[derive(Clone, PartialEq, Eq, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = custom)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum Ty<Ref: TypeRef> {
     #[strict_type(tag = 0)]
     #[from]
@@ -346,7 +346,7 @@ impl<Ref: TypeRef> Ty<Ref> {
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
-#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(crate = "serde_crate"))]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Field<Ref: TypeRef> {
     pub name: FieldName,
     pub ty: Ref,
@@ -365,11 +365,7 @@ where Ref: Display
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, dumb = fields!("dumb" => Ref::strict_dumb()))]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(transparent))]
 pub struct NamedFields<Ref: TypeRef>(NonEmptyVec<Field<Ref>, { u8::MAX as usize }>);
 
 impl<Ref: TypeRef> Wrapper for NamedFields<Ref> {
@@ -444,11 +440,7 @@ where Ref: Display
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, dumb = fields!(Ref::strict_dumb()))]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(transparent))]
 pub struct UnnamedFields<Ref: TypeRef>(NonEmptyVec<Ref, { u8::MAX as usize }>);
 
 impl<Ref: TypeRef> Wrapper for UnnamedFields<Ref> {
@@ -515,11 +507,7 @@ where Ref: Display
 #[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Debug, From)]
 #[derive(StrictDumb, StrictType)]
 #[strict_type(lib = STRICT_TYPES_LIB, dumb = variants!("dumb" => Ref::strict_dumb()))]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(transparent))]
 pub struct UnionVariants<Ref: TypeRef>(NonEmptyOrdMap<Variant, Ref, { u8::MAX as usize }>);
 
 impl<Ref: TypeRef> Wrapper for UnionVariants<Ref> {
@@ -639,6 +627,11 @@ where Ref: Display
             } else {
                 Display::fmt(ty, f)?;
             }
+            if self.len() == 1 {
+                f.write_str(" | (|)")?;
+            }
+        } else {
+            f.write_str("(|)")?;
         }
         Ok(())
     }
@@ -648,11 +641,7 @@ where Ref: Display
 #[wrapper(Deref)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, dumb = variants!("dumb"))]
-#[cfg_attr(
-    feature = "serde",
-    derive(Serialize, Deserialize),
-    serde(crate = "serde_crate", transparent)
-)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(transparent))]
 pub struct EnumVariants(NonEmptyOrdSet<Variant, { u8::MAX as usize }>);
 
 impl TryFrom<BTreeSet<Variant>> for EnumVariants {
@@ -696,6 +685,9 @@ impl EnumVariants {
 
 impl Display for EnumVariants {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        if self.is_empty() {
+            return f.write_str("(|)");
+        }
         let mut iter = self.iter();
         let mut last_tag = 0;
         if let Some(variant) = iter.next() {
@@ -707,6 +699,9 @@ impl Display for EnumVariants {
             last_tag = last_tag.saturating_add(1);
         }
         let mut chunk_size = None;
+        if self.len() == 1 {
+            f.write_str(" | (|)")?;
+        }
         loop {
             for variant in iter.by_ref().take(chunk_size.unwrap_or(3)) {
                 write!(f, " | {variant}")?;
