@@ -242,11 +242,11 @@ mod test {
             "name [Unicode ^ ..0xff]
                        , option U8?
                        , precision \
-             semid:3KnxzApb-9$6dpmO-YsJf16I-zNiMxSh-sNC3zIL-q$uHyeo#manila-compare-person
+             semid:3KnxzApb-9.6dpmO-YsJf16I-zNiMxSh-sNC3zIL-q.uHyeo#manila-compare-person
                        , data [Byte ^ ..0xff]
                        , list [U16]
                        , tuple \
-             semid:61l54MmE-DY1FQ1b-jjkquKp-5UOyhe0-sBSjtr$-VPzs4fk#cabinet-vampire-change"
+             semid:61l54MmE-DY1FQ1b-jjkquKp-5UOyhe0-sBSjtr.-VPzs4fk#cabinet-vampire-change"
         );
         let sys = SystemBuilder::new().import(lib).unwrap().finalize().unwrap();
         eprintln!("{}", Ty::<SemId>::Primitive(Primitive::BYTE).is_byte());
