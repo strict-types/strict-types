@@ -156,9 +156,9 @@ impl TypedWrite for LibBuilder {
         c1: &impl StrictEncode,
         mut sizing: Sizing,
     ) -> Self {
-        self = c.strict_encode(self).expect("in-memory encoding");
-        let ty1 = self.last_compiled.clone().expect("can't compile type");
         self = c1.strict_encode(self).expect("in-memory encoding");
+        let ty1 = self.last_compiled.clone().expect("can't compile type");
+        self = c.strict_encode(self).expect("in-memory encoding");
         let ty = self.last_compiled.expect("can't compile type");
         sizing.min -= 1;
         sizing.max -= 1;
