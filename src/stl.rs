@@ -21,9 +21,10 @@
 // limitations under the License.
 
 use encoding::stl::{
-    Alpha, AlphaCaps, AlphaCapsLodash, AlphaCapsNum, AlphaLodash, AlphaNum, AlphaNumDash,
-    AlphaNumLodash, AlphaSmall, AlphaSmallLodash, AsciiPrintable, AsciiSym, Bool, Dec, HexDecCaps,
-    HexDecSmall, U2, U3, U4, U6, U7,
+    Alpha, AlphaCaps, AlphaCapsDash, AlphaCapsDot, AlphaCapsLodash, AlphaCapsNum, AlphaDash,
+    AlphaDot, AlphaLodash, AlphaNum, AlphaNumDash, AlphaNumDot, AlphaNumLodash, AlphaSmall,
+    AlphaSmallDash, AlphaSmallDot, AlphaSmallLodash, AsciiPrintable, AsciiSym, Bool, Dec, DecDot,
+    HexDecCaps, HexDecSmall, U2, U3, U4, U6, U7,
 };
 use encoding::{
     FieldName, Ident, LibName, TypeName, VariantName, LIB_NAME_STD, STRICT_TYPES_LIB, U1, U5,
@@ -36,9 +37,9 @@ use crate::{
 };
 
 pub const LIB_ID_STD: &str =
-    "stl:yiweb4OZ-3TAMPm~-eUS.XRw-iMgF32K-DbZZJX5-xmwCVCc#ralph-blue-lucky";
+    "stl:gonrTQ8L-cFSvdEs-F6MHXnS-MDplxjy-8_lZ5j5-_lY8MWo#delete-roman-hair";
 pub const LIB_ID_STRICT_TYPES: &str =
-    "stl:ReqjX9v2-45ABOvH-i7YYKfx-30V2lgT-owwpkNk-E.v5ENk#century-comrade-chess";
+    "stl:6Z6S5ztA-l3_RfoW-uOIW~K0-04t7R_3-KIiByhE-1W4rPFA#henry-heart-survive";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
     LibBuilder::new(libname!(LIB_NAME_STD), None)
@@ -53,16 +54,24 @@ fn _std_sym() -> Result<SymbolicLib, TranspileError> {
         .transpile::<AsciiSym>()
         .transpile::<AsciiPrintable>()
         .transpile::<Alpha>()
+        .transpile::<AlphaDot>()
+        .transpile::<AlphaDash>()
         .transpile::<AlphaLodash>()
         .transpile::<AlphaCaps>()
+        .transpile::<AlphaCapsDot>()
+        .transpile::<AlphaCapsDash>()
         .transpile::<AlphaCapsLodash>()
         .transpile::<AlphaSmall>()
+        .transpile::<AlphaSmallDot>()
+        .transpile::<AlphaSmallDash>()
         .transpile::<AlphaSmallLodash>()
         .transpile::<Dec>()
+        .transpile::<DecDot>()
         .transpile::<HexDecCaps>()
         .transpile::<HexDecSmall>()
         .transpile::<AlphaNum>()
         .transpile::<AlphaCapsNum>()
+        .transpile::<AlphaNumDot>()
         .transpile::<AlphaNumDash>()
         .transpile::<AlphaNumLodash>()
         .compile_symbols()
