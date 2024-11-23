@@ -36,7 +36,7 @@ macro_rules! ston {
     (~) => {
         $crate::StrictVal::none()
     };
-    ($tag:literal) => {
+    ($val:literal) => {
         $crate::StrictVal::from($val)
     };
     ($val:expr) => {
