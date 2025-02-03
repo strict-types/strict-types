@@ -93,7 +93,11 @@ impl TypeSystem {
         sem_id: SemId,
         writer: &mut impl io::Write,
     ) -> Result<(), io::Error> {
-        let ty = self.find(sem_id).expect("typified with some other TypeSystem");
+        let ty = if sem_id == SemId::unit() {
+            &Ty::UNIT
+        } else {
+            self.find(sem_id).expect("typified with some other TypeSystem")
+        };
         self.strict_write_ty(val, ty, writer)
     }
 
