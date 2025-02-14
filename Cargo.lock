@@ -74,9 +74,9 @@ dependencies = [
 
 [[package]]
 name = "baid64"
-version = "0.4.0"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4fbb63215df31f5d0c0db9f820bd298b2480a1e6f466b75af20a8c634e10d8e2"
+checksum = "6cb4a8b2f1afee4ef00a190b260ad871842b93206177b59631fecd325d48d538"
 dependencies = [
  "amplify",
  "base64",

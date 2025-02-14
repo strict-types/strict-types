@@ -140,10 +140,35 @@ impl TypeSystem {
 
     pub fn typify(&self, val: StrictVal, sem_id: SemId) -> Result<TypedVal, Error> {
         let spec = TypeSpec::from(sem_id);
-        let ty = self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?;
+        let ty = if sem_id == SemId::unit() {
+            &Ty::UNIT
+        } else {
+            self.find(sem_id).ok_or_else(|| Error::TypeAbsent(spec.clone()))?
+        };
         let val = match (val, ty) {
             // Primitive direct matches:
             (val @ StrictVal::Unit, Ty::Primitive(prim)) if *prim == Primitive::UNIT => val,
+            (StrictVal::Tuple(fields), Ty::Primitive(prim))
+                if *prim == Primitive::UNIT && fields.is_empty() =>
+            {
+                StrictVal::Unit
+            }
+            (StrictVal::Struct(fields), Ty::Primitive(prim))
+                if *prim == Primitive::UNIT && fields.is_empty() =>
+            {
+                StrictVal::Unit
+            }
+            (StrictVal::List(items), Ty::Primitive(prim))
+                if *prim == Primitive::UNIT && items.is_empty() =>
+            {
+                StrictVal::Unit
+            }
+            (StrictVal::Map(items), Ty::Primitive(prim))
+                if *prim == Primitive::UNIT && items.is_empty() =>
+            {
+                StrictVal::Unit
+            }
+
             (val @ StrictVal::Number(StrictNum::Uint(_)), Ty::Primitive(prim))
                 if prim.is_small_unsigned() =>
             {
