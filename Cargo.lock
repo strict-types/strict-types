@@ -473,7 +473,7 @@ dependencies = [
 
 [[package]]
 name = "strict_types"
-version = "2.8.1"
+version = "2.8.2"
 dependencies = [
  "amplify",
  "ascii-armor",
