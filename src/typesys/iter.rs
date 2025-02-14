@@ -147,7 +147,7 @@ pub struct TypeTreeIter<'sys> {
     nested: Vec<NestedCase>,
 }
 
-impl<'sys> Iterator for TypeTreeIter<'sys> {
+impl Iterator for TypeTreeIter<'_> {
     type Item = TypeInfo;
 
     fn next(&mut self) -> Option<Self::Item> {
