@@ -154,8 +154,16 @@ impl TypeSystem {
             }
             (StrictVal::Struct(vals), Ty::Struct(fields)) => {
                 debug_assert_eq!(vals.len(), fields.len());
-                for (val, field) in vals.values().zip(fields) {
-                    self.strict_write_val(val, field.ty, writer)?;
+
+                for field in fields {
+                    let fname = &field.name;
+                    let Some(item) = vals.get(fname) else {
+                        return Err(io::Error::new(
+                            io::ErrorKind::InvalidData,
+                            format!("missing field: {fname}"),
+                        ));
+                    };
+                    self.strict_write_val(item, field.ty, writer)?;
                 }
             }
             (StrictVal::Enum(EnumTag::Ord(tag)), Ty::Enum(variants)) => {
