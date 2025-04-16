@@ -21,6 +21,7 @@
 // limitations under the License.
 
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
 
 use amplify::confinement::{NonEmptyOrdMap, TinyOrdSet};
@@ -203,7 +204,7 @@ impl Display for LibRef {
     }
 }
 
-#[derive(Clone, Eq, Debug)]
+#[derive(Clone, Eq, Debug, Hash)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
@@ -268,7 +269,11 @@ impl StrictDumb for TypeLib {
 }
 
 impl TypeLib {
-    pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
+    pub fn to_dependency(&self) -> (Dependency, HashSet<SemId>) {
+        let dependency = Dependency::with(self.id(), self.name.clone());
+        let types = self.types.iter().map(|(name, ty)| ty.sem_id_named(name)).collect();
+        (dependency, types)
+    }
 
     pub fn import(&mut self, dependency: Dependency) -> Result<(), CompileError> {
         if self.dependencies.contains(&dependency) {

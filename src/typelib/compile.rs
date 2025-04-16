@@ -65,6 +65,9 @@ pub enum CompileError {
 
     /// library `{0}` contains too many types.
     LibTooLarge(LibName),
+
+    /// library `{0}` used as a dependency doesn't provide type `{2}` with id {1}.
+    DependencyMissesType(LibName, SemId, TypeName),
 }
 
 impl From<TranspileError> for CompileError {
@@ -77,6 +80,9 @@ impl From<TranspileError> for CompileError {
             TranspileError::TooManyDependencies => Self::TooManyDependencies,
             TranspileError::TooManyTypes => Self::TooManyTypes,
             TranspileError::LibTooLarge(lib) => Self::LibTooLarge(lib),
+            TranspileError::DependencyMissesType(lib, sem_id, type_name) => {
+                Self::DependencyMissesType(lib, sem_id, type_name)
+            }
         }
     }
 }

@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::io;
 use std::io::Sink;
 
@@ -51,9 +51,9 @@ pub trait BuilderParent: StrictParent<StreamWriter<Sink>> {
 #[derive(Debug)]
 pub struct LibBuilder {
     pub(super) lib_name: LibName,
-    pub(super) known_libs: BTreeSet<Dependency>,
-    pub(super) extern_types: BTreeMap<LibName, BTreeMap<SemId, TypeName>>,
-    pub(super) types: BTreeMap<TypeName, Ty<TranspileRef>>,
+    pub(super) known_libs: HashMap<Dependency, HashSet<SemId>>,
+    pub(super) extern_types: HashMap<LibName, BTreeMap<SemId, TypeName>>,
+    pub(super) types: HashMap<TypeName, Ty<TranspileRef>>,
     sink: StreamWriter<Sink>,
     last_compiled: Option<TranspileRef>,
 }
@@ -61,7 +61,7 @@ pub struct LibBuilder {
 impl LibBuilder {
     pub fn new(
         name: impl Into<LibName>,
-        known_libs: impl IntoIterator<Item = Dependency>,
+        known_libs: impl IntoIterator<Item = (Dependency, HashSet<SemId>)>,
     ) -> LibBuilder {
         LibBuilder {
             lib_name: name.into(),
@@ -79,7 +79,7 @@ impl LibBuilder {
 
     fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
         self.known_libs
-            .iter()
+            .keys()
             .find(|dep| &dep.name == lib_name)
             .map(|dep| dep.id)
             .unwrap_or_else(|| panic!("use of library '{lib_name}' which is not a dependency"))

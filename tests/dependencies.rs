@@ -33,7 +33,7 @@ use strict_encoding::{
     LIB_NAME_STD, STRICT_TYPES_LIB,
 };
 use strict_types::stl::{std_stl, strict_types_stl};
-use strict_types::{Dependency, LibBuilder, SystemBuilder, TypeLib};
+use strict_types::{CompileError, LibBuilder, SystemBuilder, TranspileError, TypeLib};
 
 const LIB: &str = "Test";
 
@@ -109,16 +109,43 @@ fn serialize() {
         LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
     let lib = builder.compile().unwrap();
 
-    let imports = bset! {
-        Dependency::with(lib.id(), lib.name)
-    };
-    let builder = LibBuilder::new(libname!(LIB), imports).transpile::<Complex>();
+    let builder = LibBuilder::new(libname!(LIB), [lib.to_dependency()]).transpile::<Complex>();
     let lib = builder.compile_symbols().unwrap();
 
     println!("{}", lib);
 }
 
 #[test]
+fn dependency_misses_type() {
+    #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+    #[derive(StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = LIB_NAME_STD)]
+    struct Fake(());
+
+    #[derive(Copy, Clone, Ord, PartialOrd, Eq, PartialEq, Hash, Debug, Default)]
+    #[derive(StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = LIB)]
+    struct FakeUser(Fake);
+
+    let std = std_stl();
+    let builder = LibBuilder::new(libname!(LIB), [std.to_dependency()]).transpile::<FakeUser>();
+    let err = builder.compile().unwrap_err();
+    eprintln!("{err}");
+    assert!(
+        matches!(err, CompileError::DependencyMissesType(lib, _, name) if lib == libname!(LIB_NAME_STD) && name == tn!("Fake"))
+    );
+
+    let builder = LibBuilder::new(libname!(LIB), [std.to_dependency()]).transpile::<FakeUser>();
+    let err = builder.compile_symbols().unwrap_err();
+    assert!(
+        matches!(err, TranspileError::DependencyMissesType(lib, _, name) if lib == libname!(LIB_NAME_STD) && name == tn!("Fake"))
+    );
+}
+
+#[test]
+#[should_panic(
+    expected = r#"DependencyMissesType(LibName("Std"), SemId(Array<32>(831bcb0c328608f3f9cd16633c16a8e6a52ac31c79a61042be9d864bc9f4a0f7)), TypeName("AlphaLodash"))"#
+)]
 fn type_lib_missing_type() {
     // construct the original SymbolicSys
     let libs_orig = [strict_types_stl(), std_stl()];
@@ -163,6 +190,9 @@ fn type_lib_missing_type() {
 }
 
 #[test]
+#[should_panic(
+    expected = r#"DependencyMissesType(LibName("Std"), SemId(Array<32>(95c3bdc94d0260f9716a113cf6492d5d4e23988e33043005ca36da6d6eee67b4)), TypeName("AlphaNumLodash"))"#
+)]
 fn type_lib_semid_inconsistency() {
     // construct the original SymbolicSys
     let libs_orig = [strict_types_stl(), std_stl()];
