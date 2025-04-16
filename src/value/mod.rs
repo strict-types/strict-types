@@ -86,10 +86,11 @@ mod test_helpers {
     pub fn test_system() -> SymbolicSys {
         let std = std_stl();
         let st = strict_types_stl();
-        let lib = LibBuilder::new("TestLib", [std.to_dependency(), st.to_dependency()])
-            .transpile::<Nominal>()
-            .compile()
-            .unwrap();
+        let lib =
+            LibBuilder::with("TestLib", [std.to_dependency_types(), st.to_dependency_types()])
+                .transpile::<Nominal>()
+                .compile()
+                .unwrap();
         SystemBuilder::new()
             .import(lib)
             .unwrap()

@@ -51,7 +51,7 @@ pub trait BuilderParent: StrictParent<StreamWriter<Sink>> {
 #[derive(Debug)]
 pub struct LibBuilder {
     pub(super) lib_name: LibName,
-    pub(super) known_libs: HashMap<Dependency, HashSet<SemId>>,
+    pub(super) known_libs: HashMap<Dependency, Option<HashSet<SemId>>>,
     pub(super) extern_types: HashMap<LibName, BTreeMap<SemId, TypeName>>,
     pub(super) types: HashMap<TypeName, Ty<TranspileRef>>,
     sink: StreamWriter<Sink>,
@@ -59,13 +59,32 @@ pub struct LibBuilder {
 }
 
 impl LibBuilder {
+    #[deprecated(
+        since = "2.8.3",
+        note = "use `with` instead; change `to_dependency` calls in the second parameter with \
+                `to_dependency_types`"
+    )]
     pub fn new(
+        name: impl Into<LibName>,
+        known_libs: impl IntoIterator<Item = Dependency>,
+    ) -> LibBuilder {
+        LibBuilder {
+            lib_name: name.into(),
+            known_libs: known_libs.into_iter().map(|d| (d, None)).collect(),
+            extern_types: empty!(),
+            types: empty!(),
+            sink: StreamWriter::sink::<MAX_WRITE_COUNT>(),
+            last_compiled: None,
+        }
+    }
+
+    pub fn with(
         name: impl Into<LibName>,
         known_libs: impl IntoIterator<Item = (Dependency, HashSet<SemId>)>,
     ) -> LibBuilder {
         LibBuilder {
             lib_name: name.into(),
-            known_libs: known_libs.into_iter().collect(),
+            known_libs: known_libs.into_iter().map(|(d, types)| (d, Some(types))).collect(),
             extern_types: empty!(),
             types: empty!(),
             sink: StreamWriter::sink::<MAX_WRITE_COUNT>(),
@@ -440,7 +459,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: LibBuilder::new(self.lib.clone(), None),
+            parent: LibBuilder::with(self.lib.clone(), None),
             writer: UnionWriter::sink(),
         }
     }

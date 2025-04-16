@@ -274,7 +274,9 @@ impl StrictDumb for TypeLib {
 }
 
 impl TypeLib {
-    pub fn to_dependency(&self) -> (Dependency, HashSet<SemId>) {
+    pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
+
+    pub fn to_dependency_types(&self) -> (Dependency, HashSet<SemId>) {
         let dependency = Dependency::with(self.id(), self.name.clone());
         let types = self.types.iter().map(|(name, ty)| ty.sem_id_named(name)).collect();
         (dependency, types)

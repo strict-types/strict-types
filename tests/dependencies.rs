@@ -105,11 +105,12 @@ pub struct Complex {
 #[test]
 fn serialize() {
     let std = std_stl();
-    let builder =
-        LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
+    let builder = LibBuilder::with(libname!(STRICT_TYPES_LIB), [std.to_dependency_types()])
+        .transpile::<TypeLib>();
     let lib = builder.compile().unwrap();
 
-    let builder = LibBuilder::new(libname!(LIB), [lib.to_dependency()]).transpile::<Complex>();
+    let builder =
+        LibBuilder::with(libname!(LIB), [lib.to_dependency_types()]).transpile::<Complex>();
     let lib = builder.compile_symbols().unwrap();
 
     println!("{}", lib);
@@ -128,14 +129,16 @@ fn dependency_misses_type() {
     struct FakeUser(Fake);
 
     let std = std_stl();
-    let builder = LibBuilder::new(libname!(LIB), [std.to_dependency()]).transpile::<FakeUser>();
+    let builder =
+        LibBuilder::with(libname!(LIB), [std.to_dependency_types()]).transpile::<FakeUser>();
     let err = builder.compile().unwrap_err();
     eprintln!("{err}");
     assert!(
         matches!(err, CompileError::DependencyMissesType(lib, _, name) if lib == libname!(LIB_NAME_STD) && name == tn!("Fake"))
     );
 
-    let builder = LibBuilder::new(libname!(LIB), [std.to_dependency()]).transpile::<FakeUser>();
+    let builder =
+        LibBuilder::with(libname!(LIB), [std.to_dependency_types()]).transpile::<FakeUser>();
     let err = builder.compile_symbols().unwrap_err();
     assert!(
         matches!(err, TranspileError::DependencyMissesType(lib, _, name) if lib == libname!(LIB_NAME_STD) && name == tn!("Fake"))
@@ -156,7 +159,7 @@ fn type_lib_missing_type() {
     let sys_orig = builder_orig.finalize().unwrap();
 
     // construct a copy of std_stl that uses only Bool
-    let std_stl_mod = LibBuilder::new(libname!(LIB_NAME_STD), None)
+    let std_stl_mod = LibBuilder::with(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .compile_symbols()
         .unwrap()
@@ -165,7 +168,7 @@ fn type_lib_missing_type() {
 
     // construct a library that uses the original Ident but depends on the modified std_stl
     let strict_types_stl_mod =
-        LibBuilder::new(libname!(STRICT_TYPES_LIB), [std_stl_mod.to_dependency()])
+        LibBuilder::with(libname!(STRICT_TYPES_LIB), [std_stl_mod.to_dependency_types()])
             .transpile::<Ident>()
             .compile_symbols()
             .unwrap()
@@ -215,7 +218,7 @@ fn type_lib_semid_inconsistency() {
     }
 
     // construct a copy of std_stl that uses the modified AlphaNumLodash
-    let std_stl_mod = LibBuilder::new(libname!(LIB_NAME_STD), None)
+    let std_stl_mod = LibBuilder::with(libname!(LIB_NAME_STD), None)
         .transpile::<AlphaLodash>()
         .transpile::<AlphaNumLodash>()
         .compile_symbols()
@@ -225,7 +228,7 @@ fn type_lib_semid_inconsistency() {
 
     // construct a library that uses the original Ident but depends on the modified std_stl
     let strict_types_stl_mod =
-        LibBuilder::new(libname!(STRICT_TYPES_LIB), [std_stl_mod.to_dependency()])
+        LibBuilder::with(libname!(STRICT_TYPES_LIB), [std_stl_mod.to_dependency_types()])
             .transpile::<Ident>()
             .compile_symbols()
             .unwrap()

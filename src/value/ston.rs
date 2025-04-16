@@ -234,8 +234,10 @@ mod test {
         impl StrictSerialize for Test {}
         impl StrictDeserialize for Test {}
 
-        let lib =
-            LibBuilder::new(libname!("Test"), iter::empty()).transpile::<Test>().compile().unwrap();
+        let lib = LibBuilder::with(libname!("Test"), iter::empty())
+            .transpile::<Test>()
+            .compile()
+            .unwrap();
         let stl = lib.types.get(&tn!("Test")).unwrap();
         assert_eq!(
             stl.to_string(),

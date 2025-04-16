@@ -234,10 +234,17 @@ impl LibBuilder {
         let mut type_map = BTreeMap::new();
         for (dep_name, dep_types) in extern_types {
             for (sem_id, type_name) in &dep_types {
-                let dependency_types = used_dependencies
+                let Some(dependency_types) = used_dependencies
                     .get(&dep_name)
                     .and_then(|dep| known_libs.get(dep))
-                    .expect("the presence checked above");
+                    .expect("the presence checked above")
+                else {
+                    eprintln!(
+                        "use of deprecated API for strict_types::LibBuilder put at risk of \
+                         non-determinism"
+                    );
+                    continue;
+                };
                 if !dependency_types.contains(sem_id) {
                     return Err(TranspileError::DependencyMissesType(
                         dep_name,
