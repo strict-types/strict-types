@@ -23,7 +23,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap, TinyOrdSet};
+use amplify::confinement::{Confined, NonEmptyOrdMap, SmallOrdMap, TinyOrdMap, TinyOrdSet};
 use amplify::ByteArray;
 use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
@@ -37,14 +37,25 @@ use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRe
 pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<SemId, TypeName>>;
 
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(rename_all = "camelCase"))]
 pub struct SymbolicLib {
     name: LibName,
     dependencies: TinyOrdSet<Dependency>,
     extern_types: ExternTypes,
-    types: SmallOrdMap<TypeName, Ty<TranspileRef>>,
+    types: NonEmptyOrdMap<TypeName, Ty<TranspileRef>>,
+}
+
+impl StrictDumb for SymbolicLib {
+    fn strict_dumb() -> Self {
+        SymbolicLib {
+            name: strict_dumb!(),
+            dependencies: strict_dumb!(),
+            extern_types: strict_dumb!(),
+            types: NonEmptyOrdMap::with_key_value(strict_dumb!(), strict_dumb!()),
+        }
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -182,6 +193,11 @@ pub enum TranspileError {
 
 impl LibBuilder {
     pub fn compile_symbols(self) -> Result<SymbolicLib, TranspileError> {
+        assert!(
+            !self.types.is_empty(),
+            "library builder has no types; use `transpile` method to add types to it"
+        );
+
         let (name, known_libs, extern_types, types) =
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
