@@ -42,7 +42,7 @@ pub const LIB_ID_STRICT_TYPES: &str =
     "stl:6Z6S5ztA-l3_RfoW-uOIW~K0-04t7R_3-KIiByhE-1W4rPFA#henry-heart-survive";
 
 fn _std_sym() -> Result<SymbolicLib, TranspileError> {
-    LibBuilder::new(libname!(LIB_NAME_STD), None)
+    LibBuilder::with(libname!(LIB_NAME_STD), None)
         .transpile::<Bool>()
         .transpile::<U1>()
         .transpile::<U2>()
@@ -84,7 +84,7 @@ pub fn std_sym() -> SymbolicLib { _std_sym().expect("invalid strict type Std lib
 pub fn std_stl() -> TypeLib { _std_stl().expect("invalid strict type Std library") }
 
 fn _strict_types_sym() -> Result<SymbolicLib, TranspileError> {
-    LibBuilder::new(libname!(STRICT_TYPES_LIB), [std_stl().to_dependency()])
+    LibBuilder::with(libname!(STRICT_TYPES_LIB), [std_stl().to_dependency_types()])
         .transpile::<Ident>()
         .transpile::<TypeName>()
         .transpile::<FieldName>()

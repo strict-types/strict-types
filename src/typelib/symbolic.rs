@@ -20,10 +20,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{self, Display, Formatter};
 
-use amplify::confinement::{Confined, SmallOrdMap, TinyOrdMap, TinyOrdSet};
+use amplify::confinement::{Confined, NonEmptyOrdMap, SmallOrdMap, TinyOrdMap, TinyOrdSet};
 use amplify::ByteArray;
 use encoding::{LibName, LIB_EMBEDDED};
 use sha2::Digest;
@@ -37,14 +37,25 @@ use crate::{Dependency, LibRef, SemId, Translate, Ty, TypeLib, TypeLibId, TypeRe
 pub type ExternTypes = TinyOrdMap<LibName, SmallOrdMap<SemId, TypeName>>;
 
 #[derive(Getters, Clone, Eq, PartialEq, Debug)]
-#[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+#[derive(StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(rename_all = "camelCase"))]
 pub struct SymbolicLib {
     name: LibName,
     dependencies: TinyOrdSet<Dependency>,
     extern_types: ExternTypes,
-    types: SmallOrdMap<TypeName, Ty<TranspileRef>>,
+    types: NonEmptyOrdMap<TypeName, Ty<TranspileRef>>,
+}
+
+impl StrictDumb for SymbolicLib {
+    fn strict_dumb() -> Self {
+        SymbolicLib {
+            name: strict_dumb!(),
+            dependencies: strict_dumb!(),
+            extern_types: strict_dumb!(),
+            types: NonEmptyOrdMap::with_key_value(strict_dumb!(), strict_dumb!()),
+        }
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug, Display)]
@@ -175,10 +186,18 @@ pub enum TranspileError {
 
     /// library `{0}` contains too many types.
     LibTooLarge(LibName),
+
+    /// library `{0}` used as a dependency doesn't provide type `{2}` with id {1}.
+    DependencyMissesType(LibName, SemId, TypeName),
 }
 
 impl LibBuilder {
     pub fn compile_symbols(self) -> Result<SymbolicLib, TranspileError> {
+        assert!(
+            !self.types.is_empty(),
+            "library builder has no types; use `transpile` method to add types to it"
+        );
+
         let (name, known_libs, extern_types, types) =
             (self.lib_name, self.known_libs, self.extern_types, self.types);
 
@@ -195,36 +214,54 @@ impl LibBuilder {
             }
         }
 
-        let mut used_dependencies = BTreeSet::<Dependency>::new();
+        let mut used_dependencies = HashMap::<LibName, Dependency>::new();
         for lib in extern_types.keys() {
             if lib == &libname!(LIB_EMBEDDED) {
                 continue;
             }
-            match known_libs.iter().find(|dep| &dep.name == lib) {
-                None if !used_dependencies.iter().any(|dep| &dep.name == lib) => {
+            match known_libs.keys().find(|dep| &dep.name == lib) {
+                None if !used_dependencies.contains_key(lib) => {
                     return Err(TranspileError::UnknownLib(lib.clone()));
                 }
                 None => {}
                 Some(dep) => {
-                    used_dependencies.insert(dep.clone());
+                    used_dependencies.insert(lib.clone(), dep.clone());
                 }
             }
         }
 
-        let dependencies = Confined::try_from(used_dependencies)
+        let types = Confined::try_from_iter(types).map_err(|_| TranspileError::TooManyTypes)?;
+        let mut type_map = BTreeMap::new();
+        for (dep_name, dep_types) in extern_types {
+            for (sem_id, type_name) in &dep_types {
+                let Some(dependency_types) = used_dependencies
+                    .get(&dep_name)
+                    .and_then(|dep| known_libs.get(dep))
+                    .expect("the presence checked above")
+                else {
+                    eprintln!(
+                        "use of deprecated API for strict_types::LibBuilder put at risk of \
+                         non-determinism"
+                    );
+                    continue;
+                };
+                if !dependency_types.contains(sem_id) {
+                    return Err(TranspileError::DependencyMissesType(
+                        dep_name,
+                        *sem_id,
+                        type_name.clone(),
+                    ));
+                }
+            }
+            let dep_types = SmallOrdMap::try_from_iter(dep_types)
+                .map_err(|_| TranspileError::LibTooLarge(dep_name.clone()))?;
+            type_map.insert(dep_name, dep_types);
+        }
+        let extern_types =
+            TinyOrdMap::try_from(type_map).map_err(|_| TranspileError::TooManyDependencies)?;
+        let dependencies = TinyOrdSet::try_from_iter(used_dependencies.into_values())
             .map_err(|_| TranspileError::TooManyDependencies)?;
-        let types = Confined::try_from(types).map_err(|_| TranspileError::TooManyTypes)?;
-        let extern_types = Confined::try_from(
-            extern_types
-                .into_iter()
-                .map(|(k, v)| {
-                    let v = Confined::try_from(v)
-                        .map_err(|_| TranspileError::LibTooLarge(k.clone()))?;
-                    Ok((k, v))
-                })
-                .collect::<Result<_, _>>()?,
-        )
-        .map_err(|_| TranspileError::TooManyDependencies)?;
+
         Ok(SymbolicLib {
             name,
             extern_types,

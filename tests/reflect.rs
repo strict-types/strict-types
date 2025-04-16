@@ -31,8 +31,8 @@ use strict_types::{LibBuilder, SymbolicSys, TypeLib};
 
 fn lib() -> TypeLib {
     let std = std_stl();
-    let builder =
-        LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
+    let builder = LibBuilder::with(libname!(STRICT_TYPES_LIB), [std.to_dependency_types()])
+        .transpile::<TypeLib>();
     builder.compile().unwrap()
 }
 

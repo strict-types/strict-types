@@ -21,7 +21,9 @@
 // limitations under the License.
 
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use amplify::confinement::{NonEmptyOrdMap, TinyOrdSet};
 use baid64::DisplayBaid64;
@@ -212,6 +214,10 @@ pub struct Dependency {
     pub name: LibName,
 }
 
+impl Hash for Dependency {
+    fn hash<H: Hasher>(&self, state: &mut H) { self.id.hash(state) }
+}
+
 impl PartialEq for Dependency {
     fn eq(&self, other: &Self) -> bool { self.id == other.id || self.name == other.name }
 }
@@ -269,6 +275,12 @@ impl StrictDumb for TypeLib {
 
 impl TypeLib {
     pub fn to_dependency(&self) -> Dependency { Dependency::with(self.id(), self.name.clone()) }
+
+    pub fn to_dependency_types(&self) -> (Dependency, HashSet<SemId>) {
+        let dependency = Dependency::with(self.id(), self.name.clone());
+        let types = self.types.iter().map(|(name, ty)| ty.sem_id_named(name)).collect();
+        (dependency, types)
+    }
 
     pub fn import(&mut self, dependency: Dependency) -> Result<(), CompileError> {
         if self.dependencies.contains(&dependency) {
