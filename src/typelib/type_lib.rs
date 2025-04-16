@@ -23,6 +23,7 @@
 use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::fmt::{self, Display, Formatter};
+use std::hash::{Hash, Hasher};
 
 use amplify::confinement::{NonEmptyOrdMap, TinyOrdSet};
 use baid64::DisplayBaid64;
@@ -204,13 +205,17 @@ impl Display for LibRef {
     }
 }
 
-#[derive(Clone, Eq, Debug, Hash)]
+#[derive(Clone, Eq, Debug)]
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct Dependency {
     pub id: TypeLibId,
     pub name: LibName,
+}
+
+impl Hash for Dependency {
+    fn hash<H: Hasher>(&self, state: &mut H) { self.id.hash(state) }
 }
 
 impl PartialEq for Dependency {

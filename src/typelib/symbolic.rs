@@ -241,7 +241,7 @@ impl LibBuilder {
                 if !dependency_types.contains(sem_id) {
                     return Err(TranspileError::DependencyMissesType(
                         dep_name,
-                        sem_id.clone(),
+                        *sem_id,
                         type_name.clone(),
                     ));
                 }
