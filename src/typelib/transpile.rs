@@ -20,7 +20,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 use std::io;
 use std::io::Sink;
 
@@ -51,21 +51,40 @@ pub trait BuilderParent: StrictParent<StreamWriter<Sink>> {
 #[derive(Debug)]
 pub struct LibBuilder {
     pub(super) lib_name: LibName,
-    pub(super) known_libs: BTreeSet<Dependency>,
-    pub(super) extern_types: BTreeMap<LibName, BTreeMap<SemId, TypeName>>,
-    pub(super) types: BTreeMap<TypeName, Ty<TranspileRef>>,
+    pub(super) known_libs: HashMap<Dependency, Option<HashSet<SemId>>>,
+    pub(super) extern_types: HashMap<LibName, BTreeMap<SemId, TypeName>>,
+    pub(super) types: HashMap<TypeName, Ty<TranspileRef>>,
     sink: StreamWriter<Sink>,
     last_compiled: Option<TranspileRef>,
 }
 
 impl LibBuilder {
+    #[deprecated(
+        since = "2.8.3",
+        note = "use `with` instead; change `to_dependency` calls in the second parameter with \
+                `to_dependency_types`"
+    )]
     pub fn new(
         name: impl Into<LibName>,
         known_libs: impl IntoIterator<Item = Dependency>,
     ) -> LibBuilder {
         LibBuilder {
             lib_name: name.into(),
-            known_libs: known_libs.into_iter().collect(),
+            known_libs: known_libs.into_iter().map(|d| (d, None)).collect(),
+            extern_types: empty!(),
+            types: empty!(),
+            sink: StreamWriter::sink::<MAX_WRITE_COUNT>(),
+            last_compiled: None,
+        }
+    }
+
+    pub fn with(
+        name: impl Into<LibName>,
+        known_libs: impl IntoIterator<Item = (Dependency, HashSet<SemId>)>,
+    ) -> LibBuilder {
+        LibBuilder {
+            lib_name: name.into(),
+            known_libs: known_libs.into_iter().map(|(d, types)| (d, Some(types))).collect(),
             extern_types: empty!(),
             types: empty!(),
             sink: StreamWriter::sink::<MAX_WRITE_COUNT>(),
@@ -79,7 +98,7 @@ impl LibBuilder {
 
     fn dependency_id(&self, lib_name: &LibName) -> TypeLibId {
         self.known_libs
-            .iter()
+            .keys()
             .find(|dep| &dep.name == lib_name)
             .map(|dep| dep.id)
             .unwrap_or_else(|| panic!("use of library '{lib_name}' which is not a dependency"))
@@ -440,7 +459,7 @@ impl UnionBuilder {
             lib: self.lib.clone(),
             name: self.name.clone(),
             variants: self.variants.clone(),
-            parent: LibBuilder::new(self.lib.clone(), None),
+            parent: LibBuilder::with(self.lib.clone(), None),
             writer: UnionWriter::sink(),
         }
     }

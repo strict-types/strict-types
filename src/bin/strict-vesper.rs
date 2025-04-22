@@ -29,8 +29,8 @@ use strict_types::{LibBuilder, SystemBuilder, TypeLib};
 
 fn main() {
     let std = std_stl();
-    let builder =
-        LibBuilder::new(libname!(STRICT_TYPES_LIB), [std.to_dependency()]).transpile::<TypeLib>();
+    let builder = LibBuilder::with(libname!(STRICT_TYPES_LIB), [std.to_dependency_types()])
+        .transpile::<TypeLib>();
     let lib = builder.compile().unwrap();
     let builder = SystemBuilder::new().import(lib).unwrap().import(std).unwrap();
     let sys = builder.finalize().unwrap_or_else(|errors| {
