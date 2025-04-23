@@ -1,31 +1,30 @@
-// Strict encoding schema library, implementing validation and parsing
-// strict encoded data against a schema.
+// Strict encoding schema library, implementing validation and parsing of strict encoded data
+// against a schema.
 //
 // SPDX-License-Identifier: Apache-2.0
 //
-// Written in 2022-2024 by
-//     Dr. Maxim Orlovsky <orlovsky@ubideco.org>
+// Designed in 2019-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
+// Written in 2024-2025 by Dr Maxim Orlovsky <orlovsky@ubideco.org>
 //
-// Copyright 2022-2024 UBIDECO Institute
+// Copyright (C) 2022-2025 Laboratories for Ubiquitous Deterministic Computing (UBIDECO),
+//                         Institute for Distributed and Cognitive Systems (InDCS), Switzerland.
+// Copyright (C) 2022-2025 Dr Maxim Orlovsky.
+// All rights under the above copyrights are reserved.
 //
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
+// Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+// in compliance with the License. You may obtain a copy of the License at
 //
-//     http://www.apache.org/licenses/LICENSE-2.0
+//        http://www.apache.org/licenses/LICENSE-2.0
 //
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
-use std::fmt;
-use std::fmt::{Display, Formatter};
+// Unless required by applicable law or agreed to in writing, software distributed under the License
+// is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+// or implied. See the License for the specific language governing permissions and limitations under
+// the License.
 
 use amplify::confinement::LargeVec;
 use strict_encoding::STRICT_TYPES_LIB;
 
+#[cfg(feature = "vesper")]
 use super::vesper::TypeVesper;
 use crate::typesys::{TypeInfo, TypeTree};
 
@@ -52,15 +51,17 @@ impl<'a> From<&'a TypeTree<'_>> for MemoryLayout {
     }
 }
 
-impl Display for MemoryLayout {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Display::fmt(&self.to_vesper().display(), f)
+#[cfg(feature = "vesper")]
+impl std::fmt::Display for MemoryLayout {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.to_vesper().display(), f)
     }
 }
 
 impl MemoryLayout {
     fn new() -> Self { Self { items: empty!() } }
 
+    #[cfg(feature = "vesper")]
     pub fn to_vesper(&self) -> TypeVesper {
         let mut root = None;
         let mut path: Vec<usize> = vec![];
