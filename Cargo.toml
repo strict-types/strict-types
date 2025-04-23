@@ -50,7 +50,7 @@ getrandom = { version = "0.2", features = ["js"], optional = true }
 wasm-bindgen-test = "0.3"
 
 [features]
-default = []
+default = ["vesper"] # For backwards compatiblity. Remove this on the next major version update.
 all = ["vesper", "armor", "stl", "serde"]
 armor = ["ascii-armor"]
 vesper = ["dep:vesper-lang"]
