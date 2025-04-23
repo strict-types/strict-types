@@ -21,12 +21,10 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-use std::fmt;
-use std::fmt::{Display, Formatter};
-
 use amplify::confinement::LargeVec;
 use strict_encoding::STRICT_TYPES_LIB;
 
+#[cfg(feature = "vesper")]
 use super::vesper::TypeVesper;
 use crate::typesys::{TypeInfo, TypeTree};
 
@@ -53,15 +51,17 @@ impl<'a> From<&'a TypeTree<'_>> for MemoryLayout {
     }
 }
 
-impl Display for MemoryLayout {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        Display::fmt(&self.to_vesper().display(), f)
+#[cfg(feature = "vesper")]
+impl std::fmt::Display for MemoryLayout {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.to_vesper().display(), f)
     }
 }
 
 impl MemoryLayout {
     fn new() -> Self { Self { items: empty!() } }
 
+    #[cfg(feature = "vesper")]
     pub fn to_vesper(&self) -> TypeVesper {
         let mut root = None;
         let mut path: Vec<usize> = vec![];

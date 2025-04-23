@@ -21,8 +21,6 @@
 // or implied. See the License for the specific language governing permissions and limitations under
 // the License.
 
-use std::fmt;
-use std::fmt::{Display, Formatter};
 use std::mem::swap;
 
 use amplify::confinement::{Confined, TinyVec};
@@ -79,8 +77,11 @@ where 'tree: 'sys
     fn into_iter(self) -> Self::IntoIter { self.iter() }
 }
 
-impl Display for TypeTree<'_> {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result { Display::fmt(&self.to_layout(), f) }
+#[cfg(feature = "vesper")]
+impl std::fmt::Display for TypeTree<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Display::fmt(&self.to_layout(), f)
+    }
 }
 
 #[derive(Clone, Eq, PartialEq, Debug)]
