@@ -34,7 +34,10 @@ use strict_encoding::{
     LIB_NAME_STD, STRICT_TYPES_LIB,
 };
 use strict_types::stl::{std_stl, strict_types_stl};
-use strict_types::{CompileError, LibBuilder, SystemBuilder, TranspileError, TypeLib};
+use strict_types::{
+    CompileError, LibBuilder, StrictDeserialize, StrictSerialize, SystemBuilder, TranspileError,
+    TypeLib,
+};
 
 const LIB: &str = "Test";
 
@@ -265,4 +268,73 @@ fn type_lib_semid_inconsistency() {
     assert_ne!(alphanumlodash_semid_orig, alphanumlodash_semid_mod);
     // Ident sem IDs from the 2 SymbolicSys unexpectedly match
     assert_ne!(ident_semid_orig, ident_semid_mod); // fails
+}
+
+#[test]
+fn generic_dependencies() {
+    trait ATrait: StrictSerialize + StrictDeserialize + StrictDumb {}
+
+    #[derive(Clone, Eq, PartialEq, Debug)]
+    #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = LIB)]
+    struct StructInternal {
+        a: u8,
+    }
+    impl ATrait for StructInternal {}
+    impl StrictSerialize for StructInternal {}
+    impl StrictDeserialize for StructInternal {}
+
+    #[derive(Clone, Eq, PartialEq, Debug)]
+    #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = LIB)]
+    struct GenericStruct<D: ATrait> {
+        generic_param: D,
+    }
+
+    let generic_type_lib = LibBuilder::with(libname!(LIB), [])
+        .transpile::<GenericStruct<StructInternal>>()
+        .compile_symbols()
+        .unwrap()
+        .compile()
+        .unwrap();
+
+    const EXT: &str = "Extern";
+
+    #[derive(Clone, Eq, PartialEq, Debug)]
+    #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = EXT)]
+    struct StructExtern {
+        a: u8,
+    }
+    impl ATrait for StructExtern {}
+    impl StrictSerialize for StructExtern {}
+    impl StrictDeserialize for StructExtern {}
+
+    let ext_type_lib = LibBuilder::with(libname!(EXT), [])
+        .transpile::<StructExtern>()
+        .compile_symbols()
+        .unwrap()
+        .compile()
+        .unwrap();
+
+    const UNION: &str = "Union";
+
+    #[derive(Clone, Eq, PartialEq, Debug)]
+    #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
+    #[strict_type(lib = UNION)]
+    struct UnionStruct<D: ATrait> {
+        generic_struct: GenericStruct<D>,
+    }
+
+    // this fails, unable to find GenericStruct<StructExtern>
+    let _union_type_lib = LibBuilder::with(libname!(UNION), [
+        ext_type_lib.to_dependency_types(),
+        generic_type_lib.to_dependency_types(),
+    ])
+    .transpile::<UnionStruct<StructExtern>>()
+    .transpile::<GenericStruct<StructExtern>>()  // fails with or without this
+    .compile_symbols()
+    .unwrap()
+    .compile()
+    .unwrap();
 }
