@@ -60,6 +60,7 @@ impl ExternRef {
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { InlineRef::Inline(Ty::strict_dumb()) })]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(rename_all = "camelCase"))]
+#[allow(clippy::large_enum_variant)]
 pub enum InlineRef {
     #[from]
     Inline(Ty<InlineRef1>),
@@ -168,6 +169,7 @@ impl Display for InlineRef2 {
 #[derive(StrictDumb, StrictType, StrictEncode, StrictDecode)]
 #[strict_type(lib = STRICT_TYPES_LIB, tags = order, dumb = { LibRef::Inline(Ty::strict_dumb()) })]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize), serde(rename_all = "camelCase"))]
+#[allow(clippy::large_enum_variant)]
 pub enum LibRef {
     #[from]
     Inline(Ty<InlineRef>),
