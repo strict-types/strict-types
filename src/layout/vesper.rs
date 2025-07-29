@@ -25,7 +25,7 @@ use std::fmt;
 use std::fmt::{Display, Formatter};
 use std::ops::Range;
 
-use amplify::num::u24;
+use amplify::num::{u24, u40, u48, u56};
 use encoding::{Ident, Sizing};
 use vesper::{AttrVal, Attribute, Expression, Predicate, TExpr};
 
@@ -37,9 +37,9 @@ pub type TypeVesper = TExpr<Pred>;
 #[display(lowercase)]
 pub enum Pred {
     /// Type alias
-    Is,
+    Field,
     Tuple,
-    Rec,
+    Struct,
     Enum,
     Union,
     // Composites
@@ -61,12 +61,12 @@ impl Predicate for Pred {
 impl From<Cls> for Pred {
     fn from(cls: Cls) -> Self {
         match cls {
-            Cls::Primitive => Pred::Is,
+            Cls::Primitive => Pred::Field,
             Cls::Unicode => Pred::Str,
             Cls::AsciiStr => Pred::Ascii,
             Cls::Enum => Pred::Enum,
             Cls::Union => Pred::Union,
-            Cls::Struct => Pred::Rec,
+            Cls::Struct => Pred::Struct,
             Cls::Tuple => Pred::Tuple,
             Cls::Array => Pred::Array,
             Cls::List => Pred::List,
@@ -107,7 +107,7 @@ impl Attribute for Attr {
     fn name(&self) -> Option<Ident> {
         match self {
             Attr::TypeName(_) => None,
-            Attr::Wrapped(name) if name.is_some() => Some(ident!("aka")),
+            Attr::Wrapped(name) if name.is_some() => Some(ident!("alias")),
             Attr::Wrapped(_) => None,
             Attr::Option => None,
             Attr::Tag(_) => Some(ident!("tag")),
@@ -146,14 +146,21 @@ impl From<Sizing> for LenRange {
 
 impl Display for LenRange {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match (self.0.start, self.0.end) {
-            (min, max) if max == u8::MAX as u64 => write!(f, "{min}..MAX8"),
-            (min, max) if max == u16::MAX as u64 => write!(f, "{min}..MAX16"),
-            (min, max) if max == u24::MAX.into_u64() => write!(f, "{min}..MAX24"),
-            (min, max) if max == u32::MAX as u64 => write!(f, "{min}..MAX32"),
-            // TODO: Add more numbers
-            (min, u64::MAX) => write!(f, "{min}..MAX64"),
-            (min, max) => write!(f, "{min}..{max}"),
+        match self.0.start {
+            min if min < 16 => write!(f, "{min}")?,
+            min => write!(f, "{min:X}.h")?,
+        }
+        f.write_str("..")?;
+        match self.0.end {
+            max if max == u16::MAX as u64 => f.write_str("<2^16"),
+            max if max == u24::MAX.into_u64() => f.write_str("<2^24"),
+            max if max == u32::MAX as u64 => f.write_str("<2^32"),
+            max if max == u40::MAX.into_u64() => f.write_str("<2^40"),
+            max if max == u48::MAX.into_u64() => f.write_str("<2^48"),
+            max if max == u56::MAX.into_u64() => f.write_str("<2^56"),
+            u64::MAX => f.write_str("<2^64"),
+            max if max < 16 => write!(f, "{max}"),
+            max => write!(f, "={max:X}.h"),
         }
     }
 }
