@@ -53,9 +53,8 @@ fn main() {
   License: Apache-2.0
 -}}
 
-{} vesper lexicon=types
-",
-        STRICT_TYPES_LIB
+{STRICT_TYPES_LIB} vesper lexicon=types
+"
     )
     .unwrap();
     write!(file, "{tt}").unwrap();

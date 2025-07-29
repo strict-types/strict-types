@@ -114,7 +114,7 @@ fn serialize() {
         LibBuilder::with(libname!(LIB), [lib.to_dependency_types()]).transpile::<Complex>();
     let lib = builder.compile_symbols().unwrap();
 
-    println!("{}", lib);
+    println!("{lib}");
 }
 
 #[test]

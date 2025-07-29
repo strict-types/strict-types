@@ -137,7 +137,7 @@ impl Display for SymbolicLib {
                 let mnemo = ty.sem_id_named(name).to_baid64_mnemonic();
                 writeln!(f, "@mnemonic({mnemo})")?;
             }
-            write!(f, "data {name:0$} : ", width)?;
+            write!(f, "data {name:width$} : ")?;
             Display::fmt(ty, f)?;
             writeln!(f)?;
             writeln!(f)?;
@@ -160,7 +160,7 @@ impl Display for TypeLib {
         writeln!(f)?;
         let width = f.width().unwrap_or(17);
         for (name, ty) in &self.types {
-            writeln!(f, "data {name:0$} : {ty}\n", width)?;
+            writeln!(f, "data {name:width$} : {ty}\n")?;
         }
         Ok(())
     }
